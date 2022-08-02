@@ -1,3 +1,4 @@
+/* eslint-disable newline-per-chained-call */
 import pl, { col, lit } from "@polars/index";
 const df = () => {
   const df = pl.DataFrame({
@@ -1301,12 +1302,14 @@ describe("expr.lst", () => {
     expect(
       df
         .select(pl.col("a").lst.concat("b").alias("a"))
-        ["a"].seriesEqual(expected)
+        .getColumn("a")
+        .seriesEqual(expected)
     ).toBeTruthy();
     expect(
       df
         .select(pl.col("a").lst.concat(["b"]).alias("a"))
-        ["a"].seriesEqual(expected)
+        .getColumn("a")
+        .seriesEqual(expected)
     );
   });
   test("get", () => {

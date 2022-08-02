@@ -10,9 +10,6 @@ env:
       - 'nodejs-polars-v*' # Push events to matching nodejs-polars-v*, i.e. nodejs-polars-v1.0, nodejs-polars-v20.15.10
 jobs:
   build:
-    defaults:
-      run:
-        working-directory: nodejs-polars
     strategy:
       fail-fast: false
       matrix:
@@ -110,7 +107,7 @@ jobs:
         with:
           node-version: 16
           cache: yarn
-          cache-dependency-path: nodejs-polars/yarn.lock
+          cache-dependency-path: yarn.lock
           architecture: ${{ matrix.settings.architecture }}
       - name: Copy rust-toolchain to root
         run: cp rust-toolchain ..
@@ -152,7 +149,7 @@ jobs:
         if: ${{ matrix.settings.docker }}
         with:
           image: ${{ matrix.settings.docker }}
-          options: '-v ${{ env.HOME }}/.cargo/git:/root/.cargo/git -v ${{ env.HOME }}/.cargo/registry:/root/.cargo/registry -v ${{ github.workspace }}:/build -w /build/nodejs-polars'
+          options: '-v ${{ env.HOME }}/.cargo/git:/root/.cargo/git -v ${{ env.HOME }}/.cargo/registry:/root/.cargo/registry -v ${{ github.workspace }}:/build -w /build'
           run: ${{ matrix.settings.build }}
       - name: Build
         run: ${{ matrix.settings.build }}
@@ -162,12 +159,9 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: bindings-${{ matrix.settings.target }}
-          path: nodejs-polars/polars/*.node
+          path: polars/*.node
           if-no-files-found: error
   test-macos:
-    defaults:
-      run:
-        working-directory: nodejs-polars
     needs:
       - build
     runs-on: macos-latest
@@ -179,16 +173,13 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: bindings-x86_64-apple-darwin
-          path: nodejs-polars/polars
+          path: polars
       - name: Run test
         run: yarn test
   publish:
     name: Publish
     needs:
       - test-macos
-    defaults:
-      run:
-        working-directory: nodejs-polars
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -197,7 +188,7 @@ jobs:
           node-version: "16"
           registry-url: "https://registry.npmjs.org"
           cache: yarn
-          cache-dependency-path: nodejs-polars/yarn.lock
+          cache-dependency-path: yarn.lock
 
       - name: "Install dependencies"
         run: yarn install
@@ -205,7 +196,7 @@ jobs:
       - name: Download all artifacts
         uses: actions/download-artifact@v3
         with:
-          path: nodejs-polars/artifacts
+          path: artifacts
 
       - name: Move artifacts
         run: yarn artifacts

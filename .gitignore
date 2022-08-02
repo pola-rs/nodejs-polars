@@ -2,7 +2,7 @@
 **/*.rs.bk
 Cargo.lock
 node_modules/
-.yarn
+.yarn/cache
 .pnp.*
 
 coverage/
