@@ -3,7 +3,7 @@ import path from "path";
 import {Stream} from "stream";
 import fs from "fs";
 // eslint-disable-next-line no-undef
-const csvpath = path.resolve(__dirname, "../../examples/datasets/foods1.csv");
+const csvpath = path.resolve(__dirname, "./examples/datasets/foods1.csv");
 // eslint-disable-next-line no-undef
 const parquetpath = path.resolve(__dirname, "./examples/foods.parquet");
 // eslint-disable-next-line no-undef
@@ -188,6 +188,7 @@ describe("parquet", () => {
     expect(df.shape).toEqual({height: 4, width: 4});
   });
 });
+
 describe("ipc", () => {
   beforeEach(() => {
     pl.readCSV(csvpath).writeIPC(ipcpath);
@@ -325,7 +326,7 @@ describe("stream", () => {
     expect(df).toFrameEqual(expected);
   });
 
-  test("readJSON:error", async () => {
+  test.skip("readJSON:error", async () => {
     const readStream = new Stream.Readable({read(){}});
     readStream.push(`${JSON.stringify({a: 1, b: 2})} \n`);
     readStream.push(`${JSON.stringify({a: 2, b: 2})} \n`);

@@ -525,8 +525,14 @@ impl JsLazyFrame {
     }
 
     #[napi(getter, js_name = "columns")]
-    pub fn columns(&self) -> Vec<String> {
-        self.ldf.schema().iter_names().cloned().collect()
+    pub fn columns(&self) -> napi::Result<Vec<String>> {
+        Ok(self
+            .ldf
+            .schema()
+            .map_err(JsPolarsErr::from)?
+            .iter_names()
+            .cloned()
+            .collect())
     }
 
     #[napi]

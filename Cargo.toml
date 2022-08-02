@@ -17,7 +17,7 @@ ahash = "0.7"
 bincode = "1.3"
 napi = { version = "2.2.0", default-features = false, features = ["napi8", "serde-json", "experimental"] }
 napi-derive = { version = "2.2.0", default-features = false }
-polars-core = { path = "../polars/polars-core", default-features = false }
+polars-core = { git = "https://github.com/pola-rs/polars.git", rev = "95074d91cfa0248a86722fbae572952425ae43cb", default-features = false }
 thiserror = "1.0.20"
 
 serde_json = { version = "1" }
@@ -87,7 +87,8 @@ features = [
   "list_eval",
   "arg_where",
 ]
-path = "../polars"
+git = "https://github.com/pola-rs/polars.git" 
+rev = "95074d91cfa0248a86722fbae572952425ae43cb"
 
 [build-dependencies]
 napi-build = "1.2.1"

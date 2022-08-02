@@ -12,6 +12,8 @@ import {
 import {LazyGroupBy} from "./groupby";
 import {Deserialize, GroupByOps, Serialize} from "../shared_traits";
 
+const inspect = Symbol.for("nodejs.util.inspect.custom");
+
 type LazyJoinOptions = {
   how?: "left" | "inner" | "outer" | "cross";
   suffix?: string;
@@ -34,6 +36,7 @@ type LazyOptions = {
 export interface LazyDataFrame extends Serialize, GroupByOps<LazyGroupBy> {
   /** @ignore */
   _ldf: any;
+  [inspect](): string;
   get columns(): string[];
   /**
    * Cache the result once the execution of the physical plan hits this node.
@@ -462,6 +465,10 @@ export const _LazyDataFrame = (_ldf: any): LazyDataFrame => {
 
   return {
     _ldf,
+    [inspect]() {
+      return _ldf.describeOptimizedPlan();
+    },
+
     get columns() {
       return _ldf.columns;
     },
@@ -636,7 +643,7 @@ export const _LazyDataFrame = (_ldf: any): LazyDataFrame => {
         ...options,
       };
       const {how, suffix, allowParallel, forceParallel} = options;
-      if(how === "cross") {
+      if (how === "cross") {
 
         return _LazyDataFrame(_ldf.join(df._ldf, [], [], allowParallel, forceParallel, how, suffix, [], []));
       }
@@ -683,7 +690,7 @@ export const _LazyDataFrame = (_ldf: any): LazyDataFrame => {
       const {suffix, strategy, allowParallel, forceParallel} = options;
       let leftOn;
       let rightOn;
-      if(!(other?._ldf)) {
+      if (!(other?._ldf)) {
         throw new TypeError("Expected a 'lazyFrame' as join table");
       }
       if (options.on) {
@@ -696,30 +703,30 @@ export const _LazyDataFrame = (_ldf: any): LazyDataFrame => {
           "You should pass the column to join on as an argument."
         );
       } else {
-        leftOn = options.leftOn,
+        leftOn = options.leftOn;
         rightOn = options.rightOn;
       }
       let byLeft;
-      if(typeof options.byLeft === "string") {
+      if (typeof options.byLeft === "string") {
         byLeft = [options.byLeft];
       } else if (Array.isArray(options.byLeft)) {
         byLeft = options.byLeft;
       }
       let byRight;
-      if(typeof options.byRight === "string") {
+      if (typeof options.byRight === "string") {
         byRight = [options.byRight];
       } else if (Array.isArray(options.byRight)) {
         byRight = options.byRight;
       }
 
-      if(typeof options.by === "string") {
-        byLeft = byRight =  [options.by];
+      if (typeof options.by === "string") {
+        byLeft = byRight = [options.by];
 
       } else if (Array.isArray(options.by)) {
         byLeft = byRight = options.by;
       }
       let toleranceStr, toleranceNum;
-      if(typeof options.tolerance === "string") {
+      if (typeof options.tolerance === "string") {
         toleranceStr = options.tolerance;
       } else {
         toleranceNum = options.tolerance;

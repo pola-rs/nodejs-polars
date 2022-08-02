@@ -273,8 +273,11 @@ impl JsExpr {
     }
 
     #[napi]
-    pub fn value_counts(&self, multithreaded: bool) -> JsExpr {
-        self.inner.clone().value_counts(multithreaded).into()
+    pub fn value_counts(&self, multithreaded: bool, sorted: bool) -> JsExpr {
+        self.inner
+            .clone()
+            .value_counts(multithreaded, sorted)
+            .into()
     }
 
     #[napi]

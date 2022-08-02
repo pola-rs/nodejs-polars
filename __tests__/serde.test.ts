@@ -1,8 +1,10 @@
 import pl from "@polars";
 import path from "path";
+// eslint-disable-next-line no-undef
+const csvpath = path.resolve(__dirname, "./examples/datasets/foods1.csv");
 describe("serde", () => {
   test("lazyframe:json", () => {
-    const df = pl.scanCSV(path.resolve("../examples/datasets/foods1.csv"));
+    const df = pl.scanCSV(csvpath);
     const buf = df.serialize("json");
     const deserde = pl.LazyDataFrame.deserialize(buf, "json");
     const expected = df.collectSync();
@@ -11,7 +13,7 @@ describe("serde", () => {
   });
 
   test.skip("lazyframe:bincode", () => {
-    const df = pl.scanCSV("../examples/datasets/foods1.csv");
+    const df = pl.scanCSV(csvpath);
     const buf = df.serialize("bincode");
     const deserde = pl.LazyDataFrame.deserialize(buf, "bincode");
     const expected = df.collectSync();

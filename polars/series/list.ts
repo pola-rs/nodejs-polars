@@ -1,8 +1,8 @@
-import {Series, _Series} from "./series";
-import {col} from "../lazy/functions";
-import {ListFunctions} from "../shared_traits";
+import { Series, _Series } from "./series";
+import { col } from "../lazy/functions";
+import { ListFunctions } from "../shared_traits";
 
-export type SeriesListFunctions =  ListFunctions<Series>;
+export type SeriesListFunctions = ListFunctions<Series>;
 export const SeriesListFunctions = (_s): ListFunctions<Series> => {
   const wrap = (method, ...args) => {
     const s = _Series(_s);
@@ -10,7 +10,8 @@ export const SeriesListFunctions = (_s): ListFunctions<Series> => {
     return s
       .toFrame()
       .select(
-        col(s.name).lst[method](...args)
+        col(s.name)
+          .lst[method](...args)
           .as(s.name)
       )
       .getColumn(s.name);
@@ -23,6 +24,15 @@ export const SeriesListFunctions = (_s): ListFunctions<Series> => {
     argMin() {
       return wrap("argMin");
     },
+    concat(other) {
+      return wrap("concat", other);
+    },
+    contains(item) {
+      return wrap("contains", item);
+    },
+    diff(n, nullBehavior) {
+      return wrap("diff", n, nullBehavior);
+    },
     get(index: number) {
       return wrap("get", index);
     },
@@ -31,6 +41,12 @@ export const SeriesListFunctions = (_s): ListFunctions<Series> => {
     },
     first() {
       return wrap("get", 0);
+    },
+    head(n = 5) {
+      return this.slice(0, n);
+    },
+    tail(n = 5) {
+      return this.slice(-n, n);
     },
     join(separator = ",") {
       return wrap("join", separator);
@@ -60,9 +76,9 @@ export const SeriesListFunctions = (_s): ListFunctions<Series> => {
       return wrap("slice", offset, length);
     },
     sort(reverse: any = false) {
-      return typeof reverse === "boolean" ?
-        wrap("sort", reverse) :
-        wrap("sort", reverse.reverse);
+      return typeof reverse === "boolean"
+        ? wrap("sort", reverse)
+        : wrap("sort", reverse.reverse);
     },
     sum() {
       return wrap("sum");

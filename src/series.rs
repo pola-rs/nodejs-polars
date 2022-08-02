@@ -1,3 +1,4 @@
+use crate::dataframe::JsDataFrame;
 use crate::prelude::*;
 use crate::utils::reinterpret;
 use polars_core::series::ops::NullBehavior;
@@ -458,9 +459,14 @@ impl JsSeries {
         Ok(unique.into())
     }
     #[napi]
-    pub fn value_counts(&self) -> napi::Result<Object> {
-        todo!()
+    pub fn value_counts(&self, sorted: bool) -> napi::Result<JsDataFrame> {
+        let df = self
+            .series
+            .value_counts(true, sorted)
+            .map_err(JsPolarsErr::from)?;
+        Ok(df.into())
     }
+
     #[napi]
     pub fn arg_unique(&self) -> napi::Result<JsSeries> {
         let arg_unique = self.series.arg_unique().map_err(JsPolarsErr::from)?;

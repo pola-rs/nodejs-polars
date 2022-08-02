@@ -1,0 +1,34 @@
+name: Docs
+
+on:
+  push:
+    branches:
+      - main
+      - docs
+jobs:
+  test:
+    name: Docs
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install latest Rust nightly
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly-2022-07-30
+          override: true
+          components: rustfmt, clippy
+      - name: Set up Node
+        uses: actions/setup-node@v2
+        with: 
+          node-version: 16
+      - name: Build node reference
+        run: | 
+          npm install
+          npx typedoc
+      - name: deploy docs
+        run: |
+          mkdir -p target/doc
+          cp -r nodejs-polars/docs/* target/doc/
+          echo ghp-import step
+          ghp-import -n target/doc && \
+          git push -qf https://${{ secrets.GITHUB_TOKEN }}@github.com/${GITHUB_REPOSITORY}.git gh-pages

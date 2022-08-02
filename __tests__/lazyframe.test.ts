@@ -1,6 +1,16 @@
 import pl from "@polars";
 
 describe("lazyframe", () => {
+  test("inspect", () => {
+    const df = pl.DataFrame({
+      "foo": [1, 2],
+      "bar": ["a", "b"]
+    }).lazy();
+    const actual = df[Symbol.for("nodejs.util.inspect.custom")]();
+
+    expect(actual).toEqual(
+      `DATAFRAME(in-memory): ["foo", "bar"];\n\tproject */2 columns\t|\tdetails: None;\n\tselection: "None"\n\n`);
+  });
   test("columns", () => {
     const df = pl.DataFrame({
       "foo": [1, 2],
@@ -127,7 +137,7 @@ selection: "None" `.replace(/\s+/g, " "));
   });
   // run this test 100 times to make sure it is deterministic.
   test("unique:maintainOrder", () => {
-    Array.from({length:100}).forEach(() => {
+    Array.from({length: 100}).forEach(() => {
       const actual = pl.DataFrame({
         "foo": [0, 1, 2, 2, 2],
         "bar": [0, 1, 2, 2, 2],
@@ -145,7 +155,7 @@ selection: "None" `.replace(/\s+/g, " "));
   });
   // run this test 100 times to make sure it is deterministic.
   test("unique:maintainOrder:single subset", () => {
-    Array.from({length:100}).forEach(() => {
+    Array.from({length: 100}).forEach(() => {
       const actual = pl.DataFrame({
         "foo": [0, 1, 2, 2, 2],
         "bar": [0, 1, 2, 2, 2],
@@ -163,7 +173,7 @@ selection: "None" `.replace(/\s+/g, " "));
   });
   // run this test 100 times to make sure it is deterministic.
   test("unique:maintainOrder:multi subset", () => {
-    Array.from({length:100}).forEach(() => {
+    Array.from({length: 100}).forEach(() => {
       const actual = pl.DataFrame({
         "foo": [0, 1, 2, 2, 2],
         "bar": [0, 1, 2, 2, 2],
@@ -325,15 +335,15 @@ selection: "None" `.replace(/\s+/g, " "));
     });
     expect(actual).toFrameEqual(expected);
   });
-  describe("groupby", () => {});
+  describe("groupby", () => { });
   test("head", () => {
-    const actual  = pl.DataFrame({
+    const actual = pl.DataFrame({
       "foo": [1, 2, 3],
       "ham": ["a", "b", "c"]
     }).lazy()
       .head(1)
       .collectSync();
-    const expected  = pl.DataFrame({
+    const expected = pl.DataFrame({
       "foo": [1],
       "ham": ["a"]
     });
@@ -579,26 +589,26 @@ selection: "None" `.replace(/\s+/g, " "));
     });
   });
   test("last", () => {
-    const actual  = pl.DataFrame({
+    const actual = pl.DataFrame({
       "foo": [1, 2, 3],
       "ham": ["a", "b", "c"]
     }).lazy()
       .last()
       .collectSync();
-    const expected  = pl.DataFrame({
+    const expected = pl.DataFrame({
       "foo": [3],
       "ham": ["c"]
     });
     expect(actual).toFrameEqual(expected);
   });
   test("limit", () => {
-    const actual  = pl.DataFrame({
+    const actual = pl.DataFrame({
       "foo": [1, 2, 3],
       "ham": ["a", "b", "c"]
     }).lazy()
       .limit(1)
       .collectSync();
-    const expected  = pl.DataFrame({
+    const expected = pl.DataFrame({
       "foo": [1],
       "ham": ["a"]
     });
@@ -699,13 +709,13 @@ selection: "None" `.replace(/\s+/g, " "));
     expect(actual).toFrameEqual(expected);
   });
   test("tail", () => {
-    const actual  = pl.DataFrame({
+    const actual = pl.DataFrame({
       "foo": [1, 2, 3],
       "ham": ["a", "b", "c"]
     }).lazy()
       .tail(1)
       .collectSync();
-    const expected  = pl.DataFrame({
+    const expected = pl.DataFrame({
       "foo": [3],
       "ham": ["c"]
     });
@@ -939,7 +949,7 @@ selection: "None" `.replace(/\s+/g, " "));
       .withColumn(pl.lit("a").alias("col_a"))
       .collectSync();
 
-    const expected =  pl.DataFrame([
+    const expected = pl.DataFrame([
       pl.Series("foo", [1, 2, 9], pl.Int16),
       pl.Series("bar", [6, 2, 8], pl.Int16),
       pl.Series("col_a", ["a", "a", "a"], pl.Utf8),
@@ -956,7 +966,7 @@ selection: "None" `.replace(/\s+/g, " "));
         pl.lit("b").alias("col_b")
       )
       .collectSync();
-    const expected =  pl.DataFrame([
+    const expected = pl.DataFrame([
       pl.Series("foo", [1, 2, 9], pl.Int16),
       pl.Series("bar", [6, 2, 8], pl.Int16),
       pl.Series("col_a", ["a", "a", "a"], pl.Utf8),
@@ -974,7 +984,7 @@ selection: "None" `.replace(/\s+/g, " "));
         pl.lit("b").alias("col_b")
       ])
       .collectSync();
-    const expected =  pl.DataFrame([
+    const expected = pl.DataFrame([
       pl.Series("foo", [1, 2, 9], pl.Int16),
       pl.Series("bar", [6, 2, 8], pl.Int16),
       pl.Series("col_a", ["a", "a", "a"], pl.Utf8),
@@ -990,7 +1000,7 @@ selection: "None" `.replace(/\s+/g, " "));
       .withColumnRenamed("foo", "apple")
       .collectSync();
 
-    const expected =  pl.DataFrame([
+    const expected = pl.DataFrame([
       pl.Series("apple", [1, 2, 9], pl.Int16),
       pl.Series("bar", [6, 2, 8], pl.Int16),
     ]);
@@ -1004,7 +1014,7 @@ selection: "None" `.replace(/\s+/g, " "));
       .withRowCount()
       .collectSync();
 
-    const expected =  pl.DataFrame([
+    const expected = pl.DataFrame([
       pl.Series("row_nr", [0, 1, 2], pl.UInt32),
       pl.Series("foo", [1, 2, 9], pl.Int16),
       pl.Series("bar", [6, 2, 8], pl.Int16),

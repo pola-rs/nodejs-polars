@@ -1,47 +1,56 @@
-import {ColumnsOrExpr} from "./utils";
-import {Expr} from "./lazy/expr";
+import { ColumnsOrExpr } from "./utils";
+import { Expr, _Expr } from "./lazy/expr";
+import { Series } from "./series/series";
+import { concatList } from "./lazy/functions";
+
+import pli from "./internals/polars_internal";
 
 export type RollingOptions = {
-  windowSize: number,
-  weights?: Array<number>,
-  minPeriods?: number,
-  center?: boolean
+  windowSize: number;
+  weights?: Array<number>;
+  minPeriods?: number;
+  center?: boolean;
 };
 
-export type Interpolation = "nearest" | "higher" | "lower" | "midpoint" | "linear"
+export type Interpolation =
+  | "nearest"
+  | "higher"
+  | "lower"
+  | "midpoint"
+  | "linear";
 
 export interface Arithmetic<T> {
-  add(rhs: any): T
-  sub(rhs: any): T
-  div(rhs: any): T
-  mul(rhs: any): T
-  rem(rhs: any): T
-  plus(rhs: any): T
-  minus(rhs: any): T
-  divideBy(rhs: any): T
-  multiplyBy(rhs: any): T
-  modulo(rhs: any): T
+  add(rhs: any): T;
+  sub(rhs: any): T;
+  div(rhs: any): T;
+  mul(rhs: any): T;
+  rem(rhs: any): T;
+  plus(rhs: any): T;
+  minus(rhs: any): T;
+  divideBy(rhs: any): T;
+  multiplyBy(rhs: any): T;
+  modulo(rhs: any): T;
 }
 
 export interface Comparison<T> {
-  eq(rhs: any): T
-  equals(rhs: any): T
-  gtEq(rhs: any): T
-  greaterThanEquals(rhs: any): T
-  gt(rhs: any): T
-  greaterThan(rhs: any): T
-  ltEq(rhs: any): T
-  lessThanEquals(rhs: any): T
-  lt(rhs: any): T
-  lessThan(rhs: any): T
-  neq(rhs: any): T
-  notEquals(rhs: any): T
+  eq(rhs: any): T;
+  equals(rhs: any): T;
+  gtEq(rhs: any): T;
+  greaterThanEquals(rhs: any): T;
+  gt(rhs: any): T;
+  greaterThan(rhs: any): T;
+  ltEq(rhs: any): T;
+  lessThanEquals(rhs: any): T;
+  lt(rhs: any): T;
+  lessThan(rhs: any): T;
+  neq(rhs: any): T;
+  notEquals(rhs: any): T;
 }
 
 export interface Cumulative<T> {
   /** Get an array with the cumulative count computed at every element. */
-  cumCount(reverse?: boolean): T
-  cumCount({reverse}: {reverse: boolean}): T
+  cumCount(reverse?: boolean): T;
+  cumCount({ reverse }: { reverse: boolean }): T;
   /**
    * __Get an array with the cumulative max computes at every element.__
    * ___
@@ -59,27 +68,27 @@ export interface Cumulative<T> {
    * ]
    * ```
    */
-  cumMax(reverse?: boolean): T
-  cumMax({reverse}: {reverse: boolean}): T
+  cumMax(reverse?: boolean): T;
+  cumMax({ reverse }: { reverse: boolean }): T;
   /**
-    * __Get an array with the cumulative min computed at every element.__
-    * ___
-    * @param reverse - reverse the operation
-    * @example
-    * ```
-    * > const s = pl.Series("a", [1, 2, 3])
-    * > s.cumMin()
-    * shape: (3,)
-    * Series: 'b' [i64]
-    * [
-    *         1
-    *         1
-    *         1
-    * ]
-    * ```
-    */
-  cumMin(reverse?: boolean): T
-  cumMin({reverse}: {reverse: boolean}): T
+   * __Get an array with the cumulative min computed at every element.__
+   * ___
+   * @param reverse - reverse the operation
+   * @example
+   * ```
+   * > const s = pl.Series("a", [1, 2, 3])
+   * > s.cumMin()
+   * shape: (3,)
+   * Series: 'b' [i64]
+   * [
+   *         1
+   *         1
+   *         1
+   * ]
+   * ```
+   */
+  cumMin(reverse?: boolean): T;
+  cumMin({ reverse }: { reverse: boolean }): T;
   /**
    * __Get an array with the cumulative product computed at every element.__
    * ___
@@ -97,27 +106,27 @@ export interface Cumulative<T> {
    * ]
    * ```
    */
-  cumProd(reverse?: boolean): T
-  cumProd({reverse}: {reverse: boolean}): T
+  cumProd(reverse?: boolean): T;
+  cumProd({ reverse }: { reverse: boolean }): T;
   /**
-    * __Get an array with the cumulative sum computed at every element.__
-    * ___
-    * @param reverse - reverse the operation
-    * @example
-    * ```
-    * > const s = pl.Series("a", [1, 2, 3])
-    * > s.cumSum()
-    * shape: (3,)
-    * Series: 'b' [i64]
-    * [
-    *         1
-    *         3
-    *         6
-    * ]
-    * ```
-    */
-  cumSum(reverse?: boolean): T
-  cumSum({reverse}: {reverse: boolean}): T
+   * __Get an array with the cumulative sum computed at every element.__
+   * ___
+   * @param reverse - reverse the operation
+   * @example
+   * ```
+   * > const s = pl.Series("a", [1, 2, 3])
+   * > s.cumSum()
+   * shape: (3,)
+   * Series: 'b' [i64]
+   * [
+   *         1
+   *         3
+   *         6
+   * ]
+   * ```
+   */
+  cumSum(reverse?: boolean): T;
+  cumSum({ reverse }: { reverse: boolean }): T;
 }
 
 export interface Rolling<T> {
@@ -136,8 +145,13 @@ export interface Rolling<T> {
    * If undefined, it will be set equal to window size.
    * @param center - Set the labels at the center of the window
    */
-  rollingMax(options: RollingOptions): T
-  rollingMax(windowSize: number, weights?: Array<number>, minPeriods?: Array<number>, center?: boolean): T
+  rollingMax(options: RollingOptions): T;
+  rollingMax(
+    windowSize: number,
+    weights?: Array<number>,
+    minPeriods?: Array<number>,
+    center?: boolean
+  ): T;
   /**
    * __Apply a rolling mean (moving mean) over the values in this Series.__
    *
@@ -153,8 +167,13 @@ export interface Rolling<T> {
    * If undefined, it will be set equal to window size.
    * @param center - Set the labels at the center of the window
    */
-  rollingMean(options: RollingOptions): T
-  rollingMean(windowSize: number, weights?: Array<number>, minPeriods?: Array<number>, center?: boolean): T
+  rollingMean(options: RollingOptions): T;
+  rollingMean(
+    windowSize: number,
+    weights?: Array<number>,
+    minPeriods?: Array<number>,
+    center?: boolean
+  ): T;
   /**
    * __Apply a rolling min (moving min) over the values in this Series.__
    *
@@ -170,8 +189,13 @@ export interface Rolling<T> {
    * If undefined, it will be set equal to window size.
    * @param center - Set the labels at the center of the window
    */
-  rollingMin(options: RollingOptions): T
-  rollingMin(windowSize: number, weights?: Array<number>, minPeriods?: Array<number>, center?: boolean): T
+  rollingMin(options: RollingOptions): T;
+  rollingMin(
+    windowSize: number,
+    weights?: Array<number>,
+    minPeriods?: Array<number>,
+    center?: boolean
+  ): T;
   /**
    * Compute a rolling std dev
    *
@@ -186,8 +210,13 @@ export interface Rolling<T> {
    * If undefined, it will be set equal to window size.
    * @param center - Set the labels at the center of the window
    */
-  rollingStd(options: RollingOptions): T
-  rollingStd(windowSize: number, weights?: Array<number>, minPeriods?: Array<number>, center?: boolean): T
+  rollingStd(options: RollingOptions): T;
+  rollingStd(
+    windowSize: number,
+    weights?: Array<number>,
+    minPeriods?: Array<number>,
+    center?: boolean
+  ): T;
   /**
    * __Apply a rolling sum (moving sum) over the values in this Series.__
    *
@@ -203,8 +232,13 @@ export interface Rolling<T> {
    * If undefined, it will be set equal to window size.
    * @param center - Set the labels at the center of the window
    */
-  rollingSum(options: RollingOptions): T
-  rollingSum(windowSize: number, weights?: Array<number>, minPeriods?: Array<number>, center?: boolean): T
+  rollingSum(options: RollingOptions): T;
+  rollingSum(
+    windowSize: number,
+    weights?: Array<number>,
+    minPeriods?: Array<number>,
+    center?: boolean
+  ): T;
   /**
    * __Compute a rolling variance.__
    *
@@ -220,11 +254,21 @@ export interface Rolling<T> {
    * If undefined, it will be set equal to window size.
    * @param center - Set the labels at the center of the window
    */
-  rollingVar(options: RollingOptions): T
-  rollingVar(windowSize: number, weights?: Array<number>, minPeriods?: Array<number>, center?: boolean): T
+  rollingVar(options: RollingOptions): T;
+  rollingVar(
+    windowSize: number,
+    weights?: Array<number>,
+    minPeriods?: Array<number>,
+    center?: boolean
+  ): T;
   /** Compute a rolling median */
-  rollingMedian(options: RollingOptions): T
-  rollingMedian(windowSize: number, weights?: Array<number>, minPeriods?: Array<number>, center?: boolean): T
+  rollingMedian(options: RollingOptions): T;
+  rollingMedian(
+    windowSize: number,
+    weights?: Array<number>,
+    minPeriods?: Array<number>,
+    center?: boolean
+  ): T;
   /**
    * Compute a rolling quantile
    * @param quantile quantile to compute
@@ -236,7 +280,12 @@ export interface Rolling<T> {
    * If undefined, it will be set equal to window size.
    * @param center - Set the labels at the center of the window
    */
-  rollingQuantile(options: RollingOptions & {quantile: number, interpolation?: Interpolation}): T
+  rollingQuantile(
+    options: RollingOptions & {
+      quantile: number;
+      interpolation?: Interpolation;
+    }
+  ): T;
   rollingQuantile(
     quantile: number,
     interpolation?: Interpolation,
@@ -244,16 +293,15 @@ export interface Rolling<T> {
     weights?: Array<number>,
     minPeriods?: Array<number>,
     center?: boolean
-  ): T
+  ): T;
   /**
    * Compute a rolling skew
    * @param windowSize Size of the rolling window
    * @param bias If false, then the calculations are corrected for statistical bias.
    */
-  rollingSkew(windowSize: number, bias?: boolean): T
-  rollingSkew({windowSize, bias}: {windowSize: number, bias?: boolean}): T
+  rollingSkew(windowSize: number, bias?: boolean): T;
+  rollingSkew({ windowSize, bias }: { windowSize: number; bias?: boolean }): T;
 }
-
 
 export interface Round<T> {
   /**
@@ -262,8 +310,8 @@ export interface Round<T> {
    * Similar functionality to javascript `toFixed`
    * @param decimals number of decimals to round by.
    */
-  round(decimals: number): T
-  round(options: {decimals: number}): T
+  round(decimals: number): T;
+  round(options: { decimals: number }): T;
   /**
    * Floor underlying floating point array to the lowest integers smaller or equal to the float value.
    * Only works on floating point Series
@@ -282,8 +330,8 @@ export interface Round<T> {
    * @param min Minimum value
    * @param max Maximum value
    */
-  clip(min: number, max: number): T
-  clip(options: {min: number, max: number})
+  clip(min: number, max: number): T;
+  clip(options: { min: number; max: number });
 }
 
 export interface Sample<T> {
@@ -314,9 +362,22 @@ export interface Sample<T> {
    * ```
    */
 
-  sample(opts?: {n: number, withReplacement?: boolean, seed?: number | bigint}): T
-  sample(opts?: {frac: number, withReplacement?: boolean, seed?: number | bigint}): T
-  sample(n?: number, frac?: number, withReplacement?: boolean, seed?: number | bigint): T
+  sample(opts?: {
+    n: number;
+    withReplacement?: boolean;
+    seed?: number | bigint;
+  }): T;
+  sample(opts?: {
+    frac: number;
+    withReplacement?: boolean;
+    seed?: number | bigint;
+  }): T;
+  sample(
+    n?: number,
+    frac?: number,
+    withReplacement?: boolean,
+    seed?: number | bigint
+  ): T;
 }
 
 export interface Bincode<T> {
@@ -324,17 +385,80 @@ export interface Bincode<T> {
   getState(T): Uint8Array;
 }
 
-
 export interface ListFunctions<T> {
   argMin(): T;
   argMax(): T;
+  /**
+   * Concat the arrays in a Series dtype List in linear time.
+   * @param other Column(s) to concat into a List Series
+   * @example
+   * -------
+   * ```
+   * df = pl.DataFrame({
+   *   "a": [["a"], ["x"]],
+   *   "b": [["b", "c"], ["y", "z"]],
+   * })
+   * df.select(pl.col("a").lst.concat("b"))
+   * shape: (2, 1)
+   * ┌─────────────────┐
+   * │ a               │
+   * │ ---             │
+   * │ list[str]       │
+   * ╞═════════════════╡
+   * │ ["a", "b", "c"] │
+   * ├╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌┤
+   * │ ["x", "y", "z"] │
+   * └─────────────────┘
+   * ```
+   */
+  concat(other: (string | T)[] | string | T): T;
+  /**
+   * Check if sublists contain the given item.
+   * @param item Item that will be checked for membership
+   * @example
+   * --------
+   * ```
+   * df = pl.DataFrame({"foo": [[3, 2, 1], [], [1, 2]]})
+   * df.select(pl.col("foo").lst.contains(1))
+   * shape: (3, 1)
+   * ┌───────┐
+   * │ foo   │
+   * │ ---   │
+   * │ bool  │
+   * ╞═══════╡
+   * │ true  │
+   * ├╌╌╌╌╌╌╌┤
+   * │ false │
+   * ├╌╌╌╌╌╌╌┤
+   * │ true  │
+   * └───────┘
+   * ```
+   */
+  contains(item: any): T;
+  /**
+   * Calculate the n-th discrete difference of every sublist.
+   * @param n number of slots to shift
+   * @param nullBehavior 'ignore' | 'drop'
+   * ```
+   * s = pl.Series("a", [[1, 2, 3, 4], [10, 2, 1]])
+   * s.lst.diff()
+   *
+   * shape: (2,)
+   * Series: 'a' [list]
+   * [
+   *     [null, 1, ... 1]
+   *     [null, -8, -1]
+   * ]
+   * ```
+   */
+  diff(n?: number, nullBehavior?: "ignore" | "drop"): T;
   /**
    * Get the value by index in the sublists.
    * So index `0` would return the first item of every sublist
    * and index `-1` would return the last item of every sublist
    * if an index is out of bounds, it will return a `null`.
    */
-  get(index: number): T
+  get(index: number): T;
   /**
       Run any polars expression against the lists' elements
       Parameters
@@ -364,18 +488,48 @@ export interface ListFunctions<T> {
       │ 3   ┆ 2   ┆ [2.0, 1.0] │
       └─────┴─────┴────────────┘
    */
-  eval(expr: Expr, parallel: boolean): T
+  eval(expr: Expr, parallel: boolean): T;
   /** Get the first value of the sublists. */
-  first(): T
+  first(): T;
+  /**
+   * Slice the head of every sublist
+   * @param n How many values to take in the slice.
+   * @example
+   * --------
+   * s = pl.Series("a", [[1, 2, 3, 4], [10, 2, 1]])
+   * s.lst.head(2)
+   * shape: (2,)
+   * Series: 'a' [list]
+   * [
+   *     [1, 2]
+   *     [10, 2]
+   * ]
+   */
+  head(n: number): T;
+  /**
+   * Slice the tail of every sublist
+   * @param n How many values to take in the slice.
+   * @example
+   * --------
+   * s = pl.Series("a", [[1, 2, 3, 4], [10, 2, 1]])
+   * s.lst.tail(2)
+   * shape: (2,)
+   * Series: 'a' [list]
+   * [
+   *     [3, 4]
+   *     [2, q]
+   * ]
+   */
+  tail(n: number): T;
   /**
    * Join all string items in a sublist and place a separator between them.
    * This errors if inner type of list `!= Utf8`.
    * @param separator A string used to separate one element of the list from the next in the resulting string.
    * If omitted, the list elements are separated with a comma.
    */
-  join(separator?: string): T
+  join(separator?: string): T;
   /** Get the last value of the sublists. */
-  last(): T
+  last(): T;
   lengths(): T;
   max(): T;
   mean(): T;
@@ -384,7 +538,7 @@ export interface ListFunctions<T> {
   shift(periods: number): T;
   slice(offset: number, length: number): T;
   sort(reverse?: boolean): T;
-  sort(opt: {reverse: boolean}): T;
+  sort(opt: { reverse: boolean }): T;
   sum(): T;
   unique(): T;
 }
@@ -490,20 +644,20 @@ export interface Serialize {
    * @param format [json](https://github.com/serde-rs/json) | [bincode](https://github.com/bincode-org/bincode)
    *
    */
-  serialize(format: "json" | "bincode"): Buffer
+  serialize(format: "json" | "bincode"): Buffer;
 }
 export interface Deserialize<T> {
   /**
-  * De-serializes buffer via [serde](https://serde.rs/)
-  * @param buf buffer to deserialize
-  * @param format [json](https://github.com/serde-rs/json) | [bincode](https://github.com/bincode-org/bincode)
-  *
-  */
-  deserialize(buf: Buffer, format: "json" | "bincode"): T
+   * De-serializes buffer via [serde](https://serde.rs/)
+   * @param buf buffer to deserialize
+   * @param format [json](https://github.com/serde-rs/json) | [bincode](https://github.com/bincode-org/bincode)
+   *
+   */
+  deserialize(buf: Buffer, format: "json" | "bincode"): T;
 }
 
 export interface GroupByOps<T> {
-    /**
+  /**
     Create rolling groups based on a time column (or index value of type Int32, Int64).
 
     Different from a rolling groupby the windows are now determined by the individual values and are not of constant
@@ -591,7 +745,13 @@ export interface GroupByOps<T> {
     └─────────────────────┴───────┴───────┴───────┘
     ```
    */
-  groupByRolling(opts: {indexColumn: string, by?: ColumnsOrExpr, period: string, offset?: string, closed?: "left" | "right" | "both" | "none"}): T
+  groupByRolling(opts: {
+    indexColumn: string;
+    by?: ColumnsOrExpr;
+    period: string;
+    offset?: string;
+    closed?: "left" | "right" | "both" | "none";
+  }): T;
 
   /**
   Groups based on a time value (or index value of type Int32, Int64). Time windows are calculated and rows are assigned to windows.
@@ -645,13 +805,13 @@ export interface GroupByOps<T> {
   @param by Also group by this column/these columns
  */
   groupByDynamic(options: {
-    indexColumn: string,
-    every: string,
-    period?: string,
-    offset?: string,
-    truncate?: boolean,
-    includeBoundaries?: boolean,
-    closed?: "left" | "right" | "both" | "none"
-    by?: ColumnsOrExpr,
-  }): T
+    indexColumn: string;
+    every: string;
+    period?: string;
+    offset?: string;
+    truncate?: boolean;
+    includeBoundaries?: boolean;
+    closed?: "left" | "right" | "both" | "none";
+    by?: ColumnsOrExpr;
+  }): T;
 }
