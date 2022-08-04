@@ -28,7 +28,7 @@ jobs:
       - name: deploy docs
         run: |
           mkdir -p target/doc
-          cp -r nodejs-polars/docs/* target/doc/
+          cp -r docs/* target/doc/
           echo ghp-import step
           ghp-import -n target/doc && \
           git push -qf https://${{ secrets.GITHUB_TOKEN }}@github.com/${GITHUB_REPOSITORY}.git gh-pages
