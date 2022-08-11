@@ -427,15 +427,17 @@ impl JsLazyFrame {
     }
 
     #[napi]
-    pub fn std(&self) -> JsLazyFrame {
+    pub fn std(&self, ddof: Option<u8>) -> JsLazyFrame {
+        let ddof = ddof.unwrap_or(1);
         let ldf = self.ldf.clone();
-        ldf.std().into()
+        ldf.std(ddof).into()
     }
 
     #[napi]
-    pub fn var(&self) -> JsLazyFrame {
+    pub fn var(&self, ddof: Option<u8>) -> JsLazyFrame {
+        let ddof = ddof.unwrap_or(1);
         let ldf = self.ldf.clone();
-        ldf.var().into()
+        ldf.var(ddof).into()
     }
 
     #[napi]
@@ -650,6 +652,7 @@ pub struct ScanIPCOptions {
     pub cache: Option<bool>,
     pub rechunk: Option<bool>,
     pub row_count: Option<JsRowCount>,
+    pub memmap: Option<bool>,
 }
 
 #[napi]
@@ -657,12 +660,14 @@ pub fn scan_ipc(path: String, options: ScanIPCOptions) -> napi::Result<JsLazyFra
     let n_rows = options.n_rows.map(|i| i as usize);
     let cache = options.cache.unwrap_or(true);
     let rechunk = options.rechunk.unwrap_or(false);
+    let memmap = options.memmap.unwrap_or(true);
     let row_count: Option<RowCount> = options.row_count.map(|rc| rc.into());
     let args = ScanArgsIpc {
         n_rows,
         cache,
         rechunk,
         row_count,
+        memmap
     };
     let lf = LazyFrame::scan_ipc(path, args).map_err(JsPolarsErr::from)?;
     Ok(lf.into())
