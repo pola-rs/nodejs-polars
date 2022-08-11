@@ -5,9 +5,9 @@ authors = ["Cory Grinstead"]
 documentation = "https://pola-rs.github.io/polars-book/"
 edition = "2021"
 exclude = ["libpolars.node"]
-homepage = "https://github.com/pola-rs/polars"
+homepage = "https://github.com/pola-rs/nodejs-polars"
 license = "MIT"
-repository = "https://github.com/pola-rs/polars"
+repository = "https://github.com/pola-rs/nodejs-polars"
 
 [lib]
 crate-type = ["cdylib", "lib"]
