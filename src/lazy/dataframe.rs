@@ -676,6 +676,8 @@ pub fn scan_ipc(path: String, options: ScanIPCOptions) -> napi::Result<JsLazyFra
 struct JsonScan {
     path: String,
     batch_size: usize,
+    n_threads: Option<usize>,
+    low_memory: bool,
 }
 
 impl AnonymousScan for JsonScan {
@@ -685,6 +687,8 @@ impl AnonymousScan for JsonScan {
             .expect("unable to read file")
             .with_schema(&schema)
             .with_chunk_size(self.batch_size)
+            .with_n_threads(self.n_threads)
+            .low_memory(self.low_memory)
             .with_n_rows(scan_opts.n_rows)
             .finish()
     }
@@ -703,8 +707,14 @@ impl AnonymousScan for JsonScan {
 
 #[napi(object)]
 pub struct JsonScanOptions {
-    pub infer_schema_length: i64,
+    pub infer_schema_length: Option<i64>,
     pub batch_size: i64,
+    pub n_threads: Option<i64>,
+    pub num_rows: Option<i64>,
+    pub skip_rows: Option<i64>,
+    pub low_memory: Option<bool>,
+    pub row_count: Option<JsRowCount>,
+
 }
 
 #[napi]
@@ -712,11 +722,16 @@ pub fn scan_json(path: String, options: JsonScanOptions) -> napi::Result<JsLazyF
     let f = JsonScan {
         path,
         batch_size: options.batch_size as usize,
+        n_threads: options.n_threads.map(|i| i as usize),
+        low_memory: options.low_memory.unwrap_or(false),
     };
 
     let options = ScanArgsAnonymous {
         name: "JSON SCAN",
-        infer_schema_length: Some(options.infer_schema_length as usize),
+        infer_schema_length: options.infer_schema_length.map(|i| i as usize),
+        n_rows: options.num_rows.map(|i| i as usize),
+        skip_rows: options.skip_rows.map(|i| i as usize),
+        row_count: options.row_count.map(|rc| rc.into()),
         ..ScanArgsAnonymous::default()
     };
     let lf =

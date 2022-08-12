@@ -248,6 +248,16 @@ export function readJSON(pathOrBody, options = readJsonDefaultOptions) {
     throw new Error("must supply either a path or body");
   }
 }
+interface JsonScanOptions {
+  inferSchemaLength?: number;
+  nThreads?: number;
+  batchSize?: number;
+  lowMemory?: boolean;
+  numRows?: number;
+  skipRows?: number;
+  rowCount?: RowCount
+}
+
 /**
    * __Read a JSON file or string into a DataFrame.__
    *
@@ -257,15 +267,16 @@ export function readJSON(pathOrBody, options = readJsonDefaultOptions) {
    * @param options
    * @param options.inferSchemaLength -Maximum number of lines to read to infer schema. If set to 0, all columns will be read as pl.Utf8.
    *    If set to `null`, a full table scan will be done (slow).
+   * @param options.nThreads - Maximum number of threads to use when reading json.
+   * @param options.lowMemory - Reduce memory usage in expense of performance.
    * @param options.batchSize - Number of lines to read into the buffer at once. Modify this to change performance.
+   * @param options.numRows  Stop reading from parquet file after reading ``numRows``.
+   * @param options.skipRows -Start reading after ``skipRows`` position.
+   * @param options.rowCount Add row count as column
    * @returns ({@link DataFrame})
    * @example
    * ```
-   * const jsonString = `
-   * {"a", 1, "b", "foo", "c": 3}
-   * {"a": 2, "b": "bar", "c": 6}
-   * `
-   * > const df = pl.scanJson(jsonString).collectSync()
+   * > const df = pl.scanJson('path/to/file.json', {numRows: 2}).collectSync()
    * > console.log(df)
    *   shape: (2, 3)
    * ╭─────┬─────┬─────╮
@@ -279,8 +290,8 @@ export function readJSON(pathOrBody, options = readJsonDefaultOptions) {
    * ╰─────┴─────┴─────╯
    * ```
    */
-export function scanJson(path: string, options?: Partial<{inferSchemaLength: number, batchSize: number}>): LazyDataFrame
-export function scanJson(path, options?) {
+export function scanJson(path: string, options?: JsonScanOptions): LazyDataFrame
+export function scanJson(path: string, options?: JsonScanOptions) {
   options = {...readJsonDefaultOptions, ...options};
 
   return _LazyDataFrame(pli.scanJson(path, options));
