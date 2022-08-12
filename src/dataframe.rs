@@ -971,12 +971,14 @@ impl JsDataFrame {
         self.df.mean().into()
     }
     #[napi]
-    pub fn std(&self) -> JsDataFrame {
-        self.df.std().into()
+    pub fn std(&self, ddof: Option<u8>) -> JsDataFrame {
+        let ddof = ddof.unwrap_or(1);
+        self.df.std(ddof).into()
     }
     #[napi]
-    pub fn var(&self) -> JsDataFrame {
-        self.df.var().into()
+    pub fn var(&self, ddof: Option<u8>) -> JsDataFrame {
+        let ddof = ddof.unwrap_or(1);
+        self.df.var(ddof).into()
     }
     #[napi]
     pub fn median(&self) -> JsDataFrame {
@@ -1493,8 +1495,6 @@ fn finish_groupby(gb: GroupBy, agg: &str) -> napi::Result<JsDataFrame> {
         "median" => gb.median(),
         "agg_list" => gb.agg_list(),
         "groups" => gb.groups(),
-        "std" => gb.std(),
-        "var" => gb.var(),
         a => Err(PolarsError::ComputeError(
             format!("agg fn {} does not exists", a).into(),
         )),

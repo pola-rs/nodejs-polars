@@ -11,3 +11,4 @@ bin/
 *.node
 docs/
 run.js
+.yarn/install-state.gz

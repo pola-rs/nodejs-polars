@@ -707,7 +707,7 @@ describe("expr", () => {
     const df = pl.DataFrame({ a: [1, 2, 3, 3] });
     const expected = pl.DataFrame({
       "skew:bias=true": ["-0.49338220021815865"],
-      "skew:bias=false": ["-0.8545630383279711"],
+      "skew:bias=false": ["-0.8545630383279712"],
     });
     const actual = df.select(
       col("a")
@@ -1574,7 +1574,7 @@ describe("expr.dt", () => {
       hour: pl.Series("", [1], pl.UInt32),
       day: pl.Series("", [8], pl.UInt32),
       ordinalDay: pl.Series("", [8], pl.UInt32),
-      weekday: pl.Series("", [7], pl.UInt32),
+      weekday: pl.Series("", [6], pl.UInt32),
       week: pl.Series("", [1], pl.UInt32),
       month: pl.Series("", [1], pl.UInt32),
       year: pl.Series("", [1984], pl.Int32),

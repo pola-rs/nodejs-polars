@@ -391,13 +391,15 @@ impl JsExpr {
     }
 
     #[napi]
-    pub fn std(&self) -> JsExpr {
-        self.clone().inner.std().into()
+    pub fn std(&self, ddof: Option<u8>) -> JsExpr {
+        let ddof = ddof.unwrap_or(1);
+        self.clone().inner.std(ddof).into()
     }
 
     #[napi]
-    pub fn var(&self) -> JsExpr {
-        self.clone().inner.var().into()
+    pub fn var(&self, ddof: Option<u8>) -> JsExpr {
+        let ddof = ddof.unwrap_or(1);
+        self.clone().inner.var(ddof).into()
     }
     #[napi]
     pub fn is_unique(&self) -> JsExpr {
@@ -1406,13 +1408,15 @@ pub fn arange(low: Wrap<Expr>, high: Wrap<Expr>, step: Option<i64>) -> JsExpr {
 }
 
 #[napi]
-pub fn pearson_corr(a: Wrap<Expr>, b: Wrap<Expr>) -> JsExpr {
-    polars::lazy::dsl::pearson_corr(a.0, b.0).into()
+pub fn pearson_corr(a: Wrap<Expr>, b: Wrap<Expr>, ddof: Option<u8>) -> JsExpr {
+    let ddof = ddof.unwrap_or(1);
+    polars::lazy::dsl::pearson_corr(a.0, b.0, ddof).into()
 }
 
 #[napi]
-pub fn spearman_rank_corr(a: Wrap<Expr>, b: Wrap<Expr>) -> JsExpr {
-    polars::lazy::dsl::spearman_rank_corr(a.0, b.0).into()
+pub fn spearman_rank_corr(a: Wrap<Expr>, b: Wrap<Expr>, ddof: Option<u8>) -> JsExpr {
+    let ddof = ddof.unwrap_or(1);
+    polars::lazy::dsl::spearman_rank_corr(a.0, b.0, ddof).into()
 }
 
 #[napi]
