@@ -1836,7 +1836,8 @@ export const _DataFrame = (_df: any): DataFrame => {
       return wrap("extend", (other as any).inner());
     },
     filter(predicate) {
-      return this.lazy().filter(predicate).collectSync();
+      return this.lazy().filter(predicate)
+        .collectSync();
     },
     fillNull(strategy) {
       return wrap("fillNull", strategy);
@@ -2069,7 +2070,9 @@ export const _DataFrame = (_df: any): DataFrame => {
     select(...selection) {
       const hasExpr = selection.flat().some((s) => Expr.isExpr(s));
       if (hasExpr) {
-        return _DataFrame(_df).lazy().select(selection).collectSync();
+        return _DataFrame(_df).lazy()
+          .select(selection)
+          .collectSync();
       } else {
         return wrap("select", columnOrColumnsStrict(selection as any));
       }
