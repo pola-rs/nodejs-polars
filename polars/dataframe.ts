@@ -916,7 +916,29 @@ export interface DataFrame
    * ___
    *
    * @param idVars - Columns to use as identifier variables.
-   * @param valueVars - Values to use as identifier variables.
+   * @param valueVars - Values to use as value variables.
+   * @example
+   * ```
+   * >>> df1 = pl.DataFrame({
+   * >>>   'id': [1],
+   * >>>   'asset_key_1': ['123'],
+   * >>>   'asset_key_2': ['456'],
+   * >>>   'asset_key_3': ['abc'],
+   * >>> })
+   * >>> df1.melt('id', ['asset_key_1', 'asset_key_2', 'asset_key_3'])
+   * shape: (3, 3)
+   * ┌─────┬─────────────┬───────┐
+   * │ id  ┆ variable    ┆ value │
+   * │ --- ┆ ---         ┆ ---   │
+   * │ f64 ┆ str         ┆ str   │
+   * ╞═════╪═════════════╪═══════╡
+   * │ 1   ┆ asset_key_1 ┆ 123   │
+   * ├╌╌╌╌╌┼╌╌╌╌╌╌╌╌╌╌╌╌╌┼╌╌╌╌╌╌╌┤
+   * │ 1   ┆ asset_key_2 ┆ 456   │
+   * ├╌╌╌╌╌┼╌╌╌╌╌╌╌╌╌╌╌╌╌┼╌╌╌╌╌╌╌┤
+   * │ 1   ┆ asset_key_3 ┆ abc   │
+   * └─────┴─────────────┴───────┘
+   * ```
    */
   melt(idVars: ColumnSelection, valueVars: ColumnSelection): DataFrame;
   /**
