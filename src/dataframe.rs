@@ -163,7 +163,7 @@ pub fn read_json_lines(
     options: ReadJsonOptions,
 ) -> napi::Result<JsDataFrame> {
     let infer_schema_length = options.infer_schema_length.unwrap_or(100) as usize;
-    let batch_size = options.batch_size.unwrap_or(10000) as usize;
+    let batch_size = options.batch_size.map(|b| b as usize);
 
     let df = match path_or_buffer {
         Either::A(path) => JsonLineReader::from_path(path)
@@ -839,55 +839,29 @@ impl JsDataFrame {
     }
 
     #[napi]
-    pub fn pivot(
-        &self,
-        by: Vec<String>,
-        pivot_column: Vec<String>,
-        values_column: Vec<String>,
-        agg: String,
-    ) -> napi::Result<JsDataFrame> {
-        let mut gb = self.df.groupby(&by).map_err(JsPolarsErr::from)?;
-        let pivot = gb.pivot(pivot_column, values_column);
-        let df = match agg.as_ref() {
-            "first" => pivot.first(),
-            "min" => pivot.min(),
-            "max" => pivot.max(),
-            "mean" => pivot.mean(),
-            "median" => pivot.median(),
-            "sum" => pivot.sum(),
-            "count" => pivot.count(),
-            "last" => pivot.last(),
-            a => Err(PolarsError::ComputeError(
-                format!("agg fn {} does not exists", a).into(),
-            )),
-        };
-        let df = df.map_err(JsPolarsErr::from)?;
-        Ok(JsDataFrame::new(df))
-    }
-    #[napi]
-    pub fn pivot2(
+    pub fn pivot_expr(
         &self,
         values: Vec<String>,
         index: Vec<String>,
         columns: Vec<String>,
-        aggregate_fn: Wrap<PivotAgg>,
+        aggregate_expr: Wrap<Expr>,
         maintain_order: bool,
         sort_columns: bool,
     ) -> napi::Result<JsDataFrame> {
         let fun = match maintain_order {
-            true => DataFrame::pivot_stable,
-            false => DataFrame::pivot,
+            true => polars::prelude::pivot::pivot_stable,
+            false => polars::prelude::pivot::pivot,
         };
-        let df = fun(
+        fun(
             &self.df,
             values,
             index,
             columns,
-            aggregate_fn.0,
+            aggregate_expr.0,
             sort_columns,
         )
-        .map_err(JsPolarsErr::from)?;
-        Ok(JsDataFrame::new(df))
+        .map(|df| df.into())
+        .map_err(|e| napi::Error::from_reason(format!("Could not pivot: {}", e)))
     }
     #[napi]
     pub fn clone(&self) -> JsDataFrame {
@@ -1037,7 +1011,7 @@ impl JsDataFrame {
     }
     #[napi]
     pub fn hash_rows(
-        &self,
+        &mut self,
         k0: Wrap<u64>,
         k1: Wrap<u64>,
         k2: Wrap<u64>,

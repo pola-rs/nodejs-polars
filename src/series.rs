@@ -1116,7 +1116,7 @@ impl JsSeries {
 
     #[napi]
     pub fn shuffle(&self, seed: Wrap<u64>) -> JsSeries {
-        self.series.shuffle(seed.0).into()
+        self.series.shuffle(Some(seed.0)).into()
     }
 
     #[napi]
@@ -1143,59 +1143,21 @@ impl JsSeries {
             None
         }
     }
+    #[napi]
+    pub fn set_at_idx(&mut self, idx: &JsSeries, values: &JsSeries) -> napi::Result<()> {
+        // we take the value because we want a ref count
+        // of 1 so that we can have mutable access
+        let s = std::mem::take(&mut self.series);
+        match crate::set::set_at_idx(s, &idx.series, &values.series) {
+            Ok(out) => {
+                self.series = out;
+                Ok(())
+            }
+            Err(e) => Err(napi::Error::from_reason(format!("{:?}", e))),
+        }
+    }
 }
 
-macro_rules! impl_set_at_idx_wrap {
-    ($name:ident, $native:ty, $cast:ident) => {
-        #[napi]
-        pub fn $name(
-            series: &JsSeries,
-            indices: Vec<u32>,
-            value: Option<Wrap<$native>>,
-        ) -> napi::Result<JsSeries> {
-            let value = value.map(|v| v.0);
-            let s = series
-                .series
-                .$cast()
-                .map_err(JsPolarsErr::from)?
-                .set_at_idx(indices.iter().map(|idx| *idx as usize), value)
-                .map_err(JsPolarsErr::from)?
-                .into_series();
-            Ok(s.into())
-        }
-    };
-}
-macro_rules! impl_set_at_idx {
-    ($name:ident, $native:ty, $cast:ident) => {
-        #[napi]
-        pub fn $name(
-            series: &JsSeries,
-            indices: Vec<u32>,
-            value: Option<$native>,
-        ) -> napi::Result<JsSeries> {
-            let s = series
-                .series
-                .$cast()
-                .map_err(JsPolarsErr::from)?
-                .set_at_idx(indices.iter().map(|idx| *idx as usize), value)
-                .map_err(JsPolarsErr::from)?
-                .into_series();
-            Ok(s.into())
-        }
-    };
-}
-
-impl_set_at_idx_wrap!(series_set_at_idx_str, &str, utf8);
-impl_set_at_idx!(series_set_at_idx_f64, f64, f64);
-impl_set_at_idx_wrap!(series_set_at_idx_f32, f32, f32);
-impl_set_at_idx_wrap!(series_set_at_idx_u8, u8, u8);
-impl_set_at_idx_wrap!(series_set_at_idx_u16, u16, u16);
-impl_set_at_idx!(series_set_at_idx_u32, u32, u32);
-impl_set_at_idx_wrap!(series_set_at_idx_u64, u64, u64);
-impl_set_at_idx_wrap!(series_set_at_idx_i8, i8, i8);
-impl_set_at_idx_wrap!(series_set_at_idx_i16, i16, i16);
-impl_set_at_idx!(series_set_at_idx_i32, i32, i32);
-impl_set_at_idx!(series_set_at_idx_i64, i64, i64);
 
 macro_rules! impl_set_with_mask_wrap {
     ($name:ident, $native:ty, $cast:ident) => {

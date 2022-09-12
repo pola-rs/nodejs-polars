@@ -543,14 +543,15 @@ describe("series", () => {
   });
   it("setAtIdx:array expected matches actual", () => {
     const expected = pl.Series([99, 2, 99]);
-    const actual = pl.Series([1, 2, 3]).setAtIdx([0, 2], 99);
+    const actual = pl.Series([1, 2, 3]);
+    actual.setAtIdx([0, 2], 99);
     expect(actual).toSeriesEqual(expected);
   });
   it("setAtIdx:series expected matches actual", () => {
     const expected = pl.Series([99, 2, 99]);
     const indices = pl.Series([0, 2]);
-    const actual = pl.Series([1, 2, 3])
-      .setAtIdx(indices, 99);
+    const actual = pl.Series([1, 2, 3]);
+    actual.setAtIdx(indices, 99);
     expect(actual).toSeriesEqual(expected);
   });
   it("setAtIdx: throws error", () => {

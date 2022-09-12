@@ -229,13 +229,13 @@ export interface Series extends
    * ```
    */
   explode(): any
- /**
-  * Extend the Series with given number of values.
-  * @param value The value to extend the Series with. This value may be null to fill with nulls.
-  * @param n The number of values to extend.
-  * @deprecated
-  * @see {@link extendConstant}
-  */
+  /**
+   * Extend the Series with given number of values.
+   * @param value The value to extend the Series with. This value may be null to fill with nulls.
+   * @param n The number of values to extend.
+   * @deprecated
+   * @see {@link extendConstant}
+   */
   extend(value: any, n: number): Series
   /**
    * Extend the Series with given number of values.
@@ -740,7 +740,7 @@ export interface Series extends
    * @param value value to replace masked values with
    */
   set(filter: Series, value: any): Series
-  setAtIdx(indices: number[] | Series, value: any): Series
+  setAtIdx(indices: number[] | Series, value: any): void
   /**
    * __Shift the values by a given period__
    *
@@ -915,27 +915,27 @@ export interface Series extends
    * ```
    */
   unique(maintainOrder?: boolean | {maintainOrder: boolean}): Series
-   /**
-   * __Count the unique values in a Series.__
-   * ___
-   * @example
-   * ```
-   * s = pl.Series("a", [1, 2, 2, 3])
-   * s.valueCounts()
-   * shape: (3, 2)
-   * ╭─────┬────────╮
-   * │ a   ┆ counts │
-   * │ --- ┆ ---    │
-   * │ i64 ┆ u32    │
-   * ╞═════╪════════╡
-   * │ 2   ┆ 2      │
-   * ├╌╌╌╌╌┼╌╌╌╌╌╌╌╌┤
-   * │ 1   ┆ 1      │
-   * ├╌╌╌╌╌┼╌╌╌╌╌╌╌╌┤
-   * │ 3   ┆ 1      │
-   * ╰─────┴────────╯
-   * ```
-   */
+  /**
+  * __Count the unique values in a Series.__
+  * ___
+  * @example
+  * ```
+  * s = pl.Series("a", [1, 2, 2, 3])
+  * s.valueCounts()
+  * shape: (3, 2)
+  * ╭─────┬────────╮
+  * │ a   ┆ counts │
+  * │ --- ┆ ---    │
+  * │ i64 ┆ u32    │
+  * ╞═════╪════════╡
+  * │ 2   ┆ 2      │
+  * ├╌╌╌╌╌┼╌╌╌╌╌╌╌╌┤
+  * │ 1   ┆ 1      │
+  * ├╌╌╌╌╌┼╌╌╌╌╌╌╌╌┤
+  * │ 3   ┆ 1      │
+  * ╰─────┴────────╯
+  * ```
+  */
   valueCounts(): DataFrame
   /**
    * Where mask evaluates true, take values from self.
@@ -1008,7 +1008,7 @@ export function _Series(_s: any): Series {
   const wrap = (method, ...args): Series => {
     return _Series(unwrap(method, ...args));
   };
-  const  dtypeWrap = (method: string, ...args: any[])  => {
+  const dtypeWrap = (method: string, ...args: any[]) => {
     const dtype = _s.dtype;
 
     const dt = (DTYPE_TO_FFINAME as any)[dtype];
@@ -1017,7 +1017,7 @@ export function _Series(_s: any): Series {
     return _Series(pli[internalMethod](_s, ...args));
   };
 
-  const dtypeUnwrap = (method: string, ...args: any[]) =>  {
+  const dtypeUnwrap = (method: string, ...args: any[]) => {
     const dtype = _s.dtype;
 
     const dt = (DTYPE_TO_FFINAME as any)[dtype];
@@ -1026,7 +1026,7 @@ export function _Series(_s: any): Series {
     return pli[internalMethod](_s, ...args);
   };
 
-  const expr_op =  (method: string, ...args)  => {
+  const expr_op = (method: string, ...args) => {
     return _Series(_s)
       .toFrame()
       .select(col(_s.name)[method](...args))
@@ -1098,8 +1098,8 @@ export function _Series(_s: any): Series {
     argMin() {
       return _s.argMin();
     },
-    argSort(reverse: any = false, nullsLast=true) {
-      if(typeof reverse === "boolean") {
+    argSort(reverse: any = false, nullsLast = true) {
+      if (typeof reverse === "boolean") {
         return _Series(_s.argsort(reverse, nullsLast));
       }
 
@@ -1263,7 +1263,7 @@ export function _Series(_s: any): Series {
       if (typeof obj === "number" || typeof obj === "bigint") {
         return wrap("hash", BigInt(obj), BigInt(k1), BigInt(k2), BigInt(k3));
       }
-      const o = { k0: obj, k1: k1, k2: k2, k3: k3, ...obj};
+      const o = {k0: obj, k1: k1, k2: k2, k3: k3, ...obj};
 
       return wrap(
         "hash",
@@ -1369,7 +1369,7 @@ export function _Series(_s: any): Series {
       if (typeof fisher === "boolean") {
         return _s.kurtosis(fisher, bias);
       }
-      const d =  {
+      const d = {
         fisher: true,
         bias,
         ...fisher
@@ -1392,7 +1392,7 @@ export function _Series(_s: any): Series {
     lessThanEquals(field) {
       return dtypeWrap("LtEq", field);
     },
-    limit(n=10) {
+    limit(n = 10) {
       return wrap("limit", n);
     },
     max() {
@@ -1521,9 +1521,19 @@ export function _Series(_s: any): Series {
       return expr_op("clip", ...args);
     },
     setAtIdx(indices, value) {
-      indices = Series.isSeries(indices) ? indices.cast(DataType.UInt32).toArray() : indices;
+      indices = Series.isSeries(indices) ? indices.cast(DataType.UInt32) : Series(indices);
+      if (!Series.isSeries(value)) {
+        if (!Array.isArray(value)) {
+          value = [value];
+        }
+        value = Series(value);
+      }
 
-      return dtypeWrap("SetAtIdx", indices, value);
+      if(indices.length > 0) {
+        value = value.extendConstant(value[0], indices.length - 1)
+
+      }
+      _s.setAtIdx(indices._s, value._s);
     },
     set(mask, value) {
       mask = Series.isSeries(mask) ? mask : Series.from(mask);
@@ -1531,7 +1541,7 @@ export function _Series(_s: any): Series {
       return dtypeWrap("SetWithMask", mask.inner(), value);
     },
     sample(opts?, frac?, withReplacement = false, seed?) {
-      if(arguments.length === 0) {
+      if (arguments.length === 0) {
         return wrap("sampleN",
           1,
           withReplacement,
@@ -1539,7 +1549,7 @@ export function _Series(_s: any): Series {
           seed
         );
       }
-      if(opts?.n  !== undefined || opts?.frac  !== undefined) {
+      if (opts?.n !== undefined || opts?.frac !== undefined) {
         return this.sample(opts.n, opts.frac, opts.withReplacement, seed);
       }
       if (typeof opts === "number") {
@@ -1550,7 +1560,7 @@ export function _Series(_s: any): Series {
           seed
         );
       }
-      if(typeof frac === "number") {
+      if (typeof frac === "number") {
         return wrap("sampleFrac",
           frac,
           withReplacement,
@@ -1563,17 +1573,17 @@ export function _Series(_s: any): Series {
       }
 
     },
-    seriesEqual(other, nullEqual: any = true, strict=false) {
+    seriesEqual(other, nullEqual: any = true, strict = false) {
       return _s.seriesEqual(other._s, nullEqual, strict);
     },
-    shift(periods=1) {
+    shift(periods = 1) {
       return wrap("shift", periods);
     },
     shiftAndFill(...args) {
       return expr_op("shiftAndFill", ...args);
     },
     shrinkToFit(inPlace?: boolean) {
-      if(inPlace) {
+      if (inPlace) {
         _s.shrinkToFit();
       } else {
         const s = this.clone();
@@ -1611,7 +1621,7 @@ export function _Series(_s: any): Series {
     sum() {
       return _s.sum() as any;
     },
-    tail(length=5) {
+    tail(length = 5) {
       return wrap("tail", length);
     },
     take(indices) {
@@ -1627,7 +1637,7 @@ export function _Series(_s: any): Series {
       return _s.toArray();
     },
     toTypedArray() {
-      if(!this.hasValidity()) {
+      if (!this.hasValidity()) {
         return _s.toTypedArray();
       } else {
         throw new Error("data contains nulls, unable to convert to TypedArray");
@@ -1641,7 +1651,7 @@ export function _Series(_s: any): Series {
     },
     toJSON(...args: any[]) {
       // this is passed by `JSON.stringify` when calling `toJSON()`
-      if(args[0] === "") {
+      if (args[0] === "") {
         return _s.toJs();
       }
 
@@ -1651,7 +1661,7 @@ export function _Series(_s: any): Series {
       return _s.toJs();
     },
     unique(maintainOrder?) {
-      if(maintainOrder) {
+      if (maintainOrder) {
         return wrap("uniqueStable");
       } else {
         return wrap("unique");
@@ -1696,10 +1706,10 @@ export interface SeriesConstructor extends Deserialize<Series> {
    */
   from<T>(arrayLike: ArrayLike<T>): Series
   from<T>(name: string, arrayLike: ArrayLike<T>): Series
-   /**
-   * Returns a new Series from a set of elements.
-   * @param items — A set of elements to include in the new Series object.
-   */
+  /**
+  * Returns a new Series from a set of elements.
+  * @param items — A set of elements to include in the new Series object.
+  */
   of<T>(...items: T[]): Series
   isSeries(arg: any): arg is Series;
   /**
@@ -1709,7 +1719,7 @@ export interface SeriesConstructor extends Deserialize<Series> {
 }
 
 
-let SeriesConstructor = function(arg0: any, arg1?: any, dtype?: any, strict?: any): Series {
+let SeriesConstructor = function (arg0: any, arg1?: any, dtype?: any, strict?: any): Series {
   if (typeof arg0 === "string") {
     const _s = arrayToJsSeries(arg0, arg1, dtype, strict);
 
@@ -1718,7 +1728,7 @@ let SeriesConstructor = function(arg0: any, arg1?: any, dtype?: any, strict?: an
 
   return SeriesConstructor("", arg0);
 };
-const isSeries = (anyVal: any): anyVal is Series =>  {
+const isSeries = (anyVal: any): anyVal is Series => {
   try {
     return anyVal?.[Symbol.toStringTag]?.() === "Series";
   } catch (err) {
@@ -1727,7 +1737,7 @@ const isSeries = (anyVal: any): anyVal is Series =>  {
 };
 
 const from = (name, values?: ArrayLike<any>): Series => {
-  if(Array.isArray(name) ){
+  if (Array.isArray(name)) {
     return SeriesConstructor("", values);
 
   } else {

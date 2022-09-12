@@ -506,7 +506,7 @@ describe("dataframe", () => {
       "bar": [6, 7, 8],
       "ham": ["a", "b", "c"]
     }).max();
-    expect(actual.row(0)).toEqual([3, 8, null]);
+    expect(actual.row(0)).toEqual([3, 8, "c"]);
   });
   test("max:axis:1", () => {
     const actual = pl.DataFrame({
@@ -548,7 +548,7 @@ describe("dataframe", () => {
       "bar": [6, 7, 8],
       "ham": ["a", "b", "c"]
     }).min();
-    expect(actual.row(0)).toEqual([1, 6, null]);
+    expect(actual.row(0)).toEqual([1, 6, "a"]);
   });
   test("min:axis:1", () => {
     const actual = pl.DataFrame({

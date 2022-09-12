@@ -26,7 +26,10 @@ pub mod list_construction;
 pub mod prelude;
 pub mod series;
 pub mod utils;
+pub mod set;
+
 pub use polars_core;
+
 pub mod export {
     pub use crate::dataframe::JsDataFrame;
     pub use crate::lazy::dataframe::JsLazyFrame;

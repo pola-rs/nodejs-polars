@@ -1,7 +1,7 @@
 import {Expr, _Expr, exprToLitOrExpr} from "./expr";
 import {Series} from "../series/series";
-import { DataFrame } from "../dataframe";
-import { ExprOrString, range, selectionToExprList} from "../utils";
+import {DataFrame} from "../dataframe";
+import {ExprOrString, range, selectionToExprList} from "../utils";
 import pli from "../internals/polars_internal";
 
 /**
@@ -98,10 +98,10 @@ import pli from "../internals/polars_internal";
  * ```
  */
 export function col(col: string | string[] | Series): Expr {
-  if(Series.isSeries(col)) {
+  if (Series.isSeries(col)) {
     col = col.toArray();
   }
-  if(Array.isArray(col)) {
+  if (Array.isArray(col)) {
     return _Expr(pli.cols(col));
   } else {
     return _Expr(pli.col(col));
@@ -116,10 +116,10 @@ export function cols(...cols): Expr {
 }
 
 export function lit(value: any): Expr {
-  if(Array.isArray(value)) {
+  if (Array.isArray(value)) {
     value = Series(value);
   }
-  if(Series.isSeries(value)){
+  if (Series.isSeries(value)) {
 
     return _Expr(pli.lit(value.inner()));
   }
@@ -152,12 +152,12 @@ export function arange<T>(opts: {low: any, high: any, step: number, eager: boole
 export function arange(low: any, high?: any, step?: number, eager?: true): Series;
 export function arange(low: any, high?: any, step?: number, eager?: false): Expr;
 export function arange(opts: any, high?, step?, eager?): Series | Expr {
-  if(typeof opts?.low === "number") {
+  if (typeof opts?.low === "number") {
     return arange(opts.low, opts.high, opts.step, opts.eager);
   } else {
     const low = exprToLitOrExpr(opts, false);
     high = exprToLitOrExpr(high, false);
-    if(eager) {
+    if (eager) {
       const df = DataFrame({"a": [1]});
 
       return df.select(arange(low, high, step).alias("arange") as any).getColumn("arange") as any;
@@ -178,7 +178,7 @@ export function all(): Expr {
  * and so on.
  */
 export function argSortBy(exprs: Expr[] | string[], reverse: boolean | boolean[] = false): Expr {
-  if(!Array.isArray(reverse)) {
+  if (!Array.isArray(reverse)) {
     reverse = Array.from({length: exprs.length}, () => reverse) as any;
   }
   const by = selectionToExprList(exprs);
@@ -198,7 +198,7 @@ export function avg(column: Series | string): number | Expr {
  */
 export function concatList(exprs: ExprOrString[]): Expr
 export function concatList(expr: ExprOrString, ...exprs: ExprOrString[]): Expr
-export function concatList(expr: ExprOrString, expr2: ExprOrString,  ...exprs: ExprOrString[]): Expr
+export function concatList(expr: ExprOrString, expr2: ExprOrString, ...exprs: ExprOrString[]): Expr
 export function concatList(...exprs): Expr {
   const items = selectionToExprList(exprs as any, false);
 
@@ -208,8 +208,8 @@ export function concatList(...exprs): Expr {
 /** Concat Utf8 Series in linear time. Non utf8 columns are cast to utf8. */
 export function concatString(opts: {exprs: ExprOrString[], sep: string});
 export function concatString(exprs: ExprOrString[], sep?: string);
-export function concatString(opts, sep=",") {
-  if(opts?.exprs) {
+export function concatString(opts, sep = ",") {
+  if (opts?.exprs) {
     return concatString(opts.exprs, opts.sep);
   }
   const items = selectionToExprList(opts as any, false);
@@ -222,7 +222,7 @@ export function concatString(opts, sep=",") {
 export function count(column: string): Expr
 export function count(column: Series): number
 export function count(column) {
-  if(Series.isSeries(column)) {
+  if (Series.isSeries(column)) {
     return column.len();
   } else {
     return col(column).count();
@@ -254,8 +254,8 @@ export function exclude(...columns): Expr {
 export function first(column: string): Expr
 export function first<T>(column: Series): T
 export function first<T>(column: string | Series): Expr | T {
-  if(Series.isSeries(column)) {
-    if(column.length) {
+  if (Series.isSeries(column)) {
+    if (column.length) {
       return column.get(0);
     } else {
       throw new RangeError("The series is empty, so no first value can be returned.");
@@ -296,9 +296,9 @@ export function first<T>(column: string | Series): Expr | T {
  * ```
  */
 export function format(strings: string | TemplateStringsArray, ...expr: ExprOrString[]): Expr {
-  if(typeof strings === "string") {
+  if (typeof strings === "string") {
     const s = strings.split("{}");
-    if(s.length - 1 !== expr.length) {
+    if (s.length - 1 !== expr.length) {
       throw new RangeError("number of placeholders should equal the number of arguments");
     }
 
@@ -325,7 +325,7 @@ export function groups(column: string): Expr {
 export function head(column: ExprOrString, n?: number): Expr;
 export function head(column: Series, n?: number): Series;
 export function head(column: Series | ExprOrString, n?): Series | Expr {
-  if(Series.isSeries(column)) {
+  if (Series.isSeries(column)) {
     return column.head(n);
   } else {
     return exprToLitOrExpr(column, false).head(n);
@@ -334,9 +334,9 @@ export function head(column: Series | ExprOrString, n?): Series | Expr {
 }
 
 /** Get the last value. */
-export function last(column: ExprOrString | Series):  any  {
-  if(Series.isSeries(column)) {
-    if(column.length) {
+export function last(column: ExprOrString | Series): any {
+  if (Series.isSeries(column)) {
+    if (column.length) {
       return column.get(-1);
     } else {
       throw new RangeError("The series is empty, so no last value can be returned.");
@@ -350,7 +350,7 @@ export function last(column: ExprOrString | Series):  any  {
 export function mean(column: ExprOrString): Expr;
 export function mean(column: Series): number;
 export function mean(column: Series | ExprOrString): number | Expr {
-  if(Series.isSeries(column)) {
+  if (Series.isSeries(column)) {
     return column.mean();
   }
 
@@ -361,7 +361,7 @@ export function mean(column: Series | ExprOrString): number | Expr {
 export function median(column: ExprOrString): Expr;
 export function median(column: Series): number;
 export function median(column: Series | ExprOrString): number | Expr {
-  if(Series.isSeries(column)) {
+  if (Series.isSeries(column)) {
     return column.median();
   }
 
@@ -372,7 +372,7 @@ export function median(column: Series | ExprOrString): number | Expr {
 export function nUnique(column: ExprOrString): Expr;
 export function nUnique(column: Series): number;
 export function nUnique(column: Series | ExprOrString): number | Expr {
-  if(Series.isSeries(column)) {
+  if (Series.isSeries(column)) {
     return column.nUnique();
   }
 
@@ -392,7 +392,7 @@ export function pearsonCorr(a: ExprOrString, b: ExprOrString): Expr {
 export function quantile(column: ExprOrString, q: number): Expr;
 export function quantile(column: Series, q: number): number;
 export function quantile(column, q) {
-  if(Series.isSeries(column)) {
+  if (Series.isSeries(column)) {
     return column.quantile(q);
   }
 
@@ -421,7 +421,7 @@ export function spearmanRankCorr(a: ExprOrString, b: ExprOrString): Expr {
 export function tail(column: ExprOrString, n?: number): Expr;
 export function tail(column: Series, n?: number): Series;
 export function tail(column: Series | ExprOrString, n?: number): Series | Expr {
-  if(Series.isSeries(column)) {
+  if (Series.isSeries(column)) {
     return column.tail(n);
   } else {
     return exprToLitOrExpr(column, false).tail(n);
@@ -499,6 +499,54 @@ export function struct(exprs: ExprOrString | ExprOrString[] | Series[]): Expr | 
   exprs = selectionToExprList(exprs);
 
   return _Expr(pli.asStruct(exprs));
+}
+
+
+/**
+ * Alias for an element in evaluated in an `eval` expression.
+
+ * @example
+  *
+  *  A horizontal rank computation by taking the elements of a list
+  * 
+  *  >>> df = pl.DataFrame({"a": [1, 8, 3], "b": [4, 5, 2]})
+  *  >>> df.withColumn(
+  *  ...     pl.concatList(["a", "b"]).arr.eval(pl.element().rank()).alias("rank")
+  *  ... )
+  *  shape: (3, 3)
+  *  ┌─────┬─────┬────────────┐
+  *  │ a   ┆ b   ┆ rank       │
+  *  │ --- ┆ --- ┆ ---        │
+  *  │ i64 ┆ i64 ┆ list[f32]  │
+  *  ╞═════╪═════╪════════════╡
+  *  │ 1   ┆ 4   ┆ [1.0, 2.0] │
+  *  ├╌╌╌╌╌┼╌╌╌╌╌┼╌╌╌╌╌╌╌╌╌╌╌╌┤
+  *  │ 8   ┆ 5   ┆ [2.0, 1.0] │
+  *  ├╌╌╌╌╌┼╌╌╌╌╌┼╌╌╌╌╌╌╌╌╌╌╌╌┤
+  *  │ 3   ┆ 2   ┆ [2.0, 1.0] │
+  *  └─────┴─────┴────────────┘
+  *
+  *  A mathematical operation on array elements
+  *
+  *  >>> df = pl.DataFrame({"a": [1, 8, 3], "b": [4, 5, 2]})
+  *  >>> df.withColumn(
+  *  ...     pl.concatList(["a", "b"]).arr.eval(pl.element() * 2).alias("a_b_doubled")
+  *  ... )
+  *  shape: (3, 3)
+  *  ┌─────┬─────┬─────────────┐
+  *  │ a   ┆ b   ┆ a_b_doubled │
+  *  │ --- ┆ --- ┆ ---         │
+  *  │ i64 ┆ i64 ┆ list[i64]   │
+  *  ╞═════╪═════╪═════════════╡
+  *  │ 1   ┆ 4   ┆ [2, 8]      │
+  *  ├╌╌╌╌╌┼╌╌╌╌╌┼╌╌╌╌╌╌╌╌╌╌╌╌╌┤
+  *  │ 8   ┆ 5   ┆ [16, 10]    │
+  *  ├╌╌╌╌╌┼╌╌╌╌╌┼╌╌╌╌╌╌╌╌╌╌╌╌╌┤
+  *  │ 3   ┆ 2   ┆ [6, 4]      │
+  *  └─────┴─────┴─────────────┘
+ */
+export function element(): Expr {
+  return col("")
 }
 // // export function collect_all() {}
 // // export function all() {} // fold
