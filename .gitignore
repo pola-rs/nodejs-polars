@@ -2,7 +2,6 @@
 **/*.rs.bk
 Cargo.lock
 node_modules/
-.yarn/cache
 .pnp.*
 
 coverage/
@@ -11,4 +10,5 @@ bin/
 *.node
 docs/
 run.js
+.yarn/cache
 .yarn/install-state.gz

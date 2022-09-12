@@ -132,7 +132,6 @@ jobs:
         with:
           path: ~/.cargo/git
           key: ${{ matrix.settings.target }}-cargo-index
-
       - name: Setup toolchain
         run: ${{ matrix.settings.setup }}
         if: ${{ matrix.settings.setup }}
@@ -140,7 +139,6 @@ jobs:
       - name: "Install dependencies"
         run: yarn install
         if: ${{ matrix.settings.target != 'i686-pc-windows-msvc' }}
-
       - name: "Install dependencies"
         run: npm install
         if: ${{ matrix.settings.target == 'i686-pc-windows-msvc' }}
