@@ -508,7 +508,7 @@ export function struct(exprs: ExprOrString | ExprOrString[] | Series[]): Expr | 
  * @example
   *
   *  A horizontal rank computation by taking the elements of a list
-  * 
+  *
   *  >>> df = pl.DataFrame({"a": [1, 8, 3], "b": [4, 5, 2]})
   *  >>> df.withColumn(
   *  ...     pl.concatList(["a", "b"]).arr.eval(pl.element().rank()).alias("rank")
@@ -546,7 +546,7 @@ export function struct(exprs: ExprOrString | ExprOrString[] | Series[]): Expr | 
   *  └─────┴─────┴─────────────┘
  */
 export function element(): Expr {
-  return col("")
+  return col("");
 }
 // // export function collect_all() {}
 // // export function all() {} // fold

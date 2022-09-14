@@ -2028,12 +2028,12 @@ export const _DataFrame = (_df: any): DataFrame => {
           median: element().median(),
           last: element().last(),
           count: element().count()
-        }[aggregateFunc] ?? new Error(`Unknown aggregate function ${aggregateFunc}`)
+        }[aggregateFunc] ?? new Error(`Unknown aggregate function ${aggregateFunc}`);
         if (fn instanceof Error) {
           throw fn;
         }
       }
-      
+
       return _DataFrame(
         _df.pivotExpr(
           values,

@@ -1530,7 +1530,7 @@ export function _Series(_s: any): Series {
       }
 
       if(indices.length > 0) {
-        value = value.extendConstant(value[0], indices.length - 1)
+        value = value.extendConstant(value[0], indices.length - 1);
 
       }
       _s.setAtIdx(indices._s, value._s);
