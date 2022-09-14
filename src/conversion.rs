@@ -307,7 +307,7 @@ impl FromNapiValue for Wrap<ClosedWindow> {
             "right" => ClosedWindow::Right,
             _ => {
                 return Err(napi::Error::from_reason(
-                    "closed should be any of {'none', 'left', 'right'}".to_owned(),
+                    "closed should be any of {'none', 'left', 'right', 'both'}".to_owned(),
                 ))
             }
         };
@@ -327,7 +327,7 @@ impl FromNapiValue for Wrap<RankMethod> {
             "random" => RankMethod::Random,
             _ => {
                 return Err(napi::Error::from_reason(
-                    "use one of 'avg, min, max, dense, ordinal'".to_owned(),
+                    "use one of {'average', 'min', 'max', 'dense', 'ordinal', 'random'}".to_owned(),
                 ))
             }
         };
@@ -371,7 +371,7 @@ impl FromNapiValue for Wrap<UniqueKeepStrategy> {
             "last" => UniqueKeepStrategy::Last,
             _ => {
                 return Err(napi::Error::from_reason(
-                    "use one of 'first, last'".to_owned(),
+                    "use one of {'first', 'last'}".to_owned(),
                 ))
             }
         };
@@ -387,7 +387,7 @@ impl FromNapiValue for Wrap<NullStrategy> {
             "propagate" => NullStrategy::Propagate,
             _ => {
                 return Err(napi::Error::from_reason(
-                    "use one of 'ignore', 'propagate'".to_owned(),
+                    "use one of {'ignore', 'propagate'}".to_owned(),
                 ))
             }
         };
@@ -403,7 +403,7 @@ impl FromNapiValue for Wrap<NullBehavior> {
             "ignore" => NullBehavior::Ignore,
             _ => {
                 return Err(napi::Error::from_reason(
-                    "use one of 'drop', 'ignore'".to_owned(),
+                    "use one of {'drop', 'ignore'}".to_owned(),
                 ))
             }
         };
