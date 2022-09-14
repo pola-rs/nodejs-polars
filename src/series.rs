@@ -1158,7 +1158,6 @@ impl JsSeries {
     }
 }
 
-
 macro_rules! impl_set_with_mask_wrap {
     ($name:ident, $native:ty, $cast:ident) => {
         #[napi]

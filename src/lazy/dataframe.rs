@@ -671,7 +671,6 @@ pub fn scan_ipc(path: String, options: ScanIPCOptions) -> napi::Result<JsLazyFra
     Ok(lf.into())
 }
 
-
 #[napi(object)]
 pub struct JsonScanOptions {
     pub infer_schema_length: Option<i64>,

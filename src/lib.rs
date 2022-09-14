@@ -25,8 +25,8 @@ pub mod lazy;
 pub mod list_construction;
 pub mod prelude;
 pub mod series;
-pub mod utils;
 pub mod set;
+pub mod utils;
 
 pub use polars_core;
 
