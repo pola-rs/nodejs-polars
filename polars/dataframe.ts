@@ -1,13 +1,13 @@
 import pli from "./internals/polars_internal";
-import { arrayToJsDataFrame } from "./internals/construction";
-import { DynamicGroupBy, GroupBy, RollingGroupBy } from "./groupby";
-import { LazyDataFrame, _LazyDataFrame } from "./lazy/dataframe";
-import { concat } from "./functions";
-import { Expr } from "./lazy/expr";
-import { Series, _Series } from "./series/series";
-import { Stream, Writable } from "stream";
+import {arrayToJsDataFrame} from "./internals/construction";
+import {DynamicGroupBy, GroupBy, RollingGroupBy} from "./groupby";
+import {LazyDataFrame, _LazyDataFrame} from "./lazy/dataframe";
+import {concat} from "./functions";
+import {Expr} from "./lazy/expr";
+import {Series, _Series} from "./series/series";
+import {Stream, Writable} from "stream";
 
-import { DataType, JoinBaseOptions } from "./datatypes";
+import {DataType, JoinBaseOptions} from "./datatypes";
 
 import {
   columnOrColumns,
@@ -27,7 +27,7 @@ import {
   Sample,
   Serialize,
 } from "./shared_traits";
-import { col } from "./lazy/functions";
+import {col, element} from "./lazy/functions";
 
 const inspect = Symbol.for("nodejs.util.inspect.custom");
 
@@ -43,13 +43,13 @@ type WriteJsonOptions = {
 
 type WriteParquetOptions = {
   compression?:
-    | "uncompressed"
-    | "snappy"
-    | "gzip"
-    | "lzo"
-    | "brotli"
-    | "lz4"
-    | "zstd";
+  | "uncompressed"
+  | "snappy"
+  | "gzip"
+  | "lzo"
+  | "brotli"
+  | "lz4"
+  | "zstd";
 };
 
 type WriteIPCOptions = {
@@ -128,10 +128,10 @@ interface WriteMethods {
    * >>> df.writeJSON("/path/to/file.json", {format:'lines'})
    * ```
    */
-  writeJSON(options?: { format: "lines" | "json" }): Buffer;
+  writeJSON(options?: {format: "lines" | "json"}): Buffer;
   writeJSON(
     destination: string | Writable,
-    options?: { format: "lines" | "json" }
+    options?: {format: "lines" | "json"}
   ): void;
   /**
    * Write to Arrow IPC binary stream, or a feather file.
@@ -240,15 +240,15 @@ interface WriteMethods {
  */
 export interface DataFrame
   extends Arithmetic<DataFrame>,
-    Sample<DataFrame>,
-    WriteMethods,
-    Serialize,
-    GroupByOps<RollingGroupBy> {
+  Sample<DataFrame>,
+  WriteMethods,
+  Serialize,
+  GroupByOps<RollingGroupBy> {
   /** @ignore */
   _df: any;
   dtypes: DataType[];
   height: number;
-  shape: { height: number; width: number };
+  shape: {height: number; width: number};
   width: number;
   get columns(): string[];
   set columns(cols: string[]);
@@ -729,7 +729,7 @@ export interface DataFrame
    */
   join(
     other: DataFrame,
-    options: { on: ValueOrArray<string> } & JoinBaseOptions
+    options: {on: ValueOrArray<string>} & JoinBaseOptions
   ): DataFrame;
   join(
     other: DataFrame,
@@ -738,7 +738,7 @@ export interface DataFrame
       rightOn: ValueOrArray<string>;
     } & JoinBaseOptions
   ): DataFrame;
-  join(other: DataFrame, options: { how: "cross"; suffix?: string }): DataFrame;
+  join(other: DataFrame, options: {how: "cross"; suffix?: string}): DataFrame;
 
   /**
      * Perform an asof join. This is similar to a left-join except that we
@@ -1050,14 +1050,15 @@ export interface DataFrame
       index: string | string[];
       columns: string | string[];
       aggregateFunc?:
-        | "sum"
-        | "max"
-        | "min"
-        | "mean"
-        | "median"
-        | "first"
-        | "last"
-        | "count";
+      | "sum"
+      | "max"
+      | "min"
+      | "mean"
+      | "median"
+      | "first"
+      | "last"
+      | "count"
+      | Expr;
       maintainOrder?: boolean;
       sortColumns?: boolean;
     }
@@ -1067,14 +1068,15 @@ export interface DataFrame
     index: string | string[];
     columns: string | string[];
     aggregateFunc?:
-      | "sum"
-      | "max"
-      | "min"
-      | "mean"
-      | "median"
-      | "first"
-      | "last"
-      | "count";
+    | "sum"
+    | "max"
+    | "min"
+    | "mean"
+    | "median"
+    | "first"
+    | "last"
+    | "count"
+    | Expr;
     maintainOrder?: boolean;
     sortColumns?: boolean;
   }): DataFrame;
@@ -1254,7 +1256,7 @@ export interface DataFrame
    * ```
    */
   shift(periods: number): DataFrame;
-  shift({ periods }: { periods: number }): DataFrame;
+  shift({periods}: {periods: number}): DataFrame;
   /**
    * Shift the values by a given period and fill the parts that will be empty due to this operation
    * with the result of the `fill_value` expression.
@@ -1297,7 +1299,7 @@ export interface DataFrame
    */
   shrinkToFit(): DataFrame;
   shrinkToFit(inPlace: true): void;
-  shrinkToFit({ inPlace }: { inPlace: true }): void;
+  shrinkToFit({inPlace}: {inPlace: true}): void;
   /**
    * Slice this DataFrame over the rows direction.
    * ___
@@ -1324,7 +1326,7 @@ export interface DataFrame
    * └─────┴─────┴─────┘
    * ```
    */
-  slice({ offset, length }: { offset: number; length: number }): DataFrame;
+  slice({offset, length}: {offset: number; length: number}): DataFrame;
   slice(offset: number, length: number): DataFrame;
   /**
    * Sort the DataFrame by column.
@@ -1333,7 +1335,7 @@ export interface DataFrame
    * @param reverse - Reverse/descending sort.
    */
   sort(by: ColumnsOrExpr, reverse?: boolean): DataFrame;
-  sort({ by, reverse }: { by: ColumnsOrExpr; reverse?: boolean }): DataFrame;
+  sort({by, reverse}: {by: ColumnsOrExpr; reverse?: boolean}): DataFrame;
   /**
    * Aggregate the columns of this DataFrame to their standard deviation value.
    * ___
@@ -1677,7 +1679,7 @@ export interface DataFrame
    * @param newName
    */
   withColumnRenamed(existing: string, replacement: string): DataFrame;
-  withColumnRenamed(opts: { existing: string; replacement: string }): DataFrame;
+  withColumnRenamed(opts: {existing: string; replacement: string}): DataFrame;
   /**
    * Add a column at index 0 that counts the rows.
    * @param name - name of the column to add
@@ -1822,7 +1824,7 @@ export const _DataFrame = (_df: any): DataFrame => {
       if (opts.subset) {
         opts.subset = [opts.subset].flat(3);
       }
-      const o = { ...defaultOptions, ...opts };
+      const o = {...defaultOptions, ...opts};
 
       return wrap("unique", o.maintainOrder, o.subset, o.keep);
     },
@@ -1830,7 +1832,7 @@ export const _DataFrame = (_df: any): DataFrame => {
       return _DataFrame(_df)
         .lazy()
         .explode(columns)
-        .collectSync({ noOptimization: true });
+        .collectSync({noOptimization: true});
     },
     extend(other) {
       return wrap("extend", (other as any).inner());
@@ -1902,7 +1904,7 @@ export const _DataFrame = (_df: any): DataFrame => {
           _df.hashRows(BigInt(obj), BigInt(k1), BigInt(k2), BigInt(k3))
         );
       }
-      const o = { k0: obj, k1: k1, k2: k2, k3: k3, ...obj };
+      const o = {k0: obj, k1: k1, k2: k2, k3: k3, ...obj};
 
       return _Series(
         _df.hashRows(BigInt(o.k0), BigInt(o.k1), BigInt(o.k2), BigInt(o.k3))
@@ -1932,7 +1934,7 @@ export const _DataFrame = (_df: any): DataFrame => {
     isEmpty: () => _df.height === 0,
     isUnique: () => _Series(_df.isUnique()) as any,
     join(other: DataFrame, options): DataFrame {
-      options = { how: "inner", suffix: "right", ...options };
+      options = {how: "inner", suffix: "right", ...options};
       const on = columnOrColumns(options.on);
       const how = options.how;
       const suffix = options.suffix;
@@ -2013,12 +2015,31 @@ export const _DataFrame = (_df: any): DataFrame => {
       index = typeof index === "string" ? [index] : index;
       columns = typeof columns === "string" ? [columns] : columns;
 
+      let fn: Expr;
+      if (Expr.isExpr(aggregateFunc)) {
+        fn = aggregateFunc;
+      } else {
+        fn = {
+          first: element().first(),
+          sum: element().sum(),
+          max: element().max(),
+          min: element().min(),
+          mean: element().mean(),
+          median: element().median(),
+          last: element().last(),
+          count: element().count()
+        }[aggregateFunc] ?? new Error(`Unknown aggregate function ${aggregateFunc}`);
+        if (fn instanceof Error) {
+          throw fn;
+        }
+      }
+
       return _DataFrame(
-        _df.pivot2(
+        _df.pivotExpr(
           values,
           index,
           columns,
-          aggregateFunc,
+          fn,
           maintainOrder,
           sortColumns
         )
@@ -2109,7 +2130,7 @@ export const _DataFrame = (_df: any): DataFrame => {
         return _DataFrame(_df)
           .lazy()
           .sort(arg, reverse)
-          .collectSync({ noOptimization: true, stringCache: false });
+          .collectSync({noOptimization: true, stringCache: false});
       }
 
       return wrap("sort", arg, reverse, true);
@@ -2165,7 +2186,7 @@ export const _DataFrame = (_df: any): DataFrame => {
         return acc;
       }, {});
     },
-    writeJSON(dest?, options = { format: "lines" }) {
+    writeJSON(dest?, options = {format: "lines"}) {
       if (dest instanceof Writable || typeof dest === "string") {
         return _df.writeJson(dest, options) as any;
       }
@@ -2177,7 +2198,7 @@ export const _DataFrame = (_df: any): DataFrame => {
         },
       });
 
-      _df.writeJson(writeStream, { ...options, ...dest });
+      _df.writeJson(writeStream, {...options, ...dest});
       writeStream.end("");
 
       return Buffer.concat(buffers);
@@ -2185,7 +2206,7 @@ export const _DataFrame = (_df: any): DataFrame => {
     toParquet(dest?, options?) {
       return this.writeParquet(dest, options);
     },
-    writeParquet(dest?, options = { compression: "uncompressed" }) {
+    writeParquet(dest?, options = {compression: "uncompressed"}) {
       if (dest instanceof Writable || typeof dest === "string") {
         return _df.writeParquet(dest, options.compression) as any;
       }
@@ -2202,7 +2223,7 @@ export const _DataFrame = (_df: any): DataFrame => {
 
       return Buffer.concat(buffers);
     },
-    writeAvro(dest?, options = { compression: "uncompressed" }) {
+    writeAvro(dest?, options = {compression: "uncompressed"}) {
       if (dest instanceof Writable || typeof dest === "string") {
         return _df.writeAvro(dest, options.compression) as any;
       }
@@ -2222,7 +2243,7 @@ export const _DataFrame = (_df: any): DataFrame => {
     toIPC(dest?, options?) {
       return this.writeIPC(dest, options);
     },
-    writeIPC(dest?, options = { compression: "uncompressed" }) {
+    writeIPC(dest?, options = {compression: "uncompressed"}) {
       if (dest instanceof Writable || typeof dest === "string") {
         return _df.writeIpc(dest, options.compression) as any;
       }
@@ -2266,7 +2287,7 @@ export const _DataFrame = (_df: any): DataFrame => {
         }
 
         const newColumns = Array.from(
-          { length: df.width },
+          {length: df.width},
           (
             (i) => () =>
               i.next().value
@@ -2309,14 +2330,14 @@ export const _DataFrame = (_df: any): DataFrame => {
       } else {
         return this.lazy()
           .withColumns(columns)
-          .collectSync({ noOptimization: true, stringCache: false });
+          .collectSync({noOptimization: true, stringCache: false});
       }
     },
     withColumnRenamed(opt, replacement?) {
       if (typeof opt === "string") {
-        return this.rename({ [opt]: replacement });
+        return this.rename({[opt]: replacement});
       } else {
-        return this.rename({ [opt.existing]: opt.replacement });
+        return this.rename({[opt.existing]: opt.replacement});
       }
     },
     withRowCount(name = "row_nr") {

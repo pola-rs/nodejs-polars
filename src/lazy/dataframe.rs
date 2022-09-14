@@ -109,14 +109,13 @@ impl JsLazyFrame {
         predicate_pushdown: Option<bool>,
         projection_pushdown: Option<bool>,
         simplify_expr: Option<bool>,
-        string_cache: Option<bool>,
+        _string_cache: Option<bool>,
         slice_pushdown: Option<bool>,
     ) -> JsLazyFrame {
         let type_coercion = type_coercion.unwrap_or(true);
         let predicate_pushdown = predicate_pushdown.unwrap_or(true);
         let projection_pushdown = projection_pushdown.unwrap_or(true);
         let simplify_expr = simplify_expr.unwrap_or(true);
-        let string_cache = string_cache.unwrap_or(true);
         let slice_pushdown = slice_pushdown.unwrap_or(true);
 
         let ldf = self.ldf.clone();
@@ -124,7 +123,6 @@ impl JsLazyFrame {
             .with_type_coercion(type_coercion)
             .with_predicate_pushdown(predicate_pushdown)
             .with_simplify_expr(simplify_expr)
-            .with_string_cache(string_cache)
             .with_slice_pushdown(slice_pushdown)
             .with_projection_pushdown(projection_pushdown);
         ldf.into()
@@ -667,43 +665,12 @@ pub fn scan_ipc(path: String, options: ScanIPCOptions) -> napi::Result<JsLazyFra
         cache,
         rechunk,
         row_count,
-        memmap
+        memmap,
     };
     let lf = LazyFrame::scan_ipc(path, args).map_err(JsPolarsErr::from)?;
     Ok(lf.into())
 }
 
-struct JsonScan {
-    path: String,
-    batch_size: usize,
-    n_threads: Option<usize>,
-    low_memory: bool,
-}
-
-impl AnonymousScan for JsonScan {
-    fn scan(&self, scan_opts: AnonymousScanOptions) -> polars::prelude::Result<DataFrame> {
-        let schema = scan_opts.output_schema.unwrap_or(scan_opts.schema);
-        JsonLineReader::from_path(&self.path)
-            .expect("unable to read file")
-            .with_schema(&schema)
-            .with_chunk_size(self.batch_size)
-            .with_n_threads(self.n_threads)
-            .low_memory(self.low_memory)
-            .with_n_rows(scan_opts.n_rows)
-            .finish()
-    }
-
-    fn schema(&self, infer_schema_length: Option<usize>) -> polars::prelude::Result<Schema> {
-        let f = std::fs::File::open(&self.path)?;
-        let mut reader = std::io::BufReader::new(f);
-
-        let data_type = ndjson::read::infer(&mut reader, infer_schema_length)
-            .map_err(|err| PolarsError::ComputeError(format!("{:#?}", err).into()))?;
-        let schema: polars_core::prelude::Schema = StructArray::get_fields(&data_type).into();
-
-        Ok(schema)
-    }
-}
 
 #[napi(object)]
 pub struct JsonScanOptions {
@@ -714,29 +681,18 @@ pub struct JsonScanOptions {
     pub skip_rows: Option<i64>,
     pub low_memory: Option<bool>,
     pub row_count: Option<JsRowCount>,
-
 }
 
 #[napi]
 pub fn scan_json(path: String, options: JsonScanOptions) -> napi::Result<JsLazyFrame> {
-    let f = JsonScan {
-        path,
-        batch_size: options.batch_size as usize,
-        n_threads: options.n_threads.map(|i| i as usize),
-        low_memory: options.low_memory.unwrap_or(false),
-    };
-
-    let options = ScanArgsAnonymous {
-        name: "JSON SCAN",
-        infer_schema_length: options.infer_schema_length.map(|i| i as usize),
-        n_rows: options.num_rows.map(|i| i as usize),
-        skip_rows: options.skip_rows.map(|i| i as usize),
-        row_count: options.row_count.map(|rc| rc.into()),
-        ..ScanArgsAnonymous::default()
-    };
-    let lf =
-        LazyFrame::anonymous_scan(std::sync::Arc::new(f), options).map_err(JsPolarsErr::from)?;
-    Ok(lf.into())
+    LazyJsonLineReader::new(path)
+        .with_batch_size(Some(options.batch_size as usize))
+        .low_memory(options.low_memory.unwrap_or(false))
+        .with_row_count(options.row_count.map(|rc| rc.into()))
+        .with_n_rows(options.num_rows.map(|i| i as usize))
+        .finish()
+        .map_err(|err| napi::Error::from_reason(format!("{:?}", err)))
+        .map(|lf| lf.into())
 }
 
 pub struct AsyncFetch((LazyFrame, usize));

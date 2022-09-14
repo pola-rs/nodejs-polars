@@ -309,7 +309,13 @@ impl JsExpr {
 
     #[napi]
     pub fn arg_sort(&self, reverse: bool) -> JsExpr {
-        self.clone().inner.arg_sort(reverse).into()
+        self.clone()
+            .inner
+            .arg_sort(SortOptions {
+                descending: reverse,
+                nulls_last: true,
+            })
+            .into()
     }
     #[napi]
     pub fn arg_max(&self) -> JsExpr {
@@ -459,8 +465,8 @@ impl JsExpr {
         self.clone().inner.ceil().into()
     }
     #[napi]
-    pub fn clip(&self, min: f64, max: f64) -> JsExpr {
-        self.clone().inner.clip(min, max).into()
+    pub fn clip(&self, min: Wrap<AnyValue>, max: Wrap<AnyValue>) -> JsExpr {
+        self.clone().inner.clip(min.0, max.0).into()
     }
 
     #[napi]
@@ -1185,7 +1191,7 @@ impl JsExpr {
 
     #[napi]
     pub fn shuffle(&self, seed: Wrap<u64>) -> JsExpr {
-        self.inner.clone().shuffle(seed.0).into()
+        self.inner.clone().shuffle(Some(seed.0)).into()
     }
 
     #[napi]
@@ -1203,28 +1209,31 @@ impl JsExpr {
             .into()
     }
     #[napi]
-    pub fn ewm_mean(&self, alpha: f64, adjust: bool, min_periods: i64) -> JsExpr {
+    pub fn ewm_mean(&self, alpha: f64, adjust: bool, min_periods: i64, bias: bool) -> JsExpr {
         let options = EWMOptions {
             alpha,
             adjust,
+            bias,
             min_periods: min_periods as usize,
         };
         self.inner.clone().ewm_mean(options).into()
     }
     #[napi]
-    pub fn ewm_std(&self, alpha: f64, adjust: bool, min_periods: i64) -> Self {
+    pub fn ewm_std(&self, alpha: f64, adjust: bool, min_periods: i64, bias: bool) -> Self {
         let options = EWMOptions {
             alpha,
             adjust,
+            bias,
             min_periods: min_periods as usize,
         };
         self.inner.clone().ewm_std(options).into()
     }
     #[napi]
-    pub fn ewm_var(&self, alpha: f64, adjust: bool, min_periods: i64) -> Self {
+    pub fn ewm_var(&self, alpha: f64, adjust: bool, min_periods: i64, bias: bool) -> Self {
         let options = EWMOptions {
             alpha,
             adjust,
+            bias,
             min_periods: min_periods as usize,
         };
         self.inner.clone().ewm_var(options).into()
