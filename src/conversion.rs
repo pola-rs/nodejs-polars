@@ -926,7 +926,7 @@ impl FromJsUnknown for i64 {
                 let s: JsNumber = val.try_into()?;
                 s.try_into()
             }
-            dt => Err(JsPolarsErr::Other(format!("cannot cast {} to u64", dt)).into()),
+            dt => Err(JsPolarsErr::Other(format!("cannot cast {} to i64", dt)).into()),
         }
     }
 }
