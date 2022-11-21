@@ -17,7 +17,7 @@ ahash = "0.7"
 bincode = "1.3"
 napi = {version = "2.2.0", default-features = false, features = ["napi8", "serde-json", "experimental"]}
 napi-derive = {version = "2.2.0", default-features = false}
-polars-core = {git = "https://github.com/pola-rs/polars.git", rev = "e0167a4f5d692a61c959aa10cdcd19081af27007", default-features = false}
+polars-core = {git = "https://github.com/universalmind303/polars.git", branch = "nodejs-simdjson-bump", default-features = false}
 thiserror = "1.0.20"
 
 serde_json = {version = "1"}
@@ -88,8 +88,8 @@ features = [
   "list_eval",
   "arg_where",
 ]
-git = "https://github.com/pola-rs/polars.git"
-rev = "e0167a4f5d692a61c959aa10cdcd19081af27007"
+git = "https://github.com/universalmind303/polars.git" 
+branch = "nodejs-simdjson-bump"
 
 [build-dependencies]
 napi-build = "1.2.1"
