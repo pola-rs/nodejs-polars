@@ -45,7 +45,7 @@ jobs:
           - host: ubuntu-latest
             target: x86_64-unknown-linux-gnu
             docker: ghcr.io/napi-rs/napi-rs/nodejs-rust:lts-debian
-            build: |-
+            build: |
               set -e &&
               yarn build --target x86_64-unknown-linux-gnu &&
               strip polars/*.node
