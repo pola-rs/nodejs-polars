@@ -19,7 +19,6 @@ jobs:
             build: |
               yarn build
               strip -x polars/*.node
-         
          - host: macos-latest
             target: aarch64-apple-darwin
             build: |
@@ -30,7 +29,6 @@ jobs:
               export CFLAGS="-isysroot $SYSROOT -isystem $SYSROOT";
               yarn build --target aarch64-apple-darwin
               strip -x polars/*.node
-
           - host: windows-latest
             build: yarn build
             target: x86_64-pc-windows-msvc
