@@ -1,6 +1,6 @@
 {
   "name": "nodejs-polars",
-  "version": "0.7.0-alpha.1",
+  "version": "0.7.0-alpha.2",
   "repository": "https://github.com/pola-rs/nodejs-polars.git",
   "license": "SEE LICENSE IN LICENSE",
   "main": "bin/index.js",
@@ -23,7 +23,6 @@
       "defaults": true,
       "additional": [
         "aarch64-apple-darwin",
-        "aarch64-linux-android",
         "aarch64-unknown-linux-gnu",
         "i686-pc-windows-msvc"
       ]
