@@ -856,10 +856,11 @@ export const _Expr = (_expr: any): Expr => {
     },
     quantile(quantile, interpolation: InterpolationMethod = "nearest") {
       if (Expr.isExpr(quantile)) {
-        quantile = quantile._expr
+        quantile = quantile._expr;
       } else {
         quantile = pli.lit(quantile);
       }
+
       return _Expr(_expr.quantile(quantile, interpolation));
     },
     rank(method, reverse=false) {

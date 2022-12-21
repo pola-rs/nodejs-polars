@@ -1303,7 +1303,7 @@ describe("expr.lst", () => {
     expect(
       df
         .select(pl.concatList(["a", "b"]).alias("a"))
-        ["a"].seriesEqual(expected),
+        .getColumn("a").seriesEqual(expected),
     ).toBeTruthy();
     expect(
       df

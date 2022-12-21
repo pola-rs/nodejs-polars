@@ -224,8 +224,9 @@ describe("groupby ops", () => {
       indexColumn: "event_date",
       every: "1mo",
     }).agg(
-      pl.col("adm1_code").unique(), 
-      pl.col("fatalities").gt(0).sum()
+      pl.col("adm1_code").unique(),
+      pl.col("fatalities").gt(0)
+        .sum()
     );
     const expected = [
       new Date("2021-04-01"),

@@ -33,7 +33,7 @@ describe("lazyframe", () => {
     }).lazy();
     const actual = df.describeOptimizedPlan().replace(/\s+/g, " ");
     expect(actual).toEqual(
-      ` DF ["foo", "bar"]; PROJECT */2 COLUMNS; SELECTION: "None" `)
+      ` DF ["foo", "bar"]; PROJECT */2 COLUMNS; SELECTION: "None" `);
   });
   test("drop", () => {
     const df = pl.DataFrame({

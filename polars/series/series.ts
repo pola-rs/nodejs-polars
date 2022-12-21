@@ -1543,7 +1543,7 @@ export function _Series(_s: any): Series {
     },
     sample(opts?, frac?, withReplacement = false, seed?) {
       // rome-ignore lint/style/noArguments: <explanation>
-if  (arguments.length === 0) {
+      if  (arguments.length === 0) {
         return wrap("sampleN",
           1,
           withReplacement,
