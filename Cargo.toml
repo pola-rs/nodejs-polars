@@ -1,6 +1,6 @@
 [package]
 name = "nodejs-polars"
-version = "0.7.0-alpha.2"
+version = "0.7.0-alpha.3"
 authors = ["Cory Grinstead"]
 documentation = "https://pola-rs.github.io/polars-book/"
 edition = "2021"
@@ -17,7 +17,7 @@ ahash = "0.7"
 bincode = "1.3"
 napi = {version = "2.10", default-features = false, features = ["napi8", "serde-json", "experimental"]}
 napi-derive = {version = "2.9", default-features = false}
-polars-core = {git = "https://github.com/universalmind303/polars.git", branch = "nodejs-simdjson-bump", default-features = false}
+polars-core = {version="0.25.1", default-features = false}
 thiserror = "1.0.20"
 
 serde_json = {version = "1"}
@@ -57,7 +57,6 @@ features = [
   "rolling_window",
   "repeat_by",
   "interpolate",
-  "list",
   "ewma",
   "rank",
   "diff",
@@ -88,8 +87,7 @@ features = [
   "list_eval",
   "arg_where",
 ]
-git = "https://github.com/universalmind303/polars.git" 
-branch = "nodejs-simdjson-bump"
+version = "0.25.1"
 
 [build-dependencies]
 napi-build = "2"
