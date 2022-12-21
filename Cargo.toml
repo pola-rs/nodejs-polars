@@ -59,6 +59,7 @@ features = [
   "interpolate",
   "ewma",
   "rank",
+  "propagate_nans",
   "diff",
   "pct_change",
   "moment",

@@ -2,6 +2,7 @@ use crate::file::*;
 use crate::prelude::*;
 use crate::series::JsSeries;
 use napi::JsUnknown;
+use polars::frame::NullStrategy;
 use polars::frame::row::{infer_schema, Row};
 use polars::io::RowCount;
 use std::borrow::Borrow;
@@ -606,7 +607,7 @@ impl JsDataFrame {
     }
     #[napi]
     pub fn n_chunks(&self) -> napi::Result<u32> {
-        let n = self.df.n_chunks().map_err(JsPolarsErr::from)?;
+        let n = self.df.n_chunks();
         Ok(n as u32)
     }
 
@@ -1017,7 +1018,7 @@ impl JsDataFrame {
         k2: Wrap<u64>,
         k3: Wrap<u64>,
     ) -> napi::Result<JsSeries> {
-        let hb = ahash::RandomState::with_seeds(k0.0, k1.0, k2.0, k3.0);
+        let hb = polars::export::ahash::RandomState::with_seeds(k0.0, k1.0, k2.0, k3.0);
         let hash = self.df.hash_rows(Some(hb)).map_err(JsPolarsErr::from)?;
         Ok(hash.into_series().into())
     }
@@ -1456,6 +1457,7 @@ impl JsDataFrame {
     }
 }
 
+#[allow(deprecated)]
 fn finish_groupby(gb: GroupBy, agg: &str) -> napi::Result<JsDataFrame> {
     let df = match agg {
         "min" => gb.min(),

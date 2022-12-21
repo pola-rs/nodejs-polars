@@ -1,16 +1,6 @@
 import pl from "@polars";
 
 describe("lazyframe", () => {
-  test("inspect", () => {
-    const df = pl.DataFrame({
-      "foo": [1, 2],
-      "bar": ["a", "b"]
-    }).lazy();
-    const actual = df[Symbol.for("nodejs.util.inspect.custom")]();
-
-    expect(actual).toEqual(
-      `DATAFRAME(in-memory): ["foo", "bar"];\n\tproject */2 columns\t|\tdetails: None;\n\tselection: "None"\n\n`);
-  });
   test("columns", () => {
     const df = pl.DataFrame({
       "foo": [1, 2],
@@ -35,16 +25,7 @@ describe("lazyframe", () => {
     const actual = await expected.lazy().collect();
     expect(actual).toFrameEqual(expected);
   });
-  test("describePlan", () => {
-    const df = pl.DataFrame({
-      "foo": [1, 2],
-      "bar": ["a", "b"]
-    }).lazy();
-    const actual = df.describePlan().replace(/\s+/g, " ");
-    expect(actual).toEqual(`DATAFRAME(in-memory): ["foo", "bar"];
-project */2 columns	|	details: None;
-selection: "None" `.replace(/\s+/g, " "));
-  });
+
   test("describeOptimizedPlan", () => {
     const df = pl.DataFrame({
       "foo": [1, 2],
@@ -52,9 +33,7 @@ selection: "None" `.replace(/\s+/g, " "));
     }).lazy();
     const actual = df.describeOptimizedPlan().replace(/\s+/g, " ");
     expect(actual).toEqual(
-      `DATAFRAME(in-memory): ["foo", "bar"];
-      project */2 columns	|	details: None;
-      selection: "None" `.replace(/\s+/g, " "));
+      ` DF ["foo", "bar"]; PROJECT */2 COLUMNS; SELECTION: "None" `)
   });
   test("drop", () => {
     const df = pl.DataFrame({

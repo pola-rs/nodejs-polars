@@ -19,7 +19,7 @@ const df = () => {
   return df.withColumns(
     pl.col("date").cast(pl.Date),
     pl.col("datetime").cast(pl.Datetime("ms")),
-    pl.col("strings").cast(pl.Categorical).alias("cat")
+    pl.col("strings").cast(pl.Categorical).alias("cat"),
   );
 };
 describe("expr", () => {
@@ -30,7 +30,7 @@ describe("expr", () => {
         pl
           .lit(pl.Series([1, -2, -3]))
           .abs()
-          .as("abs")
+          .as("abs"),
       )
       .getColumn("abs");
     expect(actual).toSeriesEqual(expected);
@@ -67,7 +67,7 @@ describe("expr", () => {
     const df = pl.DataFrame({ a: [1, 1, 4, 1.5] });
     const expected = pl.DataFrame({ argUnique: [0, 2, 3] });
     const actual = df.select(
-      col("a").argUnique().cast(pl.Float64).alias("argUnique")
+      col("a").argUnique().cast(pl.Float64).alias("argUnique"),
     );
     expect(actual).toFrameEqual(expected);
   });
@@ -144,7 +144,7 @@ describe("expr", () => {
     const df = pl.DataFrame({ a: [1, 2, 2, 1, 3] });
     const expected = pl.DataFrame({ a: cumProd });
     const actual = df.select(
-      col("a").cast(pl.Int64).cumProd(args).cast(pl.Float64)
+      col("a").cast(pl.Int64).cumProd(args).cast(pl.Float64),
     );
     expect(actual).toFrameEqual(expected);
   });
@@ -331,8 +331,8 @@ describe("expr", () => {
   });
   test.each`
     args                   | hashValue
-    ${[0]}                 | ${6340063056640878722n}
-    ${[{ k0: 1n, k1: 1 }]} | ${9788354747012366704n}
+    ${[0]}                 | ${5246693565886627840n}
+    ${[{ k0: 1n, k1: 1 }]} | ${10529415928792219648n}
   `("$# hash", ({ args, hashValue }) => {
     const df = pl.DataFrame({ a: [1] });
     const expected = pl.DataFrame({ hash: [hashValue] });
@@ -401,7 +401,7 @@ describe("expr", () => {
     });
     const expected = pl.DataFrame({ isIn: [true, true, false] });
     const actual = df.select(
-      col("optional_members").isIn(col("sets")).as("isIn")
+      col("optional_members").isIn(col("sets")).as("isIn"),
     );
     expect(actual).toFrameEqual(expected);
   });
@@ -462,7 +462,7 @@ describe("expr", () => {
       kurtosis: [-1.044],
     });
     const actual = df.select(
-      col("a").kurtosis().round({ decimals: 3 }).as("kurtosis")
+      col("a").kurtosis().round({ decimals: 3 }).as("kurtosis"),
     );
     expect(actual).toFrameEqual(expected);
   });
@@ -542,7 +542,7 @@ describe("expr", () => {
     const df = pl.DataFrame({ a: [2, 2, 1, 3, 4, 1, 2] });
     const expected = pl.DataFrame({ mode: [2] });
     const actual = df.select(
-      col("a").cast(pl.Int64).mode().cast(pl.Float64).as("mode")
+      col("a").cast(pl.Int64).mode().cast(pl.Float64).as("mode"),
     );
     expect(actual).toFrameEqual(expected);
   });
@@ -587,7 +587,7 @@ describe("expr", () => {
     });
     const actual = df.select(
       col("groups"),
-      col("groups").sum().over("groups").alias("sum_groups")
+      col("groups").sum().over("groups").alias("sum_groups"),
     );
     expect(actual).toFrameEqual(expected);
   });
@@ -613,6 +613,12 @@ describe("expr", () => {
     const df = pl.DataFrame({ a: [1, 2, 3] });
     const expected = pl.DataFrame({ quantile: [2] });
     const actual = df.select(col("a").quantile(0.5).as("quantile"));
+    expect(actual).toFrameEqual(expected);
+  });
+  test("quantile with expr", () => {
+    const df = pl.DataFrame({ a: [1, 2, 3] });
+    const expected = pl.DataFrame({ quantile: [2] });
+    const actual = df.select(col("a").quantile(lit(0.5)).as("quantile"));
     expect(actual).toFrameEqual(expected);
   });
 
@@ -719,7 +725,7 @@ describe("expr", () => {
         .cast(pl.UInt64)
         .skew({ bias: false })
         .cast(pl.Utf8) // casted to string to retain precision when extracting to JS
-        .as("skew:bias=false")
+        .as("skew:bias=false"),
     );
     expect(actual).toFrameStrictEqual(expected);
   });
@@ -733,7 +739,7 @@ describe("expr", () => {
     const actual = df.select(
       col("a").slice(0, 2).as("slice(0,2)"),
       col("a").slice(-2, 2).as("slice(-2,2)"),
-      col("a").slice({ offset: 1, length: 2 }).as("slice(1,2)")
+      col("a").slice({ offset: 1, length: 2 }).as("slice(1,2)"),
     );
     expect(actual).toFrameEqual(expected);
   });
@@ -766,7 +772,7 @@ describe("expr", () => {
       b.sort({ nullsLast: true }).as("b_sorted_nulls_last"),
       b
         .sort({ reverse: true, nullsLast: true })
-        .as("b_sorted_reverse_nulls_last")
+        .as("b_sorted_reverse_nulls_last"),
     );
     expect(actual).toFrameEqual(expected);
   });
@@ -792,7 +798,7 @@ describe("expr", () => {
         .sortBy("value")
         .last()
         .over("label")
-        .suffix("_max")
+        .suffix("_max"),
     );
     expect(actual).toFrameEqual(expected);
   });
@@ -817,7 +823,7 @@ describe("expr", () => {
         .sortBy({ by: [pl.col("value")], reverse: [true] })
         .last()
         .over("label")
-        .suffix("_min")
+        .suffix("_min"),
     );
     expect(actual).toFrameEqual(expected);
   });
@@ -826,7 +832,7 @@ describe("expr", () => {
     const df = pl.DataFrame({ a: [1, 2, 3, 10, 200] });
     const expected = pl.DataFrame({ std: ["87.73"] });
     const actual = df.select(
-      col("a").std().round({ decimals: 2 }).cast(pl.Utf8).as("std")
+      col("a").std().round({ decimals: 2 }).cast(pl.Utf8).as("std"),
     );
     expect(actual).toFrameEqual(expected);
   });
@@ -860,7 +866,7 @@ describe("expr", () => {
       col("a").take([0, 2, 3, 5]).as("take:array"),
       col("a")
         .take(lit([0, 1, 2, 3]))
-        .as("take:list")
+        .as("take:list"),
     );
     expect(actual).toFrameEqual(expected);
   });
@@ -875,10 +881,10 @@ describe("expr", () => {
   test("unique", () => {
     const df = pl.DataFrame({ a: [1, 1, 2, 2, 3, 3, 8, null, 1] });
     const expected = pl.DataFrame({
-      uniques: [1, 2, 3, 8],
+      uniques: [1, 2, 3, 8, null],
     });
     const actual = df.select(
-      col("a").unique().sort({ nullsLast: true }).as("uniques")
+      col("a").unique().sort({ nullsLast: true }).as("uniques"),
     );
     expect(actual).toFrameEqual(expected);
   });
@@ -975,9 +981,7 @@ describe("expr.str", () => {
       .toFrame();
 
     const actual = df.select(
-      col("a")
-        .str.extract(/candidate=(\w+)/g, 1)
-        .as("candidate")
+      col("a").str.extract(/candidate=(\w+)/g, 1).as("candidate"),
     );
     expect(actual).toFrameEqual(expected);
     expect(seriesActual).toFrameEqual(expected);
@@ -1095,7 +1099,7 @@ describe("expr.str", () => {
           new Date(Date.parse("2020-02-01T01:02:01.030+00:00")),
           new Date(Date.parse("2021-11-01T01:02:20.001+00:00")),
         ],
-        pl.Date
+        pl.Date,
       ),
     ]);
 
@@ -1114,7 +1118,7 @@ describe("expr.str", () => {
       col("timestamp")
         .str.strptime(pl.Datetime("ms"), "%FT%T%.3f%:z")
         .as("datetime"),
-      col("timestamp").str.strptime(pl.Date, "%FT%T%.3f%:z").as("date")
+      col("timestamp").str.strptime(pl.Date, "%FT%T%.3f%:z").as("date"),
     );
 
     expect(actual).toFrameEqual(expected);
@@ -1227,7 +1231,7 @@ describe("expr.str", () => {
       df.select(
         col("encoded")
           .str.decode({ encoding: "hex", strict: true })
-          .as("decoded")
+          .as("decoded"),
       );
     expect(fn).toThrow();
   });
@@ -1245,7 +1249,7 @@ describe("expr.str", () => {
       .rename("encoded")
       .toFrame();
     const actual = df.select(
-      col("original").str.encode("base64").as("encoded")
+      col("original").str.encode("base64").as("encoded"),
     );
     expect(actual).toFrameEqual(expected);
     expect(seriesActual).toFrameEqual(expected);
@@ -1264,7 +1268,7 @@ describe("expr.str", () => {
       .rename("decoded")
       .toFrame();
     const actual = df.select(
-      col("encoded").str.decode("base64", false).as("decoded")
+      col("encoded").str.decode("base64", false).as("decoded"),
     );
     expect(actual).toFrameEqual(expected);
     expect(seriesActual).toFrameEqual(expected);
@@ -1278,7 +1282,7 @@ describe("expr.str", () => {
       df.select(
         col("encoded")
           .str.decode({ encoding: "base64", strict: true })
-          .as("decoded")
+          .as("decoded"),
       );
     expect(fn).toThrow();
   });
@@ -1297,25 +1301,40 @@ describe("expr.lst", () => {
 
     let df = pl.DataFrame([s0, s1]);
     expect(
-      df.select(pl.concatList(["a", "b"]).alias("a"))["a"].seriesEqual(expected)
+      df
+        .select(pl.concatList(["a", "b"]).alias("a"))
+        ["a"].seriesEqual(expected),
     ).toBeTruthy();
     expect(
       df
         .select(pl.col("a").lst.concat("b").alias("a"))
         .getColumn("a")
-        .seriesEqual(expected)
+        .seriesEqual(expected),
     ).toBeTruthy();
     expect(
       df
         .select(pl.col("a").lst.concat(["b"]).alias("a"))
         .getColumn("a")
-        .seriesEqual(expected)
+        .seriesEqual(expected),
     );
   });
   test("get", () => {
     const df = pl.DataFrame({ a: [[1, 10, 11], [2, 10, 12], [1]] });
     const expected = pl.DataFrame({ get: [11, 12, null] });
     const actual = df.select(col("a").lst.get(2).as("get"));
+    const actualFromSeries = df
+      .getColumn("a")
+      .lst.get(2)
+      .rename("get")
+      .toFrame();
+
+    expect(actual).toFrameEqual(expected);
+    expect(actualFromSeries).toFrameEqual(expected);
+  });
+  test("get with expr", () => {
+    const df = pl.DataFrame({ a: [[1, 10, 11], [2, 10, 12], [1]] });
+    const expected = pl.DataFrame({ get: [11, 12, null] });
+    const actual = df.select(col("a").lst.get(lit(2)).as("get"));
     const actualFromSeries = df
       .getColumn("a")
       .lst.get(2)
@@ -1505,7 +1524,7 @@ describe("expr.lst", () => {
     });
     const actual = df.select(
       col("a").lst.sort().as("sort"),
-      col("a").lst.sort({ reverse: true }).as("sort:reverse")
+      col("a").lst.sort({ reverse: true }).as("sort:reverse"),
     );
 
     const sortSeries = df.getColumn("a").lst.sort().rename("sort");
@@ -1574,7 +1593,7 @@ describe("expr.dt", () => {
       hour: pl.Series("", [1], pl.UInt32),
       day: pl.Series("", [8], pl.UInt32),
       ordinalDay: pl.Series("", [8], pl.UInt32),
-      weekday: pl.Series("", [6], pl.UInt32),
+      weekday: pl.Series("", [7], pl.UInt32),
       week: pl.Series("", [1], pl.UInt32),
       month: pl.Series("", [1], pl.UInt32),
       year: pl.Series("", [1984], pl.Int32),
@@ -1591,7 +1610,7 @@ describe("expr.dt", () => {
       dtCol.weekday().as("weekday"),
       dtCol.week().as("week"),
       dtCol.month().as("month"),
-      dtCol.year().as("year")
+      dtCol.year().as("year"),
     );
 
     const actualFromSeries = pl.DataFrame([
@@ -1666,7 +1685,7 @@ describe("rolling", () => {
       rolling_median_a: [null, 1.5, 2.5, 3, 2.5, 6, 9],
     });
     const actual = df.withColumn(
-      col("a").rollingMedian({ windowSize: 2 }).prefix("rolling_median_")
+      col("a").rollingMedian({ windowSize: 2 }).prefix("rolling_median_"),
     );
     expect(actual).toFrameStrictEqual(expected);
   });
@@ -1679,7 +1698,7 @@ describe("rolling", () => {
     const actual = df.withColumn(
       col("a")
         .rollingQuantile({ windowSize: 2, quantile: 0.5 })
-        .prefix("rolling_quantile_")
+        .prefix("rolling_quantile_"),
     );
 
     expect(actual).toFrameStrictEqual(expected);
@@ -1718,7 +1737,7 @@ describe("rolling", () => {
         .cast(pl.UInt64)
         .rollingSkew({ windowSize: 4, bias: false })
         .cast(pl.Utf8) // casted to string to retain precision when extracting to JS
-        .as("bias_false")
+        .as("bias_false"),
     );
     expect(actual).toFrameStrictEqual(expected);
   });

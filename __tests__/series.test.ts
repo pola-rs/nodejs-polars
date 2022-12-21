@@ -472,7 +472,7 @@ describe("series", () => {
   ${"getIndex"}      | ${pl.Series(["a", "b", "c"]).getIndex(0)}            | ${"a"}
   ${"hasValidity"}   | ${pl.Series([1, null, 2]).hasValidity()}             | ${true}
   ${"hasValidity"}   | ${pl.Series([1, 1, 2]).hasValidity()}                | ${false}
-  ${"hash"}          | ${pl.Series([1]).hash()}                             | ${pl.Series([6340063056640878722n])}
+  ${"hash"}          | ${pl.Series([1]).hash()}                             | ${pl.Series([5246693565886627840n])}
   ${"head"}          | ${pl.Series([1, 2, 3, 4, 5, 5, 5]).head()}           | ${pl.Series([1, 2, 3, 4, 5])}
   ${"head"}          | ${pl.Series([1, 2, 3, 4, 5, 5, 5]).head(2)}          | ${pl.Series([1, 2])}
   ${"interpolate"}   | ${pl.Series([1, 2, null, null, 5]).interpolate()}    | ${pl.Series([1, 2, 3, 4, 5])}

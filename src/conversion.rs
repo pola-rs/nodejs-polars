@@ -132,30 +132,15 @@ impl<'a> ToNapiValue for Wrap<AnyValue<'a>> {
                 Ok(ptr)
             }
             AnyValue::Datetime(v, _, _) => {
-                let mut ptr = std::ptr::null_mut();
+                let mut js_value = std::ptr::null_mut();
+                napi::sys::napi_create_date(env, v as f64, &mut js_value);
 
-                check_status!(
-                    napi::sys::napi_create_date(env, v as f64, &mut ptr),
-                    "Failed to convert rust type `AnyValue::Date` into napi value",
-                )?;
-
-                Ok(ptr)
+                Ok(js_value)
             }
             AnyValue::Duration(v, _) => i64::to_napi_value(env, v),
             AnyValue::Time(v) => i64::to_napi_value(env, v),
             AnyValue::List(ser) => Wrap::<&Series>::to_napi_value(env, Wrap(&ser)),
-            AnyValue::Struct(vals, flds) => {
-                let env_obj = Env::from_raw(env);
-
-                let mut obj = env_obj.create_object()?;
-
-                for (val, fld) in vals.iter().zip(flds) {
-                    let key = fld.name();
-
-                    obj.set(key, Wrap(val.clone()))?;
-                }
-                Object::to_napi_value(env, obj)
-            }
+            ref av @ AnyValue::Struct(_, _, flds) => struct_dict(env, av._iter_struct_av(), flds),
             _ => todo!(),
         }
     }
@@ -632,7 +617,7 @@ impl FromNapiValue for Wrap<Schema> {
                         Ok(Field::new(key, dtype.0))
                     })
                     .collect::<Result<_>>()?;
-                Ok(Wrap(Schema::from(fields)))
+                Ok(Wrap(Schema::from(fields.into_iter())))
             }
             _ => Err(Error::new(
                 Status::InvalidArg,
@@ -670,6 +655,40 @@ impl FromNapiValue for Wrap<ParallelStrategy> {
             }
         };
         Ok(Wrap(unit))
+    }
+}
+impl FromNapiValue for Wrap<InterpolationMethod> {
+    unsafe fn from_napi_value(env: sys::napi_env, napi_val: sys::napi_value) -> napi::Result<Self> {
+        let s = String::from_napi_value(env, napi_val)?;
+
+        let unit = match s.as_ref() {
+            "linear" => InterpolationMethod::Linear,
+            "nearest" => InterpolationMethod::Nearest,
+            _ => {
+                return Err(Error::new(
+                    Status::InvalidArg,
+                    "expected one of {'linear', 'nearest'}".to_owned(),
+                ))
+            }
+        };
+        Ok(Wrap(unit))
+    }
+}
+impl FromNapiValue for Wrap<SortOptions> {
+    unsafe fn from_napi_value(env: sys::napi_env, napi_val: sys::napi_value) -> napi::Result<Self> {
+        let obj = Object::from_napi_value(env, napi_val)?;
+        let descending = obj.get::<_, bool>("descending")?.unwrap();
+        let nulls_last = if let Some(nulls_last) = obj.get::<_, bool>("nulls_last")? {
+            nulls_last
+        } else {
+            obj.get::<_, bool>("nullsLast")?.unwrap_or(false)
+        };
+
+        let options = SortOptions {
+            descending,
+            nulls_last,
+        };
+        Ok(Wrap(options))
     }
 }
 
@@ -1008,4 +1027,19 @@ where
             Err(_) => Ok(None),
         }
     }
+}
+
+unsafe fn struct_dict<'a>(
+    env_raw: sys::napi_env,
+    vals: impl Iterator<Item = AnyValue<'a>>,
+    flds: &[Field],
+) -> Result<sys::napi_value> {
+    let env = Env::from_raw(env_raw);
+    let mut obj = env.create_object()?;
+    for (val, fld) in vals.zip(flds) {
+        let key = fld.name();
+        let val = Wrap(val);
+        obj.set(key, val)?;
+    }
+    Object::to_napi_value(env_raw, obj)
 }
