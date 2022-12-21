@@ -1,7 +1,7 @@
-const {existsSync, readFileSync} = require('fs')
-const {join} = require('path')
+const { existsSync, readFileSync } = require('fs')
+const { join } = require('path')
 
-const {platform, arch} = process
+const { platform, arch } = process
 
 let nativeBinding = null
 let localFileExisted = false
@@ -11,108 +11,126 @@ function isMusl() {
   // For Node 10
   if (!process.report || typeof process.report.getReport !== 'function') {
     try {
-      return readFileSync('/usr/bin/ldd', 'utf8').includes('musl')
+      const lddPath = require('child_process').execSync('which ldd').toString().trim();
+      return readFileSync(lddPath, 'utf8').includes('musl')
     } catch (e) {
       return true
     }
   } else {
-    const {glibcVersionRuntime} = process.report.getReport().header
+    const { glibcVersionRuntime } = process.report.getReport().header
     return !glibcVersionRuntime
   }
 }
 
-switch (platform, arch) {
-  case 'android', "arm64":
-    localFileExisted = existsSync(join(__dirname, 'nodejs-polars.android-arm64.node'))
-    try {
-      if (localFileExisted) {
-        nativeBinding = require('./nodejs-polars.android-arm64.node')
-      } else {
-        nativeBinding = require('nodejs-polars-android-arm64')
-      }
-    } catch (e) {
-      loadError = e
+switch (platform) {
+  case 'android':
+    switch (arch) {
+      case 'arm64':
+        localFileExisted = existsSync(join(__dirname, 'nodejs-polars.android-arm64.node'))
+        try {
+          if (localFileExisted) {
+            nativeBinding = require('./nodejs-polars.android-arm64.node')
+          } else {
+            nativeBinding = require('nodejs-polars-android-arm64')
+          }
+        } catch (e) {
+          loadError = e
+        }
+        break
+      case 'arm':
+        localFileExisted = existsSync(join(__dirname, 'nodejs-polars.android-arm-eabi.node'))
+        try {
+          if (localFileExisted) {
+            nativeBinding = require('./nodejs-polars.android-arm-eabi.node')
+          } else {
+            nativeBinding = require('nodejs-polars-android-arm-eabi')
+          }
+        } catch (e) {
+          loadError = e
+        }
+        break
+      default:
+        throw new Error(`Unsupported architecture on Android ${arch}`)
     }
     break
-  case 'android', 'arm':
-    localFileExisted = existsSync(join(__dirname, 'nodejs-polars.android-arm-eabi.node'))
-    try {
-      if (localFileExisted) {
-        nativeBinding = require('./nodejs-polars.android-arm-eabi.node')
-      } else {
-        nativeBinding = require('nodejs-polars-android-arm-eabi')
-      }
-    } catch (e) {
-      loadError = e
+  case 'win32':
+    switch (arch) {
+      case 'x64':
+        localFileExisted = existsSync(
+          join(__dirname, 'nodejs-polars.win32-x64-msvc.node')
+        )
+        try {
+          if (localFileExisted) {
+            nativeBinding = require('./nodejs-polars.win32-x64-msvc.node')
+          } else {
+            nativeBinding = require('nodejs-polars-win32-x64-msvc')
+          }
+        } catch (e) {
+          loadError = e
+        }
+        break
+      case 'ia32':
+        localFileExisted = existsSync(
+          join(__dirname, 'nodejs-polars.win32-ia32-msvc.node')
+        )
+        try {
+          if (localFileExisted) {
+            nativeBinding = require('./nodejs-polars.win32-ia32-msvc.node')
+          } else {
+            nativeBinding = require('nodejs-polars-win32-ia32-msvc')
+          }
+        } catch (e) {
+          loadError = e
+        }
+        break
+      case 'arm64':
+        localFileExisted = existsSync(
+          join(__dirname, 'nodejs-polars.win32-arm64-msvc.node')
+        )
+        try {
+          if (localFileExisted) {
+            nativeBinding = require('./nodejs-polars.win32-arm64-msvc.node')
+          } else {
+            nativeBinding = require('nodejs-polars-win32-arm64-msvc')
+          }
+        } catch (e) {
+          loadError = e
+        }
+        break
+      default:
+        throw new Error(`Unsupported architecture on Windows: ${arch}`)
     }
     break
-  case 'win32', 'x64':
-    localFileExisted = existsSync(
-      join(__dirname, 'nodejs-polars.win32-x64-msvc.node')
-    )
-    try {
-      if (localFileExisted) {
-        nativeBinding = require('./nodejs-polars.win32-x64-msvc.node')
-      } else {
-        nativeBinding = require('nodejs-polars-win32-x64-msvc')
-      }
-    } catch (e) {
-      loadError = e
-    }
-    break
-  case 'win32', 'ia32':
-    localFileExisted = existsSync(
-      join(__dirname, 'nodejs-polars.win32-ia32-msvc.node')
-    )
-    try {
-      if (localFileExisted) {
-        nativeBinding = require('./nodejs-polars.win32-ia32-msvc.node')
-      } else {
-        nativeBinding = require('nodejs-polars-win32-ia32-msvc')
-      }
-    } catch (e) {
-      loadError = e
-    }
-    break
-  case 'win32', 'arm64':
-    localFileExisted = existsSync(
-      join(__dirname, 'nodejs-polars.win32-arm64-msvc.node')
-    )
-    try {
-      if (localFileExisted) {
-        nativeBinding = require('./nodejs-polars.win32-arm64-msvc.node')
-      } else {
-        nativeBinding = require('nodejs-polars-win32-arm64-msvc')
-      }
-    } catch (e) {
-      loadError = e
-    }
-    break
-
-  case 'darwin', 'x64':
-    localFileExisted = existsSync(join(__dirname, 'nodejs-polars.darwin-x64.node'))
-    try {
-      if (localFileExisted) {
-        nativeBinding = require('./nodejs-polars.darwin-x64.node')
-      } else {
-        nativeBinding = require('nodejs-polars-darwin-x64')
-      }
-    } catch (e) {
-      loadError = e
-    }
-    break
-  case 'darwin', 'arm64':
-    localFileExisted = existsSync(
-      join(__dirname, 'nodejs-polars.darwin-arm64.node')
-    )
-    try {
-      if (localFileExisted) {
-        nativeBinding = require('./nodejs-polars.darwin-arm64.node')
-      } else {
-        nativeBinding = require('nodejs-polars-darwin-arm64')
-      }
-    } catch (e) {
-      loadError = e
+  case 'darwin':
+    switch (arch) {
+      case 'x64':
+        localFileExisted = existsSync(join(__dirname, 'nodejs-polars.darwin-x64.node'))
+        try {
+          if (localFileExisted) {
+            nativeBinding = require('./nodejs-polars.darwin-x64.node')
+          } else {
+            nativeBinding = require('nodejs-polars-darwin-x64')
+          }
+        } catch (e) {
+          loadError = e
+        }
+        break
+      case 'arm64':
+        localFileExisted = existsSync(
+          join(__dirname, 'nodejs-polars.darwin-arm64.node')
+        )
+        try {
+          if (localFileExisted) {
+            nativeBinding = require('./nodejs-polars.darwin-arm64.node')
+          } else {
+            nativeBinding = require('nodejs-polars-darwin-arm64')
+          }
+        } catch (e) {
+          loadError = e
+        }
+        break
+      default:
+        throw new Error(`Unsupported architecture on macOS: ${arch}`)
     }
     break
   case 'freebsd':
