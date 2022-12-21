@@ -95,7 +95,7 @@ branch = "nodejs-simdjson-bump"
 napi-build = "2"
 
 [profile.release]
-codegen-units = 1
+codegen-units = 64
 lto = "fat"
 
 [workspace]
