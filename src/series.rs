@@ -1038,7 +1038,7 @@ impl JsSeries {
 
     #[napi]
     pub fn hash(&self, k0: Wrap<u64>, k1: Wrap<u64>, k2: Wrap<u64>, k3: Wrap<u64>) -> JsSeries {
-        let hb = ahash::RandomState::with_seeds(k0.0, k1.0, k2.0, k3.0);
+        let hb = polars::export::ahash::RandomState::with_seeds(k0.0, k1.0, k2.0, k3.0);
         self.series.hash(hb).into_series().into()
     }
     #[napi]
@@ -1051,12 +1051,6 @@ impl JsSeries {
     pub fn mode(&self) -> napi::Result<JsSeries> {
         let s = self.series.mode().map_err(JsPolarsErr::from)?;
         Ok(s.into())
-    }
-
-    #[napi]
-    pub fn interpolate(&self) -> JsSeries {
-        let s = self.series.interpolate();
-        s.into()
     }
 
     #[napi]

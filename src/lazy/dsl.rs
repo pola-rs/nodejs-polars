@@ -255,10 +255,14 @@ impl JsExpr {
     }
 
     #[napi]
-    pub fn quantile(&self, quantile: f64, interpolation: Wrap<QuantileInterpolOptions>) -> JsExpr {
+    pub fn quantile(
+        &self,
+        quantile: &JsExpr,
+        interpolation: Wrap<QuantileInterpolOptions>,
+    ) -> JsExpr {
         self.clone()
             .inner
-            .quantile(quantile, interpolation.0)
+            .quantile(quantile.inner.clone(), interpolation.0)
             .into()
     }
 
@@ -543,6 +547,7 @@ impl JsExpr {
                 fmt,
                 strict,
                 exact,
+                ..Default::default()
             })
             .into()
     }
@@ -556,6 +561,7 @@ impl JsExpr {
                 fmt,
                 strict,
                 exact,
+                ..Default::default()
             })
             .into()
     }
@@ -912,7 +918,7 @@ impl JsExpr {
     #[napi]
     pub fn hash(&self, k0: Wrap<u64>, k1: Wrap<u64>, k2: Wrap<u64>, k3: Wrap<u64>) -> JsExpr {
         let function = move |s: Series| {
-            let hb = ahash::RandomState::with_seeds(k0.0, k1.0, k2.0, k3.0);
+            let hb = polars::export::ahash::RandomState::with_seeds(k0.0, k1.0, k2.0, k3.0);
             Ok(s.hash(hb).into_series())
         };
         self.clone()
@@ -964,8 +970,8 @@ impl JsExpr {
         self.inner.clone().exclude_dtype(&dtypes).into()
     }
     #[napi]
-    pub fn interpolate(&self) -> JsExpr {
-        self.inner.clone().interpolate().into()
+    pub fn interpolate(&self, method: Wrap<InterpolationMethod>) -> JsExpr {
+        self.inner.clone().interpolate(method.0).into()
     }
     #[napi]
     pub fn rolling_sum(&self, options: JsRollingOptions) -> JsExpr {
@@ -1046,11 +1052,14 @@ impl JsExpr {
     }
 
     #[napi]
-    pub fn lst_sort(&self, reverse: bool) -> JsExpr {
+    pub fn lst_sort(&self, descending: bool) -> JsExpr {
         self.inner
             .clone()
             .arr()
-            .sort(reverse)
+            .sort(SortOptions {
+                descending,
+                ..Default::default()
+            })
             .with_fmt("arr.sort")
             .into()
     }
@@ -1084,8 +1093,8 @@ impl JsExpr {
             .into()
     }
     #[napi]
-    pub fn lst_get(&self, index: i64) -> JsExpr {
-        self.inner.clone().arr().get(index).into()
+    pub fn lst_get(&self, index: &JsExpr) -> JsExpr {
+        self.inner.clone().arr().get(index.inner.clone()).into()
     }
     #[napi]
     pub fn lst_join(&self, separator: String) -> JsExpr {
@@ -1114,11 +1123,11 @@ impl JsExpr {
         self.inner.clone().arr().shift(periods).into()
     }
     #[napi]
-    pub fn lst_slice(&self, offset: i64, length: i64) -> JsExpr {
+    pub fn lst_slice(&self, offset: &JsExpr, length: &JsExpr) -> JsExpr {
         self.inner
             .clone()
             .arr()
-            .slice(offset, length as usize)
+            .slice(offset.inner.clone(), length.inner.clone())
             .into()
     }
     #[napi]
@@ -1423,9 +1432,14 @@ pub fn pearson_corr(a: Wrap<Expr>, b: Wrap<Expr>, ddof: Option<u8>) -> JsExpr {
 }
 
 #[napi]
-pub fn spearman_rank_corr(a: Wrap<Expr>, b: Wrap<Expr>, ddof: Option<u8>) -> JsExpr {
+pub fn spearman_rank_corr(
+    a: Wrap<Expr>,
+    b: Wrap<Expr>,
+    ddof: Option<u8>,
+    propagate_nans: bool,
+) -> JsExpr {
     let ddof = ddof.unwrap_or(1);
-    polars::lazy::dsl::spearman_rank_corr(a.0, b.0, ddof).into()
+    polars::lazy::dsl::spearman_rank_corr(a.0, b.0, ddof, propagate_nans).into()
 }
 
 #[napi]

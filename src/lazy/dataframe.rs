@@ -254,6 +254,7 @@ impl JsLazyFrame {
                 truncate,
                 include_boundaries,
                 closed_window,
+                ..Default::default()
             },
         );
 
@@ -450,7 +451,7 @@ impl JsLazyFrame {
         interpolation: Wrap<QuantileInterpolOptions>,
     ) -> JsLazyFrame {
         let ldf = self.ldf.clone();
-        ldf.quantile(quantile, interpolation.0).into()
+        ldf.quantile(lit(quantile), interpolation.0).into()
     }
 
     #[napi]

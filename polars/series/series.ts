@@ -10,6 +10,7 @@ import {InvalidOperationError} from "../error";
 import {RankMethod} from "../utils";
 import {Arithmetic, Comparison, Cumulative, Deserialize, Rolling, Round, Sample, Serialize} from "../shared_traits";
 import {col} from "../lazy/functions";
+import {InterpolationMethod} from "@polars/lazy/expr";
 
 const inspect = Symbol.for("nodejs.util.inspect.custom");
 export interface Series extends
@@ -346,7 +347,7 @@ export interface Series extends
    * ]
    * ```
    */
-  interpolate(): Series
+  interpolate(method?: InterpolationMethod): Series
   /**
    * Check if this Series is a Boolean.
    */
@@ -1283,7 +1284,7 @@ export function _Series(_s: any): Series {
       return _s;
     },
     interpolate() {
-      return wrap("interpolate");
+      return expr_op("interpolate");
     },
     isBoolean() {
       const dtype = this.dtype;
@@ -1541,7 +1542,8 @@ export function _Series(_s: any): Series {
       return dtypeWrap("SetWithMask", mask.inner(), value);
     },
     sample(opts?, frac?, withReplacement = false, seed?) {
-      if (arguments.length === 0) {
+      // rome-ignore lint/style/noArguments: <explanation>
+      if  (arguments.length === 0) {
         return wrap("sampleN",
           1,
           withReplacement,

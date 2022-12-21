@@ -1,7 +1,7 @@
 use polars::export::arrow::array::Array;
 use polars::prelude::*;
 
-pub(crate) fn set_at_idx(mut s: Series, idx: &Series, values: &Series) -> Result<Series> {
+pub(crate) fn set_at_idx(mut s: Series, idx: &Series, values: &Series) -> PolarsResult<Series> {
     let logical_dtype = s.dtype().clone();
     let idx = idx.cast(&IDX_DTYPE)?;
     let idx = idx.rechunk();
@@ -79,17 +79,17 @@ pub(crate) fn set_at_idx(mut s: Series, idx: &Series, values: &Series) -> Result
             let values = values.bool()?;
             let value = values.get(0);
             ca.set_at_idx(idx.iter().copied(), value)
-                .map(|ca| ca.into_series())?
+                .map(|ca| ca.into_series())
         }
         DataType::Utf8 => {
             let ca = s.utf8()?;
             let values = values.utf8()?;
             let value = values.get(0);
             ca.set_at_idx(idx.iter().copied(), value)
-                .map(|ca| ca.into_series())?
+                .map(|ca| ca.into_series())
         }
         _ => panic!("not yet implemented for dtype: {}", logical_dtype),
     };
 
-    s.cast(&logical_dtype)
+    s?.cast(&logical_dtype)
 }

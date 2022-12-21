@@ -2,7 +2,7 @@ import { Expr, _Expr } from "../expr";
 import { ListFunctions } from "../../shared_traits";
 import { Series } from "../../series/series";
 import pli from "../../internals/polars_internal";
-import { concatList } from "../functions";
+import { concatList, lit } from "../functions";
 
 /**
  * namespace containing expr list functions
@@ -44,11 +44,15 @@ export const ExprListFunctions = (_expr: any): ExprList => {
     contains(item) {
       throw new Error("not yet implemented");
     },
-    diff(n=1, nullBehavior="ignore") {
+    diff(n = 1, nullBehavior = "ignore") {
       return wrap("lstDiff", n, nullBehavior);
     },
-    get(index: number) {
-      return wrap("lstGet", index);
+    get(index: number | Expr) {
+      if (Expr.isExpr(index)) {
+        return wrap("lstGet", index._expr);
+      } else {
+        return wrap("lstGet", pli.lit(index));
+      }
     },
     head(n = 5) {
       return this.slice(0, n);
@@ -60,13 +64,13 @@ export const ExprListFunctions = (_expr: any): ExprList => {
       return wrap("lstEval", expr, parallel);
     },
     first() {
-      return wrap("lstGet", 0);
+      return this.get(0);
     },
     join(separator = ",") {
       return wrap("lstJoin", separator);
     },
     last() {
-      return wrap("lstGet", -1);
+      return this.get(-1);
     },
     lengths() {
       return wrap("lstLengths");

@@ -11,6 +11,8 @@ import {Series} from "../series/series";
 
 import * as expr from "./expr/";
 import {Arithmetic, Comparison, Cumulative, Deserialize, Rolling, Round, Sample, Serialize} from "../shared_traits";
+export type InterpolationMethod = "nearest" | "higher" | "lower" | "midpoint" | "linear";
+
 
 export interface Expr extends
   Rolling<Expr>,
@@ -424,7 +426,7 @@ export interface Expr extends
    */
   prefix(prefix: string): Expr
   /** Get quantile value. */
-  quantile(quantile: number): Expr
+  quantile(quantile: number | Expr): Expr
   /** Assign ranks to data, dealing with ties appropriately. */
   rank(method?: RankMethod): Expr
   rank({method}: {method: string}): Expr
@@ -756,8 +758,8 @@ export const _Expr = (_expr: any): Expr => {
 
       return wrap("head", length.length);
     },
-    interpolate() {
-      return _Expr(_expr.interpolate());
+    interpolate(method: InterpolationMethod = "linear") {
+      return _Expr(_expr.interpolate(method));
     },
     isDuplicated() {
       return _Expr(_expr.isDuplicated());
@@ -852,7 +854,13 @@ export const _Expr = (_expr: any): Expr => {
 
       return _Expr(_expr.prefix(prefix));
     },
-    quantile(quantile, interpolation = "nearest") {
+    quantile(quantile, interpolation: InterpolationMethod = "nearest") {
+      if (Expr.isExpr(quantile)) {
+        quantile = quantile._expr;
+      } else {
+        quantile = pli.lit(quantile);
+      }
+
       return _Expr(_expr.quantile(quantile, interpolation));
     },
     rank(method, reverse=false) {

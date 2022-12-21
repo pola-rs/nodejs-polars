@@ -413,7 +413,7 @@ export function spearmanRankCorr(a: ExprOrString, b: ExprOrString): Expr {
   a = exprToLitOrExpr(a, false);
   b = exprToLitOrExpr(b, false);
 
-  return _Expr(pli.spearmanRankCorr(a, b));
+  return _Expr(pli.spearmanRankCorr(a, b, null, false));
 }
 
 

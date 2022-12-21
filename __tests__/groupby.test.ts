@@ -214,21 +214,27 @@ describe("groupby ops", () => {
         new Date("2021-05-29"),
       ],
       "adm1_code": [1, 2, 1],
+      "five_type": ["a", "b", "a"],
+      "actor": ["a", "a", "a"],
+      "admin": ["a", "a", "a"],
+      "fatalities": [10, 20, 30],
     });
     const out = df.groupByDynamic({
+      by: ["admin", "five_type", "actor"],
       indexColumn: "event_date",
       every: "1mo",
-      period: "2mo",
-      offset: "-1mo",
-      includeBoundaries: true
-    }).agg(pl.col("adm1_code"));
+    }).agg(
+      pl.col("adm1_code").unique(),
+      pl.col("fatalities").gt(0)
+        .sum()
+    );
     const expected = [
       new Date("2021-04-01"),
-      new Date("2021-04-01"),
       new Date("2021-05-01"),
+      new Date("2021-04-01"),
     ];
-    const actual = out.getColumn("event_date").toArray();
-    expect(actual).toEqual(expected);
+    const actual = out.getColumn("event_date");
+    expect(actual.toArray()).toEqual(expected);
 
   });
   test("dynamic - 2", () => {
@@ -279,9 +285,9 @@ describe("groupby ops", () => {
     }).agg(pl.col("idx"));
     const expected = pl.DataFrame({
       "dt": [
+        new Date("2019-12-01"),
         new Date("2020-01-01"),
-        new Date("2020-01-01"),
-        new Date("2020-03-01"),
+        new Date("2020-02-01"),
       ],
       "idx": [[0], [1, 2], [3]],
     });

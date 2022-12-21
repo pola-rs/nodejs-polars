@@ -150,7 +150,7 @@ export interface Rolling<T> {
     windowSize: number,
     weights?: Array<number>,
     minPeriods?: Array<number>,
-    center?: boolean
+    center?: boolean,
   ): T;
   /**
    * __Apply a rolling mean (moving mean) over the values in this Series.__
@@ -172,7 +172,7 @@ export interface Rolling<T> {
     windowSize: number,
     weights?: Array<number>,
     minPeriods?: Array<number>,
-    center?: boolean
+    center?: boolean,
   ): T;
   /**
    * __Apply a rolling min (moving min) over the values in this Series.__
@@ -194,7 +194,7 @@ export interface Rolling<T> {
     windowSize: number,
     weights?: Array<number>,
     minPeriods?: Array<number>,
-    center?: boolean
+    center?: boolean,
   ): T;
   /**
    * Compute a rolling std dev
@@ -215,7 +215,7 @@ export interface Rolling<T> {
     windowSize: number,
     weights?: Array<number>,
     minPeriods?: Array<number>,
-    center?: boolean
+    center?: boolean,
   ): T;
   /**
    * __Apply a rolling sum (moving sum) over the values in this Series.__
@@ -237,7 +237,7 @@ export interface Rolling<T> {
     windowSize: number,
     weights?: Array<number>,
     minPeriods?: Array<number>,
-    center?: boolean
+    center?: boolean,
   ): T;
   /**
    * __Compute a rolling variance.__
@@ -259,7 +259,7 @@ export interface Rolling<T> {
     windowSize: number,
     weights?: Array<number>,
     minPeriods?: Array<number>,
-    center?: boolean
+    center?: boolean,
   ): T;
   /** Compute a rolling median */
   rollingMedian(options: RollingOptions): T;
@@ -267,7 +267,7 @@ export interface Rolling<T> {
     windowSize: number,
     weights?: Array<number>,
     minPeriods?: Array<number>,
-    center?: boolean
+    center?: boolean,
   ): T;
   /**
    * Compute a rolling quantile
@@ -284,7 +284,7 @@ export interface Rolling<T> {
     options: RollingOptions & {
       quantile: number;
       interpolation?: Interpolation;
-    }
+    },
   ): T;
   rollingQuantile(
     quantile: number,
@@ -292,7 +292,7 @@ export interface Rolling<T> {
     windowSize?: number,
     weights?: Array<number>,
     minPeriods?: Array<number>,
-    center?: boolean
+    center?: boolean,
   ): T;
   /**
    * Compute a rolling skew
@@ -376,7 +376,7 @@ export interface Sample<T> {
     n?: number,
     frac?: number,
     withReplacement?: boolean,
-    seed?: number | bigint
+    seed?: number | bigint,
   ): T;
 }
 
@@ -458,7 +458,7 @@ export interface ListFunctions<T> {
    * and index `-1` would return the last item of every sublist
    * if an index is out of bounds, it will return a `null`.
    */
-  get(index: number): T;
+  get(index: number | Expr): T;
   /**
       Run any polars expression against the lists' elements
       Parameters
