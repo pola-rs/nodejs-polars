@@ -95,7 +95,7 @@ rev = "43598c3e21a2b6c1246a565005045ef553e4f688"
 napi-build = "2"
 
 [profile.release]
-codegen-units = 64
+codegen-units = 1
 lto = "fat"
 
 [workspace]
