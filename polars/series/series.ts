@@ -10,7 +10,7 @@ import {InvalidOperationError} from "../error";
 import {RankMethod} from "../utils";
 import {Arithmetic, Comparison, Cumulative, Deserialize, Rolling, Round, Sample, Serialize} from "../shared_traits";
 import {col} from "../lazy/functions";
-import {InterpolationMethod} from "@polars/lazy/expr";
+import {InterpolationMethod} from "../lazy/expr";
 
 const inspect = Symbol.for("nodejs.util.inspect.custom");
 export interface Series extends
