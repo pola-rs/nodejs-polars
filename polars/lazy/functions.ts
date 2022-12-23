@@ -251,9 +251,13 @@ export function exclude(...columns): Expr {
 }
 
 /** Get the first value. */
+export function first(): Expr
 export function first(column: string): Expr
 export function first<T>(column: Series): T
-export function first<T>(column: string | Series): Expr | T {
+export function first<T>(column?: string | Series): Expr | T {
+  if(!column) {
+    return _Expr(pli.first());
+  }
   if (Series.isSeries(column)) {
     if (column.length) {
       return column.get(0);
@@ -530,7 +534,7 @@ export function struct(exprs: ExprOrString | ExprOrString[] | Series[]): Expr | 
   *
   *  >>> df = pl.DataFrame({"a": [1, 8, 3], "b": [4, 5, 2]})
   *  >>> df.withColumn(
-  *  ...     pl.concatList(["a", "b"]).arr.eval(pl.element() * 2).alias("a_b_doubled")
+  *  ...     pl.concatList(["a", "b"]).arr.eval(pl.element().multiplyBy(2)).alias("a_b_doubled")
   *  ... )
   *  shape: (3, 3)
   *  ┌─────┬─────┬─────────────┐

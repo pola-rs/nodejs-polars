@@ -41,6 +41,8 @@ namespace pl {
   export import Datetime = DataType.Datetime;
   export import Time = DataType.Time;
   export import Object = DataType.Object;
+  export import Null = DataType.Null;
+  export import Struct = DataType.Struct;
   export import Categorical = DataType.Categorical;
   export import repeat = func.repeat;
   export import concat = func.concat;
@@ -73,6 +75,7 @@ namespace pl {
   export import count = lazy.count
   export import cov = lazy.cov
   export import exclude = lazy.exclude
+  export import element = lazy.element
   export import first = lazy.first
   export import format = lazy.format
   export import groups = lazy.groups
