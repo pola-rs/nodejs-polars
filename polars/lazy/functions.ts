@@ -550,7 +550,7 @@ export function struct(exprs: ExprOrString | ExprOrString[] | Series[]): Expr | 
   *  └─────┴─────┴─────────────┘
  */
 export function element(): Expr {
-  return col(""); 
+  return col("");
 }
 // // export function collect_all() {}
 // // export function all() {} // fold

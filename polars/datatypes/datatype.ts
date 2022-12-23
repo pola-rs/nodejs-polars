@@ -124,7 +124,7 @@ export abstract class DataType {
   }
   toJSON() {
     const inner = (this as any).inner;
-    
+
     if (inner) {
       return {
         [this.identity]: {

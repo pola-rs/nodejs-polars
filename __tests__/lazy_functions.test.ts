@@ -442,12 +442,12 @@ describe("lazy functions", () => {
   });
   test("element", () => {
     const df = pl.DataFrame({
-      a: [[1,2], [3,4], [5,6]],
-    })
+      a: [[1, 2], [3, 4], [5, 6]],
+    });
     const expected = pl.DataFrame({
-      a: [[2,4], [6,8], [10,12]],
-    })
-    const actual = df.select(pl.col("a").lst.eval(pl.element().mul(2)))
-    expect(actual).toFrameEqual(expected)
-  })
+      a: [[2, 4], [6, 8], [10, 12]],
+    });
+    const actual = df.select(pl.col("a").lst.eval(pl.element().mul(2)));
+    expect(actual).toFrameEqual(expected);
+  });
 });
