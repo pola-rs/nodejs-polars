@@ -8,12 +8,12 @@ export interface Field {
 export class Field {
   constructor(public name: string, public dtype: DataType) { }
   toString() {
-    return `Field("${this.name}": ${this.dtype})`;
+    return `Field("${this.name}", ${this.dtype})`;
   }
   toJSON() {
     return {
       name: this.name,
-      dtype: this.dtype.toString(),
+      dtype: this.dtype,
     };
   }
   [Symbol.for("nodejs.util.inspect.custom")]() {

@@ -60,8 +60,12 @@ export const ExprListFunctions = (_expr: any): ExprList => {
     tail(n = 5) {
       return this.slice(-n, n);
     },
-    eval(expr, parallel) {
-      return wrap("lstEval", expr, parallel);
+    eval(expr, parallel = true) {
+      if (Expr.isExpr(expr)) {
+        return wrap("lstEval", expr._expr, parallel);
+      } else {
+        return wrap("lstEval", expr, parallel);
+      }
     },
     first() {
       return this.get(0);

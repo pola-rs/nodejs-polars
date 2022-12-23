@@ -115,22 +115,25 @@ export abstract class DataType {
   }
 
   toString() {
-    return `${this.identity}.${this.variant}`;
+    if(this.inner) {
+      return `${this.identity}(${this.variant}(${this.inner}))`;
+    } else {
+      return `${this.identity}(${this.variant})`;
+
+    }
   }
   toJSON() {
     const inner = (this as any).inner;
+    
     if (inner) {
       return {
         [this.identity]: {
-          variant: this.variant,
-          inner,
+          [this.variant]: inner[0],
         },
       };
     } else {
       return {
-        [this.identity]: {
-          variant: this.variant,
-        },
+        [this.identity]: this.variant,
       };
     }
   }
@@ -236,8 +239,9 @@ class _Struct extends DataType {
   }
   override toJSON() {
     return {
-      variant: this.variant,
-      fields: this.fields.map(fld => fld.toJSON())
+      [this.identity]: {
+        [this.variant]: this.fields
+      }
     } as any;
   }
 }

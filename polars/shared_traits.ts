@@ -488,7 +488,7 @@ export interface ListFunctions<T> {
       │ 3   ┆ 2   ┆ [2.0, 1.0] │
       └─────┴─────┴────────────┘
    */
-  eval(expr: Expr, parallel: boolean): T;
+  eval(expr: Expr, parallel?: boolean): T;
   /** Get the first value of the sublists. */
   first(): T;
   /**

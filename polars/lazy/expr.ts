@@ -863,7 +863,7 @@ export const _Expr = (_expr: any): Expr => {
 
       return _Expr(_expr.quantile(quantile, interpolation));
     },
-    rank(method, reverse=false) {
+    rank(method: any = "average", reverse=false) {
       return _Expr(_expr.rank(method?.method ?? method, method?.reverse ?? reverse));
     },
     reinterpret(signed: any = true) {
