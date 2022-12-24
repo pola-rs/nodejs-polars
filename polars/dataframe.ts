@@ -702,7 +702,7 @@ export interface DataFrame
    * @param options.on - Name(s) of the join columns in both DataFrames.
    * @param options.how - Join strategy
    * @param options.suffix - Suffix to append to columns with a duplicate name.
-   * @see {@link JoinOptions}
+   * @see {@link JoinBaseOptions}
    * @example
    * ```
    * >>> df = pl.DataFrame({

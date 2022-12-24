@@ -176,7 +176,38 @@ export interface LazyDataFrame extends Serialize, GroupByOps<LazyGroupBy> {
    */
   head(length?: number): LazyDataFrame;
   /**
-   * Add a join operation to the Logical Plan.
+   *  __SQL like joins.__
+   * @param df - DataFrame to join with.
+   * @param options
+   * @param options.leftOn - Name(s) of the left join column(s).
+   * @param options.rightOn - Name(s) of the right join column(s).
+   * @param options.on - Name(s) of the join columns in both DataFrames.
+   * @param options.how - Join strategy
+   * @param options.suffix - Suffix to append to columns with a duplicate name.
+   * @see {@link LazyJoinOptions}
+   * @example
+   * ```
+   * >>> df = pl.DataFrame({
+   * >>>   "foo": [1, 2, 3],
+   * >>>   "bar": [6.0, 7.0, 8.0],
+   * >>>   "ham": ['a', 'b', 'c']
+   * >>> })
+   * >>> otherDF = pl.DataFrame({
+   * >>>   "apple": ['x', 'y', 'z'],
+   * >>>   "ham": ['a', 'b', 'd']
+   * >>> })
+   * >>> df.join(otherDF, {on: 'ham', how: 'inner'})
+   * shape: (2, 4)
+   * ╭─────┬─────┬─────┬───────╮
+   * │ foo ┆ bar ┆ ham ┆ apple │
+   * │ --- ┆ --- ┆ --- ┆ ---   │
+   * │ i64 ┆ f64 ┆ str ┆ str   │
+   * ╞═════╪═════╪═════╪═══════╡
+   * │ 1   ┆ 6   ┆ "a" ┆ "x"   │
+   * ├╌╌╌╌╌┼╌╌╌╌╌┼╌╌╌╌╌┼╌╌╌╌╌╌╌┤
+   * │ 2   ┆ 7   ┆ "b" ┆ "y"   │
+   * ╰─────┴─────┴─────┴───────╯
+   * ```
    */
   join(
     other: LazyDataFrame,
