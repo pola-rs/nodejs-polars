@@ -184,19 +184,22 @@ export interface LazyDataFrame extends Serialize, GroupByOps<LazyGroupBy> {
    * @param options.on - Name(s) of the join columns in both DataFrames.
    * @param options.how - Join strategy
    * @param options.suffix - Suffix to append to columns with a duplicate name.
+   * @param options.allowParallel - Allow the physical plan to optionally evaluate the computation of both DataFrames up to the join in parallel.
+   * @param options.forceParallel - Force the physical plan to evaluate the computation of both DataFrames up to the join in parallel.
    * @see {@link LazyJoinOptions}
    * @example
    * ```
-   * >>> df = pl.DataFrame({
-   * >>>   "foo": [1, 2, 3],
-   * >>>   "bar": [6.0, 7.0, 8.0],
-   * >>>   "ham": ['a', 'b', 'c']
-   * >>> })
-   * >>> otherDF = pl.DataFrame({
-   * >>>   "apple": ['x', 'y', 'z'],
-   * >>>   "ham": ['a', 'b', 'd']
-   * >>> })
-   * >>> df.join(otherDF, {on: 'ham', how: 'inner'})
+   * >>> const df = pl.DataFrame({
+   * >>>     foo: [1, 2, 3],
+   * >>>     bar: [6.0, 7.0, 8.0],
+   * >>>     ham: ['a', 'b', 'c'],
+   * >>>   }).lazy()
+   * >>>
+   * >>> const otherDF = pl.DataFrame({
+   * >>>     apple: ['x', 'y', 'z'],
+   * >>>     ham: ['a', 'b', 'd'],
+   * >>>   }).lazy();
+   * >>> const result = await df.join(otherDF, { on: 'ham', how: 'inner' }).collect();
    * shape: (2, 4)
    * ╭─────┬─────┬─────┬───────╮
    * │ foo ┆ bar ┆ ham ┆ apple │
