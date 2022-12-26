@@ -176,7 +176,41 @@ export interface LazyDataFrame extends Serialize, GroupByOps<LazyGroupBy> {
    */
   head(length?: number): LazyDataFrame;
   /**
-   * Add a join operation to the Logical Plan.
+   *  __SQL like joins.__
+   * @param df - DataFrame to join with.
+   * @param options
+   * @param options.leftOn - Name(s) of the left join column(s).
+   * @param options.rightOn - Name(s) of the right join column(s).
+   * @param options.on - Name(s) of the join columns in both DataFrames.
+   * @param options.how - Join strategy
+   * @param options.suffix - Suffix to append to columns with a duplicate name.
+   * @param options.allowParallel - Allow the physical plan to optionally evaluate the computation of both DataFrames up to the join in parallel.
+   * @param options.forceParallel - Force the physical plan to evaluate the computation of both DataFrames up to the join in parallel.
+   * @see {@link LazyJoinOptions}
+   * @example
+   * ```
+   * >>> const df = pl.DataFrame({
+   * >>>     foo: [1, 2, 3],
+   * >>>     bar: [6.0, 7.0, 8.0],
+   * >>>     ham: ['a', 'b', 'c'],
+   * >>>   }).lazy()
+   * >>>
+   * >>> const otherDF = pl.DataFrame({
+   * >>>     apple: ['x', 'y', 'z'],
+   * >>>     ham: ['a', 'b', 'd'],
+   * >>>   }).lazy();
+   * >>> const result = await df.join(otherDF, { on: 'ham', how: 'inner' }).collect();
+   * shape: (2, 4)
+   * ╭─────┬─────┬─────┬───────╮
+   * │ foo ┆ bar ┆ ham ┆ apple │
+   * │ --- ┆ --- ┆ --- ┆ ---   │
+   * │ i64 ┆ f64 ┆ str ┆ str   │
+   * ╞═════╪═════╪═════╪═══════╡
+   * │ 1   ┆ 6   ┆ "a" ┆ "x"   │
+   * ├╌╌╌╌╌┼╌╌╌╌╌┼╌╌╌╌╌┼╌╌╌╌╌╌╌┤
+   * │ 2   ┆ 7   ┆ "b" ┆ "y"   │
+   * ╰─────┴─────┴─────┴───────╯
+   * ```
    */
   join(
     other: LazyDataFrame,

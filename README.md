@@ -137,7 +137,7 @@ Want to know about all the features Polars supports? Read the docs!
 #### Node
 
   * Installation guide: `$ yarn install nodejs-polars`
-  * [Node documentation](https://pola-rs.github.io/nodejs-polars/html/index.html)
+  * [Node documentation](https://pola-rs.github.io/nodejs-polars/)
   * [User guide](https://pola-rs.github.io/polars-book/)
 
 ## Contribution
