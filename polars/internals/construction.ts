@@ -1,7 +1,7 @@
 import pli from "./polars_internal";
 import { DataType, polarsTypeToConstructor } from "../datatypes";
 import { isTypedArray } from "util/types";
-import {Series} from "../series/series";
+import {Series} from "../series";
 import {_DataFrame} from "../dataframe";
 import {TimeUnit} from "../datatypes/datatype";
 import {Field} from "../datatypes/field";
@@ -77,11 +77,11 @@ export const jsTypeToPolarsType = (value: unknown): DataType => {
  *
  * @example
  * ```
- * >>> const input = [null, [], [null, "a", "b"]]
- * >>> firstNonNull(input)
+ * > const input = [null, [], [null, "a", "b"]]
+ * > firstNonNull(input)
  * ["a"]
- * >>> const ints = [null, 1]
- * >>> firstNonNull(ints)
+ * > const ints = [null, 1]
+ * > firstNonNull(ints)
  * 1
  * ```
  */
@@ -132,16 +132,16 @@ export function arrayToJsSeries(name: string = "", values: any[] = [], dtype?: a
   }
 
   //Empty sequence defaults to Float64 type
-  if (!values?.length && !dtype) {
+  if (!(values?.length || dtype)) {
     dtype = DataType.Float64;
   }
   const firstValue = firstNonNull(values);
   if(Array.isArray(firstValue) || isTypedArray(firstValue)) {
     const listDtype = jsTypeToPolarsType(firstValue);
 
-    const constructor = polarsTypeToConstructor(DataType.List(listDtype));
+    const ctor = polarsTypeToConstructor(DataType.List(listDtype));
 
-    return constructor(name, values, strict, listDtype);
+    return ctor(name, values, strict, listDtype);
   }
 
   dtype = dtype ?? jsTypeToPolarsType(firstValue);
@@ -155,8 +155,8 @@ export function arrayToJsSeries(name: string = "", values: any[] = [], dtype?: a
 
     series = pli.JsSeries.newOptDate(name, values, strict);
   } else {
-    const constructor = polarsTypeToConstructor(dtype);
-    series = constructor(name, values, strict);
+    const ctor = polarsTypeToConstructor(dtype);
+    series = ctor(name, values, strict);
   }
   if ([
     "Datetime",

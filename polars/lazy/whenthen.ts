@@ -56,8 +56,8 @@ function When(_when: any): When {
  * @example
  * ```
  * // Below we add a column with the value 1, where column "foo" > 2 and the value -1 where it isn't.
- * >>> df = pl.DataFrame({"foo": [1, 3, 4], "bar": [3, 4, 0]})
- * >>> df.withColumn(pl.when(pl.col("foo").gt(2)).then(pl.lit(1)).otherwise(pl.lit(-1)))
+ * > df = pl.DataFrame({"foo": [1, 3, 4], "bar": [3, 4, 0]})
+ * > df.withColumn(pl.when(pl.col("foo").gt(2)).then(pl.lit(1)).otherwise(pl.lit(-1)))
  * shape: (3, 3)
  * ┌─────┬─────┬─────────┐
  * │ foo ┆ bar ┆ literal │
@@ -72,7 +72,7 @@ function When(_when: any): When {
  * └─────┴─────┴─────────┘
  *
  * // Or with multiple `when, thens` chained:
- * >>> df.with_column(
+ * > df.with_column(
  * ...     pl.when(pl.col("foo").gt(2))
  * ...     .then(1)
  * ...     .when(pl.col("bar").gt(2))

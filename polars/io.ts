@@ -80,7 +80,7 @@ class LineBatcher extends Stream.Transform {
       if (chunk[i] === 10) {
         // '\n'
         this.#accumulatedLines++;
-        if (this.#accumulatedLines == this.#batchSize) {
+        if (this.#accumulatedLines === this.#batchSize) {
           this.#lines.push(chunk.subarray(begin, i + 1));
           this.push(Buffer.concat(this.#lines));
           this.#lines = [];

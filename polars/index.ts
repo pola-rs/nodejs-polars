@@ -1,31 +1,35 @@
-import * as series from "./series/series";
+import * as series from "./series";
 import * as df from "./dataframe";
-import {DataType} from "./datatypes";
+import { DataType, Field as _field } from "./datatypes";
 import * as func from "./functions";
 import * as io from "./io";
 import * as cfg from "./cfg";
 import * as ldf from "./lazy/dataframe";
 import pli from "./internals/polars_internal";
-import {
-  funcs as lazy,
-  Expr as lazyExpr,
-  GroupBy as lazyGroupBy,
-  when as _when
-} from "./lazy";
-
-
-namespace pl {
-  export import Expr = lazyExpr.Expr
-  export import DataFrame = df.DataFrame
-  export import LazyDataFrame = ldf.LazyDataFrame
+export { DataType, Field, TimeUnit } from "./datatypes";
+export * from "./series";
+export { Expr } from "./lazy/expr";
+export * from "./dataframe";
+export * from "./functions";
+export * from "./io";
+export * from "./cfg";
+export * from "./lazy/dataframe";
+export * from "./lazy";
+import * as lazy from "./lazy";
+export * from "./types";
+export type { GroupBy } from "./groupby";
+export namespace pl {
+  export import Expr = lazy.Expr;
+  export import DataFrame = df.DataFrame;
+  export import LazyDataFrame = ldf.LazyDataFrame;
   export import Series = series.Series;
-  export type LazyGroupBy = lazyGroupBy;
-  export type When = _when.When;
-  export type WhenThen = _when.WhenThen;
-  export type WhenThenThen = _when.WhenThenThen;
+  export type LazyGroupBy = lazy.LazyGroupBy;
+  export type When = lazy.When;
+  export type WhenThen = lazy.WhenThen;
+  export type WhenThenThen = lazy.WhenThenThen;
   export import Config = cfg.Config;
-  export import Int8 = DataType.Int8
-  export import Int16 = DataType.Int16
+  export import Int8 = DataType.Int8;
+  export import Int16 = DataType.Int16;
   export import Int32 = DataType.Int32;
   export import Int64 = DataType.Int64;
   export import UInt8 = DataType.UInt8;
@@ -37,13 +41,16 @@ namespace pl {
   export import Bool = DataType.Bool;
   export import Utf8 = DataType.Utf8;
   export import List = DataType.List;
+  // rome-ignore lint/suspicious/noShadowRestrictedNames: pl.Date
   export import Date = DataType.Date;
   export import Datetime = DataType.Datetime;
   export import Time = DataType.Time;
+  // rome-ignore lint/suspicious/noShadowRestrictedNames: pl.Object
   export import Object = DataType.Object;
   export import Null = DataType.Null;
   export import Struct = DataType.Struct;
   export import Categorical = DataType.Categorical;
+  export import Field = _field;
   export import repeat = func.repeat;
   export import concat = func.concat;
 
@@ -64,39 +71,34 @@ namespace pl {
   export import readJSONStream = io.readJSONStream;
 
   // lazy
-  export import col = lazy.col
-  export import cols = lazy.cols
-  export import lit = lazy.lit
-  export import arange = lazy.arange
-  export import argSortBy = lazy.argSortBy
-  export import avg = lazy.avg
-  export import concatList = lazy.concatList
-  export import concatString = lazy.concatString
-  export import count = lazy.count
-  export import cov = lazy.cov
-  export import exclude = lazy.exclude
-  export import element = lazy.element
-  export import first = lazy.first
-  export import format = lazy.format
-  export import groups = lazy.groups
-  export import head = lazy.head
-  export import last = lazy.last
-  export import mean = lazy.mean
-  export import median = lazy.median
-  export import nUnique = lazy.nUnique
-  export import pearsonCorr = lazy.pearsonCorr
-  export import quantile = lazy.quantile
-  export import select = lazy.select
-  export import struct = lazy.struct
-  export import spearmanRankCorr = lazy.spearmanRankCorr
-  export import tail = lazy.tail
-  export import list = lazy.list
-  export import when = _when.when;
+  export import col = lazy.col;
+  export import cols = lazy.cols;
+  export import lit = lazy.lit;
+  export import arange = lazy.arange;
+  export import argSortBy = lazy.argSortBy;
+  export import avg = lazy.avg;
+  export import concatList = lazy.concatList;
+  export import concatString = lazy.concatString;
+  export import count = lazy.count;
+  export import cov = lazy.cov;
+  export import exclude = lazy.exclude;
+  export import element = lazy.element;
+  export import first = lazy.first;
+  export import format = lazy.format;
+  export import groups = lazy.groups;
+  export import head = lazy.head;
+  export import last = lazy.last;
+  export import mean = lazy.mean;
+  export import median = lazy.median;
+  export import nUnique = lazy.nUnique;
+  export import pearsonCorr = lazy.pearsonCorr;
+  export import quantile = lazy.quantile;
+  export import select = lazy.select;
+  export import struct = lazy.struct;
+  export import spearmanRankCorr = lazy.spearmanRankCorr;
+  export import tail = lazy.tail;
+  export import list = lazy.list;
   export const version = pli.version();
 }
-
-// add this globally so packages can reuse it.
 // eslint-disable-next-line no-undef
-global[Symbol.for("__pl__")] = pl;
-// eslint-disable-next-line no-undef
-export = pl;
+export default pl;

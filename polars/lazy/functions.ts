@@ -1,7 +1,7 @@
-import {Expr, _Expr, exprToLitOrExpr} from "./expr";
-import {Series} from "../series/series";
-import {DataFrame} from "../dataframe";
-import {ExprOrString, range, selectionToExprList} from "../utils";
+import { Expr, _Expr, exprToLitOrExpr } from "./expr";
+import { Series } from "../series";
+import { DataFrame } from "../dataframe";
+import { ExprOrString, range, selectionToExprList } from "../utils";
 import pli from "../internals/polars_internal";
 
 /**
@@ -13,11 +13,11 @@ import pli from "../internals/polars_internal";
  * @param col
  * @example
  * ```
- * >>> df = pl.DataFrame({
- * >>> "ham": [1, 2, 3],
- * >>> "hamburger": [11, 22, 33],
- * >>> "foo": [3, 2, 1]})
- * >>> df.select(col("foo"))
+ * > df = pl.DataFrame({
+ * > "ham": [1, 2, 3],
+ * > "hamburger": [11, 22, 33],
+ * > "foo": [3, 2, 1]})
+ * > df.select(col("foo"))
  * shape: (3, 1)
  * ╭─────╮
  * │ foo │
@@ -30,7 +30,7 @@ import pli from "../internals/polars_internal";
  * ├╌╌╌╌╌┤
  * │ 1   │
  * ╰─────╯
- * >>> df.select(col("*"))
+ * > df.select(col("*"))
  * shape: (3, 3)
  * ╭─────┬───────────┬─────╮
  * │ ham ┆ hamburger ┆ foo │
@@ -43,7 +43,7 @@ import pli from "../internals/polars_internal";
  * ├╌╌╌╌╌┼╌╌╌╌╌╌╌╌╌╌╌┼╌╌╌╌╌┤
  * │ 3   ┆ 33        ┆ 1   │
  * ╰─────┴───────────┴─────╯
- * >>> df.select(col("^ham.*$"))
+ * > df.select(col("^ham.*$"))
  * shape: (3, 2)
  * ╭─────┬───────────╮
  * │ ham ┆ hamburger │
@@ -56,7 +56,7 @@ import pli from "../internals/polars_internal";
  * ├╌╌╌╌╌┼╌╌╌╌╌╌╌╌╌╌╌┤
  * │ 3   ┆ 33        │
  * ╰─────┴───────────╯
- * >>> df.select(col("*").exclude("ham"))
+ * > df.select(col("*").exclude("ham"))
  * shape: (3, 2)
  * ╭───────────┬─────╮
  * │ hamburger ┆ foo │
@@ -69,7 +69,7 @@ import pli from "../internals/polars_internal";
  * ├╌╌╌╌╌╌╌╌╌╌╌┼╌╌╌╌╌┤
  * │ 33        ┆ 1   │
  * ╰───────────┴─────╯
- * >>> df.select(col(["hamburger", "foo"])
+ * > df.select(col(["hamburger", "foo"])
  * shape: (3, 2)
  * ╭───────────┬─────╮
  * │ hamburger ┆ foo │
@@ -82,7 +82,7 @@ import pli from "../internals/polars_internal";
  * ├╌╌╌╌╌╌╌╌╌╌╌┼╌╌╌╌╌┤
  * │ 33        ┆ 1   │
  * ╰───────────┴─────╯
- * >>> df.select(col(pl.Series(["hamburger", "foo"]))
+ * > df.select(col(pl.Series(["hamburger", "foo"]))
  * shape: (3, 2)
  * ╭───────────┬─────╮
  * │ hamburger ┆ foo │
@@ -108,10 +108,9 @@ export function col(col: string | string[] | Series): Expr {
   }
 }
 
-export function cols(col: string | string[]): Expr
-export function cols(col: string, ...cols: string[]): Expr
+export function cols(col: string | string[]): Expr;
+export function cols(col: string, ...cols: string[]): Expr;
 export function cols(...cols): Expr {
-
   return col(cols.flat());
 }
 
@@ -120,7 +119,6 @@ export function lit(value: any): Expr {
     value = Series(value);
   }
   if (Series.isSeries(value)) {
-
     return _Expr(pli.lit(value.inner()));
   }
 
@@ -143,14 +141,29 @@ export function lit(value: any): Expr {
  * @param eager - If eager evaluation is `true`, a Series is returned instead of an Expr
  * @example
  * ```
- * >>> df.lazy()
- * >>>   .filter(pl.col("foo").lt(pl.arange(0, 100)))
- * >>>   .collect()
+ * > df.lazy()
+ * >   .filter(pl.col("foo").lt(pl.arange(0, 100)))
+ * >   .collect()
  * ```
  */
-export function arange<T>(opts: {low: any, high: any, step: number, eager: boolean});
-export function arange(low: any, high?: any, step?: number, eager?: true): Series;
-export function arange(low: any, high?: any, step?: number, eager?: false): Expr;
+export function arange<T>(opts: {
+  low: any;
+  high: any;
+  step: number;
+  eager: boolean;
+});
+export function arange(
+  low: any,
+  high?: any,
+  step?: number,
+  eager?: true,
+): Series;
+export function arange(
+  low: any,
+  high?: any,
+  step?: number,
+  eager?: false,
+): Expr;
 export function arange(opts: any, high?, step?, eager?): Series | Expr {
   if (typeof opts?.low === "number") {
     return arange(opts.low, opts.high, opts.step, opts.eager);
@@ -158,9 +171,11 @@ export function arange(opts: any, high?, step?, eager?): Series | Expr {
     const low = exprToLitOrExpr(opts, false);
     high = exprToLitOrExpr(high, false);
     if (eager) {
-      const df = DataFrame({"a": [1]});
+      const df = DataFrame({ a: [1] });
 
-      return df.select(arange(low, high, step).alias("arange") as any).getColumn("arange") as any;
+      return df
+        .select(arange(low, high, step).alias("arange") as any)
+        .getColumn("arange") as any;
     }
 
     return _Expr(pli.arange(low, high, step));
@@ -177,9 +192,12 @@ export function all(): Expr {
  * If there are duplicates in the first column, the second column will be used to determine the ordering
  * and so on.
  */
-export function argSortBy(exprs: Expr[] | string[], reverse: boolean | boolean[] = false): Expr {
+export function argSortBy(
+  exprs: Expr[] | string[],
+  reverse: boolean | boolean[] = false,
+): Expr {
   if (!Array.isArray(reverse)) {
-    reverse = Array.from({length: exprs.length}, () => reverse) as any;
+    reverse = Array.from({ length: exprs.length }, () => reverse) as any;
   }
   const by = selectionToExprList(exprs);
 
@@ -196,9 +214,13 @@ export function avg(column: Series | string): number | Expr {
  * Concat the arrays in a Series dtype List in linear time.
  * @param exprs Columns to concat into a List Series
  */
-export function concatList(exprs: ExprOrString[]): Expr
-export function concatList(expr: ExprOrString, ...exprs: ExprOrString[]): Expr
-export function concatList(expr: ExprOrString, expr2: ExprOrString, ...exprs: ExprOrString[]): Expr
+export function concatList(exprs: ExprOrString[]): Expr;
+export function concatList(expr: ExprOrString, ...exprs: ExprOrString[]): Expr;
+export function concatList(
+  expr: ExprOrString,
+  expr2: ExprOrString,
+  ...exprs: ExprOrString[]
+): Expr;
 export function concatList(...exprs): Expr {
   const items = selectionToExprList(exprs as any, false);
 
@@ -206,7 +228,7 @@ export function concatList(...exprs): Expr {
 }
 
 /** Concat Utf8 Series in linear time. Non utf8 columns are cast to utf8. */
-export function concatString(opts: {exprs: ExprOrString[], sep: string});
+export function concatString(opts: { exprs: ExprOrString[]; sep: string });
 export function concatString(exprs: ExprOrString[], sep?: string);
 export function concatString(opts, sep = ",") {
   if (opts?.exprs) {
@@ -215,12 +237,11 @@ export function concatString(opts, sep = ",") {
   const items = selectionToExprList(opts as any, false);
 
   return (Expr as any)(pli.concatStr(items, sep));
-
 }
 
 /** Count the number of values in this column. */
-export function count(column: string): Expr
-export function count(column: Series): number
+export function count(column: string): Expr;
+export function count(column: Series): number;
 export function count(column) {
   if (Series.isSeries(column)) {
     return column.len();
@@ -241,28 +262,30 @@ export function cov(a: ExprOrString, b: ExprOrString): Expr {
  *
  * Syntactic sugar for:
  * ```
- * >>> pl.col("*").exclude(columns)
+ * > pl.col("*").exclude(columns)
  * ```
  */
-export function exclude(columns: string[] | string): Expr
-export function exclude(col: string, ...cols: string[]): Expr
+export function exclude(columns: string[] | string): Expr;
+export function exclude(col: string, ...cols: string[]): Expr;
 export function exclude(...columns): Expr {
   return col("*").exclude(columns as any);
 }
 
 /** Get the first value. */
-export function first(): Expr
-export function first(column: string): Expr
-export function first<T>(column: Series): T
+export function first(): Expr;
+export function first(column: string): Expr;
+export function first<T>(column: Series): T;
 export function first<T>(column?: string | Series): Expr | T {
-  if(!column) {
+  if (!column) {
     return _Expr(pli.first());
   }
   if (Series.isSeries(column)) {
     if (column.length) {
       return column.get(0);
     } else {
-      throw new RangeError("The series is empty, so no first value can be returned.");
+      throw new RangeError(
+        "The series is empty, so no first value can be returned.",
+      );
     }
   } else {
     return col(column).first();
@@ -274,11 +297,11 @@ export function first<T>(column?: string | Series): Expr | T {
  * Note: strings will be interpolated as `col(<value>)`. if you want a literal string, use `lit(<value>)`
  * @example
  * ```
- * >>> df = pl.DataFrame({
+ * > df = pl.DataFrame({
  * ...   "a": ["a", "b", "c"],
  * ...   "b": [1, 2, 3],
  * ... })
- * >>> df.select(
+ * > df.select(
  * ...   pl.format("foo_{}_bar_{}", pl.col("a"), "b").alias("fmt"),
  * ... )
  * shape: (3, 1)
@@ -295,15 +318,20 @@ export function first<T>(column?: string | Series): Expr | T {
  * └─────────────┘
  *
  * // You can use format as tag function as well
- * >>> pl.format("foo_{}_bar_{}", pl.col("a"), "b") // is the same as
- * >>> pl.format`foo_${pl.col("a")}_bar_${"b"}`
+ * > pl.format("foo_{}_bar_{}", pl.col("a"), "b") // is the same as
+ * > pl.format`foo_${pl.col("a")}_bar_${"b"}`
  * ```
  */
-export function format(strings: string | TemplateStringsArray, ...expr: ExprOrString[]): Expr {
+export function format(
+  strings: string | TemplateStringsArray,
+  ...expr: ExprOrString[]
+): Expr {
   if (typeof strings === "string") {
     const s = strings.split("{}");
     if (s.length - 1 !== expr.length) {
-      throw new RangeError("number of placeholders should equal the number of arguments");
+      throw new RangeError(
+        "number of placeholders should equal the number of arguments",
+      );
     }
 
     return format(s as any, ...expr);
@@ -333,7 +361,6 @@ export function head(column: Series | ExprOrString, n?): Series | Expr {
     return column.head(n);
   } else {
     return exprToLitOrExpr(column, false).head(n);
-
   }
 }
 
@@ -343,7 +370,9 @@ export function last(column: ExprOrString | Series): any {
     if (column.length) {
       return column.get(-1);
     } else {
-      throw new RangeError("The series is empty, so no last value can be returned.");
+      throw new RangeError(
+        "The series is empty, so no last value can be returned.",
+      );
     }
   } else {
     return exprToLitOrExpr(column, false).last();
@@ -383,7 +412,6 @@ export function nUnique(column: Series | ExprOrString): number | Expr {
   return exprToLitOrExpr(column, false).nUnique();
 }
 
-
 /** Compute the pearson's correlation between two columns. */
 export function pearsonCorr(a: ExprOrString, b: ExprOrString): Expr {
   a = exprToLitOrExpr(a, false);
@@ -420,7 +448,6 @@ export function spearmanRankCorr(a: ExprOrString, b: ExprOrString): Expr {
   return _Expr(pli.spearmanRankCorr(a, b, null, false));
 }
 
-
 /** Get the last n rows of an Expression. */
 export function tail(column: ExprOrString, n?: number): Expr;
 export function tail(column: Series, n?: number): Series;
@@ -437,7 +464,6 @@ export function list(column: ExprOrString): Expr {
   return exprToLitOrExpr(column, false).list();
 }
 
-
 /**
     Collect several columns into a Series of dtype Struct
     Parameters
@@ -450,7 +476,7 @@ export function list(column: ExprOrString): Expr {
     Examples
     --------
     ```
-    >>> pl.DataFrame(
+    >pl.DataFrame(
     ...     {
     ...         "int": [1, 2],
     ...         "str": ["a", "b"],
@@ -470,12 +496,12 @@ export function list(column: ExprOrString): Expr {
     └───────────────────────┘
 
     // Only collect specific columns as a struct:
-    >>> df = pl.DataFrame({
+    >df = pl.DataFrame({
     ...   "a": [1, 2, 3, 4],
     ...   "b": ["one", "two", "three", "four"],
     ...   "c": [9, 8, 7, 6]
     ... })
-    >>> df.withColumn(pl.struct(pl.col(["a", "b"])).alias("a_and_b"))
+    >df.withColumn(pl.struct(pl.col(["a", "b"])).alias("a_and_b"))
     shape: (4, 4)
     ┌─────┬───────┬─────┬───────────────────────────────┐
     │ a   ┆ b     ┆ c   ┆ a_and_b                       │
@@ -492,19 +518,22 @@ export function list(column: ExprOrString): Expr {
     └─────┴───────┴─────┴───────────────────────────────┘
 ```
 */
-export function struct(exprs: Series[]): Series
-export function struct(exprs: ExprOrString | ExprOrString[]): Expr
-export function struct(exprs: ExprOrString | ExprOrString[] | Series[]): Expr | Series {
+export function struct(exprs: Series[]): Series;
+export function struct(exprs: ExprOrString | ExprOrString[]): Expr;
+export function struct(
+  exprs: ExprOrString | ExprOrString[] | Series[],
+): Expr | Series {
   exprs = Array.isArray(exprs) ? exprs : [exprs];
 
   if (Series.isSeries(exprs[0])) {
-    return select(_Expr(pli.asStruct(exprs.map(e => pli.lit(e.inner()))))).toSeries();
+    return select(
+      _Expr(pli.asStruct(exprs.map((e) => pli.lit(e.inner())))),
+    ).toSeries();
   }
   exprs = selectionToExprList(exprs);
 
   return _Expr(pli.asStruct(exprs));
 }
-
 
 /**
  * Alias for an element in evaluated in an `eval` expression.
@@ -513,8 +542,8 @@ export function struct(exprs: ExprOrString | ExprOrString[] | Series[]): Expr | 
   *
   *  A horizontal rank computation by taking the elements of a list
   *
-  *  >>> df = pl.DataFrame({"a": [1, 8, 3], "b": [4, 5, 2]})
-  *  >>> df.withColumn(
+  *  >df = pl.DataFrame({"a": [1, 8, 3], "b": [4, 5, 2]})
+  *  >df.withColumn(
   *  ...     pl.concatList(["a", "b"]).arr.eval(pl.element().rank()).alias("rank")
   *  ... )
   *  shape: (3, 3)
@@ -532,8 +561,8 @@ export function struct(exprs: ExprOrString | ExprOrString[] | Series[]): Expr | 
   *
   *  A mathematical operation on array elements
   *
-  *  >>> df = pl.DataFrame({"a": [1, 8, 3], "b": [4, 5, 2]})
-  *  >>> df.withColumn(
+  *  >df = pl.DataFrame({"a": [1, 8, 3], "b": [4, 5, 2]})
+  *  >df.withColumn(
   *  ...     pl.concatList(["a", "b"]).arr.eval(pl.element().multiplyBy(2)).alias("a_b_doubled")
   *  ... )
   *  shape: (3, 3)

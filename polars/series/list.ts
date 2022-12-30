@@ -1,8 +1,9 @@
-import { Series, _Series } from "./series";
+import { Series, _Series } from ".";
 import { col } from "../lazy/functions";
 import { ListFunctions } from "../shared_traits";
 
-export type SeriesListFunctions = ListFunctions<Series>;
+export interface ListNamespace extends ListFunctions<Series> {}
+
 export const SeriesListFunctions = (_s): ListFunctions<Series> => {
   const wrap = (method, ...args) => {
     const s = _Series(_s);
@@ -12,7 +13,7 @@ export const SeriesListFunctions = (_s): ListFunctions<Series> => {
       .select(
         col(s.name)
           .lst[method](...args)
-          .as(s.name)
+          .as(s.name),
       )
       .getColumn(s.name);
   };

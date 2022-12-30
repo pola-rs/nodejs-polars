@@ -1,11 +1,20 @@
-import pli from "../../internals/polars_internal";
-import {_Expr, Expr} from "../expr";
+import { _Expr, Expr } from "../expr";
 
+/**
+ * Struct functions
+ */
 export interface ExprStruct {
+  /**
+   * Access a field by name
+   * @param name - name of the field
+   */
   field(name: string): Expr;
-  renameFields(names: string[]): Expr
+  /**
+   * Rename the fields of a struct
+   * @param names - new names of the fields
+   */
+  renameFields(names: string[]): Expr;
 }
-
 
 export const ExprStructFunctions = (_expr: any): ExprStruct => {
   return {
@@ -14,6 +23,6 @@ export const ExprStructFunctions = (_expr: any): ExprStruct => {
     },
     renameFields(names) {
       return _Expr(_expr.structRenameFields(names));
-    }
+    },
   };
 };
