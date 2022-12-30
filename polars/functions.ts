@@ -1,11 +1,12 @@
 /* eslint-disable no-redeclare */
 import {jsTypeToPolarsType} from "./internals/construction";
-import {Series, _Series} from "./series/series";
+import {Series, _Series} from "./series";
 import {DataFrame, _DataFrame} from "./dataframe";
 import pli from "./internals/polars_internal";
 import {isDataFrameArray, isSeriesArray} from "./utils";
+import {ConcatOptions} from "./types";
 
-type ConcatOptions = {rechunk?: boolean, how?: "vertical" | "horizontal"}
+
 
 /**
  * _Repeat a single value n times and collect into a Series._
@@ -16,8 +17,8 @@ type ConcatOptions = {rechunk?: boolean, how?: "vertical" | "horizontal"}
  *
  * ```
  *
- * > const s = pl.repeat("a", 5)
- * > s.toArray()
+ * >  const s = pl.repeat("a", 5)
+ * >  s.toArray()
  * ["a", "a", "a", "a", "a"]
  *
  * ```
@@ -38,9 +39,9 @@ export function repeat<V>(value: V, n: number, name= ""): Series {
  *     - Horizontal: Stacks Series horizontally and fills with nulls if the lengths don't match.
  *
  * @example
- * >>> const df1 = pl.DataFrame({"a": [1], "b": [3]})
- * >>> const df2 = pl.DataFrame({"a": [2], "b": [4]})
- * >>> pl.concat([df1, df2])
+ * > const df1 = pl.DataFrame({"a": [1], "b": [3]})
+ * > const df2 = pl.DataFrame({"a": [2], "b": [4]})
+ * > pl.concat([df1, df2])
  * shape: (2, 2)
  * ┌─────┬─────┐
  * │ a   ┆ b   │

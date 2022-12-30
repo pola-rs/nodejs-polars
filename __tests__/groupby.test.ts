@@ -1,5 +1,4 @@
 import pl from "@polars";
-
 describe("groupby", () => {
   let df: pl.DataFrame;
   beforeEach(() => {

@@ -1,53 +1,36 @@
-import {DataType} from "./datatype";
-export {DataType};
+import { DataType, TimeUnit } from "./datatype";
+export { DataType, TimeUnit };
+export { Field } from "./field";
 
 import pli from "../internals/polars_internal";
 
+/** @ignore */
+export type TypedArray =
+  | Int8Array
+  | Int16Array
+  | Int32Array
+  | BigInt64Array
+  | Uint8Array
+  | Uint16Array
+  | Uint32Array
+  | BigInt64Array
+  | Float32Array
+  | Float64Array;
 
-export type TypedArray = Int8Array | Int16Array | Int32Array | BigInt64Array | Uint8Array | Uint16Array | Uint32Array | BigInt64Array | Float32Array | Float64Array;
-
-
+/**
+ *  @ignore
+ */
 export type Optional<T> = T | undefined | null;
-export enum _DataType {
-  Int8,
-  Int16,
-  Int32,
-  Int64,
-  UInt8,
-  UInt16,
-  UInt32,
-  UInt64,
-  Float32,
-  Float64,
-  Bool,
-  Utf8,
-  List,
-  Date,
-  Datetime,
-  Time,
-  Object,
-  Categorical,
-  Struct
-}
 
-
+/**
+ * @ignore
+ */
 export type JsDataFrame = any;
 export type NullValues = string | Array<string> | Record<string, string>;
 
-export type JoinBaseOptions = {
-  how?: "left" | "inner" | "outer" | "semi" | "anti" | "cross"
-  suffix?: string;
-}
-
-export type JoinOptions = {
-  leftOn?: string | Array<string>;
-  rightOn?: string | Array<string>;
-  on?: string | Array<string>;
-  how?: "left" | "inner" | "outer" | "semi" | "anti" | "cross"
-  suffix?: string;
-};
-
-
+/**
+ * @ignore
+ */
 export const DTYPE_TO_FFINAME = {
   Int8: "I8",
   Int16: "I16",
@@ -121,12 +104,12 @@ const POLARS_TYPE_TO_CONSTRUCTOR: Record<string, any> = {
   },
 };
 
+/** @ignore */
 export const polarsTypeToConstructor = (dtype: DataType): CallableFunction => {
-  const constructor = POLARS_TYPE_TO_CONSTRUCTOR[dtype.variant];
-  if (!constructor) {
+  const ctor = POLARS_TYPE_TO_CONSTRUCTOR[dtype.variant];
+  if (!ctor) {
     throw new Error(`Cannot construct Series for type ${dtype.variant}.`);
   }
 
-
-  return constructor;
+  return ctor;
 };

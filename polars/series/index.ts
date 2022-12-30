@@ -1,44 +1,55 @@
 import pli from "../internals/polars_internal";
-import {arrayToJsSeries} from "../internals/construction";
-import {DataType, DTYPE_TO_FFINAME, Optional} from "../datatypes";
-import {DataFrame, _DataFrame} from "../dataframe";
-import {StringFunctions} from "./string";
-import {SeriesListFunctions} from "./list";
-import {SeriesDateFunctions} from "./datetime";
-import {SeriesStructFunctions} from "./struct";
-import {InvalidOperationError} from "../error";
-import {RankMethod} from "../utils";
-import {Arithmetic, Comparison, Cumulative, Deserialize, Rolling, Round, Sample, Serialize} from "../shared_traits";
-import {col} from "../lazy/functions";
-import {InterpolationMethod} from "../lazy/expr";
+import { arrayToJsSeries } from "../internals/construction";
+import { DataType, DTYPE_TO_FFINAME, Optional } from "../datatypes";
+import { DataFrame, _DataFrame } from "../dataframe";
+import { SeriesStringFunctions, StringNamespace } from "./string";
+import { ListNamespace, SeriesListFunctions } from "./list";
+import { SeriesDateFunctions } from "./datetime";
+import { SeriesStructFunctions } from "./struct";
+import { InvalidOperationError } from "../error";
+import {
+  Arithmetic,
+  Comparison,
+  Cumulative,
+  Deserialize,
+  Rolling,
+  Round,
+  Sample,
+  Serialize,
+} from "../shared_traits";
+import { col } from "../lazy/functions";
+import { InterpolationMethod, RankMethod } from "../types";
 
 const inspect = Symbol.for("nodejs.util.inspect.custom");
-export interface Series extends
-  ArrayLike<any>,
-  Rolling<Series>,
-  Arithmetic<Series>,
-  Comparison<Series>,
-  Cumulative<Series>,
-  Round<Series>,
-  Sample<Series>,
-  Serialize {
-  inner(): any
-  name: string
-  dtype: DataType
-  str: StringFunctions
-  lst: SeriesListFunctions,
-  struct: SeriesStructFunctions,
-  date: SeriesDateFunctions
+/**
+ * A Series represents a single column in a polars DataFrame.
+ */
+export interface Series
+  extends ArrayLike<any>,
+    Rolling<Series>,
+    Arithmetic<Series>,
+    Comparison<Series>,
+    Cumulative<Series>,
+    Round<Series>,
+    Sample<Series>,
+    Serialize {
+  inner(): any;
+  name: string;
+  dtype: DataType;
+  str: StringNamespace;
+  lst: ListNamespace;
+  struct: SeriesStructFunctions;
+  date: SeriesDateFunctions;
   [inspect](): string;
   [Symbol.iterator](): IterableIterator<any>;
   // inner(): JsSeries
-  bitand(other: Series): Series
-  bitor(other: Series): Series
-  bitxor(other: Series): Series
+  bitand(other: Series): Series;
+  bitor(other: Series): Series;
+  bitxor(other: Series): Series;
   /**
    * Take absolute values
    */
-  abs(): Series
+  abs(): Series;
   /**
    * __Rename this Series.__
    *
@@ -46,15 +57,15 @@ export interface Series extends
    * @see {@link rename}
    *
    */
-  alias(name: string): Series
+  alias(name: string): Series;
   /**
    * __Append a Series to this one.__
    * ___
    * @param {Series} other - Series to append.
    * @example
-   * > const s = pl.Series("a", [1, 2, 3])
-   * > const s2 = pl.Series("b", [4, 5, 6])
-   * > s.append(s2)
+   * >  const s = pl.Series("a", [1, 2, 3])
+   * >  const s2 = pl.Series("b", [4, 5, 6])
+   * >  s.append(s2)
    * shape: (6,)
    * Series: 'a' [i64]
    * [
@@ -66,7 +77,7 @@ export interface Series extends
    *         6
    * ]
    */
-  append(other: Series): void
+  append(other: Series): void;
   // TODO!
   // /**
   //  * __Apply a function over elements in this Series and return a new Series.__
@@ -78,8 +89,8 @@ export interface Series extends
   //  * @returns {SeriesType} `Series<T> | Series<returnType>`
   //  * @example
   //  * ```
-  //  * > const s = pl.Series("a", [1, 2, 3])
-  //  * > s.apply(x => x + 10)
+  //  * >  const s = pl.Series("a", [1, 2, 3])
+  //  * >  s.apply(x => x + 10)
   //  * shape: (3,)
   //  * Series: 'a' [i64]
   //  * [
@@ -93,29 +104,29 @@ export interface Series extends
   /**
    * Get the index of the maximal value.
    */
-  argMax(): Optional<number>
+  argMax(): Optional<number>;
   /**
- * Get the index of the minimal value.
- */
-  argMin(): Optional<number>
+   * Get the index of the minimal value.
+   */
+  argMin(): Optional<number>;
   /**
    * Get index values where Boolean Series evaluate True.
    *
    */
-  argTrue(): Series
+  argTrue(): Series;
   /**
    * Get unique index as Series.
    */
-  argUnique(): Series
+  argUnique(): Series;
   /**
    * Index location of the sorted variant of this Series.
    * ___
    * @param reverse
    * @return {SeriesType} indexes - Indexes that can be used to sort this array.
    */
-  argSort(): Series
-  argSort(reverse: boolean): Series
-  argSort({reverse}: {reverse: boolean}): Series
+  argSort(): Series;
+  argSort(reverse: boolean): Series;
+  argSort({ reverse }: { reverse: boolean }): Series;
   /**
    * __Rename this Series.__
    *
@@ -123,20 +134,20 @@ export interface Series extends
    * @see {@link rename} {@link alias}
    *
    */
-  as(name: string): Series
+  as(name: string): Series;
   /**
    * Cast between data types.
    */
-  cast(dtype: DataType, strict?: boolean): Series
+  cast(dtype: DataType, strict?: boolean): Series;
   /**
    * Get the length of each individual chunk
    */
-  chunkLengths(): Array<any>
+  chunkLengths(): Array<any>;
   /**
    * Cheap deep clones.
    */
-  clone(): Series
-  concat(other: Series): Series
+  clone(): Series;
+  concat(other: Series): Series;
 
   /**
    * __Quick summary statistics of a series. __
@@ -145,8 +156,8 @@ export interface Series extends
    * ___
    * @example
    * ```
-   * > const seriesNum = pl.Series([1,2,3,4,5])
-   * > series_num.describe()
+   * >  const seriesNum = pl.Series([1,2,3,4,5])
+   * >  series_num.describe()
    *
    * shape: (6, 2)
    * ┌──────────────┬────────────────────┐
@@ -167,8 +178,8 @@ export interface Series extends
    * │ "count"      ┆ 5                  │
    * └──────────────┴────────────────────┘
    *
-   * > series_str = pl.Series(["a", "a", None, "b", "c"])
-   * > series_str.describe()
+   * >  series_str = pl.Series(["a", "a", None, "b", "c"])
+   * >  series_str.describe()
    *
    * shape: (3, 2)
    * ┌──────────────┬───────┐
@@ -184,30 +195,33 @@ export interface Series extends
    * └──────────────┴───────┘
    * ```
    */
-  describe(): DataFrame
+  describe(): DataFrame;
   /**
    * Calculates the n-th discrete difference.
    * @param n - number of slots to shift
    * @param nullBehavior - `'ignore' | 'drop'`
    */
-  diff(n: number, nullBehavior: "ignore" | "drop"): Series
-  diff({n, nullBehavior}: {n: number, nullBehavior: "ignore" | "drop"}): Series
+  diff(n: number, nullBehavior: "ignore" | "drop"): Series;
+  diff({
+    n,
+    nullBehavior,
+  }: { n: number; nullBehavior: "ignore" | "drop" }): Series;
   /**
-  * Compute the dot/inner product between two Series
-  * ___
-  * @example
-  * ```
-  * > const s = pl.Series("a", [1, 2, 3])
-  * > const s2 = pl.Series("b", [4.0, 5.0, 6.0])
-  * > s.dot(s2)
-  * 32.0
-  * ```
-  */
-  dot(other: Series): number | undefined | null
+   * Compute the dot/inner product between two Series
+   * ___
+   * @example
+   * ```
+   * >  const s = pl.Series("a", [1, 2, 3])
+   * >  const s2 = pl.Series("b", [4.0, 5.0, 6.0])
+   * >  s.dot(s2)
+   * 32.0
+   * ```
+   */
+  dot(other: Series): number | undefined | null;
   /**
    * Create a new Series that copies data from this Series without null values.
    */
-  dropNulls(): Series
+  dropNulls(): Series;
   /**
    * __Explode a list or utf8 Series.__
    *
@@ -215,8 +229,8 @@ export interface Series extends
    * ___
    * @example
    * ```
-   * > const s = pl.Series('a', [[1, 2], [3, 4], [9, 10]])
-   * > s.explode()
+   * >  const s = pl.Series('a', [[1, 2], [3, 4], [9, 10]])
+   * >  s.explode()
    * shape: (6,)
    * Series: 'a' [i64]
    * [
@@ -229,7 +243,7 @@ export interface Series extends
    * ]
    * ```
    */
-  explode(): any
+  explode(): any;
   /**
    * Extend the Series with given number of values.
    * @param value The value to extend the Series with. This value may be null to fill with nulls.
@@ -237,21 +251,21 @@ export interface Series extends
    * @deprecated
    * @see {@link extendConstant}
    */
-  extend(value: any, n: number): Series
+  extend(value: any, n: number): Series;
   /**
    * Extend the Series with given number of values.
    * @param value The value to extend the Series with. This value may be null to fill with nulls.
    * @param n The number of values to extend.
    */
-  extendConstant(value: any, n: number): Series
+  extendConstant(value: any, n: number): Series;
   /**
    * __Fill null values with a filling strategy.__
    * ___
    * @param strategy - Filling Strategy
    * @example
    * ```
-   * > const s = pl.Series("a", [1, 2, 3, None])
-   * > s.fill_null('forward'))
+   * >  const s = pl.Series("a", [1, 2, 3, None])
+   * >  s.fill_null('forward'))
    * shape: (4,)
    * Series: '' [i64]
    * [
@@ -260,7 +274,7 @@ export interface Series extends
    *         3
    *         3
    * ]
-   * > s.fill_null('min'))
+   * >  s.fill_null('min'))
    * shape: (4,)
    * Series: 'a' [i64]
    * [
@@ -271,22 +285,28 @@ export interface Series extends
    * ]
    * ```
    */
-  fillNull(strategy: "backward" | "forward" | "min" | "max" | "mean" | "one" | "zero"): Series
-  fillNull({strategy}: {strategy: "backward" | "forward" | "min" | "max" | "mean" | "one" | "zero"}): Series
+  fillNull(
+    strategy: "backward" | "forward" | "min" | "max" | "mean" | "one" | "zero",
+  ): Series;
+  fillNull({
+    strategy,
+  }: {
+    strategy: "backward" | "forward" | "min" | "max" | "mean" | "one" | "zero";
+  }): Series;
   /**
    * __Filter elements by a boolean mask.__
    * @param {SeriesType} predicate - Boolean mask
    *
    */
-  filter(predicate: Series): Series
-  filter({predicate}: {predicate: Series}): Series
-  get(index: number): any
-  getIndex(n: number): any
+  filter(predicate: Series): Series;
+  filter({ predicate }: { predicate: Series }): Series;
+  get(index: number): any;
+  getIndex(n: number): any;
   /**
    * Returns True if the Series has a validity bitmask.
    * If there is none, it means that there are no null values.
    */
-  hasValidity(): boolean
+  hasValidity(): boolean;
   /**
    * Hash the Series
    * The hash value is of type `UInt64`
@@ -297,8 +317,8 @@ export interface Series extends
    * @param k3 - seed parameter
    * @example
    * ```
-   * > const s = pl.Series("a", [1, 2, 3])
-   * > s.hash(42)
+   * >  const s = pl.Series("a", [1, 2, 3])
+   * >  s.hash(42)
    * shape: (3,)
    * Series: 'a' [u64]
    * [
@@ -308,16 +328,31 @@ export interface Series extends
    * ]
    * ```
    */
-  hash(k0?: number | bigint, k1?: number | bigint, k2?: number | bigint, k3?: number | bigint): Series
-  hash({k0, k1, k2, k3}: {k0?: number | bigint, k1?: number | bigint, k2?: number | bigint, k3?: number | bigint}): Series
+  hash(
+    k0?: number | bigint,
+    k1?: number | bigint,
+    k2?: number | bigint,
+    k3?: number | bigint,
+  ): Series;
+  hash({
+    k0,
+    k1,
+    k2,
+    k3,
+  }: {
+    k0?: number | bigint;
+    k1?: number | bigint;
+    k2?: number | bigint;
+    k3?: number | bigint;
+  }): Series;
   /**
    * __Get first N elements as Series.__
    * ___
    * @param length  Length of the head
    * @example
    * ```
-   * > const s = pl.Series("a", [1, 2, 3])
-   * > s.head(2)
+   * >  const s = pl.Series("a", [1, 2, 3])
+   * >  s.head(2)
    * shape: (2,)
    * Series: 'a' [i64]
    * [
@@ -326,7 +361,7 @@ export interface Series extends
    * ]
    * ```
    */
-  head(length?: number): Series
+  head(length?: number): Series;
   /**
    * __Interpolate intermediate values.__
    *
@@ -334,8 +369,8 @@ export interface Series extends
    * ___
    * @example
    * ```
-   * > const s = pl.Series("a", [1, 2, None, None, 5])
-   * > s.interpolate()
+   * >  const s = pl.Series("a", [1, 2, None, None, 5])
+   * >  s.interpolate()
    * shape: (5,)
    * Series: 'a' [i64]
    * [
@@ -347,22 +382,22 @@ export interface Series extends
    * ]
    * ```
    */
-  interpolate(method?: InterpolationMethod): Series
+  interpolate(method?: InterpolationMethod): Series;
   /**
    * Check if this Series is a Boolean.
    */
-  isBoolean(): boolean
+  isBoolean(): boolean;
   /**
    * Check if this Series is a DataTime.
    */
-  isDateTime(): boolean
+  isDateTime(): boolean;
   /**
    * __Get mask of all duplicated values.__
    *
    * @example
    * ```
-   * > const s = pl.Series("a", [1, 2, 2, 3])
-   * > s.isDuplicated()
+   * >  const s = pl.Series("a", [1, 2, 2, 3])
+   * >  s.isDuplicated()
    *
    * shape: (4,)
    * Series: 'a' [bool]
@@ -374,29 +409,29 @@ export interface Series extends
    * ]
    * ```
    */
-  isDuplicated(): Series
+  isDuplicated(): Series;
   /**
    * Get mask of finite values if Series dtype is Float.
    */
-  isFinite(): Series
+  isFinite(): Series;
   /**
    * Get a mask of the first unique value.
    */
-  isFirst(): Series
+  isFirst(): Series;
   /**
    * Check if this Series is a Float.
    */
-  isFloat(): boolean
+  isFloat(): boolean;
   /**
    * Check if elements of this Series are in the right Series, or List values of the right Series.
    */
-  isIn<U>(other: Series | U[]): Series
+  isIn<U>(other: Series | U[]): Series;
   /**
    * __Get mask of infinite values if Series dtype is Float.__
    * @example
    * ```
-   * > const s = pl.Series("a", [1.0, 2.0, 3.0])
-   * > s.isInfinite()
+   * >  const s = pl.Series("a", [1.0, 2.0, 3.0])
+   * >  s.isInfinite()
    *
    * shape: (3,)
    * Series: 'a' [bool]
@@ -407,7 +442,7 @@ export interface Series extends
    * ]
    * ```
    */
-  isInfinite(): Series
+  isInfinite(): Series;
   /**
    * __Get mask of non null values.__
    *
@@ -415,8 +450,8 @@ export interface Series extends
    * ___
    * @example
    * ```
-   * > const s = pl.Series("a", [1.0, undefined, 2.0, 3.0, null])
-   * > s.isNotNull()
+   * >  const s = pl.Series("a", [1.0, undefined, 2.0, 3.0, null])
+   * >  s.isNotNull()
    * shape: (5,)
    * Series: 'a' [bool]
    * [
@@ -428,7 +463,7 @@ export interface Series extends
    * ]
    * ```
    */
-  isNotNull(): Series
+  isNotNull(): Series;
   /**
    * __Get mask of null values.__
    *
@@ -436,8 +471,8 @@ export interface Series extends
    * ___
    * @example
    * ```
-   * > const s = pl.Series("a", [1.0, undefined, 2.0, 3.0, null])
-   * > s.isNull()
+   * >  const s = pl.Series("a", [1.0, undefined, 2.0, 3.0, null])
+   * >  s.isNull()
    * shape: (5,)
    * Series: 'a' [bool]
    * [
@@ -449,18 +484,18 @@ export interface Series extends
    * ]
    * ```
    */
-  isNull(): Series
+  isNull(): Series;
   /**
    * Check if this Series datatype is numeric.
    */
-  isNumeric(): boolean
+  isNumeric(): boolean;
   /**
    * __Get mask of unique values.__
    * ___
    * @example
    * ```
-   * > const s = pl.Series("a", [1, 2, 2, 3])
-   * > s.isUnique()
+   * >  const s = pl.Series("a", [1, 2, 2, 3])
+   * >  s.isUnique()
    * shape: (4,)
    * Series: 'a' [bool]
    * [
@@ -471,11 +506,11 @@ export interface Series extends
    * ]
    * ```
    */
-  isUnique(): Series
+  isUnique(): Series;
   /**
    * Checks if this Series datatype is a Utf8.
    */
-  isUtf8(): boolean
+  isUtf8(): boolean;
   /**
    * __Compute the kurtosis (Fisher or Pearson) of a dataset.__
    *
@@ -489,20 +524,23 @@ export interface Series extends
    * - If True, Fisher's definition is used (normal ==> 0.0).
    * - If False, Pearson's definition is used (normal ==> 3.0)
    */
-  kurtosis(): Optional<number>
-  kurtosis(fisher: boolean, bias?: boolean): Optional<number>
-  kurtosis({fisher, bias}: {fisher?: boolean, bias?: boolean}): Optional<number>
+  kurtosis(): Optional<number>;
+  kurtosis(fisher: boolean, bias?: boolean): Optional<number>;
+  kurtosis({
+    fisher,
+    bias,
+  }: { fisher?: boolean; bias?: boolean }): Optional<number>;
   /**
    * __Length of this Series.__
    * ___
    * @example
    * ```
-   * > const s = pl.Series("a", [1, 2, 3])
-   * > s.len()
+   * >  const s = pl.Series("a", [1, 2, 3])
+   * >  s.len()
    * 3
    * ```
    */
-  len(): number
+  len(): number;
   /**
    * __Take `n` elements from this Series.__
    * ___
@@ -520,47 +558,47 @@ export interface Series extends
    * ]
    * ```
    */
-  limit(n?: number): Series
+  limit(n?: number): Series;
   /**
    * Get the maximum value in this Series.
    * @example
    * ```
-   * >>> s = pl.Series("a", [1, 2, 3])
-   * >>> s.max()
+   * > s = pl.Series("a", [1, 2, 3])
+   * > s.max()
    * 3
    * ```
    */
-  max(): number
+  max(): number;
   /**
    * Reduce this Series to the mean value.
    * @example
    * ```
-   * >>> s = pl.Series("a", [1, 2, 3])
-   * >>> s.mean()
+   * > s = pl.Series("a", [1, 2, 3])
+   * > s.mean()
    * 2
    * ```
    */
-  mean(): number
+  mean(): number;
   /**
    * Get the median of this Series
    * @example
    * ```
-   * >>> s = pl.Series("a", [1, 2, 3])
-   * >>> s.median()
+   * > s = pl.Series("a", [1, 2, 3])
+   * > s.median()
    * 2
    * ```
    */
-  median(): number
+  median(): number;
   /**
    * Get the minimal value in this Series.
    * @example
    * ```
-   * >>> s = pl.Series("a", [1, 2, 3])
-   * >>> s.min()
+   * > s = pl.Series("a", [1, 2, 3])
+   * > s.min()
    * 1
    * ```
    */
-  min(): number
+  min(): number;
   /**
    * __Compute the most occurring value(s). Can return multiple Values__
    * ___
@@ -584,11 +622,11 @@ export interface Series extends
    * ]
    * ```
    */
-  mode(): Series
+  mode(): Series;
   /**
    * Get the number of chunks that this Series contains.
    */
-  nChunks(): number
+  nChunks(): number;
   /**
    * __Count the number of unique values in this Series.__
    * ___
@@ -599,13 +637,13 @@ export interface Series extends
    * 3
    * ```
    */
-  nUnique(): number
+  nUnique(): number;
   /**
    * Count the null values in this Series. --
    * _`undefined` values are treated as null_
    *
    */
-  nullCount(): number
+  nullCount(): number;
   /**
    * Get a boolean mask of the local maximum peaks.
    * ___
@@ -624,7 +662,7 @@ export interface Series extends
    * ]
    * ```
    */
-  peakMax(): Series
+  peakMax(): Series;
   /**
    * Get a boolean mask of the local minimum peaks.
    * ___
@@ -643,7 +681,7 @@ export interface Series extends
    * ]
    * ```
    */
-  peakMin(): Series
+  peakMin(): Series;
   /**
    * Get the quantile value of this Series.
    * ___
@@ -655,7 +693,7 @@ export interface Series extends
    * 2
    * ```
    */
-  quantile(quantile: number, interpolation?: string): number
+  quantile(quantile: number, interpolation?: string): number;
   /**
    * Assign ranks to data, dealing with ties appropriately.
    * @param method
@@ -677,10 +715,10 @@ export interface Series extends
    *  * __'random'__: Like 'ordinal', but the rank for ties is not dependent
    *    on the order that the values occur in `a`.
    */
-  rank(method?: RankMethod): Series
-  rechunk(): Series
-  rechunk(inPlace: true): Series
-  rechunk(inPlace: false): void
+  rank(method?: RankMethod): Series;
+  rechunk(): Series;
+  rechunk(inPlace: true): Series;
+  rechunk(inPlace: false): void;
   /**
    * __Reinterpret the underlying bits as a signed/unsigned integer.__
    *
@@ -694,7 +732,7 @@ export interface Series extends
    * @see {@link cast}
    *
    */
-  reinterpret(signed?: boolean): Series
+  reinterpret(signed?: boolean): Series;
   /**
    * __Rename this Series.__
    *
@@ -715,9 +753,9 @@ export interface Series extends
    * ```
    */
   rename(name: string): Series;
-  rename(name: string, inPlace: boolean): void
-  rename({name, inPlace}: {name: string, inPlace?: boolean}): void
-  rename({name, inPlace}: {name: string, inPlace: true}): void
+  rename(name: string, inPlace: boolean): void;
+  rename({ name, inPlace }: { name: string; inPlace?: boolean }): void;
+  rename({ name, inPlace }: { name: string; inPlace: true }): void;
 
   /**
    * __Check if series is equal with another Series.__
@@ -734,14 +772,14 @@ export interface Series extends
    * false
    * ```
    */
-  seriesEqual<U>(other: Series, nullEqual?: boolean, strict?: boolean): boolean
+  seriesEqual<U>(other: Series, nullEqual?: boolean, strict?: boolean): boolean;
   /**
    * __Set masked values__
    * @param filter Boolean mask
    * @param value value to replace masked values with
    */
-  set(filter: Series, value: any): Series
-  setAtIdx(indices: number[] | Series, value: any): void
+  set(filter: Series, value: any): Series;
+  setAtIdx(indices: number[] | Series, value: any): void;
   /**
    * __Shift the values by a given period__
    *
@@ -769,7 +807,7 @@ export interface Series extends
    * ]
    * ```
    */
-  shift(periods: number): Series
+  shift(periods: number): Series;
   /**
    * Shift the values by a given period
    *
@@ -778,15 +816,15 @@ export interface Series extends
    * @param periods - Number of places to shift (may be negative).
    * @param fillValue - Fill null & undefined values with the result of this expression.
    */
-  shiftAndFill(periods: number, fillValue: any): Series
-  shiftAndFill(args: {periods: number, fillValue: any}): Series
+  shiftAndFill(periods: number, fillValue: any): Series;
+  shiftAndFill(args: { periods: number; fillValue: any }): Series;
 
   /**
    * __Shrink memory usage of this Series to fit the exact capacity needed to hold the data.__
    * @param inPlace - Modify the Series in-place.
    */
-  shrinkToFit(): Series
-  shrinkToFit(inPlace: true): void
+  shrinkToFit(): Series;
+  shrinkToFit(inPlace: true): void;
   /**
    * __Compute the sample skewness of a data set.__
    *
@@ -798,14 +836,14 @@ export interface Series extends
    * ___
    * @param bias - If false, then the calculations are corrected for statistical bias.
    */
-  skew(bias?: boolean): number | undefined
+  skew(bias?: boolean): number | undefined;
   /**
    * Create subslices of the Series.
    *
    * @param offset - Start of the slice (negative indexing may be used).
    * @param length - length of the slice.
    */
-  slice(start: number, length?: number): Series
+  slice(start: number, length?: number): Series;
   /**
    * __Sort this Series.__
    * @param reverse - Reverse sort
@@ -832,19 +870,19 @@ export interface Series extends
    * ]
    * ```
    */
-  sort(): Series
-  sort(reverse?: boolean): Series
-  sort(options: {reverse: boolean}): Series
+  sort(): Series;
+  sort(reverse?: boolean): Series;
+  sort(options: { reverse: boolean }): Series;
   /**
    * Reduce this Series to the sum value.
    * @example
    * ```
-   * >>> s = pl.Series("a", [1, 2, 3])
-   * >>> s.sum()
+   * > s = pl.Series("a", [1, 2, 3])
+   * > s.sum()
    * 6
    * ```
    */
-  sum(): number
+  sum(): number;
   /**
    * __Get last N elements as Series.__
    *
@@ -863,7 +901,7 @@ export interface Series extends
    * ]
    * ```
    */
-  tail(length?: number): Series
+  tail(length?: number): Series;
   /**
    * Take every nth value in the Series and return as new Series.
    * @param n - nth value to take
@@ -879,7 +917,7 @@ export interface Series extends
    * ]
    * ```
    */
-  takeEvery(n: number): Series
+  takeEvery(n: number): Series;
   /**
    * Take values by index.
    * ___
@@ -896,7 +934,7 @@ export interface Series extends
    * ]
    * ```
    */
-  take(indices: Array<number>): Series
+  take(indices: Array<number>): Series;
 
   /**
    * __Get unique elements in series.__
@@ -915,29 +953,29 @@ export interface Series extends
    * ]
    * ```
    */
-  unique(maintainOrder?: boolean | {maintainOrder: boolean}): Series
+  unique(maintainOrder?: boolean | { maintainOrder: boolean }): Series;
   /**
-  * __Count the unique values in a Series.__
-  * ___
-  * @example
-  * ```
-  * s = pl.Series("a", [1, 2, 2, 3])
-  * s.valueCounts()
-  * shape: (3, 2)
-  * ╭─────┬────────╮
-  * │ a   ┆ counts │
-  * │ --- ┆ ---    │
-  * │ i64 ┆ u32    │
-  * ╞═════╪════════╡
-  * │ 2   ┆ 2      │
-  * ├╌╌╌╌╌┼╌╌╌╌╌╌╌╌┤
-  * │ 1   ┆ 1      │
-  * ├╌╌╌╌╌┼╌╌╌╌╌╌╌╌┤
-  * │ 3   ┆ 1      │
-  * ╰─────┴────────╯
-  * ```
-  */
-  valueCounts(): DataFrame
+   * __Count the unique values in a Series.__
+   * ___
+   * @example
+   * ```
+   * s = pl.Series("a", [1, 2, 2, 3])
+   * s.valueCounts()
+   * shape: (3, 2)
+   * ╭─────┬────────╮
+   * │ a   ┆ counts │
+   * │ --- ┆ ---    │
+   * │ i64 ┆ u32    │
+   * ╞═════╪════════╡
+   * │ 2   ┆ 2      │
+   * ├╌╌╌╌╌┼╌╌╌╌╌╌╌╌┤
+   * │ 1   ┆ 1      │
+   * ├╌╌╌╌╌┼╌╌╌╌╌╌╌╌┤
+   * │ 3   ┆ 1      │
+   * ╰─────┴────────╯
+   * ```
+   */
+  valueCounts(): DataFrame;
   /**
    * Where mask evaluates true, take values from self.
    *
@@ -947,7 +985,7 @@ export interface Series extends
    * @param other - Series of same type
    *
    */
-  zipWith(mask: Series, other: Series): Series
+  zipWith(mask: Series, other: Series): Series;
 
   /**
    * __Convert this Series to a Javascript Array.__
@@ -964,14 +1002,14 @@ export interface Series extends
    * true
    * ```
    */
-  toArray(): Array<any>
+  toArray(): Array<any>;
   /**
    * Converts series to a javascript typedArray.
    *
    * __Warning:__
    * This will throw an error if you have nulls, or are using non numeric data types
    */
-  toTypedArray(): any
+  toTypedArray(): any;
 
   /**
    * _Returns a Javascript object representation of Series_
@@ -988,20 +1026,14 @@ export interface Series extends
    * }
    * ```
    */
-  toObject(): {name: string, datatype: string, values: any[]}
-  toFrame(): DataFrame
+  toObject(): { name: string; datatype: string; values: any[] };
+  toFrame(): DataFrame;
   /** compat with `JSON.stringify */
-  toJSON(): string
+  toJSON(): string;
   /** Returns an iterator over the values */
-  values(): IterableIterator<any>
+  values(): IterableIterator<any>;
 }
 
-export interface RollingOptions {
-  windowSize: number
-  weights?: Array<number>
-  minPeriods: number
-  center: boolean
-}
 export function _Series(_s: any): Series {
   const unwrap = (method: keyof any, ...args: any[]) => {
     return _s[method as any](...args);
@@ -1067,7 +1099,7 @@ export function _Series(_s: any): Series {
       return _s.len();
     },
     get str() {
-      return StringFunctions(_s);
+      return SeriesStringFunctions(_s);
     },
     get lst() {
       return SeriesListFunctions(_s);
@@ -1104,19 +1136,17 @@ export function _Series(_s: any): Series {
         return _Series(_s.argsort(reverse, nullsLast));
       }
 
-      return _Series(_s.argsort(
-        reverse.reverse,
-        reverse.nullsLast ?? nullsLast
-      ));
+      return _Series(
+        _s.argsort(reverse.reverse, reverse.nullsLast ?? nullsLast),
+      );
     },
     argTrue() {
-      return _Series(this
-        .toFrame()
-        ._df
-        .lazy()
-        .select([pli.argWhere(pli.col(this.name))])
-        .collectSync()
-        .column(this.name)
+      return _Series(
+        this.toFrame()
+          ._df.lazy()
+          .select([pli.argWhere(pli.col(this.name))])
+          .collectSync()
+          .column(this.name),
       );
     },
     argUnique() {
@@ -1173,37 +1203,37 @@ export function _Series(_s: any): Series {
       if (this.isNumeric()) {
         s = s.cast(DataType.Float64);
         stats = {
-          "min": s.min(),
-          "max": s.max(),
-          "null_count": s.nullCount(),
-          "mean": s.mean(),
-          "count": s.len(),
+          min: s.min(),
+          max: s.max(),
+          null_count: s.nullCount(),
+          mean: s.mean(),
+          count: s.len(),
         };
       } else if (s.isBoolean()) {
         stats = {
-          "sum": s.sum(),
-          "null_count": s.nullCount(),
-          "count": s.len(),
+          sum: s.sum(),
+          null_count: s.nullCount(),
+          count: s.len(),
         };
       } else if (s.isUtf8()) {
         stats = {
-          "unique": s.nUnique(),
-          "null_count": s.nullCount(),
-          "count": s.len(),
+          unique: s.nUnique(),
+          null_count: s.nullCount(),
+          count: s.len(),
         };
       } else {
         throw new InvalidOperationError("describe", s.dtype);
       }
 
       return DataFrame({
-        "statistic": Object.keys(stats),
-        "value": Object.values(stats)
+        statistic: Object.keys(stats),
+        value: Object.values(stats),
       });
     },
     diff(n: any = 1, nullBehavior = "ignore") {
-      return typeof n === "number" ?
-        _Series(_s.diff(n, nullBehavior)) :
-        _Series(_s.diff(n?.n ?? 1, n.nullBehavior ?? nullBehavior));
+      return typeof n === "number"
+        ? _Series(_s.diff(n, nullBehavior))
+        : _Series(_s.diff(n?.n ?? 1, n.nullBehavior ?? nullBehavior));
     },
     div(field: Series) {
       return dtypeWrap("Div", field);
@@ -1233,14 +1263,14 @@ export function _Series(_s: any): Series {
       return wrap("extendConstant", value, n);
     },
     fillNull(strategy) {
-      return typeof strategy === "string" ?
-        wrap("fillNull", strategy) :
-        wrap("fillNull", strategy.strategy);
+      return typeof strategy === "string"
+        ? wrap("fillNull", strategy)
+        : wrap("fillNull", strategy.strategy);
     },
     filter(predicate) {
-      return Series.isSeries(predicate) ?
-        wrap("filter", (predicate as any)._s) :
-        wrap("filter", (SeriesConstructor("", predicate) as any)._s);
+      return Series.isSeries(predicate)
+        ? wrap("filter", (predicate as any)._s)
+        : wrap("filter", (SeriesConstructor("", predicate) as any)._s);
     },
     get(field) {
       return dtypeUnwrap("Get", field);
@@ -1264,14 +1294,14 @@ export function _Series(_s: any): Series {
       if (typeof obj === "number" || typeof obj === "bigint") {
         return wrap("hash", BigInt(obj), BigInt(k1), BigInt(k2), BigInt(k3));
       }
-      const o = {k0: obj, k1: k1, k2: k2, k3: k3, ...obj};
+      const o = { k0: obj, k1: k1, k2: k2, k3: k3, ...obj };
 
       return wrap(
         "hash",
         BigInt(o.k0),
         BigInt(o.k1),
         BigInt(o.k2),
-        BigInt(o.k3)
+        BigInt(o.k3),
       );
     },
     hasValidity() {
@@ -1302,7 +1332,11 @@ export function _Series(_s: any): Series {
     isFinite() {
       const dtype = this.dtype;
 
-      if (![DataType.Float32.variant, DataType.Float64.variant].includes(dtype.variant)) {
+      if (
+        ![DataType.Float32.variant, DataType.Float64.variant].includes(
+          dtype.variant,
+        )
+      ) {
         throw new InvalidOperationError("isFinite", dtype);
       } else {
         return wrap("isFinite");
@@ -1314,17 +1348,23 @@ export function _Series(_s: any): Series {
     isFloat() {
       const dtype = this.dtype;
 
-      return [DataType.Float32.variant, DataType.Float64.variant].includes(dtype.variant);
+      return [DataType.Float32.variant, DataType.Float64.variant].includes(
+        dtype.variant,
+      );
     },
     isIn(other) {
-      return Series.isSeries(other) ?
-        wrap("isIn", (other as any)._s) :
-        wrap("isIn", (Series("", other) as any)._s);
+      return Series.isSeries(other)
+        ? wrap("isIn", (other as any)._s)
+        : wrap("isIn", (Series("", other) as any)._s);
     },
     isInfinite() {
       const dtype = this.dtype;
 
-      if (![DataType.Float32.variant, DataType.Float64.variant].includes(dtype.variant)) {
+      if (
+        ![DataType.Float32.variant, DataType.Float64.variant].includes(
+          dtype.variant,
+        )
+      ) {
         throw new InvalidOperationError("isFinite", dtype);
       } else {
         return wrap("isInfinite");
@@ -1355,7 +1395,7 @@ export function _Series(_s: any): Series {
         DataType.UInt32.variant,
         DataType.UInt64.variant,
         DataType.Float32.variant,
-        DataType.Float64.variant
+        DataType.Float64.variant,
       ];
 
       return numericTypes.includes(dtype.variant);
@@ -1373,7 +1413,7 @@ export function _Series(_s: any): Series {
       const d = {
         fisher: true,
         bias,
-        ...fisher
+        ...fisher,
       };
 
       return _s.kurtosis(d.fisher, d.bias);
@@ -1452,7 +1492,11 @@ export function _Series(_s: any): Series {
     },
     reinterpret(signed = true) {
       const dtype = this.dtype;
-      if ([DataType.UInt64.variant, DataType.Int64.variant].includes(dtype.variant)) {
+      if (
+        [DataType.UInt64.variant, DataType.Int64.variant].includes(
+          dtype.variant,
+        )
+      ) {
         return wrap("reinterpret", signed);
       } else {
         throw new InvalidOperationError("reinterpret", dtype);
@@ -1471,7 +1515,6 @@ export function _Series(_s: any): Series {
         return this.alias(obj?.name ?? obj);
       }
     },
-
 
     rollingMax(...args) {
       return expr_op("rollingMax", ...args);
@@ -1513,7 +1556,6 @@ export function _Series(_s: any): Series {
         } else {
           return wrap("round", opt.decimals);
         }
-
       } else {
         throw new InvalidOperationError("round", this.dtype);
       }
@@ -1522,7 +1564,9 @@ export function _Series(_s: any): Series {
       return expr_op("clip", ...args);
     },
     setAtIdx(indices, value) {
-      indices = Series.isSeries(indices) ? indices.cast(DataType.UInt32) : Series(indices);
+      indices = Series.isSeries(indices)
+        ? indices.cast(DataType.UInt32)
+        : Series(indices);
       if (!Series.isSeries(value)) {
         if (!Array.isArray(value)) {
           value = [value];
@@ -1530,9 +1574,8 @@ export function _Series(_s: any): Series {
         value = Series(value);
       }
 
-      if(indices.length > 0) {
+      if (indices.length > 0) {
         value = value.extendConstant(value[0], indices.length - 1);
-
       }
       _s.setAtIdx(indices._s, value._s);
     },
@@ -1543,37 +1586,20 @@ export function _Series(_s: any): Series {
     },
     sample(opts?, frac?, withReplacement = false, seed?) {
       // rome-ignore lint/style/noArguments: <explanation>
-      if  (arguments.length === 0) {
-        return wrap("sampleN",
-          1,
-          withReplacement,
-          false,
-          seed
-        );
+      if (arguments.length === 0) {
+        return wrap("sampleN", 1, withReplacement, false, seed);
       }
       if (opts?.n !== undefined || opts?.frac !== undefined) {
         return this.sample(opts.n, opts.frac, opts.withReplacement, seed);
       }
       if (typeof opts === "number") {
-        return wrap("sampleN",
-          opts,
-          withReplacement,
-          false,
-          seed
-        );
+        return wrap("sampleN", opts, withReplacement, false, seed);
       }
       if (typeof frac === "number") {
-        return wrap("sampleFrac",
-          frac,
-          withReplacement,
-          false,
-          seed
-        );
-      }
-      else {
+        return wrap("sampleFrac", frac, withReplacement, false, seed);
+      } else {
         throw new TypeError("must specify either 'frac' or 'n'");
       }
-
     },
     seriesEqual(other, nullEqual: any = true, strict = false) {
       return _s.seriesEqual(other._s, nullEqual, strict);
@@ -1593,7 +1619,6 @@ export function _Series(_s: any): Series {
 
         return s as any;
       }
-
     },
     skew(bias: any = true) {
       if (typeof bias === "boolean") {
@@ -1615,7 +1640,6 @@ export function _Series(_s: any): Series {
       }
 
       return wrap("sort", reverse?.reverse ?? false);
-
     },
     sub(field) {
       return dtypeWrap("Sub", field);
@@ -1677,7 +1701,7 @@ export function _Series(_s: any): Series {
     },
     zipWith(mask, other) {
       return wrap("zipWith", mask._s, other._s);
-    }
+    },
   };
 
   return new Proxy(series, {
@@ -1694,34 +1718,73 @@ export function _Series(_s: any): Series {
 
         return true;
       }
-    }
+    },
   });
 }
 
+/**
+ * @ignore
+ * @inheritDoc {Series}
+ */
 export interface SeriesConstructor extends Deserialize<Series> {
-  (values: any): Series
-  (name: string, values: any[], dtype?): Series
+  /**
+   * Creates a new Series from a set of values.
+   * @param values — A set of values to include in the new Series object.
+   * @example
+   * ```
+   * >  pl.Series([1, 2, 3])
+   * shape: (3,)
+   * Series: '' [f64]
+   * [
+   *         1
+   *         2
+   *         3
+   * ]
+   * ```
+   */
+  (values: any): Series;
+  /**
+   * Create a new named series
+   * @param name - The name of the series
+   * @param values - A set of values to include in the new Series object.
+   * @example
+   * ```
+   * >  pl.Series('foo', [1, 2, 3])
+   * shape: (3,)
+   * Series: 'foo' [f64]
+   * [
+   *         1
+   *         2
+   *         3
+   * ]
+   * ```
+   */
+  (name: string, values: any[], dtype?): Series;
 
   /**
    * Creates an array from an array-like object.
    * @param arrayLike — An array-like object to convert to an array.
    */
-  from<T>(arrayLike: ArrayLike<T>): Series
-  from<T>(name: string, arrayLike: ArrayLike<T>): Series
+  from<T>(arrayLike: ArrayLike<T>): Series;
+  from<T>(name: string, arrayLike: ArrayLike<T>): Series;
   /**
-  * Returns a new Series from a set of elements.
-  * @param items — A set of elements to include in the new Series object.
-  */
-  of<T>(...items: T[]): Series
+   * Returns a new Series from a set of elements.
+   * @param items — A set of elements to include in the new Series object.
+   */
+  of<T>(...items: T[]): Series;
   isSeries(arg: any): arg is Series;
   /**
    * @param binary used to serialize/deserialize series. This will only work with the output from series.toBinary().
-  */
+   */
   // fromBinary(binary: Buffer): Series
 }
 
-
-let SeriesConstructor = function (arg0: any, arg1?: any, dtype?: any, strict?: any): Series {
+let SeriesConstructor = function (
+  arg0: any,
+  arg1?: any,
+  dtype?: any,
+  strict?: any,
+): Series {
   if (typeof arg0 === "string") {
     const _s = arrayToJsSeries(arg0, arg1, dtype, strict);
 
@@ -1741,7 +1804,6 @@ const isSeries = (anyVal: any): anyVal is Series => {
 const from = (name, values?: ArrayLike<any>): Series => {
   if (Array.isArray(name)) {
     return SeriesConstructor("", values);
-
   } else {
     return SeriesConstructor(name, values);
   }
@@ -1750,10 +1812,9 @@ const of = (...values: any[]): Series => {
   return Series.from(values);
 };
 
-
 export const Series: SeriesConstructor = Object.assign(SeriesConstructor, {
   isSeries,
   from,
   of,
-  deserialize: (buf, fmt) => _Series(pli.JsSeries.deserialize(buf, fmt))
+  deserialize: (buf, fmt) => _Series(pli.JsSeries.deserialize(buf, fmt)),
 });

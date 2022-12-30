@@ -1,24 +1,31 @@
 import pli from "./native-polars";
+
+/**
+ * Configure polars; offers options for table formatting and more.
+ */
 export interface Config {
   /** Use utf8 characters to print tables */
-  setUtf8Tables(): Config
+  setUtf8Tables(): Config;
   /** Use ascii characters to print tables */
-  setAsciiTables(): Config
+  setAsciiTables(): Config;
   /** Set the number of character used to draw the table */
-  setTblWidthChars(width: number): Config
+  setTblWidthChars(width: number): Config;
   /** Set the number of rows used to print tables */
-  setTblRows(n: number): Config
+  setTblRows(n: number): Config;
   /** Set the number of columns used to print tables */
-  setTblCols(n: number): Config
+  setTblCols(n: number): Config;
   /** Turn on the global string cache */
-  setGlobalStringCache(): Config
+  setGlobalStringCache(): Config;
   /** Turn off the global string cache */
-  unsetGlobalStringCache(): Config
+  unsetGlobalStringCache(): Config;
 }
+
+/**
+ * @ignore
+ */
 export const Config: Config = {
   setUtf8Tables() {
-
-    delete process.env["POLARS_FMT_NO_UTF8"];
+    process.env["POLARS_FMT_NO_UTF8"] = undefined;
 
     return this;
   },
@@ -28,7 +35,6 @@ export const Config: Config = {
     return this;
   },
   setTblWidthChars(width) {
-
     process.env["POLARS_TABLE_WIDTH"] = String(width);
 
     return this;
@@ -52,5 +58,5 @@ export const Config: Config = {
     pli.toggleStringCache(false);
 
     return this;
-  }
+  },
 };

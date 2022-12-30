@@ -1,13 +1,13 @@
 import { Expr, _Expr } from "../expr";
 import { ListFunctions } from "../../shared_traits";
-import { Series } from "../../series/series";
+import { Series } from "../../series";
 import pli from "../../internals/polars_internal";
-import { concatList, lit } from "../functions";
+import { concatList } from "../functions";
 
 /**
  * namespace containing expr list functions
  */
-export type ExprList = ListFunctions<Expr>;
+export interface ExprList extends ListFunctions<Expr> {}
 export const ExprListFunctions = (_expr: any): ExprList => {
   const wrap = (method, ...args: any[]): Expr => {
     return _Expr(_expr[method](...args));

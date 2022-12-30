@@ -1,5 +1,5 @@
 import {DataFrame} from "@polars/dataframe";
-import {Series} from "@polars/series/series";
+import {Series} from "@polars/series";
 
 declare global {
   namespace jest {
@@ -12,11 +12,11 @@ declare global {
        *
        * @example
        * ```
-       * >>> df = pl.Dataframe([pl.Series("int32": [1,2], pl.Int32)])
-       * >>> other = pl.Dataframe([pl.Series("int32": [1,2], pl.UInt32)])
+       * > df = pl.Dataframe([pl.Series("int32": [1,2], pl.Int32)])
+       * > other = pl.Dataframe([pl.Series("int32": [1,2], pl.UInt32)])
        *
-       * >>> expect(df).toFrameEqual(other) // passes
-       * >>> expect(df).toFrameStrictEqual(other) // fails
+       * > expect(df).toFrameEqual(other) // passes
+       * > expect(df).toFrameStrictEqual(other) // fails
        * ```
        */
       toFrameStrictEqual(b: DataFrame): R;

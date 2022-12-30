@@ -1,24 +1,22 @@
-import {DataFrame, _DataFrame} from "./dataframe";
+import { DataFrame, _DataFrame } from "./dataframe";
 import * as utils from "./utils";
 import util from "util";
-import {Expr} from "./lazy/expr";
-import {col, exclude} from "./lazy/functions";
-import pli from "./internals/polars_internal";
-import {ColumnsOrExpr, selectionToExprList} from "./utils";
-
+import { Expr } from "./lazy/expr";
+import { col, exclude } from "./lazy/functions";
+import { ColumnsOrExpr } from "./utils";
 
 const inspect = Symbol.for("nodejs.util.inspect.custom");
-const inspectOpts = {colors:true, depth:null};
+const inspectOpts = { colors: true, depth: null };
 
 /**
  * Starts a new GroupBy operation.
  */
 export interface GroupBy {
-  [inspect](): string,
+  [inspect](): string;
   /**
    * Aggregate the groups into Series.
    */
-  aggList(): DataFrame
+  aggList(): DataFrame;
   /**
    * __Use multiple aggregations on columns.__
    * This can be combined with complete lazy API and is considered idiomatic polars.
@@ -31,46 +29,46 @@ export interface GroupBy {
    * @example
    * ```
    * // use lazy api rest parameter style
-   * >>> df.groupBy('foo', 'bar')
-   * >>>   .agg(pl.sum('ham'), col('spam').tail(4).sum())
+   * > df.groupBy('foo', 'bar')
+   * >   .agg(pl.sum('ham'), col('spam').tail(4).sum())
    *
    * // use lazy api array style
-   * >>> df.groupBy('foo', 'bar')
-   * >>>   .agg([pl.sum('ham'), col('spam').tail(4).sum()])
+   * > df.groupBy('foo', 'bar')
+   * >   .agg([pl.sum('ham'), col('spam').tail(4).sum()])
    *
    * // use a mapping
-   * >>> df.groupBy('foo', 'bar')
-   * >>>   .agg({'spam': ['sum', 'min']})
+   * > df.groupBy('foo', 'bar')
+   * >   .agg({'spam': ['sum', 'min']})
    *
    * ```
    */
-  agg(...columns: Expr[]): DataFrame
-  agg(columns: Record<string, keyof Expr | (keyof Expr)[]>): DataFrame
+  agg(...columns: Expr[]): DataFrame;
+  agg(columns: Record<string, keyof Expr | (keyof Expr)[]>): DataFrame;
   /**
    * Count the number of values in each group.
    */
-  count(): DataFrame
+  count(): DataFrame;
   /**
    * Aggregate the first values in the group.
    */
-  first(): DataFrame
+  first(): DataFrame;
 
   /**
    * Return a `DataFrame` with:
    *   - the groupby keys
    *   - the group indexes aggregated as lists
    */
-  groups(): DataFrame
+  groups(): DataFrame;
   /**
    * Return first n rows of each group.
    * @param n -Number of values of the group to select
    * @example
    * ```
-   * >>> df = pl.DataFrame({
-   * >>>   "letters": ["c", "c", "a", "c", "a", "b"],
-   * >>>   "nrs": [1, 2, 3, 4, 5, 6]
-   * >>> })
-   * >>> df
+   * > df = pl.DataFrame({
+   * >   "letters": ["c", "c", "a", "c", "a", "b"],
+   * >   "nrs": [1, 2, 3, 4, 5, 6]
+   * > })
+   * > df
    * shape: (6, 2)
    * ╭─────────┬─────╮
    * │ letters ┆ nrs │
@@ -89,10 +87,10 @@ export interface GroupBy {
    * ├╌╌╌╌╌╌╌╌╌┼╌╌╌╌╌┤
    * │ "b"     ┆ 6   │
    * ╰─────────┴─────╯
-   * >>> df.groupby("letters")
-   * >>>   .head(2)
-   * >>>   .sort("letters");
-   * >>>
+   * > df.groupby("letters")
+   * >   .head(2)
+   * >   .sort("letters");
+   * > >>
    * shape: (5, 2)
    * ╭─────────┬─────╮
    * │ letters ┆ nrs │
@@ -111,75 +109,71 @@ export interface GroupBy {
    * ╰─────────┴─────╯
    * ```
    */
-  head(n?: number): DataFrame
+  head(n?: number): DataFrame;
   /**
    * Aggregate the last values in the group.
    */
-  last(): DataFrame
+  last(): DataFrame;
   /**
    * Reduce the groups to the maximal value.
    */
-  max(): DataFrame
+  max(): DataFrame;
   /**
    * Reduce the groups to the mean values.
    */
-  mean(): DataFrame
+  mean(): DataFrame;
   /**
    * Return the median per group.
    */
-  median(): DataFrame
+  median(): DataFrame;
   /**
    * Reduce the groups to the minimal value.
    */
-  min(): DataFrame
+  min(): DataFrame;
   /**
    * Count the unique values per group.
    */
-  nUnique(): DataFrame
+  nUnique(): DataFrame;
   /**
    * Do a pivot operation based on the group key, a pivot column and an aggregation function on the values column.
    * @param pivotCol - Column to pivot.
    * @param valuesCol - Column that will be aggregated.
    *
    */
-  pivot({pivotCol, valuesCol}: {pivotCol: string, valuesCol: string}): PivotOps
-  pivot(pivotCol: string, valuesCol: string): PivotOps
+  pivot({
+    pivotCol,
+    valuesCol,
+  }: { pivotCol: string; valuesCol: string }): PivotOps;
+  pivot(pivotCol: string, valuesCol: string): PivotOps;
   /**
    * Compute the quantile per group.
    */
-  quantile(quantile: number): DataFrame
+  quantile(quantile: number): DataFrame;
   /**
    * Reduce the groups to the sum.
    */
-  sum(): DataFrame
-  tail(n?: number): DataFrame
-  toString(): string
-
-
+  sum(): DataFrame;
+  tail(n?: number): DataFrame;
+  toString(): string;
 }
 
+export type PivotOps = Pick<
+  GroupBy,
+  "count" | "first" | "max" | "mean" | "median" | "min" | "sum"
+> & { [inspect](): string };
 
-export type PivotOps = Pick<GroupBy,
-  "count"
-  | "first"
-  | "max"
-  | "mean"
-  | "median"
-  | "min"
-  | "sum"
-> & {[inspect](): string}
+/** @ignore */
+export function _GroupBy(df: any, by: string[], maintainOrder = false) {
+  const customInspect = () =>
+    util.formatWithOptions(inspectOpts, "GroupBy {by: %O}", by);
 
-export function GroupBy(
-  df: any,
-  by: string[],
-  maintainOrder = false
-) {
-  const customInspect = () => util.formatWithOptions(inspectOpts, "GroupBy {by: %O}", by);
-
-  const pivot = (opts: {pivotCol: string, valuesCol: string} | string, valuesCol?: string): PivotOps => {
-    if(typeof opts === "string") {
-      if(valuesCol) {
-        return pivot({pivotCol: opts, valuesCol});
+  const pivot = (
+    opts: { pivotCol: string; valuesCol: string } | string,
+    valuesCol?: string,
+  ): PivotOps => {
+    if (typeof opts === "string") {
+      if (valuesCol) {
+        return pivot({ pivotCol: opts, valuesCol });
       } else {
         throw new Error("must specify both pivotCol and valuesCol");
       }
@@ -189,28 +183,26 @@ export function GroupBy(
   };
 
   const agg = (...aggs): DataFrame => {
-    if(utils.isExprArray(aggs))  {
+    if (utils.isExprArray(aggs)) {
       aggs = [aggs].flat(2);
 
       return _DataFrame(df)
         .lazy()
         .groupBy(by, maintainOrder)
         .agg(...aggs)
-        .collectSync({noOptimization:true});
+        .collectSync({ noOptimization: true });
     } else {
-      let pairs = Object.entries(aggs[0])
-        .flatMap(([key, values]) => {
-          return [values].flat(2).map(v => col(key)[v as any]());
-        });
+      let pairs = Object.entries(aggs[0]).flatMap(([key, values]) => {
+        return [values].flat(2).map((v) => col(key)[v as any]());
+      });
 
       return _DataFrame(df)
         .lazy()
         .groupBy(by, maintainOrder)
         .agg(...pairs)
-        .collectSync({noOptimization:true});
+        .collectSync({ noOptimization: true });
     }
   };
-
 
   return Object.seal({
     [inspect]: customInspect,
@@ -224,16 +216,16 @@ export function GroupBy(
     groups() {
       return _DataFrame(df.groupby([by].flat(), null, "groups"));
     },
-    head: (n=5) => agg(exclude(by as any).head(n)),
+    head: (n = 5) => agg(exclude(by as any).head(n)),
     last: () => agg(exclude(by as any).last()),
     max: () => agg(exclude(by as any).max()),
     mean: () => agg(exclude(by as any).mean()),
     median: () => agg(exclude(by as any).median()),
     min: () => agg(exclude(by as any).min()),
     nUnique: () => agg(exclude(by as any).nUnique()),
-    quantile: (q: number) =>  agg(exclude(by as any).quantile(q)),
+    quantile: (q: number) => agg(exclude(by as any).quantile(q)),
     sum: () => agg(exclude(by as any).sum()),
-    tail: (n=5) => agg(exclude(by as any).tail(n)),
+    tail: (n = 5) => agg(exclude(by as any).tail(n)),
     toString: () => "GroupBy",
   }) as GroupBy;
 }
@@ -242,11 +234,12 @@ function PivotOps(
   df: any,
   by: string | string[],
   pivotCol: string,
-  valueCol: string
+  valueCol: string,
 ): PivotOps {
-
-  const pivot =  (agg) => () =>  _DataFrame(df.pivot([by].flat(), [pivotCol], [valueCol], agg));
-  const customInspect = () => util.formatWithOptions(inspectOpts, "PivotOps {by: %O}", by);
+  const pivot = (agg) => () =>
+    _DataFrame(df.pivot([by].flat(), [pivotCol], [valueCol], agg));
+  const customInspect = () =>
+    util.formatWithOptions(inspectOpts, "PivotOps {by: %O}", by);
 
   return {
     [inspect]: customInspect,
@@ -260,37 +253,40 @@ function PivotOps(
   };
 }
 
-
+/**
+ * intermediate state of a rolling groupby
+ */
 export interface RollingGroupBy {
-  agg(column: ColumnsOrExpr, ...columns: ColumnsOrExpr[]): DataFrame
+  agg(column: ColumnsOrExpr, ...columns: ColumnsOrExpr[]): DataFrame;
 }
 
+/** @ignore */
 export function RollingGroupBy(
   df: any,
   indexColumn: string,
   period: string,
   offset?: string,
   closed?,
-  by?: ColumnsOrExpr
+  by?: ColumnsOrExpr,
 ): RollingGroupBy {
-
   return {
     agg(column: ColumnsOrExpr, ...columns: ColumnsOrExpr[]) {
-
-
       return df
         .lazy()
-        .groupByRolling({indexColumn, period, offset, closed, by} as any)
+        .groupByRolling({ indexColumn, period, offset, closed, by } as any)
         .agg(column as any, ...columns)
         .collectSync();
-    }
+    },
   };
 }
-
+/**
+ * intermediate state of a dynamic groupby
+ */
 export interface DynamicGroupBy {
-  agg(column: ColumnsOrExpr, ...columns: ColumnsOrExpr[]): DataFrame
+  agg(column: ColumnsOrExpr, ...columns: ColumnsOrExpr[]): DataFrame;
 }
 
+/** @ignore */
 export function DynamicGroupBy(
   df: any,
   indexColumn: string,
@@ -300,18 +296,24 @@ export function DynamicGroupBy(
   truncate?: boolean,
   includeBoundaries?: boolean,
   closed?: string,
-  by?: ColumnsOrExpr
+  by?: ColumnsOrExpr,
 ): DynamicGroupBy {
-
   return {
     agg(column: ColumnsOrExpr, ...columns: ColumnsOrExpr[]) {
-
-
       return df
         .lazy()
-        .groupByDynamic({indexColumn, every, period, offset, truncate, includeBoundaries, closed, by} as any)
+        .groupByDynamic({
+          indexColumn,
+          every,
+          period,
+          offset,
+          truncate,
+          includeBoundaries,
+          closed,
+          by,
+        } as any)
         .agg(column as any, ...columns)
-        .collectSync({noOptimizations: true});
-    }
+        .collectSync({ noOptimizations: true });
+    },
   };
 }

@@ -1,0 +1,28 @@
+{
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "recommended": true,
+      "suspicious": {
+        "noExplicitAny": "off"
+      }
+    },
+    "ignore": [
+      "./docs/*",
+      "./bin/*"
+    ]
+  },
+  "formatter": {
+    "indentSize": 2,
+    "indentStyle": "space",
+    "ignore": [
+      "./docs/*",
+      "./bin/*"
+    ]
+  },
+  "javascript": {
+    "formatter": {
+      "quoteStyle": "double"
+    }
+  }
+}

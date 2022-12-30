@@ -1,4 +1,4 @@
-import {Series, _Series} from "./series";
+import {Series, _Series} from ".";
 import {DateFunctions} from "../shared_traits";
 
 export type SeriesDateFunctions = DateFunctions<Series>;

@@ -1,4 +1,4 @@
-import {Field} from "./field";
+import { Field } from "./field";
 
 export abstract class DataType {
   get variant() {
@@ -90,7 +90,10 @@ export abstract class DataType {
    */
   public static Datetime(timeUnit: TimeUnit, timeZone?): DataType;
   public static Datetime(timeUnit: "ms" | "ns" | "us", timeZone?): DataType;
-  public static Datetime(timeUnit, timeZone: string | null | undefined = null): DataType {
+  public static Datetime(
+    timeUnit,
+    timeZone: string | null | undefined = null,
+  ): DataType {
     return new _Datetime(timeUnit, timeZone as any);
   }
   /**
@@ -102,10 +105,13 @@ export abstract class DataType {
   public static List(inner: DataType): DataType {
     return new _List(inner);
   }
+  /**
+   * Struct type
+   */
   public static Struct(fields: Field[]): DataType;
-  public static Struct(fields: {[key: string]: DataType}): DataType;
+  public static Struct(fields: { [key: string]: DataType }): DataType;
   public static Struct(
-    fields: Field[] | {[key: string]: DataType}
+    fields: Field[] | { [key: string]: DataType },
   ): DataType {
     return new _Struct(fields);
   }
@@ -115,11 +121,10 @@ export abstract class DataType {
   }
 
   toString() {
-    if(this.inner) {
+    if (this.inner) {
       return `${this.identity}(${this.variant}(${this.inner}))`;
     } else {
       return `${this.identity}(${this.variant})`;
-
     }
   }
   toJSON() {
@@ -141,38 +146,37 @@ export abstract class DataType {
     return this.toJSON();
   }
   static from(obj): DataType {
-
     return null as any;
   }
 }
 
-class _Null extends DataType { }
-class _Bool extends DataType { }
-class _Int8 extends DataType { }
-class _Int16 extends DataType { }
-class _Int32 extends DataType { }
-class _Int64 extends DataType { }
-class _UInt8 extends DataType { }
-class _UInt16 extends DataType { }
-class _UInt32 extends DataType { }
-class _UInt64 extends DataType { }
-class _Float32 extends DataType { }
-class _Float64 extends DataType { }
-class _Date extends DataType { }
-class _Time extends DataType { }
-class _Object extends DataType { }
-class _Utf8 extends DataType { }
+class _Null extends DataType {}
+class _Bool extends DataType {}
+class _Int8 extends DataType {}
+class _Int16 extends DataType {}
+class _Int32 extends DataType {}
+class _Int64 extends DataType {}
+class _UInt8 extends DataType {}
+class _UInt16 extends DataType {}
+class _UInt32 extends DataType {}
+class _UInt64 extends DataType {}
+class _Float32 extends DataType {}
+class _Float64 extends DataType {}
+class _Date extends DataType {}
+class _Time extends DataType {}
+class _Object extends DataType {}
+class _Utf8 extends DataType {}
 
-class _Categorical extends DataType { }
+class _Categorical extends DataType {}
+
+/**
+ * Datetime type
+ */
 class _Datetime extends DataType {
-  constructor(
-    private timeUnit: TimeUnit,
-    private timeZone?: string
-  ) {
+  constructor(private timeUnit: TimeUnit, private timeZone?: string) {
     super();
   }
   override get inner() {
-
     return [this.timeUnit, this.timeZone];
   }
 
@@ -210,9 +214,9 @@ class _Struct extends DataType {
   constructor(
     inner:
       | {
-        [name: string]: DataType;
-      }
-      | Field[]
+          [name: string]: DataType;
+        }
+      | Field[],
   ) {
     super();
     if (Array.isArray(inner)) {
@@ -240,44 +244,72 @@ class _Struct extends DataType {
   override toJSON() {
     return {
       [this.identity]: {
-        [this.variant]: this.fields
-      }
+        [this.variant]: this.fields,
+      },
     } as any;
   }
 }
 
+/**
+ * Datetime time unit
+ */
 export enum TimeUnit {
   Nanoseconds = "ns",
   Microseconds = "us",
   Milliseconds = "ms",
 }
 
+/**
+ * @ignore
+ * Timeunit namespace
+ */
 export namespace TimeUnit {
   export function from(s: "ms" | "ns" | "us"): TimeUnit {
     return TimeUnit[s];
   }
 }
-import util from "util";
-export namespace DataType {
-  export type Null = _Null;
 
+/**
+ * Datatype namespace
+ */
+export namespace DataType {
+  /** Null */
+  export type Null = _Null;
+  /** Boolean */
   export type Bool = _Bool;
+  /** Int8 */
   export type Int8 = _Int8;
+  /** Int16 */
   export type Int16 = _Int16;
+  /** Int32 */
   export type Int32 = _Int32;
+  /** Int64 */
   export type Int64 = _Int64;
+  /** UInt8 */
   export type UInt8 = _UInt8;
+  /** UInt16 */
   export type UInt16 = _UInt16;
+  /** UInt32 */
   export type UInt32 = _UInt32;
+  /** UInt64 */
   export type UInt64 = _UInt64;
+  /** Float32 */
   export type Float32 = _Float32;
+  /** Float64 */
   export type Float64 = _Float64;
+  /** Date dtype */
   export type Date = _Date;
+  /** Datetime */
   export type Datetime = _Datetime;
+  /** Utf8 */
   export type Utf8 = _Utf8;
+  /** Categorical */
   export type Categorical = _Categorical;
+  /** List */
   export type List = _List;
+  /** Struct */
   export type Struct = _Struct;
+  
   /**
    * deserializes a datatype from the serde output of rust polars `DataType`
    * @param dtype dtype object
@@ -287,15 +319,16 @@ export namespace DataType {
       return DataType[dtype];
     }
 
-    let {variant, inner} = dtype;
-    if(variant === "Struct") {
-      inner = [inner[0].map(fld => Field.from(fld.name, deserialize(fld.dtype)))];
+    let { variant, inner } = dtype;
+    if (variant === "Struct") {
+      inner = [
+        inner[0].map((fld) => Field.from(fld.name, deserialize(fld.dtype))),
+      ];
     }
-    if(variant === "List") {
+    if (variant === "List") {
       inner = [deserialize(inner[0])];
     }
 
     return DataType[variant](...inner);
-
   }
 }
