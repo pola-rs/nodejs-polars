@@ -738,12 +738,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@napi-rs/cli@npm:^2.13.3":
-  version: 2.13.3
-  resolution: "@napi-rs/cli@npm:2.13.3"
+"@napi-rs/cli@npm:^2.14.1":
+  version: 2.14.1
+  resolution: "@napi-rs/cli@npm:2.14.1"
   bin:
     napi: scripts/index.js
-  checksum: b16c3b307927b68adfe378bd76153b75c4a1a9d4101d7c49e0b1b9d425ce0f63a6d18acb9548d210dd90a4244333666f839d3f27070d3a07d63fa8ae1bfe2f35
+  checksum: ac93f7ce67b9b5ab839fadc7afbaa0a33126325807578133df016ed9d88455f403e7ceb9f225d2996d65e4a9d67960516533bab155a47998192f42febe35de24
   languageName: node
   linkType: hard
 
@@ -4465,7 +4465,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "nodejs-polars@workspace:."
   dependencies:
-    "@napi-rs/cli": ^2.13.3
+    "@napi-rs/cli": ^2.14.1
     "@types/chance": ^1.1.3
     "@types/jest": ^27.0.3
     "@types/node": ^16.11.9
