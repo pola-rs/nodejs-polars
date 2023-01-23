@@ -5,6 +5,7 @@ use napi::JsUnknown;
 use polars::frame::row::{infer_schema, Row};
 use polars::frame::NullStrategy;
 use polars::io::RowCount;
+use core::panic;
 use std::borrow::Borrow;
 use std::fs::File;
 use std::io::{BufReader, BufWriter, Cursor};
