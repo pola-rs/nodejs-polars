@@ -6,7 +6,7 @@ import { LazyDataFrame, _LazyDataFrame } from "./lazy/dataframe";
 import { Readable, Stream } from "stream";
 import { concat } from "./functions";
 
-export interface readCsvOptions {
+export interface ReadCsvOptions {
   inferSchemaLength: number | null;
   batchSize: number;
   hasHeader: boolean;
@@ -30,7 +30,7 @@ export interface readCsvOptions {
   skipRowsAfterHeader: number;
 }
 
-const readCsvDefaultOptions: Partial<readCsvOptions> = {
+const readCsvDefaultOptions: Partial<ReadCsvOptions> = {
   inferSchemaLength: 100,
   hasHeader: true,
   ignoreErrors: true,
@@ -44,13 +44,13 @@ const readCsvDefaultOptions: Partial<readCsvOptions> = {
   skipRowsAfterHeader: 0,
 };
 
-export interface readJsonOptions {
+export interface ReadJsonOptions {
   batchSize: number;
   inferSchemaLength: number | null;
   format: "lines" | "json";
 }
 
-const readJsonDefaultOptions: Partial<readJsonOptions> = {
+const readJsonDefaultOptions: Partial<ReadJsonOptions> = {
   batchSize: 10000,
   inferSchemaLength: 50,
   format: "lines",
@@ -165,7 +165,7 @@ export function readRecords(
  */
 export function readCSV(
   pathOrBody: string | Buffer,
-  options?: Partial<readCsvOptions>
+  options?: Partial<ReadCsvOptions>
 ): DataFrame;
 export function readCSV(pathOrBody, options?) {
   options = { ...readCsvDefaultOptions, ...options };
@@ -188,7 +188,7 @@ export function readCSV(pathOrBody, options?) {
   }
 }
 
-export interface scanCsvOptions {
+export interface ScanCsvOptions {
   hasHeader: boolean;
   sep: string;
   commentChar: string;
@@ -206,7 +206,7 @@ export interface scanCsvOptions {
   skipRowsAfterHeader: number;
 }
 
-const scanCsvDefaultOptions: Partial<scanCsvOptions> = {
+const scanCsvDefaultOptions: Partial<ScanCsvOptions> = {
   inferSchemaLength: 100,
   cache: true,
   hasHeader: true,
@@ -252,7 +252,7 @@ const scanCsvDefaultOptions: Partial<scanCsvOptions> = {
  */
 export function scanCSV(
   path: string,
-  options?: Partial<scanCsvOptions>
+  options?: Partial<ScanCsvOptions>
 ): LazyDataFrame;
 export function scanCSV(path, options?) {
   options = { ...scanCsvDefaultOptions, ...options };
@@ -293,11 +293,11 @@ export function scanCSV(path, options?) {
  */
 export function readJSON(
   pathOrBody: string | Buffer,
-  options?: Partial<readJsonOptions>
+  options?: Partial<ReadJsonOptions>
 ): DataFrame;
 export function readJSON(
   pathOrBody,
-  options: Partial<readJsonOptions> = readJsonDefaultOptions
+  options: Partial<ReadJsonOptions> = readJsonDefaultOptions
 ) {
   options = { ...readJsonDefaultOptions, ...options };
   let method = options.format === "lines" ? pli.readJsonLines : pli.readJson;
@@ -317,7 +317,7 @@ export function readJSON(
     throw new Error("must supply either a path or body");
   }
 }
-interface JsonScanOptions {
+interface ScanJsonOptions {
   inferSchemaLength: number | null;
   nThreads: number;
   batchSize: number;
@@ -361,9 +361,9 @@ interface JsonScanOptions {
  */
 export function scanJson(
   path: string,
-  options?: Partial<JsonScanOptions>
+  options?: Partial<ScanJsonOptions>
 ): LazyDataFrame;
-export function scanJson(path: string, options?: Partial<JsonScanOptions>) {
+export function scanJson(path: string, options?: Partial<ScanJsonOptions>) {
   options = { ...readJsonDefaultOptions, ...options };
 
   return _LazyDataFrame(pli.scanJson(path, options));
@@ -423,7 +423,7 @@ export function readParquet(
   }
 }
 
-export interface readAvroOptions {
+export interface ReadAvroOptions {
   columns: string[] | Array<string> | number[];
   projection: number;
   nRows: number;
@@ -440,7 +440,7 @@ export interface readAvroOptions {
  */
 export function readAvro(
   pathOrBody: string | Buffer,
-  options?: Partial<readAvroOptions>
+  options?: Partial<ReadAvroOptions>
 ): DataFrame;
 export function readAvro(pathOrBody, options = {}) {
   if (Buffer.isBuffer(pathOrBody)) {
@@ -494,7 +494,7 @@ export function scanParquet(path: string, options: ScanParquetOptions = {}) {
   return _LazyDataFrame(pli.scanParquet(path, pliOptions, parallel));
 }
 
-export interface readIPCOptions {
+export interface ReadIPCOptions {
   columns: string[] | number[];
   numRows: number;
 }
@@ -510,7 +510,7 @@ export interface readIPCOptions {
  */
 export function readIPC(
   pathOrBody: string | Buffer,
-  options?: Partial<readIPCOptions>
+  options?: Partial<ReadIPCOptions>
 ): DataFrame;
 export function readIPC(pathOrBody, options = {}) {
   if (Buffer.isBuffer(pathOrBody)) {
@@ -529,7 +529,7 @@ export function readIPC(pathOrBody, options = {}) {
   }
 }
 
-export interface scanIPCOptions {
+export interface ScanIPCOptions {
   numRows: number;
   cache: boolean;
   rechunk: boolean;
@@ -545,7 +545,7 @@ export interface scanIPCOptions {
  */
 export function scanIPC(
   path: string,
-  options?: Partial<scanIPCOptions>
+  options?: Partial<ScanIPCOptions>
 ): LazyDataFrame;
 export function scanIPC(path, options = {}) {
   return _LazyDataFrame(pli.scanIpc(path, options));
@@ -618,7 +618,7 @@ export function scanIPC(path, options = {}) {
  */
 export function readCSVStream(
   stream: Readable,
-  options?: Partial<readCsvOptions>
+  options?: Partial<ReadCsvOptions>
 ): Promise<DataFrame>;
 export function readCSVStream(stream, options?) {
   let batchSize = options?.batchSize ?? 10000;
@@ -685,7 +685,7 @@ export function readCSVStream(stream, options?) {
  */
 export function readJSONStream(
   stream: Readable,
-  options?: Partial<readJsonOptions>
+  options?: Partial<ReadJsonOptions>
 ): Promise<DataFrame>;
 export function readJSONStream(stream, options = readJsonDefaultOptions) {
   options = { ...readJsonDefaultOptions, ...options };
