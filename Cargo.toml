@@ -15,8 +15,8 @@ crate-type = ["cdylib", "lib"]
 [dependencies]
 ahash = "0.7"
 bincode = "1.3"
-napi = {version = "2.10", default-features = false, features = ["napi8", "serde-json", "experimental"]}
-napi-derive = {version = "2.9", default-features = false}
+napi = {version = "2.10.9", default-features = false, features = ["napi8", "serde-json", "experimental"]}
+napi-derive = {version = "2.9.4", default-features = false}
 polars-core = {git = "https://github.com/pola-rs/polars.git", rev = "43598c3e21a2b6c1246a565005045ef553e4f688", default-features = false}
 thiserror = "1.0.20"
 
@@ -92,7 +92,7 @@ git = "https://github.com/pola-rs/polars.git"
 rev = "43598c3e21a2b6c1246a565005045ef553e4f688"
 
 [build-dependencies]
-napi-build = "2"
+napi-build = "2.0.1"
 
 [profile.release]
 codegen-units = 1
