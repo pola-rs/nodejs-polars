@@ -177,7 +177,7 @@ export function readCSV(pathOrBody, options?) {
   const extensions = [".tsv", ".csv"];
 
   if (Buffer.isBuffer(pathOrBody)) {
-    return _DataFrame(pli.readCsv(pathOrBody));
+    return _DataFrame(pli.readCsv(pathOrBody, options));
   }
   if (typeof pathOrBody === "string") {
     const inline = !isPath(pathOrBody, extensions);
