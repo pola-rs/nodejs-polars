@@ -8,6 +8,7 @@ import { concat } from "./functions";
 
 export interface ReadCsvOptions {
   inferSchemaLength: number | null;
+  nRows: number;
   batchSize: number;
   hasHeader: boolean;
   ignoreErrors: boolean;
@@ -28,6 +29,7 @@ export interface ReadCsvOptions {
   skipRows: number;
   parseDates: boolean;
   skipRowsAfterHeader: number;
+  rowCount: any;
 }
 
 const readCsvDefaultOptions: Partial<ReadCsvOptions> = {
@@ -138,6 +140,9 @@ export function readRecords(
  * @param options
  * @param options.inferSchemaLength -Maximum number of lines to read to infer schema. If set to 0, all columns will be read as pl.Utf8.
  *     If set to `null`, a full table scan will be done (slow).
+ * @param options.nRows -After n rows are read from the CSV, it stops reading.
+ *     During multi-threaded parsing, an upper bound of `n` rows
+ *     cannot be guaranteed.
  * @param options.batchSize - Number of lines to read into the buffer at once. Modify this to change performance.
  * @param options.hasHeader - Indicate if first row of dataset is header or not. If set to False first row will be set to `column_x`,
  *     `x` being an enumeration over every column in the dataset.
@@ -199,7 +204,7 @@ export interface ScanCsvOptions {
   cache: boolean;
   inferSchemaLength: number | null;
   rechunk: boolean;
-  n_rows: number;
+  nRows: number;
   encoding: string;
   lowMemory: boolean;
   parseDates: boolean;
@@ -242,7 +247,7 @@ const scanCsvDefaultOptions: Partial<ScanCsvOptions> = {
  * @param options.cache Cache the result after reading.
  * @param options.inferSchemaLength -Maximum number of lines to read to infer schema. If set to 0, all columns will be read as pl.Utf8.
  *     If set to `null`, a full table scan will be done (slow).
- * @param options.n_rows -After n rows are read from the CSV, it stops reading.
+ * @param options.nRows -After n rows are read from the CSV, it stops reading.
  *     During multi-threaded parsing, an upper bound of `n` rows
  *     cannot be guaranteed.
  * @param options.rechunk -Make sure that all columns are contiguous in memory by aggregating the chunks into a single array.
@@ -436,7 +441,7 @@ export interface ReadAvroOptions {
  * as partition aware scan.
  * @param options.columns Columns to select. Accepts a list of column names.
  * @param options.projection -Indices of columns to select. Note that column indices start at zero.
- * @param options.nRows  Stop reading from avro file after reading ``n_rows``.
+ * @param options.nRows  Stop reading from avro file after reading ``nRows``.
  */
 export function readAvro(
   pathOrBody: string | Buffer,
@@ -496,7 +501,7 @@ export function scanParquet(path: string, options: ScanParquetOptions = {}) {
 
 export interface ReadIPCOptions {
   columns: string[] | number[];
-  numRows: number;
+  nRows: number;
 }
 
 /**
@@ -506,7 +511,7 @@ export interface ReadIPCOptions {
  *   - path: Path to a file or a file like string. Any valid filepath can be used. Example: `file.ipc`.
  *   - body: String or buffer to be read as Arrow IPC
  * @param options.columns Columns to select. Accepts a list of column names.
- * @param options.numRows Stop reading from parquet file after reading ``n_rows``.
+ * @param options.nRows Stop reading from parquet file after reading ``nRows``.
  */
 export function readIPC(
   pathOrBody: string | Buffer,
@@ -530,7 +535,7 @@ export function readIPC(pathOrBody, options = {}) {
 }
 
 export interface ScanIPCOptions {
-  numRows: number;
+  nRows: number;
   cache: boolean;
   rechunk: boolean;
 }
@@ -539,7 +544,7 @@ export interface ScanIPCOptions {
  * __Lazily read from an Arrow IPC (Feather v2) file or multiple files via glob patterns.__
  * ___
  * @param path Path to a IPC file.
- * @param options.numRows Stop reading from IPC file after reading ``numRows``
+ * @param options.nRows Stop reading from IPC file after reading ``nRows``
  * @param options.cache Cache the result after reading.
  * @param options.rechunk Reallocate to contiguous memory when all chunks/ files are parsed.
  */
