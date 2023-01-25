@@ -1,12 +1,10 @@
 /* eslint-disable no-redeclare */
-import {jsTypeToPolarsType} from "./internals/construction";
-import {Series, _Series} from "./series";
-import {DataFrame, _DataFrame} from "./dataframe";
+import { jsTypeToPolarsType } from "./internals/construction";
+import { Series, _Series } from "./series";
+import { DataFrame, _DataFrame } from "./dataframe";
 import pli from "./internals/polars_internal";
-import {isDataFrameArray, isSeriesArray} from "./utils";
-import {ConcatOptions} from "./types";
-
-
+import { isDataFrameArray, isSeriesArray } from "./utils";
+import { ConcatOptions } from "./types";
 
 /**
  * _Repeat a single value n times and collect into a Series._
@@ -23,7 +21,7 @@ import {ConcatOptions} from "./types";
  *
  * ```
  */
-export function repeat<V>(value: V, n: number, name= ""): Series {
+export function repeat<V>(value: V, n: number, name = ""): Series {
   const dtype = jsTypeToPolarsType(value);
   const s = pli.JsSeries.repeat(name, value, n, dtype);
 
@@ -53,20 +51,28 @@ export function repeat<V>(value: V, n: number, name= ""): Series {
  * │ 2   ┆ 4   │
  * └─────┴─────┘
  */
-export function concat(items: Array<DataFrame>, options?: ConcatOptions): DataFrame;
-export function concat<T>(items: Array<Series>, options?: {rechunk: boolean}): Series;
-export function concat<T>(items, options: ConcatOptions =  {rechunk: true, how: "vertical"}) {
-  const {rechunk, how} = options;
+export function concat(
+  items: Array<DataFrame>,
+  options?: ConcatOptions,
+): DataFrame;
+export function concat<T>(
+  items: Array<Series>,
+  options?: { rechunk: boolean },
+): Series;
+export function concat<T>(
+  items,
+  options: ConcatOptions = { rechunk: true, how: "vertical" },
+) {
+  const { rechunk, how } = options;
 
-  if(!items.length) {
+  if (!items.length) {
     throw new RangeError("cannot concat empty list");
   }
 
-  if(isDataFrameArray(items)) {
+  if (isDataFrameArray(items)) {
     let df;
-    if(how === "vertical") {
-      df =  items.reduce((acc, curr) => acc.vstack(curr));
-
+    if (how === "vertical") {
+      df = items.reduce((acc, curr) => acc.vstack(curr));
     } else {
       df = _DataFrame(pli.horizontalConcat(items.map((i: any) => i.inner())));
     }
@@ -74,8 +80,8 @@ export function concat<T>(items, options: ConcatOptions =  {rechunk: true, how: 
     return rechunk ? df.rechunk() : df;
   }
 
-  if(isSeriesArray<T>(items)) {
-    const s =  items.reduce((acc, curr) => acc.concat(curr));
+  if (isSeriesArray<T>(items)) {
+    const s = items.reduce((acc, curr) => acc.concat(curr));
 
     return rechunk ? s.rechunk() : s;
   }

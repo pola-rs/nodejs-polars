@@ -1568,7 +1568,7 @@ export interface DataFrame
       @param names Names of the struct columns that will be decomposed by its fields
       @example
       ```
-      >df = pl.DataFrame({
+      > df = pl.DataFrame({
       ...   "int": [1, 2],
       ...   "str": ["a", "b"],
       ...   "bool": [true, null],

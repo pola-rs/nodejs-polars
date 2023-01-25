@@ -38,7 +38,7 @@ describe("serde", () => {
   test("dataframe:json", () => {
     const df = pl.DataFrame({
       foo: [1, 2],
-      bar: [2, 3]
+      bar: [2, 3],
     });
     const buf = df.serialize("json");
     const expected = pl.DataFrame.deserialize(buf, "json");
@@ -47,7 +47,7 @@ describe("serde", () => {
   test("dataframe:bincode", () => {
     const df = pl.DataFrame({
       foo: [1, 2],
-      bar: [2, 3]
+      bar: [2, 3],
     });
     const buf = df.serialize("bincode");
     const expected = pl.DataFrame.deserialize(buf, "bincode");
@@ -57,7 +57,7 @@ describe("serde", () => {
   test("dataframe:unsupported", () => {
     const df = pl.DataFrame({
       foo: [1, 2],
-      bar: [2, 3]
+      bar: [2, 3],
     });
     const ser = () => df.serialize("yaml" as any);
     const buf = df.serialize("bincode");

@@ -1,11 +1,10 @@
-import {Series, _Series} from ".";
-import {DateFunctions} from "../shared_traits";
+import { Series, _Series } from ".";
+import { DateFunctions } from "../shared_traits";
 
 export type SeriesDateFunctions = DateFunctions<Series>;
 
 export const SeriesDateFunctions = (_s): SeriesDateFunctions => {
   const wrap = (method, ...args: any[]): Series => {
-
     return _Series(_s[method](...args)) as any;
   };
 

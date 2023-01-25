@@ -7,7 +7,7 @@ import {
   RollingQuantileOptions,
   RollingSkewOptions,
 } from "./types";
-import {DataType} from "./datatypes";
+import { DataType } from "./datatypes";
 
 /**
  * Arithmetic operations
@@ -860,8 +860,8 @@ export interface StringFunctions<T> {
    * └─────────┘
    * ```
    */
-  decode(encoding: "hex" | "base64", strict?: boolean): T
-  decode(options: {encoding: "hex" | "base64", strict?: boolean}): T
+  decode(encoding: "hex" | "base64", strict?: boolean): T;
+  decode(options: { encoding: "hex" | "base64"; strict?: boolean }): T;
   /**
    * Encodes a value using the provided encoding
    * @param encoding - hex | base64
@@ -883,7 +883,7 @@ export interface StringFunctions<T> {
    * └─────────┘
    * ```
    */
-  encode(encoding: "hex" | "base64"): T
+  encode(encoding: "hex" | "base64"): T;
   /**
    * Extract the target capture group from provided patterns.
    * @param pattern A valid regex pattern
@@ -949,7 +949,7 @@ export interface StringFunctions<T> {
   /**  Get length of the string values in the Series. */
   lengths(): T;
   /** Remove leading whitespace. */
-  lstrip(): T
+  lstrip(): T;
   /** Replace first regex match with a string value. */
   replace(pat: string | RegExp, val: string): T;
   /** Replace all regex matches with a string value. */
@@ -959,7 +959,7 @@ export interface StringFunctions<T> {
   /** Modify the strings to their uppercase equivalent. */
   toUpperCase(): T;
   /** Remove trailing whitespace. */
-  rstrip(): T
+  rstrip(): T;
   /**
    * Create subslices of the string values of a Utf8 Series.
    * @param start - Start of the slice (negative indexing may be used).
@@ -971,15 +971,15 @@ export interface StringFunctions<T> {
    * @param separator — A string that identifies character or characters to use in separating the string.
    * @param inclusive Include the split character/string in the results
    */
-  split(by: string, options?: {inclusive?: boolean} | boolean): T
+  split(by: string, options?: { inclusive?: boolean } | boolean): T;
   /** Remove leading and trailing whitespace. */
-  strip(): T
+  strip(): T;
   /**
    * Parse a Series of dtype Utf8 to a Date/Datetime Series.
    * @param datatype Date or Datetime.
    * @param fmt formatting syntax. [Read more](https://docs.rs/chrono/0.4.19/chrono/format/strftime/index.html)
    */
-  strptime(datatype: DataType.Date | DataType.Datetime, fmt?: string): T
+  strptime(datatype: DataType.Date | DataType.Datetime, fmt?: string): T;
 }
 
 export interface Serialize {

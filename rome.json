@@ -8,6 +8,7 @@
       }
     },
     "ignore": [
+      "polars/native-polars.js",
       "./docs/*",
       "./bin/*"
     ]
@@ -16,6 +17,7 @@
     "indentSize": 2,
     "indentStyle": "space",
     "ignore": [
+      "polars/native-polars.js",
       "./docs/*",
       "./bin/*"
     ]

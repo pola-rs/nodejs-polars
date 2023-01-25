@@ -1,5 +1,5 @@
-import {DateFunctions} from "@polars/shared_traits";
-import {Expr, _Expr} from "../expr";
+import { DateFunctions } from "../../shared_traits";
+import { Expr, _Expr } from "../expr";
 
 /**
  * DateTime functions
@@ -8,7 +8,6 @@ export interface ExprDateTime extends DateFunctions<Expr> {}
 
 export const ExprDateTimeFunctions = (_expr: any): ExprDateTime => {
   const wrap = (method, ...args: any[]): Expr => {
-
     return _Expr(_expr[method](...args));
   };
 

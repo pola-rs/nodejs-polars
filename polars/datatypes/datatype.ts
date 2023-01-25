@@ -309,7 +309,7 @@ export namespace DataType {
   export type List = _List;
   /** Struct */
   export type Struct = _Struct;
-  
+
   /**
    * deserializes a datatype from the serde output of rust polars `DataType`
    * @param dtype dtype object

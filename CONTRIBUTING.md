@@ -33,6 +33,11 @@ The following is a set of guidelines for contributing to nodejs-polars. These ar
 
 
 ## Development
+### Vscode 
+If using VScode, it is recommended to install the following extensions
+- rust-analyzer 
+- rome
+---
 
 - Fork the repository, then clone it from your fork
 ```
@@ -56,5 +61,11 @@ yarn jest
 
 - Make your changes
 - Test your changes
+- 
+You can run the `precommit` command to make sure all of your tests pass & code is formatted correctly.
+```
+yarn precommit
+```
+
 - Update the documentation if necessary
 - Create a new pull request

@@ -42,19 +42,19 @@ export interface ConcatOptions {
  * Options for {@link DataFrame.writeCSV}
  * @category Options
  */
-export interface WriteCsvOptions  {
+export interface WriteCsvOptions {
   hasHeader?: boolean;
   sep?: string;
-};
+}
 
 /**
  * Options for {@link DataFrame.writeJSON}
  * @category Options
  */
-export interface WriteJsonOptions  {
+export interface WriteJsonOptions {
   orient?: "row" | "col" | "dataframe";
   multiline?: boolean;
-};
+}
 
 /**
  * Options for {@link scanJson}
@@ -73,7 +73,7 @@ export interface JsonScanOptions {
  * Options for {@link DataFrame.writeParquet}
  * @category Options
  */
-export interface WriteParquetOptions  {
+export interface WriteParquetOptions {
   compression?:
     | "uncompressed"
     | "snappy"
@@ -82,7 +82,7 @@ export interface WriteParquetOptions  {
     | "brotli"
     | "lz4"
     | "zstd";
-};
+}
 /**
  * Options for {@link readParquet}
  */
@@ -120,15 +120,15 @@ export interface RowCount {
  */
 export interface WriteIPCOptions {
   compression?: "uncompressed" | "lz4" | "zstd";
-};
+}
 
 /**
  * Options for writing Avro files
  * @category Options
  */
-export interface WriteAvroOptions  {
+export interface WriteAvroOptions {
   compression?: "uncompressed" | "snappy" | "deflate";
-};
+}
 
 /**
  * Interpolation types
@@ -163,7 +163,7 @@ export interface JoinOptions {
   /** join type */
   how?: JoinType;
   suffix?: string;
-};
+}
 
 /**
  * options for lazy join operations @see {@link LazyDataFrame.join}
@@ -171,7 +171,7 @@ export interface JoinOptions {
 export interface LazyJoinOptions extends JoinOptions {
   allowParallel?: boolean;
   forceParallel?: boolean;
-};
+}
 
 /**
  * options for lazy operations @see {@link LazyDataFrame.collect}
@@ -194,7 +194,7 @@ export interface RollingOptions {
   weights?: Array<number>;
   minPeriods?: number;
   center?: boolean;
-};
+}
 
 /**
  * options for rolling quantile operations
@@ -203,13 +203,13 @@ export interface RollingOptions {
 export interface RollingQuantileOptions extends RollingOptions {
   quantile: number;
   interpolation?: InterpolationMethod;
-};
+}
 
 /**
  * options for rolling mean operations
  * @category Options
  */
-export interface RollingSkewOptions  {
+export interface RollingSkewOptions {
   windowSize: number;
   bias?: boolean;
-};
+}
