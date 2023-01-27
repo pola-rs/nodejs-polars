@@ -156,7 +156,7 @@ export interface ExprString {
    * If string is longer or equal to given length no modifications will be done
    * @param {number} length  - of the final string
    * @param {string} fillChar  - that will fill the string. 
-   *  If a string longer than 1 character is provided only the first character will be used
+   * @note If a string longer than 1 character is provided only the first character will be used
   */
   padStart(length: number, fillChar: string): Expr
   /**
@@ -171,7 +171,7 @@ export interface ExprString {
    * If string is longer or equal to given length no modifications will be done
    * @param {number} length  - of the final string
    * @param {string} fillChar  - that will fill the string. 
-   *  If a string longer than 1 character is provided only the first character will be used
+   * @note If a string longer than 1 character is provided only the first character will be used
   */
   padEnd(length: number, fillChar: string): Expr
   /**
