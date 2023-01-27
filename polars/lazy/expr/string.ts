@@ -152,6 +152,29 @@ export interface ExprString {
   /** Remove trailing whitespace. */
   rstrip(): Expr
   /**
+   *  Add a leading fillChar to a string until string length is reached.
+   * If string is longer or equal to given length no modifications will be done
+   * @param {number} length  - of the final string
+   * @param {string} fillChar  - that will fill the string. 
+   *  If a string longer than 1 character is provided only the first character will be used
+  */
+  padStart(length: number, fillChar: string): Expr
+  /**
+   *  Add  leading "0" to a string until string length is reached.
+   * If string is longer or equal to given length no modifications will be done
+   * @param {number} length  - of the final string
+   * @see {@link padStart}
+  */
+  justify(length: number): Expr
+  /**
+   *  Add a trailing fillChar to a string until string length is reached.
+   * If string is longer or equal to given length no modifications will be done
+   * @param {number} length  - of the final string
+   * @param {string} fillChar  - that will fill the string. 
+   *  If a string longer than 1 character is provided only the first character will be used
+  */
+  padEnd(length: number, fillChar: string): Expr
+  /**
    * Create subslices of the string values of a Utf8 Series.
    * @param start - Start of the slice (negative indexing may be used).
    * @param length - Optional length of the slice.
@@ -234,6 +257,15 @@ export const ExprStringFunctions = (_expr: any): ExprString => {
     },
     rstrip() {
       return wrap("strRstrip");
+    },
+    padStart(length: number, fillChar: string){
+      return wrap("strPadStart", length, fillChar)
+    },
+    justify(length: number) {
+      return wrap("strJustify", length)
+    },
+    padEnd(length: number, fillChar: string) {
+      return wrap("strPadEnd", length, fillChar)
     },
     slice(start: number, length?: number) {
       return wrap("strSlice", start, length);
