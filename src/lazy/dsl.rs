@@ -609,10 +609,10 @@ impl JsExpr {
     }
 
     #[napi]
-    pub fn str_pad_start(&self, length: i64, width: String) -> JsExpr {
+    pub fn str_pad_start(&self, length: i64, fill_char: String) -> JsExpr {
         let function = move |s: Series| {
             let ca = s.utf8()?;
-            Ok(ca.rjust(length as usize, width.chars().nth(0).unwrap()).into_series())
+            Ok(ca.rjust(length as usize, fill_char.chars().nth(0).unwrap()).into_series())
         };
 
         self.clone()
@@ -623,10 +623,10 @@ impl JsExpr {
     }
 
     #[napi]
-    pub fn str_pad_end(&self, length: i64, width: String) -> JsExpr {
+    pub fn str_pad_end(&self, length: i64, fill_char: String) -> JsExpr {
         let function = move |s: Series| {
             let ca = s.utf8()?;
-            Ok(ca.ljust(length as usize, width.chars().nth(0).unwrap()).into_series())
+            Ok(ca.ljust(length as usize, fill_char.chars().nth(0).unwrap()).into_series())
         };
 
         self.clone()
@@ -636,7 +636,7 @@ impl JsExpr {
             .into()
     }
     #[napi]
-    pub fn str_justify(&self, width: i64) -> JsExpr {
+    pub fn str_z_fill(&self, width: i64) -> JsExpr {
         let function = move |s: Series| {
             let ca = s.utf8()?;
             Ok(ca.zfill(width as usize).into_series())
@@ -645,7 +645,7 @@ impl JsExpr {
         self.clone()
             .inner
             .map(function, GetOutput::from_type(DataType::Utf8))
-            .with_fmt("str.justify")
+            .with_fmt("str.z_fill")
             .into()
     }
     #[napi]
