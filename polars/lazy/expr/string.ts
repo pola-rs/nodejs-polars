@@ -174,11 +174,11 @@ export interface ExprString {
    * │ str      │
    * ╞══════════╡
    * │ __a      │
-   * ├╌╌╌╌╌╌----┤
+   * ├╌╌╌╌╌╌╌╌╌╌┤
    * │ __b      │
-   * ├╌╌╌╌╌╌╌╌--┤
+   * ├╌╌╌╌╌╌╌╌╌╌┤
    * │ LONG_WORD│
-   * ├╌╌╌╌╌╌----┤
+   * ├╌╌╌╌╌╌╌╌╌╌┤
    * │ cow      │
    * └──────────┘
    * ```
@@ -206,16 +206,16 @@ export interface ExprString {
    * │ str      │
    * ╞══════════╡
    * │ 00a      │
-   * ├╌╌╌╌╌╌----┤
+   * ├╌╌╌╌╌╌╌╌╌╌┤
    * │ 00b      │
-   * ├╌╌╌╌╌╌╌╌--┤
+   * ├╌╌╌╌╌╌╌╌╌╌┤
    * │ LONG_WORD│
-   * ├╌╌╌╌╌╌----┤
+   * ├╌╌╌╌╌╌╌╌╌╌┤
    * │ cow      │
    * └──────────┘
    * ```
   */
-  justify(length: number): Expr
+  zFill(length: number): Expr
   /**
    *  Add a trailing fillChar to a string until string length is reached.
    * If string is longer or equal to given length no modifications will be done
@@ -239,11 +239,11 @@ export interface ExprString {
    * │ str      │
    * ╞══════════╡
    * │ a__      │
-   * ├╌╌╌╌╌╌----┤
+   * ├╌╌╌╌╌╌╌╌╌╌┤
    * │ b__      │
-   * ├╌╌╌╌╌╌╌╌--┤
+   * ├╌╌╌╌╌╌╌╌╌╌┤
    * │ LONG_WORD│
-   * ├╌╌╌╌╌╌----┤
+   * ├╌╌╌╌╌╌╌╌╌╌┤
    * │ cow      │
    * └──────────┘
    * ```
@@ -336,8 +336,8 @@ export const ExprStringFunctions = (_expr: any): ExprString => {
     padStart(length: number, fillChar: string){
       return wrap("strPadStart", length, fillChar)
     },
-    justify(length: number) {
-      return wrap("strJustify", length)
+    zFill(length: number) {
+      return wrap("strZFill", length)
     },
     padEnd(length: number, fillChar: string) {
       return wrap("strPadEnd", length, fillChar)
