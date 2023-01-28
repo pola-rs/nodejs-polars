@@ -896,13 +896,17 @@ impl JsSeries {
     #[napi]
     pub fn str_pad_start(&self, length: i64, fill_char: String) -> napi::Result<JsSeries> {
         let ca = self.series.utf8().map_err(JsPolarsErr::from)?;
-        let s = ca.rjust(length as usize, fill_char.chars().nth(0).unwrap()).into_series();
+        let s = ca
+            .rjust(length as usize, fill_char.chars().nth(0).unwrap())
+            .into_series();
         Ok(s.into())
     }
     #[napi]
     pub fn str_pad_end(&self, length: i64, fill_char: String) -> napi::Result<JsSeries> {
         let ca = self.series.utf8().map_err(JsPolarsErr::from)?;
-        let s = ca.ljust(length as usize, fill_char.chars().nth(0).unwrap()).into_series();
+        let s = ca
+            .ljust(length as usize, fill_char.chars().nth(0).unwrap())
+            .into_series();
         Ok(s.into())
     }
     #[napi]

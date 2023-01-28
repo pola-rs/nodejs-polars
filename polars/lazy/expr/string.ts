@@ -51,8 +51,8 @@ export interface ExprString {
    * └─────────┘
    * ```
    */
-  decode(encoding: "hex" | "base64", strict?: boolean): Expr
-  decode(options: {encoding: "hex" | "base64", strict?: boolean}): Expr
+  decode(encoding: "hex" | "base64", strict?: boolean): Expr;
+  decode(options: { encoding: "hex" | "base64"; strict?: boolean }): Expr;
   /**
    * Encodes a value using the provided encoding
    * @param encoding - hex | base64
@@ -74,7 +74,7 @@ export interface ExprString {
    * └─────────┘
    * ```
    */
-  encode(encoding: "hex" | "base64"): Expr
+  encode(encoding: "hex" | "base64"): Expr;
   /**
    * Extract the target capture group from provided patterns.
    * @param pattern A valid regex pattern
@@ -140,7 +140,7 @@ export interface ExprString {
   /**  Get length of the string values in the Series. */
   lengths(): Expr;
   /** Remove leading whitespace. */
-  lstrip(): Expr
+  lstrip(): Expr;
   /** Replace first regex match with a string value. */
   replace(pat: string | RegExp, val: string): Expr;
   /** Replace all regex matches with a string value. */
@@ -150,12 +150,12 @@ export interface ExprString {
   /** Modify the strings to their uppercase equivalent. */
   toUpperCase(): Expr;
   /** Remove trailing whitespace. */
-  rstrip(): Expr
+  rstrip(): Expr;
   /**
    *  Add a leading fillChar to a string until string length is reached.
    * If string is longer or equal to given length no modifications will be done
    * @param {number} length  - of the final string
-   * @param {string} fillChar  - that will fill the string. 
+   * @param {string} fillChar  - that will fill the string.
    * @note If a string longer than 1 character is provided only the first character will be used
    * @example
    * ```
@@ -182,8 +182,8 @@ export interface ExprString {
    * │ cow      │
    * └──────────┘
    * ```
-  */
-  padStart(length: number, fillChar: string): Expr
+   */
+  padStart(length: number, fillChar: string): Expr;
   /**
    *  Add  leading "0" to a string until string length is reached.
    * If string is longer or equal to given length no modifications will be done
@@ -214,13 +214,13 @@ export interface ExprString {
    * │ cow      │
    * └──────────┘
    * ```
-  */
-  zFill(length: number): Expr
+   */
+  zFill(length: number): Expr;
   /**
    *  Add a trailing fillChar to a string until string length is reached.
    * If string is longer or equal to given length no modifications will be done
    * @param {number} length  - of the final string
-   * @param {string} fillChar  - that will fill the string. 
+   * @param {string} fillChar  - that will fill the string.
    * @note If a string longer than 1 character is provided only the first character will be used
    *    * @example
    * ```
@@ -247,8 +247,8 @@ export interface ExprString {
    * │ cow      │
    * └──────────┘
    * ```
-  */
-  padEnd(length: number, fillChar: string): Expr
+   */
+  padEnd(length: number, fillChar: string): Expr;
   /**
    * Create subslices of the string values of a Utf8 Series.
    * @param start - Start of the slice (negative indexing may be used).
@@ -260,16 +260,16 @@ export interface ExprString {
    * @param separator — A string that identifies character or characters to use in separating the string.
    * @param inclusive Include the split character/string in the results
    */
-  split(by: string, options?: {inclusive?: boolean} | boolean): Expr
+  split(by: string, options?: { inclusive?: boolean } | boolean): Expr;
   /** Remove leading and trailing whitespace. */
-  strip(): Expr
+  strip(): Expr;
   /**
    * Parse a Series of dtype Utf8 to a Date/Datetime Series.
    * @param datatype Date or Datetime.
    * @param fmt formatting syntax. [Read more](https://docs.rs/chrono/0.4.19/chrono/format/strftime/index.html)
    */
-  strptime(datatype: DataType.Date, fmt?: string): Expr
-  strptime(datatype: DataType.Datetime, fmt?: string): Expr
+  strptime(datatype: DataType.Date, fmt?: string): Expr;
+  strptime(datatype: DataType.Datetime, fmt?: string): Expr;
 }
 
 export const ExprStringFunctions = (_expr: any): ExprString => {
@@ -334,13 +334,13 @@ export const ExprStringFunctions = (_expr: any): ExprString => {
       return wrap("strRstrip");
     },
     padStart(length: number, fillChar: string){
-      return wrap("strPadStart", length, fillChar)
+      return wrap("strPadStart", length, fillChar);
     },
     zFill(length: number) {
-      return wrap("strZFill", length)
+      return wrap("strZFill", length);
     },
     padEnd(length: number, fillChar: string) {
-      return wrap("strPadEnd", length, fillChar)
+      return wrap("strPadEnd", length, fillChar);
     },
     slice(start: number, length?: number) {
       return wrap("strSlice", start, length);

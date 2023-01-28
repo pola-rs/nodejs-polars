@@ -1047,7 +1047,7 @@ describe("lazyframe", () => {
       "ham": ["a", "b", "c"]
     }).lazy()
       .withColumn(
-        pl.col("ham").str.padStart(3,"-")
+        pl.col("ham").str.padStart(3, "-")
       )
       .collectSync();
     const expected = pl.DataFrame({
@@ -1060,7 +1060,7 @@ describe("lazyframe", () => {
       "ham": ["a", "b", "c"]
     }).lazy()
       .withColumn(
-        pl.col("ham").str.padEnd(3,"-")
+        pl.col("ham").str.padEnd(3, "-")
       )
       .collectSync();
     const expected = pl.DataFrame({

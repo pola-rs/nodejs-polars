@@ -612,7 +612,9 @@ impl JsExpr {
     pub fn str_pad_start(&self, length: i64, fill_char: String) -> JsExpr {
         let function = move |s: Series| {
             let ca = s.utf8()?;
-            Ok(ca.rjust(length as usize, fill_char.chars().nth(0).unwrap()).into_series())
+            Ok(ca
+                .rjust(length as usize, fill_char.chars().nth(0).unwrap())
+                .into_series())
         };
 
         self.clone()
@@ -626,7 +628,9 @@ impl JsExpr {
     pub fn str_pad_end(&self, length: i64, fill_char: String) -> JsExpr {
         let function = move |s: Series| {
             let ca = s.utf8()?;
-            Ok(ca.ljust(length as usize, fill_char.chars().nth(0).unwrap()).into_series())
+            Ok(ca
+                .ljust(length as usize, fill_char.chars().nth(0).unwrap())
+                .into_series())
         };
 
         self.clone()

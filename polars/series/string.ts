@@ -132,7 +132,7 @@ export interface StringFunctions {
    *  Add a leading fillChar to a string until string length is reached.
    * If string is longer or equal to given length no modifications will be done
    * @param {number} length  - of the final string
-   * @param {string} fillChar  - that will fill the string. 
+   * @param {string} fillChar  - that will fill the string.
    * @note If a string longer than 1 character is provided only the first character will be used
    * @example
    * ```
@@ -303,13 +303,13 @@ export const StringFunctions = (_s: any): StringFunctions => {
       return wrap("strReplace", /^\s*/.source, "");
     },
     padStart(length: number, fillChar: string) {
-      return wrap("strPadStart", length, fillChar)
+      return wrap("strPadStart", length, fillChar);
     },
     zFill(length: number) {
-      return wrap("strZFill", length)
+      return wrap("strZFill", length);
     },
     padEnd(length: number, fillChar: string) {
-      return wrap("strPadEnd", length, fillChar)
+      return wrap("strPadEnd", length, fillChar);
     },
     replace(pat: RegExp, val: string) {
       return wrap("strReplace", regexToString(pat), val);
