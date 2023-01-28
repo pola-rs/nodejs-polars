@@ -1068,12 +1068,12 @@ describe("lazyframe", () => {
     });
     expect(actual).toFrameEqual(expected);
   });
-  test("str:justify", () => {
+  test("str:zFill", () => {
     const actual = pl.DataFrame({
       "ham": ["a", "b", "c"]
     }).lazy()
       .withColumn(
-        pl.col("ham").str.justify(3)
+        pl.col("ham").str.zFill(3)
       )
       .collectSync();
     const expected = pl.DataFrame({
