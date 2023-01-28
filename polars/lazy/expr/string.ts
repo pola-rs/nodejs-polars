@@ -157,6 +157,31 @@ export interface ExprString {
    * @param {number} length  - of the final string
    * @param {string} fillChar  - that will fill the string. 
    * @note If a string longer than 1 character is provided only the first character will be used
+   * @example
+   * ```
+   * > df = pl.DataFrame({
+   * ...   'foo': [
+   * ...       "a",
+   * ...       "b",
+   * ...       "LONG_WORD",
+   * ...       "cow"
+   * ...   ]})
+   * > df.select(pl.col('foo').str.padStart("_", 3)
+   * shape: (4, 1)
+   * ┌──────────┐
+   * │ a        │
+   * │ -------- │
+   * │ str      │
+   * ╞══════════╡
+   * │ __a      │
+   * ├╌╌╌╌╌╌----┤
+   * │ __b      │
+   * ├╌╌╌╌╌╌╌╌--┤
+   * │ LONG_WORD│
+   * ├╌╌╌╌╌╌----┤
+   * │ cow      │
+   * └──────────┘
+   * ```
   */
   padStart(length: number, fillChar: string): Expr
   /**
@@ -164,6 +189,31 @@ export interface ExprString {
    * If string is longer or equal to given length no modifications will be done
    * @param {number} length  - of the final string
    * @see {@link padStart}
+   *    * @example
+   * ```
+   * > df = pl.DataFrame({
+   * ...   'foo': [
+   * ...       "a",
+   * ...       "b",
+   * ...       "LONG_WORD",
+   * ...       "cow"
+   * ...   ]})
+   * > df.select(pl.col('foo').str.justify(3)
+   * shape: (4, 1)
+   * ┌──────────┐
+   * │ a        │
+   * │ -------- │
+   * │ str      │
+   * ╞══════════╡
+   * │ 00a      │
+   * ├╌╌╌╌╌╌----┤
+   * │ 00b      │
+   * ├╌╌╌╌╌╌╌╌--┤
+   * │ LONG_WORD│
+   * ├╌╌╌╌╌╌----┤
+   * │ cow      │
+   * └──────────┘
+   * ```
   */
   justify(length: number): Expr
   /**
@@ -172,6 +222,31 @@ export interface ExprString {
    * @param {number} length  - of the final string
    * @param {string} fillChar  - that will fill the string. 
    * @note If a string longer than 1 character is provided only the first character will be used
+   *    * @example
+   * ```
+   * > df = pl.DataFrame({
+   * ...   'foo': [
+   * ...       "a",
+   * ...       "b",
+   * ...       "LONG_WORD",
+   * ...       "cow"
+   * ...   ]})
+   * > df.select(pl.col('foo').str.padEnd("_", 3)
+   * shape: (4, 1)
+   * ┌──────────┐
+   * │ a        │
+   * │ -------- │
+   * │ str      │
+   * ╞══════════╡
+   * │ a__      │
+   * ├╌╌╌╌╌╌----┤
+   * │ b__      │
+   * ├╌╌╌╌╌╌╌╌--┤
+   * │ LONG_WORD│
+   * ├╌╌╌╌╌╌----┤
+   * │ cow      │
+   * └──────────┘
+   * ```
   */
   padEnd(length: number, fillChar: string): Expr
   /**
