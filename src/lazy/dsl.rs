@@ -769,7 +769,6 @@ impl JsExpr {
             .with_fmt("str.hex_decode")
             .into()
     }
-    // Todo! Try binary
     #[napi]
     pub fn str_base64_encode(&self) -> JsExpr {
         self.clone()
