@@ -1190,6 +1190,54 @@ describe("expr.str", () => {
     expect(actual).toFrameEqual(expected);
     expect(seriesActual).toFrameEqual(expected);
   });
+  test("padStart", () => {
+    const df = pl.DataFrame({
+      foo: ["a", "b", "cow", "longer"],
+    });
+    const expected = pl.DataFrame({
+      foo: ["__a", "__b", "cow", "longer"],
+    });
+    const seriesActual = df
+      .getColumn("foo")
+      .str.padStart(3, "_")
+      .rename("foo")
+      .toFrame();
+    const actual = df.select(col("foo").str.padStart(3, "_").as("foo"));
+    expect(actual).toFrameEqual(expected);
+    expect(seriesActual).toFrameEqual(expected);
+  });
+  test("padEnd", () => {
+    const df = pl.DataFrame({
+      foo: ["a", "b", "cow", "longer"],
+    });
+    const expected = pl.DataFrame({
+      foo: ["a__", "b__", "cow", "longer"],
+    });
+    const seriesActual = df
+      .getColumn("foo")
+      .str.padEnd(3, "_")
+      .rename("foo")
+      .toFrame();
+    const actual = df.select(col("foo").str.padEnd(3, "_").as("foo"));
+    expect(actual).toFrameEqual(expected);
+    expect(seriesActual).toFrameEqual(expected);
+  });
+  test("zFill", () => {
+    const df = pl.DataFrame({
+      foo: ["a", "b", "cow", "longer"],
+    });
+    const expected = pl.DataFrame({
+      foo: ["00a", "00b", "cow", "longer"],
+    });
+    const seriesActual = df
+      .getColumn("foo")
+      .str.zFill(3)
+      .rename("foo")
+      .toFrame();
+    const actual = df.select(col("foo").str.zFill(3).as("foo"));
+    expect(actual).toFrameEqual(expected);
+    expect(seriesActual).toFrameEqual(expected);
+  });
   test("hex encode", () => {
     const df = pl.DataFrame({
       original: ["foo", "bar", null],

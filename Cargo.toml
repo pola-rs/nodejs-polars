@@ -66,6 +66,7 @@ features = [
   "arange",
   "true_div",
   "dtype-categorical",
+  "string_justify",
   "diagonal_concat",
   "horizontal_concat",
   "abs",
