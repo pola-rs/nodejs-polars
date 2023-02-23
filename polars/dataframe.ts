@@ -1436,7 +1436,7 @@ export interface DataFrame
   toRecords(): Record<string, any>[];
 
   /** compat with `JSON.stringify`  */
-  toJSON(): string;
+  toJSON(...args: any[]): string;
 
   /**
    * Converts dataframe object into column oriented javascript objects
