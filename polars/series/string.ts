@@ -127,6 +127,72 @@ export interface StringNamespace extends StringFunctions<Series> {
   /** Remove leading whitespace. */
   lstrip(): Series;
   /**
+   *  Add a leading fillChar to a string until string length is reached.
+   * If string is longer or equal to given length no modifications will be done
+   * @param {number} length  - of the final string
+   * @param {string} fillChar  - that will fill the string.
+   * @note If a string longer than 1 character is provided only the first character will be used
+   * @example
+   * ```
+   * > df = pl.DataFrame({
+   * ...   'foo': [
+   * ...       "a",
+   * ...       "b",
+   * ...       "LONG_WORD",
+   * ...       "cow"
+   * ...   ]})
+   * > df.select(pl.col('foo').str.padStart("_", 3)
+   * shape: (4, 1)
+   * ┌──────────┐
+   * │ a        │
+   * │ -------- │
+   * │ str      │
+   * ╞══════════╡
+   * │ __a      │
+   * ├╌╌╌╌╌╌╌╌╌╌┤
+   * │ __b      │
+   * ├╌╌╌╌╌╌╌╌╌╌┤
+   * │ LONG_WORD│
+   * ├╌╌╌╌╌╌╌╌╌╌┤
+   * │ cow      │
+   * └──────────┘
+   * ```
+   */
+  padStart(length: number, fillChar: string): Series;
+  /**
+   *  Add a leading '0' to a string until string length is reached.
+   * If string is longer or equal to given length no modifications will be done
+   * @param {number} length  - of the final string
+   * @example
+   * ```
+   * > df = pl.DataFrame({
+   * ...   'foo': [
+   * ...       "a",
+   * ...       "b",
+   * ...       "LONG_WORD",
+   * ...       "cow"
+   * ...   ]})
+   * > df.select(pl.col('foo').str.padStart(3)
+   * shape: (4, 1)
+   * ┌──────────┐
+   * │ a        │
+   * │ -------- │
+   * │ str      │
+   * ╞══════════╡
+   * │ 00a      │
+   * ├╌╌╌╌╌╌╌╌╌╌┤
+   * │ 00b      │
+   * ├╌╌╌╌╌╌╌╌╌╌┤
+   * │ LONG_WORD│
+   * ├╌╌╌╌╌╌╌╌╌╌┤
+   * │ cow      │
+   * └──────────┘
+   * ```
+   */
+  zFill(length: number): Series;
+  /** Add trailing zeros */
+  padEnd(length: number, fillChar: string): Series;
+  /**
    * Replace first regex match with a string value.
    * @param pattern A valid regex pattern
    * @param value Substring to replace.
@@ -225,6 +291,15 @@ export const SeriesStringFunctions = (_s: any): StringNamespace => {
     },
     lstrip() {
       return wrap("strReplace", /^\s*/.source, "");
+    },
+    padStart(length: number, fillChar: string) {
+      return wrap("strPadStart", length, fillChar);
+    },
+    zFill(length: number) {
+      return wrap("strZFill", length);
+    },
+    padEnd(length: number, fillChar: string) {
+      return wrap("strPadEnd", length, fillChar);
     },
     replace(pat: RegExp, val: string) {
       return wrap("strReplace", regexToString(pat), val);

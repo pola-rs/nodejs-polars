@@ -609,6 +609,50 @@ impl JsExpr {
     }
 
     #[napi]
+    pub fn str_pad_start(&self, length: i64, fill_char: String) -> JsExpr {
+        let function = move |s: Series| {
+            let ca = s.utf8()?;
+            Ok(ca
+                .rjust(length as usize, fill_char.chars().nth(0).unwrap())
+                .into_series())
+        };
+
+        self.clone()
+            .inner
+            .map(function, GetOutput::from_type(DataType::Utf8))
+            .with_fmt("str.pad_start")
+            .into()
+    }
+
+    #[napi]
+    pub fn str_pad_end(&self, length: i64, fill_char: String) -> JsExpr {
+        let function = move |s: Series| {
+            let ca = s.utf8()?;
+            Ok(ca
+                .ljust(length as usize, fill_char.chars().nth(0).unwrap())
+                .into_series())
+        };
+
+        self.clone()
+            .inner
+            .map(function, GetOutput::from_type(DataType::Utf8))
+            .with_fmt("str.pad_end")
+            .into()
+    }
+    #[napi]
+    pub fn str_z_fill(&self, width: i64) -> JsExpr {
+        let function = move |s: Series| {
+            let ca = s.utf8()?;
+            Ok(ca.zfill(width as usize).into_series())
+        };
+
+        self.clone()
+            .inner
+            .map(function, GetOutput::from_type(DataType::Utf8))
+            .with_fmt("str.z_fill")
+            .into()
+    }
+    #[napi]
     pub fn str_to_uppercase(&self) -> JsExpr {
         let function = |s: Series| {
             let ca = s.utf8()?;

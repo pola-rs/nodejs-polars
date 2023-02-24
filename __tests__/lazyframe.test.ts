@@ -1162,4 +1162,43 @@ describe("lazyframe", () => {
     });
     expect(actual).toFrameEqual(expected);
   });
+  test("str:padStart", () => {
+    const actual = pl
+      .DataFrame({
+        ham: ["a", "b", "c"],
+      })
+      .lazy()
+      .withColumn(pl.col("ham").str.padStart(3, "-"))
+      .collectSync();
+    const expected = pl.DataFrame({
+      ham: ["--a", "--b", "--c"],
+    });
+    expect(actual).toFrameEqual(expected);
+  });
+  test("str:padEnd", () => {
+    const actual = pl
+      .DataFrame({
+        ham: ["a", "b", "c"],
+      })
+      .lazy()
+      .withColumn(pl.col("ham").str.padEnd(3, "-"))
+      .collectSync();
+    const expected = pl.DataFrame({
+      ham: ["a--", "b--", "c--"],
+    });
+    expect(actual).toFrameEqual(expected);
+  });
+  test("str:zFill", () => {
+    const actual = pl
+      .DataFrame({
+        ham: ["a", "b", "c"],
+      })
+      .lazy()
+      .withColumn(pl.col("ham").str.zFill(3))
+      .collectSync();
+    const expected = pl.DataFrame({
+      ham: ["00a", "00b", "00c"],
+    });
+    expect(actual).toFrameEqual(expected);
+  });
 });
