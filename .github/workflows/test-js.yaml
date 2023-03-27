@@ -16,7 +16,7 @@ jobs:
           cache: yarn
           cache-dependency-path: yarn.lock
       - name: Install latest Rust nightly
-        uses: actions-rs/toolchain@v2
+        uses: actions-rs/toolchain@v1
         with:
           toolchain: nightly-2022-11-24
           override: true
