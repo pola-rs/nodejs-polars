@@ -21,14 +21,14 @@ const pl = require('nodejs-polars');
 ### Series
 
 ```js
->>> const fooSeries = pl.Series("foo", [1, 2, 3])
->>> fooSeries.sum()
+> const fooSeries = pl.Series("foo", [1, 2, 3])
+> fooSeries.sum()
 6
 
 // a lot operations support both positional and named arguments
 // you can see the full specs in the docs or the type definitions
->>> fooSeries.sort(true)
->>> fooSeries.sort({reverse: true})
+> fooSeries.sort(true)
+> fooSeries.sort({reverse: true})
 shape: (3,)
 Series: 'foo' [f64]
 [
@@ -36,14 +36,14 @@ Series: 'foo' [f64]
         2
         1
 ]
->>> fooSeries.toArray()
+> fooSeries.toArray()
 [1, 2, 3]
 
 // Series are 'Iterables' so you can use javascript iterable syntax on them
->>> [...fooSeries]
+> [...fooSeries]
 [1, 2, 3]
 
->>> fooSeries[0]
+> fooSeries[0]
 1
 
 ```
@@ -51,7 +51,7 @@ Series: 'foo' [f64]
 ### DataFrame
 
 ```js
->>> const df = pl.DataFrame(
+>const df = pl.DataFrame(
 ...   {
 ...     A: [1, 2, 3, 4, 5],
 ...     fruits: ["banana", "banana", "apple", "apple", "banana"],
@@ -59,9 +59,7 @@ Series: 'foo' [f64]
 ...     cars: ["beetle", "audi", "beetle", "beetle", "beetle"],
 ...   }
 ... )
->>> df
-...   .sort("fruits")
-...   .select(
+> df.sort("fruits").select(
 ...     "fruits",
 ...     "cars",
 ...     pl.lit("fruits").alias("literal_string_fruits"),
@@ -90,7 +88,7 @@ shape: (5, 8)
 ```
 
 ```js
->>> df["cars"] // or df.getColumn("cars")
+> df["cars"] // or df.getColumn("cars")
 shape: (5,)
 Series: 'cars' [str]
 [

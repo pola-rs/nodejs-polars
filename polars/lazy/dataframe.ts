@@ -1,5 +1,5 @@
-import {DataFrame, _DataFrame} from "../dataframe";
-import {Expr, exprToLitOrExpr} from "./expr";
+import { DataFrame, _DataFrame } from "../dataframe";
+import { Expr, exprToLitOrExpr } from "./expr";
 import pli from "../internals/polars_internal";
 import {
   columnOrColumnsStrict,
@@ -9,26 +9,11 @@ import {
   selectionToExprList,
   ValueOrArray,
 } from "../utils";
-import {LazyGroupBy} from "./groupby";
-import {Deserialize, GroupByOps, Serialize} from "../shared_traits";
+import { _LazyGroupBy, LazyGroupBy } from "./groupby";
+import { Deserialize, GroupByOps, Serialize } from "../shared_traits";
+import { LazyOptions, LazyJoinOptions } from "../types";
 
 const inspect = Symbol.for("nodejs.util.inspect.custom");
-
-type LazyJoinOptions = {
-  how?: "left" | "inner" | "outer" | "semi" | "anti" | "cross";
-  suffix?: string;
-  allowParallel?: boolean;
-  forceParallel?: boolean;
-};
-
-type LazyOptions = {
-  typeCoercion?: boolean;
-  predicatePushdown?: boolean;
-  projectionPushdown?: boolean;
-  simplifyExpression?: boolean;
-  stringCache?: boolean;
-  noOptimization?: boolean;
-};
 
 /**
  * Representation of a Lazy computation graph / query.
@@ -89,7 +74,7 @@ export interface LazyDataFrame extends Serialize, GroupByOps<LazyGroupBy> {
   distinct(
     maintainOrder?: boolean,
     subset?: ColumnSelection,
-    keep?: "first" | "last"
+    keep?: "first" | "last",
   ): LazyDataFrame;
   distinct(opts: {
     maintainOrder?: boolean;
@@ -138,13 +123,13 @@ export interface LazyDataFrame extends Serialize, GroupByOps<LazyGroupBy> {
    * @param predicate - Expression that evaluates to a boolean Series.
    * @example
    * ```
-   * >>> lf = pl.DataFrame({
-   * >>>   "foo": [1, 2, 3],
-   * >>>   "bar": [6, 7, 8],
-   * >>>   "ham": ['a', 'b', 'c']
-   * >>> }).lazy()
-   * >>> // Filter on one condition
-   * >>> lf.filter(pl.col("foo").lt(3)).collect()
+   * > lf = pl.DataFrame({
+   * >   "foo": [1, 2, 3],
+   * >   "bar": [6, 7, 8],
+   * >   "ham": ['a', 'b', 'c']
+   * > }).lazy()
+   * > // Filter on one condition
+   * > lf.filter(pl.col("foo").lt(3)).collect()
    * shape: (2, 3)
    * ┌─────┬─────┬─────┐
    * │ foo ┆ bar ┆ ham │
@@ -166,7 +151,7 @@ export interface LazyDataFrame extends Serialize, GroupByOps<LazyGroupBy> {
    * Start a groupby operation.
    */
   groupBy(by: ColumnsOrExpr, maintainOrder?: boolean): LazyGroupBy;
-  groupBy(by: ColumnsOrExpr, opts: {maintainOrder: boolean}): LazyGroupBy;
+  groupBy(by: ColumnsOrExpr, opts: { maintainOrder: boolean }): LazyGroupBy;
 
   /**
    * Gets the first `n` rows of the DataFrame. You probably don't want to use this!
@@ -214,22 +199,24 @@ export interface LazyDataFrame extends Serialize, GroupByOps<LazyGroupBy> {
    */
   join(
     other: LazyDataFrame,
-    joinOptions: {on: ValueOrArray<string | Expr>} & LazyJoinOptions
+    joinOptions: { on: ValueOrArray<string | Expr> } & LazyJoinOptions,
   ): LazyDataFrame;
   join(
     other: LazyDataFrame,
     joinOptions: {
       leftOn: ValueOrArray<string | Expr>;
       rightOn: ValueOrArray<string | Expr>;
-    } & LazyJoinOptions
+    } & LazyJoinOptions,
   ): LazyDataFrame;
-  join(other: LazyDataFrame, options: {
-    how: "cross",
-    suffix?: string,
-    allowParallel?: boolean,
-    forceParallel?: boolean
-  }): LazyDataFrame
-
+  join(
+    other: LazyDataFrame,
+    options: {
+      how: "cross";
+      suffix?: string;
+      allowParallel?: boolean;
+      forceParallel?: boolean;
+    },
+  ): LazyDataFrame;
 
   /**
      * Perform an asof join. This is similar to a left-join except that we
@@ -282,7 +269,7 @@ export interface LazyDataFrame extends Serialize, GroupByOps<LazyGroupBy> {
 
       @example
       ```
-      >>> const gdp = pl.DataFrame({
+      >const gdp = pl.DataFrame({
       ...   date: [
       ...     new Date('2016-01-01'),
       ...     new Date('2017-01-01'),
@@ -291,7 +278,7 @@ export interface LazyDataFrame extends Serialize, GroupByOps<LazyGroupBy> {
       ...   ],  // note record date: Jan 1st (sorted!)
       ...   gdp: [4164, 4411, 4566, 4696],
       ... })
-      >>> const population = pl.DataFrame({
+      >const population = pl.DataFrame({
       ...   date: [
       ...     new Date('2016-05-12'),
       ...     new Date('2017-05-12'),
@@ -300,7 +287,7 @@ export interface LazyDataFrame extends Serialize, GroupByOps<LazyGroupBy> {
       ...   ],  // note record date: May 12th (sorted!)
       ...   "population": [82.19, 82.66, 83.12, 83.52],
       ... })
-      >>> population.joinAsof(
+      >population.joinAsof(
       ...   gdp,
       ...   {leftOn:"date", rightOn:"date", strategy:"backward"}
       ... )
@@ -334,7 +321,7 @@ export interface LazyDataFrame extends Serialize, GroupByOps<LazyGroupBy> {
       tolerance?: number | string;
       allowParallel?: boolean;
       forceParallel?: boolean;
-    }
+    },
   ): LazyDataFrame;
   /**
    * Get the last row of the DataFrame.
@@ -386,13 +373,13 @@ export interface LazyDataFrame extends Serialize, GroupByOps<LazyGroupBy> {
    * @see {@link DataFrame.shift}
    */
   shift(periods: number): LazyDataFrame;
-  shift(opts: {periods: number}): LazyDataFrame;
+  shift(opts: { periods: number }): LazyDataFrame;
   /**
    * @see {@link DataFrame.shiftAndFill}
    */
   shiftAndFill(
     periods: number,
-    fillValue: number | string | Expr
+    fillValue: number | string | Expr,
   ): LazyDataFrame;
   shiftAndFill(opts: {
     periods: number;
@@ -402,7 +389,7 @@ export interface LazyDataFrame extends Serialize, GroupByOps<LazyGroupBy> {
    * @see {@link DataFrame.slice}
    */
   slice(offset: number, length: number): LazyDataFrame;
-  slice(opts: {offset: number; length: number}): LazyDataFrame;
+  slice(opts: { offset: number; length: number }): LazyDataFrame;
   /**
    * @see {@link DataFrame.sort}
    */
@@ -438,7 +425,7 @@ export interface LazyDataFrame extends Serialize, GroupByOps<LazyGroupBy> {
   unique(
     maintainOrder?: boolean,
     subset?: ColumnSelection,
-    keep?: "first" | "last"
+    keep?: "first" | "last",
   ): LazyDataFrame;
   unique(opts: {
     maintainOrder?: boolean;
@@ -489,6 +476,7 @@ const prepareGroupbyInputs = (by) => {
   }
 };
 
+/** @ignore */
 export const _LazyDataFrame = (_ldf: any): LazyDataFrame => {
   const unwrap = (method: string, ...args: any[]) => {
     return _ldf[method as any](...args);
@@ -537,17 +525,17 @@ export const _LazyDataFrame = (_ldf: any): LazyDataFrame => {
       };
 
       if (typeof opts === "boolean") {
-        const o = {...defaultOptions, maintainOrder: opts, subset, keep};
+        const o = { ...defaultOptions, maintainOrder: opts, subset, keep };
 
         return _LazyDataFrame(
-          _ldf.unique(o.maintainOrder, o?.subset?.flat(2), o.keep)
+          _ldf.unique(o.maintainOrder, o?.subset?.flat(2), o.keep),
         );
       }
 
       if (opts.subset) {
         opts.subset = [opts.subset].flat(3);
       }
-      const o = {...defaultOptions, ...opts};
+      const o = { ...defaultOptions, ...opts };
 
       return _LazyDataFrame(_ldf.unique(o.maintainOrder, o.subset, o.keep));
     },
@@ -580,7 +568,7 @@ export const _LazyDataFrame = (_ldf: any): LazyDataFrame => {
           opts.projectionPushdown,
           opts.simplifyExpr,
           opts.stringCache,
-          opts.slicePushdown
+          opts.slicePushdown,
         );
       }
 
@@ -598,7 +586,7 @@ export const _LazyDataFrame = (_ldf: any): LazyDataFrame => {
           opts.projectionPushdown,
           opts.simplifyExpr,
           opts.stringCache,
-          opts.slicePushdown
+          opts.slicePushdown,
         );
       }
 
@@ -617,23 +605,23 @@ export const _LazyDataFrame = (_ldf: any): LazyDataFrame => {
 
       return _LazyDataFrame(_ldf.filter(predicate));
     },
-    groupBy(opt, maintainOrder: any = true) {
+    groupBy(opt, maintainOrder: any = true): LazyGroupBy {
       if (opt?.by !== undefined) {
         const by = selectionToExprList([opt.by], false);
 
-        return LazyGroupBy(_ldf.groupby(by, opt.maintainOrder));
+        return _LazyGroupBy(_ldf.groupby(by, opt.maintainOrder));
       }
       const by = selectionToExprList([opt], false);
 
-      return LazyGroupBy(_ldf.groupby(by, maintainOrder));
+      return _LazyGroupBy(_ldf.groupby(by, maintainOrder));
     },
-    groupByRolling({indexColumn, by, period, offset, closed}) {
+    groupByRolling({ indexColumn, by, period, offset, closed }) {
       offset = offset ?? `-${period}`;
       closed = closed ?? "right";
       by = prepareGroupbyInputs(by);
       const lgb = _ldf.groupbyRolling(indexColumn, period, offset, closed, by);
 
-      return LazyGroupBy(lgb);
+      return _LazyGroupBy(lgb);
     },
     groupByDynamic({
       indexColumn,
@@ -660,10 +648,10 @@ export const _LazyDataFrame = (_ldf: any): LazyDataFrame => {
         truncate,
         includeBoundaries,
         closed,
-        by
+        by,
       );
 
-      return LazyGroupBy(lgb);
+      return _LazyGroupBy(lgb);
     },
     head(len = 5) {
       return _LazyDataFrame(_ldf.slice(0, len));
@@ -676,10 +664,21 @@ export const _LazyDataFrame = (_ldf: any): LazyDataFrame => {
         forceParallel: false,
         ...options,
       };
-      const {how, suffix, allowParallel, forceParallel} = options;
+      const { how, suffix, allowParallel, forceParallel } = options;
       if (how === "cross") {
-
-        return _LazyDataFrame(_ldf.join(df._ldf, [], [], allowParallel, forceParallel, how, suffix, [], []));
+        return _LazyDataFrame(
+          _ldf.join(
+            df._ldf,
+            [],
+            [],
+            allowParallel,
+            forceParallel,
+            how,
+            suffix,
+            [],
+            [],
+          ),
+        );
       }
       let leftOn;
       let rightOn;
@@ -692,7 +691,7 @@ export const _LazyDataFrame = (_ldf: any): LazyDataFrame => {
         (options.rightOn && !options.leftOn)
       ) {
         throw new TypeError(
-          "You should pass the column to join on as an argument."
+          "You should pass the column to join on as an argument.",
         );
       } else {
         leftOn = selectionToExprList(options.leftOn, false);
@@ -708,7 +707,7 @@ export const _LazyDataFrame = (_ldf: any): LazyDataFrame => {
         how,
         suffix,
         [],
-        []
+        [],
       );
 
       return _LazyDataFrame(ldf);
@@ -721,10 +720,10 @@ export const _LazyDataFrame = (_ldf: any): LazyDataFrame => {
         strategy: "backward",
         ...options,
       };
-      const {suffix, strategy, allowParallel, forceParallel} = options;
+      const { suffix, strategy, allowParallel, forceParallel } = options;
       let leftOn;
       let rightOn;
-      if (!(other?._ldf)) {
+      if (!other?._ldf) {
         throw new TypeError("Expected a 'lazyFrame' as join table");
       }
       if (options.on) {
@@ -734,7 +733,7 @@ export const _LazyDataFrame = (_ldf: any): LazyDataFrame => {
         (options.rightOn && !options.leftOn)
       ) {
         throw new TypeError(
-          "You should pass the column to join on as an argument."
+          "You should pass the column to join on as an argument.",
         );
       } else {
         leftOn = options.leftOn;
@@ -755,11 +754,11 @@ export const _LazyDataFrame = (_ldf: any): LazyDataFrame => {
 
       if (typeof options.by === "string") {
         byLeft = byRight = [options.by];
-
       } else if (Array.isArray(options.by)) {
         byLeft = byRight = options.by;
       }
-      let toleranceStr, toleranceNum;
+      let toleranceStr;
+      let toleranceNum;
       if (typeof options.tolerance === "string") {
         toleranceStr = options.tolerance;
       } else {
@@ -777,7 +776,7 @@ export const _LazyDataFrame = (_ldf: any): LazyDataFrame => {
         suffix,
         strategy,
         toleranceNum,
-        toleranceStr
+        toleranceStr,
       );
 
       return _LazyDataFrame(ldf);
@@ -799,7 +798,7 @@ export const _LazyDataFrame = (_ldf: any): LazyDataFrame => {
     },
     melt(ids, values) {
       return _LazyDataFrame(
-        _ldf.melt(columnOrColumnsStrict(ids), columnOrColumnsStrict(values))
+        _ldf.melt(columnOrColumnsStrict(ids), columnOrColumnsStrict(values)),
       );
     },
     min() {
@@ -901,6 +900,7 @@ export interface LazyDataFrameConstructor extends Deserialize<LazyDataFrame> {
   fromExternal(external: any): LazyDataFrame;
 }
 
+/** @ignore */
 export const LazyDataFrame: LazyDataFrameConstructor = Object.assign(
   _LazyDataFrame,
   {
@@ -909,5 +909,5 @@ export const LazyDataFrame: LazyDataFrameConstructor = Object.assign(
     fromExternal(external) {
       return _LazyDataFrame(pli.JsLazyFrame.cloneExternal(external));
     },
-  }
+  },
 );

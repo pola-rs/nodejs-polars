@@ -1,19 +1,26 @@
 import pli from "./internals/polars_internal";
-import {arrayToJsDataFrame} from "./internals/construction";
-import {DynamicGroupBy, GroupBy, RollingGroupBy} from "./groupby";
-import {LazyDataFrame, _LazyDataFrame} from "./lazy/dataframe";
-import {concat} from "./functions";
-import {Expr} from "./lazy/expr";
-import {Series, _Series} from "./series/series";
-import {Stream, Writable} from "stream";
+import { arrayToJsDataFrame } from "./internals/construction";
+import { DynamicGroupBy, _GroupBy, GroupBy, RollingGroupBy } from "./groupby";
+import { LazyDataFrame, _LazyDataFrame } from "./lazy/dataframe";
+import { concat } from "./functions";
+import { Expr } from "./lazy/expr";
+import { Series, _Series } from "./series";
+import { Stream, Writable } from "stream";
+import {
+  WriteCsvOptions,
+  WriteIPCOptions,
+  WriteParquetOptions,
+  WriteAvroOptions,
+  FillNullStrategy,
+  JoinOptions,
+} from "./types";
 
-import {DataType, JoinBaseOptions} from "./datatypes";
+import { DataType } from "./datatypes";
 
 import {
   columnOrColumns,
   columnOrColumnsStrict,
   ColumnSelection,
-  FillNullStrategy,
   isSeriesArray,
   ColumnsOrExpr,
   ValueOrArray,
@@ -27,39 +34,14 @@ import {
   Sample,
   Serialize,
 } from "./shared_traits";
-import {col, element} from "./lazy/functions";
+
+import { col, element } from "./lazy/functions";
 
 const inspect = Symbol.for("nodejs.util.inspect.custom");
 
-type WriteCsvOptions = {
-  hasHeader?: boolean;
-  sep?: string;
-};
-
-type WriteJsonOptions = {
-  orient?: "row" | "col" | "dataframe";
-  multiline?: boolean;
-};
-
-type WriteParquetOptions = {
-  compression?:
-  | "uncompressed"
-  | "snappy"
-  | "gzip"
-  | "lzo"
-  | "brotli"
-  | "lz4"
-  | "zstd";
-};
-
-type WriteIPCOptions = {
-  compression?: "uncompressed" | "lz4" | "zstd";
-};
-
-type WriteAvroOptions = {
-  compression?: "uncompressed" | "snappy" | "deflate";
-};
-
+/**
+ * Write methods for DataFrame
+ */
 interface WriteMethods {
   /**
    * __Write DataFrame to comma-separated values file (csv).__
@@ -72,33 +54,34 @@ interface WriteMethods {
    * @param options.sep - Separate CSV fields with this symbol. _defaults to `,`_
    * @example
    * ```
-   * >>> df = pl.DataFrame({
-   * >>>   "foo": [1, 2, 3],
-   * >>>   "bar": [6, 7, 8],
-   * >>>   "ham": ['a', 'b', 'c']
-   * >>> })
-   * >>> df.writeCSV()
+   * > df = pl.DataFrame({
+   * ...   "foo": [1, 2, 3],
+   * ...   "bar": [6, 7, 8],
+   * ...   "ham": ['a', 'b', 'c']
+   * ... })
+   * > df.writeCSV()
    * foo,bar,ham
    * 1,6,a
    * 2,7,b
    * 3,8,c
    *
    * // using a file path
-   * >>> df.head(1).writeCSV("./foo.csv")
+   * > df.head(1).writeCSV("./foo.csv")
    * // foo.csv
    * foo,bar,ham
    * 1,6,a
    *
    * // using a write stream
-   * >>> const writeStream = new Stream.Writable({
-   * >>>   write(chunk, encoding, callback) {
-   * >>>     console.log("writeStream: %O', chunk.toString());
-   * >>>     callback(null);
-   * >>>   }
-   * >>> });
-   * >>> df.head(1).writeCSV(writeStream, {hasHeader: false})
+   * > const writeStream = new Stream.Writable({
+   * ...   write(chunk, encoding, callback) {
+   * ...     console.log("writeStream: %O', chunk.toString());
+   * ...     callback(null);
+   * ...   }
+   * ... });
+   * > df.head(1).writeCSV(writeStream, {hasHeader: false})
    * writeStream: '1,6,a'
    * ```
+   * @category IO
    */
   writeCSV(): Buffer;
   writeCSV(options: WriteCsvOptions): Buffer;
@@ -110,34 +93,36 @@ interface WriteMethods {
    * @param options.format - json | lines
    * @example
    * ```
-   * >>> const df = pl.DataFrame({
-   * >>>   foo: [1,2,3],
-   * >>>   bar: ['a','b','c']
-   * >>> })
+   * > const df = pl.DataFrame({
+   * ...   foo: [1,2,3],
+   * ...   bar: ['a','b','c']
+   * ... })
    *
    *
-   * >>> df.writeJSON({format:"json"})
+   * > df.writeJSON({format:"json"})
    * `[ {"foo":1.0,"bar":"a"}, {"foo":2.0,"bar":"b"}, {"foo":3.0,"bar":"c"}]`
    *
-   * >>> df.writeJSON({format:"lines"})
+   * > df.writeJSON({format:"lines"})
    * `{"foo":1.0,"bar":"a"}
    * {"foo":2.0,"bar":"b"}
    * {"foo":3.0,"bar":"c"}`
    *
    * // writing to a file
-   * >>> df.writeJSON("/path/to/file.json", {format:'lines'})
+   * > df.writeJSON("/path/to/file.json", {format:'lines'})
    * ```
+   * @category IO
    */
-  writeJSON(options?: {format: "lines" | "json"}): Buffer;
+  writeJSON(options?: { format: "lines" | "json" }): Buffer;
   writeJSON(
     destination: string | Writable,
-    options?: {format: "lines" | "json"}
+    options?: { format: "lines" | "json" },
   ): void;
   /**
    * Write to Arrow IPC binary stream, or a feather file.
    * @param file File path to which the file should be written.
    * @param options.compression Compression method *defaults to "uncompressed"*
-   * */
+   * @category IO
+   */
   writeIPC(options?: WriteIPCOptions): Buffer;
   writeIPC(destination: string | Writable, options?: WriteIPCOptions): void;
 
@@ -145,110 +130,108 @@ interface WriteMethods {
    * Write the DataFrame disk in parquet format.
    * @param file File path to which the file should be written.
    * @param options.compression Compression method *defaults to "uncompressed"*
-   * */
+   * @category IO
+   */
   writeParquet(options?: WriteParquetOptions): Buffer;
   writeParquet(
     destination: string | Writable,
-    options?: WriteParquetOptions
+    options?: WriteParquetOptions,
   ): void;
 
   /**
    * Write the DataFrame disk in avro format.
    * @param file File path to which the file should be written.
    * @param options.compression Compression method *defaults to "uncompressed"*
-   *
+   * @category IO
    */
   writeAvro(options?: WriteAvroOptions): Buffer;
   writeAvro(destination: string | Writable, options?: WriteAvroOptions): void;
 }
 
 /**
+ * A DataFrame is a two-dimensional data structure that represents data as a table
+ * with rows and columns.
  *
-  A DataFrame is a two-dimensional data structure that represents data as a table
-  with rows and columns.
-
-  Parameters
-  ----------
-  @param data -  Object, Array, or Series
-      Two-dimensional data in various forms. object must contain Arrays.
-      Array may contain Series or other Arrays.
-  @param columns - Array of str, default undefined
-      Column labels to use for resulting DataFrame. If specified, overrides any
-      labels already present in the data. Must match data dimensions.
-  @param orient - 'col' | 'row' default undefined
-      Whether to interpret two-dimensional data as columns or as rows. If None,
-      the orientation is inferred by matching the columns and data dimensions. If
-      this does not yield conclusive results, column orientation is used.
-  Examples
-  --------
-  Constructing a DataFrame from an object :
-  ```
-  data = {'a': [1n, 2n], 'b': [3, 4]}
-  df = pl.DataFrame(data)
-  df
-  shape: (2, 2)
-  ╭─────┬─────╮
-  │ a   ┆ b   │
-  │ --- ┆ --- │
-  │ u64 ┆ i64 │
-  ╞═════╪═════╡
-  │ 1   ┆ 3   │
-  ├╌╌╌╌╌┼╌╌╌╌╌┤
-  │ 2   ┆ 4   │
-  ╰─────┴─────╯
-  ```
-  Notice that the dtype is automatically inferred as a polars Int64:
-  ```
-  df.dtypes
-  ['UInt64', `Int64']
-  ```
-  In order to specify dtypes for your columns, initialize the DataFrame with a list
-  of Series instead:
-  ```
-  data = [pl.Series('col1', [1, 2], pl.Float32),
-  ...         pl.Series('col2', [3, 4], pl.Int64)]
-  df2 = pl.DataFrame(series)
-  df2
-  shape: (2, 2)
-  ╭──────┬──────╮
-  │ col1 ┆ col2 │
-  │ ---  ┆ ---  │
-  │ f32  ┆ i64  │
-  ╞══════╪══════╡
-  │ 1    ┆ 3    │
-  ├╌╌╌╌╌╌┼╌╌╌╌╌╌┤
-  │ 2    ┆ 4    │
-  ╰──────┴──────╯
-  ```
-
-  Constructing a DataFrame from a list of lists, row orientation inferred:
-  ```
-  data = [[1, 2, 3], [4, 5, 6]]
-  df4 = pl.DataFrame(data, ['a', 'b', 'c'])
-  df4
-  shape: (2, 3)
-  ╭─────┬─────┬─────╮
-  │ a   ┆ b   ┆ c   │
-  │ --- ┆ --- ┆ --- │
-  │ i64 ┆ i64 ┆ i64 │
-  ╞═════╪═════╪═════╡
-  │ 1   ┆ 2   ┆ 3   │
-  ├╌╌╌╌╌┼╌╌╌╌╌┼╌╌╌╌╌┤
-  │ 4   ┆ 5   ┆ 6   │
-  ╰─────┴─────┴─────╯
-  ```
+ * @param data -  Object, Array, or Series
+ *     Two-dimensional data in various forms. object must contain Arrays.
+ *     Array may contain Series or other Arrays.
+ * @param columns - Array of str, default undefined
+ *     Column labels to use for resulting DataFrame. If specified, overrides any
+ *     labels already present in the data. Must match data dimensions.
+ * @param orient - 'col' | 'row' default undefined
+ *     Whether to interpret two-dimensional data as columns or as rows. If None,
+ *     the orientation is inferred by matching the columns and data dimensions. If
+ *     this does not yield conclusive results, column orientation is used.
+ * @example
+ * Constructing a DataFrame from an object :
+ * ```
+ * > data = {'a': [1n, 2n], 'b': [3, 4]}
+ * > df = pl.DataFrame(data)
+ * > df
+ * shape: (2, 2)
+ * ╭─────┬─────╮
+ * │ a   ┆ b   │
+ * │ --- ┆ --- │
+ * │ u64 ┆ i64 │
+ * ╞═════╪═════╡
+ * │ 1   ┆ 3   │
+ * ├╌╌╌╌╌┼╌╌╌╌╌┤
+ * │ 2   ┆ 4   │
+ * ╰─────┴─────╯
+ * ```
+ * Notice that the dtype is automatically inferred as a polars Int64:
+ * ```
+ * > df.dtypes
+ * ['UInt64', `Int64']
+ * ```
+ * In order to specify dtypes for your columns, initialize the DataFrame with a list
+ * of Series instead:
+ * ```
+ * > data = [pl.Series('col1', [1, 2], pl.Float32),
+ * ...         pl.Series('col2', [3, 4], pl.Int64)]
+ * > df2 = pl.DataFrame(series)
+ * > df2
+ * shape: (2, 2)
+ * ╭──────┬──────╮
+ * │ col1 ┆ col2 │
+ * │ ---  ┆ ---  │
+ * │ f32  ┆ i64  │
+ * ╞══════╪══════╡
+ * │ 1    ┆ 3    │
+ * ├╌╌╌╌╌╌┼╌╌╌╌╌╌┤
+ * │ 2    ┆ 4    │
+ * ╰──────┴──────╯
+ * ```
+ *
+ * Constructing a DataFrame from a list of lists, row orientation inferred:
+ * ```
+ * > data = [[1, 2, 3], [4, 5, 6]]
+ * > df4 = pl.DataFrame(data, ['a', 'b', 'c'])
+ * > df4
+ * shape: (2, 3)
+ * ╭─────┬─────┬─────╮
+ * │ a   ┆ b   ┆ c   │
+ * │ --- ┆ --- ┆ --- │
+ * │ i64 ┆ i64 ┆ i64 │
+ * ╞═════╪═════╪═════╡
+ * │ 1   ┆ 2   ┆ 3   │
+ * ├╌╌╌╌╌┼╌╌╌╌╌┼╌╌╌╌╌┤
+ * │ 4   ┆ 5   ┆ 6   │
+ * ╰─────┴─────┴─────╯
+ * ```
  */
 export interface DataFrame
   extends Arithmetic<DataFrame>,
-  Sample<DataFrame>,
-  WriteMethods,
-  Serialize,
-  GroupByOps<RollingGroupBy> {
+    Sample<DataFrame>,
+    Arithmetic<DataFrame>,
+    WriteMethods,
+    Serialize,
+    GroupByOps<RollingGroupBy> {
   /** @ignore */
   _df: any;
   dtypes: DataType[];
   height: number;
-  shape: {height: number; width: number};
+  shape: { height: number; width: number };
   width: number;
   get columns(): string[];
   set columns(cols: string[]);
@@ -265,12 +248,12 @@ export interface DataFrame
    * ___
    * Example
    * ```
-   * > df = pl.DataFrame({
-   * >     'a': [1.0, 2.8, 3.0],
-   * >     'b': [4, 5, 6],
-   * >     "c": [True, False, True]
-   * >     })
-   * > df.describe()
+   * >  df = pl.DataFrame({
+   * ...      'a': [1.0, 2.8, 3.0],
+   * ...      'b': [4, 5, 6],
+   * ...      "c": [True, False, True]
+   * ...      })
+   * ...  df.describe()
    * shape: (5, 4)
    * ╭──────────┬───────┬─────┬──────╮
    * │ describe ┆ a     ┆ b   ┆ c    │
@@ -298,13 +281,13 @@ export interface DataFrame
    * @param name
    * @example
    * ```
-   * > df = pl.DataFrame({
-   * >   "foo": [1, 2, 3],
-   * >   "bar": [6.0, 7.0, 8.0],
-   * >   "ham": ['a', 'b', 'c'],
-   * >   "apple": ['a', 'b', 'c']
-   * > })
-   * > df.drop(['ham', 'apple'])
+   * >  df = pl.DataFrame({
+   * ...    "foo": [1, 2, 3],
+   * ...    "bar": [6.0, 7.0, 8.0],
+   * ...    "ham": ['a', 'b', 'c'],
+   * ...    "apple": ['a', 'b', 'c']
+   * ...  })
+   * >  df.drop(['ham', 'apple'])
    * shape: (3, 2)
    * ╭─────┬─────╮
    * │ foo ┆ bar │
@@ -317,9 +300,7 @@ export interface DataFrame
    * ├╌╌╌╌╌┼╌╌╌╌╌┤
    * │ 3   ┆ 8   │
    * ╰─────┴─────╯
-   *
    * ```
-   *
    */
   drop(name: string): DataFrame;
   drop(names: string[]): DataFrame;
@@ -331,12 +312,12 @@ export interface DataFrame
    * ___
    * @example
    * ```
-   * > df = pl.DataFrame({
-   * >   "foo": [1, 2, 3],
-   * >   "bar": [6, null, 8],
-   * >   "ham": ['a', 'b', 'c']
-   * > })
-   * > df.dropNulls()
+   * >  df = pl.DataFrame({
+   * ...    "foo": [1, 2, 3],
+   * ...    "bar": [6, null, 8],
+   * ...    "ham": ['a', 'b', 'c']
+   * ...  })
+   * >  df.dropNulls()
    * shape: (2, 3)
    * ┌─────┬─────┬─────┐
    * │ foo ┆ bar ┆ ham │
@@ -358,11 +339,11 @@ export interface DataFrame
    * @param columns - column or columns to explode
    * @example
    * ```
-   * > df = pl.DataFrame({
-   * >   "letters": ["c", "c", "a", "c", "a", "b"],
-   * >   "nrs": [[1, 2], [1, 3], [4, 3], [5, 5, 5], [6], [2, 1, 2]]
-   * > })
-   * > console.log(df)
+   * >  df = pl.DataFrame({
+   * ...    "letters": ["c", "c", "a", "c", "a", "b"],
+   * ...    "nrs": [[1, 2], [1, 3], [4, 3], [5, 5, 5], [6], [2, 1, 2]]
+   * ...  })
+   * >  df
    * shape: (6, 2)
    * ╭─────────┬────────────╮
    * │ letters ┆ nrs        │
@@ -381,7 +362,7 @@ export interface DataFrame
    * ├╌╌╌╌╌╌╌╌╌┼╌╌╌╌╌╌╌╌╌╌╌╌┤
    * │ "b"     ┆ [2, 1, 2]  │
    * ╰─────────┴────────────╯
-   * > df.explode("nrs")
+   * >  df.explode("nrs")
    * shape: (13, 2)
    * ╭─────────┬─────╮
    * │ letters ┆ nrs │
@@ -455,13 +436,13 @@ export interface DataFrame
    * @param predicate - Expression that evaluates to a boolean Series.
    * @example
    * ```
-   * >>> df = pl.DataFrame({
-   * >>>   "foo": [1, 2, 3],
-   * >>>   "bar": [6, 7, 8],
-   * >>>   "ham": ['a', 'b', 'c']
-   * >>> })
-   * >>> // Filter on one condition
-   * >>> df.filter(pl.col("foo").lt(3))
+   * > df = pl.DataFrame({
+   * ...   "foo": [1, 2, 3],
+   * ...   "bar": [6, 7, 8],
+   * ...   "ham": ['a', 'b', 'c']
+   * ... })
+   * // Filter on one condition
+   * > df.filter(pl.col("foo").lt(3))
    * shape: (2, 3)
    * ┌─────┬─────┬─────┐
    * │ foo ┆ bar ┆ ham │
@@ -472,11 +453,11 @@ export interface DataFrame
    * ├╌╌╌╌╌┼╌╌╌╌╌┼╌╌╌╌╌┤
    * │ 2   ┆ 7   ┆ b   │
    * └─────┴─────┴─────┘
-   * >>>  // Filter on multiple conditions
-   * >>> df.filter(
-   *  pl.col("foo").lt(3)
-   *    .and(pl.col("ham").eq("a"))
-   * )
+   * // Filter on multiple conditions
+   * > df.filter(
+   * ... pl.col("foo").lt(3)
+   * ...   .and(pl.col("ham").eq("a"))
+   * ... )
    * shape: (1, 3)
    * ┌─────┬─────┬─────┐
    * │ foo ┆ bar ┆ ham │
@@ -494,12 +475,12 @@ export interface DataFrame
    * @param name -Name of the column to find.
    * @example
    * ```
-   * >>> df = pl.DataFrame({
-   * >>>   "foo": [1, 2, 3],
-   * >>>   "bar": [6, 7, 8],
-   * >>>   "ham": ['a', 'b', 'c']
-   * >>> })
-   * >>> df.findIdxByName("ham"))
+   * > df = pl.DataFrame({
+   * ...   "foo": [1, 2, 3],
+   * ...   "bar": [6, 7, 8],
+   * ...   "ham": ['a', 'b', 'c']
+   * ... })
+   * > df.findIdxByName("ham"))
    * 2
    * ```
    */
@@ -519,39 +500,39 @@ export interface DataFrame
    * @returns Series
    * @example
    * ```
-   * >>> // A horizontal sum operation
-   * >>> df = pl.DataFrame({
-   * >>>   "a": [2, 1, 3],
-   * >>>   "b": [1, 2, 3],
-   * >>>   "c": [1.0, 2.0, 3.0]
-   * >>> })
-   * >>> df.fold((s1, s2) => s1.plus(s2))
+   * > // A horizontal sum operation
+   * > df = pl.DataFrame({
+   * ...   "a": [2, 1, 3],
+   * ...   "b": [1, 2, 3],
+   * ...   "c": [1.0, 2.0, 3.0]
+   * ... })
+   * > df.fold((s1, s2) => s1.plus(s2))
    * Series: 'a' [f64]
    * [
    *     4
    *     5
    *     9
    * ]
-   * >>> // A horizontal minimum operation
-   * >>> df = pl.DataFrame({
-   * >>>   "a": [2, 1, 3],
-   * >>>   "b": [1, 2, 3],
-   * >>>   "c": [1.0, 2.0, 3.0]
-   * >>> })
-   * >>> df.fold((s1, s2) => s1.zipWith(s1.lt(s2), s2))
+   * > // A horizontal minimum operation
+   * > df = pl.DataFrame({
+   * ...   "a": [2, 1, 3],
+   * ...   "b": [1, 2, 3],
+   * ...   "c": [1.0, 2.0, 3.0]
+   * ... })
+   * > df.fold((s1, s2) => s1.zipWith(s1.lt(s2), s2))
    * Series: 'a' [f64]
    * [
    *     1
    *     1
    *     3
    * ]
-   * >>> // A horizontal string concatenation
-   * >>> df = pl.DataFrame({
-   * >>>   "a": ["foo", "bar", 2],
-   * >>>   "b": [1, 2, 3],
-   * >>>   "c": [1.0, 2.0, 3.0]
-   * >>> })
-   * >>> df.fold((s1, s2) => s.plus(s2))
+   * > // A horizontal string concatenation
+   * > df = pl.DataFrame({
+   * ...   "a": ["foo", "bar", 2],
+   * ...   "b": [1, 2, 3],
+   * ...   "c": [1.0, 2.0, 3.0]
+   * ... })
+   * > df.fold((s1, s2) => s.plus(s2))
    * Series: '' [f64]
    * [
    *     "foo11"
@@ -569,19 +550,19 @@ export interface DataFrame
    * @param options.nullEqual Consider null values as equal.
    * @example
    * ```
-   * >>> df1 = pl.DataFrame({
-   * >>    "foo": [1, 2, 3],
-   * >>    "bar": [6.0, 7.0, 8.0],
-   * >>    "ham": ['a', 'b', 'c']
-   * >>> })
-   * >>> df2 = pl.DataFrame({
-   * >>>   "foo": [3, 2, 1],
-   * >>>   "bar": [8.0, 7.0, 6.0],
-   * >>>   "ham": ['c', 'b', 'a']
-   * >>> })
-   * >>> df1.frameEqual(df1)
+   * > df1 = pl.DataFrame({
+   * ...    "foo": [1, 2, 3],
+   * ...    "bar": [6.0, 7.0, 8.0],
+   * ...    "ham": ['a', 'b', 'c']
+   * ... })
+   * > df2 = pl.DataFrame({
+   * ...   "foo": [3, 2, 1],
+   * ...   "bar": [8.0, 7.0, 6.0],
+   * ...   "ham": ['c', 'b', 'a']
+   * ... })
+   * > df1.frameEqual(df1)
    * true
-   * >>> df1.frameEqual(df2)
+   * > df1.frameEqual(df2)
    * false
    * ```
    */
@@ -621,12 +602,12 @@ export interface DataFrame
    * @param length -  Length of the head.
    * @example
    * ```
-   * >>> df = pl.DataFrame({
-   * >>>   "foo": [1, 2, 3, 4, 5],
-   * >>>   "bar": [6, 7, 8, 9, 10],
-   * >>>   "ham": ['a', 'b', 'c', 'd','e']
-   * >>> })
-   * >>> df.head(3)
+   * > df = pl.DataFrame({
+   * ...   "foo": [1, 2, 3, 4, 5],
+   * ...   "bar": [6, 7, 8, 9, 10],
+   * ...   "ham": ['a', 'b', 'c', 'd','e']
+   * ... })
+   * > df.head(3)
    * shape: (3, 3)
    * ╭─────┬─────┬─────╮
    * │ foo ┆ bar ┆ ham │
@@ -648,13 +629,13 @@ export interface DataFrame
    * @param inPlace - Modify in place
    * @example
    * ```
-   * >>> df = pl.DataFrame({
-   * >>>   "foo": [1, 2, 3],
-   * >>>   "bar": [6, 7, 8],
-   * >>>   "ham": ['a', 'b', 'c']
-   * >>> })
-   * >>> x = pl.Series("apple", [10, 20, 30])
-   * >>> df.hStack([x])
+   * > df = pl.DataFrame({
+   * ...   "foo": [1, 2, 3],
+   * ...   "bar": [6, 7, 8],
+   * ...   "ham": ['a', 'b', 'c']
+   * ... })
+   * > x = pl.Series("apple", [10, 20, 30])
+   * > df.hStack([x])
    * shape: (3, 4)
    * ╭─────┬─────┬─────┬───────╮
    * │ foo ┆ bar ┆ ham ┆ apple │
@@ -705,16 +686,16 @@ export interface DataFrame
    * @see {@link JoinOptions}
    * @example
    * ```
-   * >>> df = pl.DataFrame({
-   * >>>   "foo": [1, 2, 3],
-   * >>>   "bar": [6.0, 7.0, 8.0],
-   * >>>   "ham": ['a', 'b', 'c']
-   * >>> })
-   * >>> otherDF = pl.DataFrame({
-   * >>>   "apple": ['x', 'y', 'z'],
-   * >>>   "ham": ['a', 'b', 'd']
-   * >>> })
-   * >>> df.join(otherDF, {on: 'ham'})
+   * > df = pl.DataFrame({
+   * ...   "foo": [1, 2, 3],
+   * ...   "bar": [6.0, 7.0, 8.0],
+   * ...   "ham": ['a', 'b', 'c']
+   * ... })
+   * > otherDF = pl.DataFrame({
+   * ...   "apple": ['x', 'y', 'z'],
+   * ...   "ham": ['a', 'b', 'd']
+   * ... })
+   * > df.join(otherDF, {on: 'ham'})
    * shape: (2, 4)
    * ╭─────┬─────┬─────┬───────╮
    * │ foo ┆ bar ┆ ham ┆ apple │
@@ -729,106 +710,105 @@ export interface DataFrame
    */
   join(
     other: DataFrame,
-    options: {on: ValueOrArray<string>} & JoinBaseOptions
+    options: { on: ValueOrArray<string> } & Omit<
+      JoinOptions,
+      "leftOn" | "rightOn"
+    >,
   ): DataFrame;
   join(
     other: DataFrame,
     options: {
       leftOn: ValueOrArray<string>;
       rightOn: ValueOrArray<string>;
-    } & JoinBaseOptions
+    } & Omit<JoinOptions, "on">,
   ): DataFrame;
-  join(other: DataFrame, options: {how: "cross"; suffix?: string}): DataFrame;
+  join(other: DataFrame, options: { how: "cross"; suffix?: string }): DataFrame;
 
   /**
-     * Perform an asof join. This is similar to a left-join except that we
-     * match on nearest key rather than equal keys.
-     *
-     * Both DataFrames must be sorted by the asof_join key.
-     *
-      For each row in the left DataFrame:
-
-        - A "backward" search selects the last row in the right DataFrame whose
-          'on' key is less than or equal to the left's key.
-
-        - A "forward" search selects the first row in the right DataFrame whose
-          'on' key is greater than or equal to the left's key.
-
-      The default is "backward".
-
-      Parameters
-      ----------
-      @param other DataFrame to join with.
-      @param options.leftOn Join column of the left DataFrame.
-      @param options.rightOn Join column of the right DataFrame.
-      @param options.on Join column of both DataFrames. If set, `leftOn` and `rightOn` should be undefined.
-      @param options.byLeft join on these columns before doing asof join
-      @param options.byRight join on these columns before doing asof join
-      @param options.strategy One of {'forward', 'backward'}
-      @param options.suffix Suffix to append to columns with a duplicate name.
-      @param options.tolerance
-        Numeric tolerance. By setting this the join will only be done if the near keys are within this distance.
-        If an asof join is done on columns of dtype "Date", "Datetime" you
-        use the following string language:
-
-        - 1ns   *(1 nanosecond)*
-        - 1us   *(1 microsecond)*
-        - 1ms   *(1 millisecond)*
-        - 1s    *(1 second)*
-        - 1m    *(1 minute)*
-        - 1h    *(1 hour)*
-        - 1d    *(1 day)*
-        - 1w    *(1 week)*
-        - 1mo   *(1 calendar month)*
-        - 1y    *(1 calendar year)*
-        - 1i    *(1 index count)*
-
-      Or combine them:
-        - "3d12h4m25s" # 3 days, 12 hours, 4 minutes, and 25 seconds
-      @param options.allowParallel Allow the physical plan to optionally evaluate the computation of both DataFrames up to the join in parallel.
-      @param options.forceParallel Force the physical plan to evaluate the computation of both DataFrames up to the join in parallel.
-
-
-      @example
-      ```
-      >>> const gdp = pl.DataFrame({
-      ...   date: [
-      ...     new Date('2016-01-01'),
-      ...     new Date('2017-01-01'),
-      ...     new Date('2018-01-01'),
-      ...     new Date('2019-01-01'),
-      ...   ],  // note record date: Jan 1st (sorted!)
-      ...   gdp: [4164, 4411, 4566, 4696],
-      ... })
-      >>> const population = pl.DataFrame({
-      ...   date: [
-      ...     new Date('2016-05-12'),
-      ...     new Date('2017-05-12'),
-      ...     new Date('2018-05-12'),
-      ...     new Date('2019-05-12'),
-      ...   ],  // note record date: May 12th (sorted!)
-      ...   "population": [82.19, 82.66, 83.12, 83.52],
-      ... })
-      >>> population.joinAsof(
-      ...   gdp,
-      ...   {leftOn:"date", rightOn:"date", strategy:"backward"}
-      ... )
-        shape: (4, 3)
-        ┌─────────────────────┬────────────┬──────┐
-        │ date                ┆ population ┆ gdp  │
-        │ ---                 ┆ ---        ┆ ---  │
-        │ datetime[μs]        ┆ f64        ┆ i64  │
-        ╞═════════════════════╪════════════╪══════╡
-        │ 2016-05-12 00:00:00 ┆ 82.19      ┆ 4164 │
-        ├╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌┼╌╌╌╌╌╌╌╌╌╌╌╌┼╌╌╌╌╌╌┤
-        │ 2017-05-12 00:00:00 ┆ 82.66      ┆ 4411 │
-        ├╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌┼╌╌╌╌╌╌╌╌╌╌╌╌┼╌╌╌╌╌╌┤
-        │ 2018-05-12 00:00:00 ┆ 83.12      ┆ 4566 │
-        ├╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌┼╌╌╌╌╌╌╌╌╌╌╌╌┼╌╌╌╌╌╌┤
-        │ 2019-05-12 00:00:00 ┆ 83.52      ┆ 4696 │
-        └─────────────────────┴────────────┴──────┘
-      ```
-     */
+   * Perform an asof join. This is similar to a left-join except that we
+   * match on nearest key rather than equal keys.
+   *
+   * Both DataFrames must be sorted by the asofJoin key.
+   *
+   * For each row in the left DataFrame:
+   * - A "backward" search selects the last row in the right DataFrame whose
+   *   'on' key is less than or equal to the left's key.
+   *
+   *  - A "forward" search selects the first row in the right DataFrame whose
+   *    'on' key is greater than or equal to the left's key.
+   *
+   * The default is "backward".
+   *
+   * @param other DataFrame to join with.
+   * @param options.leftOn Join column of the left DataFrame.
+   * @param options.rightOn Join column of the right DataFrame.
+   * @param options.on Join column of both DataFrames. If set, `leftOn` and `rightOn` should be undefined.
+   * @param options.byLeft join on these columns before doing asof join
+   * @param options.byRight join on these columns before doing asof join
+   * @param options.strategy One of 'forward', 'backward'
+   * @param options.suffix Suffix to append to columns with a duplicate name.
+   * @param options.tolerance
+   *   Numeric tolerance. By setting this the join will only be done if the near keys are within this distance.
+   *   If an asof join is done on columns of dtype "Date", "Datetime" you
+   *   use the following string language:
+   *
+   *   - 1ns   *(1 nanosecond)*
+   *   - 1us   *(1 microsecond)*
+   *   - 1ms   *(1 millisecond)*
+   *   - 1s    *(1 second)*
+   *   - 1m    *(1 minute)*
+   *   - 1h    *(1 hour)*
+   *   - 1d    *(1 day)*
+   *   - 1w    *(1 week)*
+   *   - 1mo   *(1 calendar month)*
+   *   - 1y    *(1 calendar year)*
+   *   - 1i    *(1 index count)*
+   *
+   * Or combine them:
+   *   - "3d12h4m25s" # 3 days, 12 hours, 4 minutes, and 25 seconds
+   * @param options.allowParallel Allow the physical plan to optionally evaluate the computation of both DataFrames up to the join in parallel.
+   * @param options.forceParallel Force the physical plan to evaluate the computation of both DataFrames up to the join in parallel.
+   *
+   * @example
+   * ```
+   * > const gdp = pl.DataFrame({
+   * ...   date: [
+   * ...     new Date('2016-01-01'),
+   * ...     new Date('2017-01-01'),
+   * ...     new Date('2018-01-01'),
+   * ...     new Date('2019-01-01'),
+   * ...   ],  // note record date: Jan 1st (sorted!)
+   * ...   gdp: [4164, 4411, 4566, 4696],
+   * ... })
+   * > const population = pl.DataFrame({
+   * ...   date: [
+   * ...     new Date('2016-05-12'),
+   * ...     new Date('2017-05-12'),
+   * ...     new Date('2018-05-12'),
+   * ...     new Date('2019-05-12'),
+   * ...   ],  // note record date: May 12th (sorted!)
+   * ...   "population": [82.19, 82.66, 83.12, 83.52],
+   * ... })
+   * > population.joinAsof(
+   * ...   gdp,
+   * ...   {leftOn:"date", rightOn:"date", strategy:"backward"}
+   * ... )
+   *   shape: (4, 3)
+   *   ┌─────────────────────┬────────────┬──────┐
+   *   │ date                ┆ population ┆ gdp  │
+   *   │ ---                 ┆ ---        ┆ ---  │
+   *   │ datetime[μs]        ┆ f64        ┆ i64  │
+   *   ╞═════════════════════╪════════════╪══════╡
+   *   │ 2016-05-12 00:00:00 ┆ 82.19      ┆ 4164 │
+   *   ├╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌┼╌╌╌╌╌╌╌╌╌╌╌╌┼╌╌╌╌╌╌┤
+   *   │ 2017-05-12 00:00:00 ┆ 82.66      ┆ 4411 │
+   *   ├╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌┼╌╌╌╌╌╌╌╌╌╌╌╌┼╌╌╌╌╌╌┤
+   *   │ 2018-05-12 00:00:00 ┆ 83.12      ┆ 4566 │
+   *   ├╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌┼╌╌╌╌╌╌╌╌╌╌╌╌┼╌╌╌╌╌╌┤
+   *   │ 2019-05-12 00:00:00 ┆ 83.52      ┆ 4696 │
+   *   └─────────────────────┴────────────┴──────┘
+   * ```
+   */
   joinAsof(
     other: DataFrame,
     options: {
@@ -843,7 +823,7 @@ export interface DataFrame
       tolerance?: number | string;
       allowParallel?: boolean;
       forceParallel?: boolean;
-    }
+    },
   ): DataFrame;
   lazy(): LazyDataFrame;
   /**
@@ -859,12 +839,12 @@ export interface DataFrame
    * @param axis - either 0 or 1
    * @example
    * ```
-   * >>> df = pl.DataFrame({
-   * >>>   "foo": [1, 2, 3],
-   * >>>   "bar": [6, 7, 8],
-   * >>>   "ham": ['a', 'b', 'c']
-   * >>> })
-   * >>> df.max()
+   * > df = pl.DataFrame({
+   * ...   "foo": [1, 2, 3],
+   * ...   "bar": [6, 7, 8],
+   * ...   "ham": ['a', 'b', 'c']
+   * ... })
+   * > df.max()
    * shape: (1, 3)
    * ╭─────┬─────┬──────╮
    * │ foo ┆ bar ┆ ham  │
@@ -894,12 +874,12 @@ export interface DataFrame
    * ___
    * @example
    * ```
-   * >>> df = pl.DataFrame({
-   * >>>   "foo": [1, 2, 3],
-   * >>>   "bar": [6, 7, 8],
-   * >>>   "ham": ['a', 'b', 'c']
-   * >>> })
-   * >>> df.median()
+   * > df = pl.DataFrame({
+   * ...   "foo": [1, 2, 3],
+   * ...   "bar": [6, 7, 8],
+   * ...   "ham": ['a', 'b', 'c']
+   * ... })
+   * > df.median()
    * shape: (1, 3)
    * ╭─────┬─────┬──────╮
    * │ foo ┆ bar ┆ ham  │
@@ -919,13 +899,13 @@ export interface DataFrame
    * @param valueVars - Values to use as value variables.
    * @example
    * ```
-   * >>> df1 = pl.DataFrame({
-   * >>>   'id': [1],
-   * >>>   'asset_key_1': ['123'],
-   * >>>   'asset_key_2': ['456'],
-   * >>>   'asset_key_3': ['abc'],
-   * >>> })
-   * >>> df1.melt('id', ['asset_key_1', 'asset_key_2', 'asset_key_3'])
+   * > df1 = pl.DataFrame({
+   * ...   'id': [1],
+   * ...   'asset_key_1': ['123'],
+   * ...   'asset_key_2': ['456'],
+   * ...   'asset_key_3': ['abc'],
+   * ... })
+   * > df1.melt('id', ['asset_key_1', 'asset_key_2', 'asset_key_3'])
    * shape: (3, 3)
    * ┌─────┬─────────────┬───────┐
    * │ id  ┆ variable    ┆ value │
@@ -947,12 +927,12 @@ export interface DataFrame
    * @param axis - either 0 or 1
    * @example
    * ```
-   * >>> df = pl.DataFrame({
-   * >>>   "foo": [1, 2, 3],
-   * >>>   "bar": [6, 7, 8],
-   * >>>   "ham": ['a', 'b', 'c']
-   * >>> })
-   * >>> df.min()
+   * > df = pl.DataFrame({
+   * ...   "foo": [1, 2, 3],
+   * ...   "bar": [6, 7, 8],
+   * ...   "ham": ['a', 'b', 'c']
+   * ... })
+   * > df.min()
    * shape: (1, 3)
    * ╭─────┬─────┬──────╮
    * │ foo ┆ bar ┆ ham  │
@@ -975,12 +955,12 @@ export interface DataFrame
    * ___
    * @example
    * ```
-   * >>> df = pl.DataFrame({
-   * >>>   "foo": [1, null, 3],
-   * >>>   "bar": [6, 7, null],
-   * >>>   "ham": ['a', 'b', 'c']
-   * >>> })
-   * >>> df.nullCount()
+   * > df = pl.DataFrame({
+   * ...   "foo": [1, null, 3],
+   * ...   "bar": [6, 7, null],
+   * ...   "ham": ['a', 'b', 'c']
+   * ... })
+   * > df.nullCount()
    * shape: (1, 3)
    * ┌─────┬─────┬─────┐
    * │ foo ┆ bar ┆ ham │
@@ -996,53 +976,49 @@ export interface DataFrame
   partitionBy<T>(
     cols: string | string[],
     stable: boolean,
-    mapFn: (df: DataFrame) => T
+    mapFn: (df: DataFrame) => T,
   ): T[];
   /**
    *
-  Create a spreadsheet-style pivot table as a DataFrame.
-
-  Parameters
-  ----------
-  @param values Column values to aggregate. Can be multiple columns if the *columns* arguments contains multiple columns as well
-  @param options.index One or multiple keys to group by
-  @param options.columns Columns whose values will be used as the header of the output DataFrame
-  @param options.aggregateFunc
-      Any of:
-
-      - "sum"
-      - "max"
-      - "min"
-      - "mean"
-      - "median"
-      - "first"
-      - "last"
-      - "count"
-    Defaults to "first"
-  @param options.maintainOrder Sort the grouped keys so that the output order is predictable.
-  @param options.sortColumns Sort the transposed columns by name. Default is by order of discovery.
-  @example
-
-```
-  >>> df = pl.DataFrame(
-  ...     {
-  ...         "foo": ["one", "one", "one", "two", "two", "two"],
-  ...         "bar": ["A", "B", "C", "A", "B", "C"],
-  ...         "baz": [1, 2, 3, 4, 5, 6],
-  ...     }
-  ... )
-  >>> df.pivot({values:"baz", index:"foo", columns:"bar"})
-  shape: (2, 4)
-  ┌─────┬─────┬─────┬─────┐
-  │ foo ┆ A   ┆ B   ┆ C   │
-  │ --- ┆ --- ┆ --- ┆ --- │
-  │ str ┆ i64 ┆ i64 ┆ i64 │
-  ╞═════╪═════╪═════╪═════╡
-  │ one ┆ 1   ┆ 2   ┆ 3   │
-  ├╌╌╌╌╌┼╌╌╌╌╌┼╌╌╌╌╌┼╌╌╌╌╌┤
-  │ two ┆ 4   ┆ 5   ┆ 6   │
-  └─────┴─────┴─────┴─────┘
-   ```
+   *   Create a spreadsheet-style pivot table as a DataFrame.
+   *
+   *   @param values Column values to aggregate. Can be multiple columns if the *columns* arguments contains multiple columns as well
+   *   @param options.index One or multiple keys to group by
+   *   @param options.columns Columns whose values will be used as the header of the output DataFrame
+   *   @param options.aggregateFunc
+   *       Any of:
+   *       - "sum"
+   *       - "max"
+   *       - "min"
+   *       - "mean"
+   *       - "median"
+   *       - "first"
+   *       - "last"
+   *       - "count"
+   *     Defaults to "first"
+   *   @param options.maintainOrder Sort the grouped keys so that the output order is predictable.
+   *   @param options.sortColumns Sort the transposed columns by name. Default is by order of discovery.
+   *   @example
+   * ```
+   *   > df = pl.DataFrame(
+   *   ...     {
+   *   ...         "foo": ["one", "one", "one", "two", "two", "two"],
+   *   ...         "bar": ["A", "B", "C", "A", "B", "C"],
+   *   ...         "baz": [1, 2, 3, 4, 5, 6],
+   *   ...     }
+   *   ... )
+   *   > df.pivot({values:"baz", index:"foo", columns:"bar"})
+   *   shape: (2, 4)
+   *   ┌─────┬─────┬─────┬─────┐
+   *   │ foo ┆ A   ┆ B   ┆ C   │
+   *   │ --- ┆ --- ┆ --- ┆ --- │
+   *   │ str ┆ i64 ┆ i64 ┆ i64 │
+   *   ╞═════╪═════╪═════╪═════╡
+   *   │ one ┆ 1   ┆ 2   ┆ 3   │
+   *   ├╌╌╌╌╌┼╌╌╌╌╌┼╌╌╌╌╌┼╌╌╌╌╌┤
+   *   │ two ┆ 4   ┆ 5   ┆ 6   │
+   *   └─────┴─────┴─────┴─────┘
+   *    ```
    */
   pivot(
     values: string | string[],
@@ -1050,6 +1026,24 @@ export interface DataFrame
       index: string | string[];
       columns: string | string[];
       aggregateFunc?:
+        | "sum"
+        | "max"
+        | "min"
+        | "mean"
+        | "median"
+        | "first"
+        | "last"
+        | "count"
+        | Expr;
+      maintainOrder?: boolean;
+      sortColumns?: boolean;
+    },
+  ): DataFrame;
+  pivot(options: {
+    values: string | string[];
+    index: string | string[];
+    columns: string | string[];
+    aggregateFunc?:
       | "sum"
       | "max"
       | "min"
@@ -1059,24 +1053,6 @@ export interface DataFrame
       | "last"
       | "count"
       | Expr;
-      maintainOrder?: boolean;
-      sortColumns?: boolean;
-    }
-  ): DataFrame;
-  pivot(options: {
-    values: string | string[];
-    index: string | string[];
-    columns: string | string[];
-    aggregateFunc?:
-    | "sum"
-    | "max"
-    | "min"
-    | "mean"
-    | "median"
-    | "first"
-    | "last"
-    | "count"
-    | Expr;
     maintainOrder?: boolean;
     sortColumns?: boolean;
   }): DataFrame;
@@ -1089,12 +1065,12 @@ export interface DataFrame
    * Aggregate the columns of this DataFrame to their quantile value.
    * @example
    * ```
-   * >>> df = pl.DataFrame({
-   * >>>   "foo": [1, 2, 3],
-   * >>>   "bar": [6, 7, 8],
-   * >>>   "ham": ['a', 'b', 'c']
-   * >>> })
-   * >>> df.quantile(0.5)
+   * > df = pl.DataFrame({
+   * ...   "foo": [1, 2, 3],
+   * ...   "bar": [6, 7, 8],
+   * ...   "ham": ['a', 'b', 'c']
+   * ... })
+   * > df.quantile(0.5)
    * shape: (1, 3)
    * ╭─────┬─────┬──────╮
    * │ foo ┆ bar ┆ ham  │
@@ -1119,12 +1095,12 @@ export interface DataFrame
    * @param mapping - Key value pairs that map from old name to new name.
    * @example
    * ```
-   * >>> df = pl.DataFrame({
-   * >>>   "foo": [1, 2, 3],
-   * >>>   "bar": [6, 7, 8],
-   * >>>   "ham": ['a', 'b', 'c']
-   * >>> })
-   * >>> df.rename({"foo": "apple"})
+   * > df = pl.DataFrame({
+   * ...   "foo": [1, 2, 3],
+   * ...   "bar": [6, 7, 8],
+   * ...   "ham": ['a', 'b', 'c']
+   * ... })
+   * > df.rename({"foo": "apple"})
    * ╭───────┬─────┬─────╮
    * │ apple ┆ bar ┆ ham │
    * │ ---   ┆ --- ┆ --- │
@@ -1146,13 +1122,13 @@ export interface DataFrame
    * @param newColumn - New column to insert
    * @example
    * ```
-   * >>> df = pl.DataFrame({
-   * >>>   "foo": [1, 2, 3],
-   * >>>   "bar": [6, 7, 8],
-   * >>>   "ham": ['a', 'b', 'c']
-   * >>> })
-   * >>> x = pl.Series("apple", [10, 20, 30])
-   * >>> df.replaceAtIdx(0, x)
+   * > df = pl.DataFrame({
+   * ...   "foo": [1, 2, 3],
+   * ...   "bar": [6, 7, 8],
+   * ...   "ham": ['a', 'b', 'c']
+   * ... })
+   * > x = pl.Series("apple", [10, 20, 30])
+   * > df.replaceAtIdx(0, x)
    * shape: (3, 3)
    * ╭───────┬─────┬─────╮
    * │ apple ┆ bar ┆ ham │
@@ -1173,12 +1149,12 @@ export interface DataFrame
    * @param index - row index
    * @example
    * ```
-   * >>> df = pl.DataFrame({
-   * >>>   "foo": [1, 2, 3],
-   * >>>   "bar": [6, 7, 8],
-   * >>>   "ham": ['a', 'b', 'c']
-   * >>> })
-   * >>> df.row(2)
+   * > df = pl.DataFrame({
+   * ...   "foo": [1, 2, 3],
+   * ...   "bar": [6, 7, 8],
+   * ...   "ham": ['a', 'b', 'c']
+   * ... })
+   * > df.row(2)
    * [3, 8, 'c']
    * ```
    */
@@ -1194,12 +1170,12 @@ export interface DataFrame
    * @param columns - Column or columns to select.
    * @example
    * ```
-   * >>> df = pl.DataFrame({
-   * >>>     "foo": [1, 2, 3],
-   * >>>     "bar": [6, 7, 8],
-   * >>>     "ham": ['a', 'b', 'c']
-   * >>>     })
-   * >>> df.select('foo')
+   * > df = pl.DataFrame({
+   * ...     "foo": [1, 2, 3],
+   * ...     "bar": [6, 7, 8],
+   * ...     "ham": ['a', 'b', 'c']
+   * ...     })
+   * > df.select('foo')
    * shape: (3, 1)
    * ┌─────┐
    * │ foo │
@@ -1222,12 +1198,12 @@ export interface DataFrame
    * @param periods - Number of places to shift (may be negative).
    * @example
    * ```
-   * >>> df = pl.DataFrame({
-   * >>>   "foo": [1, 2, 3],
-   * >>>   "bar": [6, 7, 8],
-   * >>>   "ham": ['a', 'b', 'c']
-   * >>> })
-   * >>> df.shift(1)
+   * > df = pl.DataFrame({
+   * ...   "foo": [1, 2, 3],
+   * ...   "bar": [6, 7, 8],
+   * ...   "ham": ['a', 'b', 'c']
+   * ... })
+   * > df.shift(1)
    * shape: (3, 3)
    * ┌──────┬──────┬──────┐
    * │ foo  ┆ bar  ┆ ham  │
@@ -1240,7 +1216,7 @@ export interface DataFrame
    * ├╌╌╌╌╌╌┼╌╌╌╌╌╌┼╌╌╌╌╌╌┤
    * │ 2    ┆ 7    ┆ "b"  │
    * └──────┴──────┴──────┘
-   * >>> df.shift(-1)
+   * > df.shift(-1)
    * shape: (3, 3)
    * ┌──────┬──────┬──────┐
    * │ foo  ┆ bar  ┆ ham  │
@@ -1256,7 +1232,7 @@ export interface DataFrame
    * ```
    */
   shift(periods: number): DataFrame;
-  shift({periods}: {periods: number}): DataFrame;
+  shift({ periods }: { periods: number }): DataFrame;
   /**
    * Shift the values by a given period and fill the parts that will be empty due to this operation
    * with the result of the `fill_value` expression.
@@ -1266,12 +1242,12 @@ export interface DataFrame
    * @param opts.fillValue - fill null values with this value.
    * @example
    * ```
-   * >>> df = pl.DataFrame({
-   * >>>   "foo": [1, 2, 3],
-   * >>>   "bar": [6, 7, 8],
-   * >>>   "ham": ['a', 'b', 'c']
-   * >>> })
-   * >>> df.shiftAndFill({periods:1, fill_value:0})
+   * > df = pl.DataFrame({
+   * ...   "foo": [1, 2, 3],
+   * ...   "bar": [6, 7, 8],
+   * ...   "ham": ['a', 'b', 'c']
+   * ... })
+   * > df.shiftAndFill({periods:1, fill_value:0})
    * shape: (3, 3)
    * ┌─────┬─────┬─────┐
    * │ foo ┆ bar ┆ ham │
@@ -1299,7 +1275,7 @@ export interface DataFrame
    */
   shrinkToFit(): DataFrame;
   shrinkToFit(inPlace: true): void;
-  shrinkToFit({inPlace}: {inPlace: true}): void;
+  shrinkToFit({ inPlace }: { inPlace: true }): void;
   /**
    * Slice this DataFrame over the rows direction.
    * ___
@@ -1308,12 +1284,12 @@ export interface DataFrame
    * @param opts.length - Length of the slice
    * @example
    * ```
-   * >>> df = pl.DataFrame({
-   * >>>   "foo": [1, 2, 3],
-   * >>>   "bar": [6.0, 7.0, 8.0],
-   * >>>   "ham": ['a', 'b', 'c']
-   * >>> })
-   * >>> df.slice(1, 2) // Alternatively `df.slice({offset:1, length:2})`
+   * > df = pl.DataFrame({
+   * ...   "foo": [1, 2, 3],
+   * ...   "bar": [6.0, 7.0, 8.0],
+   * ...   "ham": ['a', 'b', 'c']
+   * ... })
+   * > df.slice(1, 2) // Alternatively `df.slice({offset:1, length:2})`
    * shape: (2, 3)
    * ┌─────┬─────┬─────┐
    * │ foo ┆ bar ┆ ham │
@@ -1326,7 +1302,7 @@ export interface DataFrame
    * └─────┴─────┴─────┘
    * ```
    */
-  slice({offset, length}: {offset: number; length: number}): DataFrame;
+  slice({ offset, length }: { offset: number; length: number }): DataFrame;
   slice(offset: number, length: number): DataFrame;
   /**
    * Sort the DataFrame by column.
@@ -1335,18 +1311,18 @@ export interface DataFrame
    * @param reverse - Reverse/descending sort.
    */
   sort(by: ColumnsOrExpr, reverse?: boolean): DataFrame;
-  sort({by, reverse}: {by: ColumnsOrExpr; reverse?: boolean}): DataFrame;
+  sort({ by, reverse }: { by: ColumnsOrExpr; reverse?: boolean }): DataFrame;
   /**
    * Aggregate the columns of this DataFrame to their standard deviation value.
    * ___
    * @example
    * ```
-   * >>> df = pl.DataFrame({
-   * >>>   "foo": [1, 2, 3],
-   * >>>   "bar": [6, 7, 8],
-   * >>>   "ham": ['a', 'b', 'c']
-   * >>> })
-   * >>> df.std()
+   * > df = pl.DataFrame({
+   * ...   "foo": [1, 2, 3],
+   * ...   "bar": [6, 7, 8],
+   * ...   "ham": ['a', 'b', 'c']
+   * ... })
+   * > df.std()
    * shape: (1, 3)
    * ╭─────┬─────┬──────╮
    * │ foo ┆ bar ┆ ham  │
@@ -1373,11 +1349,11 @@ export interface DataFrame
    *
    * @example
    * ```
-   * >>> df = pl.DataFrame({
-   * >>>   "letters": ["c", "c", "a", "c", "a", "b"],
-   * >>>   "nrs": [1, 2, 3, 4, 5, 6]
-   * >>> })
-   * >>> df
+   * > df = pl.DataFrame({
+   * ...   "letters": ["c", "c", "a", "c", "a", "b"],
+   * ...   "nrs": [1, 2, 3, 4, 5, 6]
+   * ... })
+   * > df
    * shape: (6, 2)
    * ╭─────────┬─────╮
    * │ letters ┆ nrs │
@@ -1396,10 +1372,9 @@ export interface DataFrame
    * ├╌╌╌╌╌╌╌╌╌┼╌╌╌╌╌┤
    * │ "b"     ┆ 6   │
    * ╰─────────┴─────╯
-   * >>> df.groupby("letters")
-   * >>>   .tail(2)
-   * >>>   .sort("letters")
-   * >>>
+   * > df.groupby("letters")
+   * ...   .tail(2)
+   * ...   .sort("letters")
    * shape: (5, 2)
    * ╭─────────┬─────╮
    * │ letters ┆ nrs │
@@ -1419,78 +1394,92 @@ export interface DataFrame
    * ```
    */
   tail(length?: number): DataFrame;
-  /** @deprecated *since 0.4.0* use {@link writeCSV} */
+  /**
+   * @deprecated *since 0.4.0* use {@link writeCSV}
+   * @category Deprecated
+   */
   toCSV(destOrOptions?, options?);
   /**
    * Converts dataframe object into row oriented javascript objects
    * @example
    * ```
-   * >>> df.toRecords()
+   * > df.toRecords()
    * [
    *   {"foo":1.0,"bar":"a"},
    *   {"foo":2.0,"bar":"b"},
    *   {"foo":3.0,"bar":"c"}
    * ]
    * ```
+   * @category IO
    */
   toRecords(): Record<string, any>[];
 
-  /** compat with `JSON.stringify`  */
+  /**
+   * compat with `JSON.stringify`
+   * @category IO
+   */
   toJSON(): string;
 
   /**
    * Converts dataframe object into column oriented javascript objects
    * @example
    * ```
-   * >>> df.toObject()
+   * > df.toObject()
    * {
    *  "foo": [1,2,3],
    *  "bar": ["a", "b", "c"]
    * }
    * ```
+   * @category IO
    */
   toObject(): Record<string, any[]>;
 
-  /** @deprecated *since 0.4.0* use {@link writeIPC} */
+  /**
+   * @deprecated *since 0.4.0* use {@link writeIPC}
+   * @category IO Deprecated
+   */
   toIPC(destination?, options?);
-  /** @deprecated *since 0.4.0* use {@link writeParquet} */
+  /**
+   * @deprecated *since 0.4.0* use {@link writeParquet}
+   * @category IO Deprecated
+   */
   toParquet(destination?, options?);
   toSeries(index?: number): Series;
   toString(): string;
   /**
-      Convert a ``DataFrame`` to a ``Series`` of type ``Struct``
-      @param name Name for the struct Series
-      @example
-      ```
-      >>> df = pl.DataFrame({
-      ...   "a": [1, 2, 3, 4, 5],
-      ...   "b": ["one", "two", "three", "four", "five"],
-      ... })
-      >>> df.toStruct("nums")
-      shape: (5,)
-      Series: 'nums' [struct[2]{'a': i64, 'b': str}]
-      [
-              {1,"one"}
-              {2,"two"}
-              {3,"three"}
-              {4,"four"}
-              {5,"five"}
-      ]
-      ```
-     */
+   *  Convert a ``DataFrame`` to a ``Series`` of type ``Struct``
+   *  @param name Name for the struct Series
+   *  @example
+   *  ```
+   *  > df = pl.DataFrame({
+   *  ...   "a": [1, 2, 3, 4, 5],
+   *  ...   "b": ["one", "two", "three", "four", "five"],
+   *  ... })
+   *  > df.toStruct("nums")
+   *  shape: (5,)
+   *  Series: 'nums' [struct[2]{'a': i64, 'b': str}]
+   *  [
+   *          {1,"one"}
+   *          {2,"two"}
+   *          {3,"three"}
+   *          {4,"four"}
+   *          {5,"five"}
+   *  ]
+   *  ```
+   */
   toStruct(name: string): Series;
   /**
    * Transpose a DataFrame over the diagonal.
    *
-   * @note This is a very expensive operation. Perhaps you can do it differently.
+   * @remarks This is a very expensive operation. Perhaps you can do it differently.
    * @param options
    * @param options.includeHeader If set, the column names will be added as first column.
    * @param options.headerName If `includeHeader` is set, this determines the name of the column that will be inserted
    * @param options.columnNames Optional generator/iterator that yields column names. Will be used to replace the columns in the DataFrame.
    *
    * @example
-   * >>> df = pl.DataFrame({"a": [1, 2, 3], "b": [1, 2, 3]})
-   * >>> df.transpose({includeHeader:true})
+   * > df = pl.DataFrame({"a": [1, 2, 3], "b": [1, 2, 3]})
+   * > df.transpose({includeHeader:true})
    * shape: (2, 4)
    * ┌────────┬──────────┬──────────┬──────────┐
    * │ column ┆ column_0 ┆ column_1 ┆ column_2 │
@@ -1502,7 +1491,7 @@ export interface DataFrame
    * │ b      ┆ 1        ┆ 2        ┆ 3        │
    * └────────┴──────────┴──────────┴──────────┘
    * // replace the auto generated column names with a list
-   * >>> df.transpose({includeHeader:false, columnNames:["a", "b", "c"]})
+   * > df.transpose({includeHeader:false, columnNames:["a", "b", "c"]})
    * shape: (2, 3)
    * ┌─────┬─────┬─────┐
    * │ a   ┆ b   ┆ c   │
@@ -1515,7 +1504,7 @@ export interface DataFrame
    * └─────┴─────┴─────┘
    *
    * // Include the header as a separate column
-   * >>> df.transpose({
+   * > df.transpose({
    * ...     includeHeader:true,
    * ...     headerName:"foo",
    * ...     columnNames:["a", "b", "c"]
@@ -1532,14 +1521,14 @@ export interface DataFrame
    * └─────┴─────┴─────┴─────┘
    *
    * // Replace the auto generated column with column names from a generator function
-   * >>> function *namesGenerator() {
+   * > function *namesGenerator() {
    * ...     const baseName = "my_column_";
    * ...     let count = 0;
    * ...     let name = `${baseName}_${count}`;
    * ...     count++;
    * ...     yield name;
    * ... }
-   * >>> df.transpose({includeHeader:false, columnNames:namesGenerator})
+   * > df.transpose({includeHeader:false, columnNames:namesGenerator})
    * shape: (2, 3)
    * ┌─────────────┬─────────────┬─────────────┐
    * │ my_column_0 ┆ my_column_1 ┆ my_column_2 │
@@ -1566,7 +1555,7 @@ export interface DataFrame
   unique(
     maintainOrder?: boolean,
     subset?: ColumnSelection,
-    keep?: "first" | "last"
+    keep?: "first" | "last",
   ): DataFrame;
   unique(opts: {
     maintainOrder?: boolean;
@@ -1579,7 +1568,7 @@ export interface DataFrame
       @param names Names of the struct columns that will be decomposed by its fields
       @example
       ```
-      >>> df = pl.DataFrame({
+      > df = pl.DataFrame({
       ...   "int": [1, 2],
       ...   "str": ["a", "b"],
       ...   "bool": [true, null],
@@ -1587,7 +1576,7 @@ export interface DataFrame
       ... })
       ...  .toStruct("my_struct")
       ...  .toFrame()
-      >>> df
+      > df
       shape: (2, 1)
       ┌─────────────────────────────┐
       │ my_struct                   │
@@ -1598,7 +1587,7 @@ export interface DataFrame
       ├╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌┤
       │ {2,"b",null,[3]}            │
       └─────────────────────────────┘
-      >>> df.unnest("my_struct")
+      > df.unnest("my_struct")
       shape: (2, 4)
       ┌─────┬─────┬──────┬────────────┐
       │ int ┆ str ┆ bool ┆ list       │
@@ -1616,12 +1605,12 @@ export interface DataFrame
    * Aggregate the columns of this DataFrame to their variance value.
    * @example
    * ```
-   * >>> df = pl.DataFrame({
-   * >>>   "foo": [1, 2, 3],
-   * >>>   "bar": [6, 7, 8],
-   * >>>   "ham": ['a', 'b', 'c']
-   * >>> })
-   * >>> df.var()
+   * > df = pl.DataFrame({
+   * >   "foo": [1, 2, 3],
+   * >   "bar": [6, 7, 8],
+   * >   "ham": ['a', 'b', 'c']
+   * > })
+   * > df.var()
    * shape: (1, 3)
    * ╭─────┬─────┬──────╮
    * │ foo ┆ bar ┆ ham  │
@@ -1638,17 +1627,17 @@ export interface DataFrame
    * @param df - DataFrame to stack.
    * @example
    * ```
-   * >>> df1 = pl.DataFrame({
-   * >>>   "foo": [1, 2],
-   * >>>   "bar": [6, 7],
-   * >>>   "ham": ['a', 'b']
-   * >>> })
-   * >>> df2 = pl.DataFrame({
-   * >>>   "foo": [3, 4],
-   * >>>   "bar": [8 , 9],
-   * >>>   "ham": ['c', 'd']
-   * >>> })
-   * >>> df1.vstack(df2)
+   * > df1 = pl.DataFrame({
+   * ...   "foo": [1, 2],
+   * ...   "bar": [6, 7],
+   * ...   "ham": ['a', 'b']
+   * ... })
+   * > df2 = pl.DataFrame({
+   * ...   "foo": [3, 4],
+   * ...   "bar": [8 , 9],
+   * ...   "ham": ['c', 'd']
+   * ... })
+   * > df1.vstack(df2)
    * shape: (4, 3)
    * ╭─────┬─────┬─────╮
    * │ foo ┆ bar ┆ ham │
@@ -1679,7 +1668,7 @@ export interface DataFrame
    * @param newName
    */
   withColumnRenamed(existing: string, replacement: string): DataFrame;
-  withColumnRenamed(opts: {existing: string; replacement: string}): DataFrame;
+  withColumnRenamed(opts: { existing: string; replacement: string }): DataFrame;
   /**
    * Add a column at index 0 that counts the rows.
    * @param name - name of the column to add
@@ -1768,7 +1757,7 @@ export const _DataFrame = (_df: any): DataFrame => {
             } else {
               return s;
             }
-          })
+          }),
         );
       };
       const summary = concat([
@@ -1780,7 +1769,7 @@ export const _DataFrame = (_df: any): DataFrame => {
       ]);
       summary.insertAtIdx(
         0,
-        Series("describe", ["mean", "std", "min", "max", "median"])
+        Series("describe", ["mean", "std", "min", "max", "median"]),
       );
 
       return summary;
@@ -1824,7 +1813,7 @@ export const _DataFrame = (_df: any): DataFrame => {
       if (opts.subset) {
         opts.subset = [opts.subset].flat(3);
       }
-      const o = {...defaultOptions, ...opts};
+      const o = { ...defaultOptions, ...opts };
 
       return wrap("unique", o.maintainOrder, o.subset, o.keep);
     },
@@ -1832,14 +1821,13 @@ export const _DataFrame = (_df: any): DataFrame => {
       return _DataFrame(_df)
         .lazy()
         .explode(columns)
-        .collectSync({noOptimization: true});
+        .collectSync({ noOptimization: true });
     },
     extend(other) {
       return wrap("extend", (other as any).inner());
     },
     filter(predicate) {
-      return this.lazy().filter(predicate)
-        .collectSync();
+      return this.lazy().filter(predicate).collectSync();
     },
     fillNull(strategy) {
       return wrap("fillNull", strategy);
@@ -1864,7 +1852,7 @@ export const _DataFrame = (_df: any): DataFrame => {
       return _df.getColumns().map(_Series) as any;
     },
     groupBy(...by) {
-      return GroupBy(_df as any, columnOrColumnsStrict(by));
+      return _GroupBy(_df as any, columnOrColumnsStrict(by));
     },
     groupByRolling(opts) {
       return RollingGroupBy(
@@ -1873,7 +1861,7 @@ export const _DataFrame = (_df: any): DataFrame => {
         opts.period,
         opts.offset,
         opts.closed,
-        opts.by
+        opts.by,
       );
     },
     groupByDynamic({
@@ -1895,19 +1883,19 @@ export const _DataFrame = (_df: any): DataFrame => {
         truncate,
         includeBoundaries,
         closed,
-        by
+        by,
       );
     },
     hashRows(obj: any = 0n, k1 = 1n, k2 = 2n, k3 = 3n) {
       if (typeof obj === "number" || typeof obj === "bigint") {
         return _Series(
-          _df.hashRows(BigInt(obj), BigInt(k1), BigInt(k2), BigInt(k3))
+          _df.hashRows(BigInt(obj), BigInt(k1), BigInt(k2), BigInt(k3)),
         );
       }
-      const o = {k0: obj, k1: k1, k2: k2, k3: k3, ...obj};
+      const o = { k0: obj, k1: k1, k2: k2, k3: k3, ...obj };
 
       return _Series(
-        _df.hashRows(BigInt(o.k0), BigInt(o.k1), BigInt(o.k2), BigInt(o.k3))
+        _df.hashRows(BigInt(o.k0), BigInt(o.k1), BigInt(o.k2), BigInt(o.k3)),
       ) as any;
     },
     head(length = 5) {
@@ -1921,7 +1909,7 @@ export const _DataFrame = (_df: any): DataFrame => {
 
       return wrap(
         method,
-        columns.map((col) => col.inner())
+        columns.map((col) => col.inner()),
       );
     },
     insertAtIdx(idx, series) {
@@ -1934,7 +1922,7 @@ export const _DataFrame = (_df: any): DataFrame => {
     isEmpty: () => _df.height === 0,
     isUnique: () => _Series(_df.isUnique()) as any,
     join(other: DataFrame, options): DataFrame {
-      options = {how: "inner", suffix: "right", ...options};
+      options = { how: "inner", suffix: "right", ...options };
       const on = columnOrColumns(options.on);
       const how = options.how;
       const suffix = options.suffix;
@@ -1950,7 +1938,7 @@ export const _DataFrame = (_df: any): DataFrame => {
       }
       if ((leftOn && !rightOn) || (rightOn && !leftOn)) {
         throw new TypeError(
-          "You should pass the column to join on as an argument."
+          "You should pass the column to join on as an argument.",
         );
       }
 
@@ -2019,30 +2007,25 @@ export const _DataFrame = (_df: any): DataFrame => {
       if (Expr.isExpr(aggregateFunc)) {
         fn = aggregateFunc;
       } else {
-        fn = {
-          first: element().first(),
-          sum: element().sum(),
-          max: element().max(),
-          min: element().min(),
-          mean: element().mean(),
-          median: element().median(),
-          last: element().last(),
-          count: element().count()
-        }[aggregateFunc] ?? new Error(`Unknown aggregate function ${aggregateFunc}`);
+        fn =
+          {
+            first: element().first(),
+            sum: element().sum(),
+            max: element().max(),
+            min: element().min(),
+            mean: element().mean(),
+            median: element().median(),
+            last: element().last(),
+            count: element().count(),
+          }[aggregateFunc] ??
+          new Error(`Unknown aggregate function ${aggregateFunc}`);
         if (fn instanceof Error) {
           throw fn;
         }
       }
 
       return _DataFrame(
-        _df.pivotExpr(
-          values,
-          index,
-          columns,
-          fn,
-          maintainOrder,
-          sortColumns
-        )
+        _df.pivotExpr(values, index, columns, fn, maintainOrder, sortColumns),
       );
     },
     quantile(quantile, interpolation = "nearest") {
@@ -2072,6 +2055,7 @@ export const _DataFrame = (_df: any): DataFrame => {
       return _df.toRows();
     },
     sample(opts?, frac?, withReplacement = false, seed?) {
+      // rome-ignore lint/style/noArguments: <explanation>
       if (arguments.length === 0) {
         return wrap("sampleN", 1, withReplacement, false, seed);
       }
@@ -2091,9 +2075,7 @@ export const _DataFrame = (_df: any): DataFrame => {
     select(...selection) {
       const hasExpr = selection.flat().some((s) => Expr.isExpr(s));
       if (hasExpr) {
-        return _DataFrame(_df).lazy()
-          .select(selection)
-          .collectSync();
+        return _DataFrame(_df).lazy().select(selection).collectSync();
       } else {
         return wrap("select", columnOrColumnsStrict(selection as any));
       }
@@ -2130,7 +2112,7 @@ export const _DataFrame = (_df: any): DataFrame => {
         return _DataFrame(_df)
           .lazy()
           .sort(arg, reverse)
-          .collectSync({noOptimization: true, stringCache: false});
+          .collectSync({ noOptimization: true, stringCache: false });
       }
 
       return wrap("sort", arg, reverse, true);
@@ -2186,7 +2168,7 @@ export const _DataFrame = (_df: any): DataFrame => {
         return acc;
       }, {});
     },
-    writeJSON(dest?, options = {format: "lines"}) {
+    writeJSON(dest?, options = { format: "lines" }) {
       if (dest instanceof Writable || typeof dest === "string") {
         return _df.writeJson(dest, options) as any;
       }
@@ -2198,7 +2180,7 @@ export const _DataFrame = (_df: any): DataFrame => {
         },
       });
 
-      _df.writeJson(writeStream, {...options, ...dest});
+      _df.writeJson(writeStream, { ...options, ...dest });
       writeStream.end("");
 
       return Buffer.concat(buffers);
@@ -2206,7 +2188,7 @@ export const _DataFrame = (_df: any): DataFrame => {
     toParquet(dest?, options?) {
       return this.writeParquet(dest, options);
     },
-    writeParquet(dest?, options = {compression: "uncompressed"}) {
+    writeParquet(dest?, options = { compression: "uncompressed" }) {
       if (dest instanceof Writable || typeof dest === "string") {
         return _df.writeParquet(dest, options.compression) as any;
       }
@@ -2223,7 +2205,7 @@ export const _DataFrame = (_df: any): DataFrame => {
 
       return Buffer.concat(buffers);
     },
-    writeAvro(dest?, options = {compression: "uncompressed"}) {
+    writeAvro(dest?, options = { compression: "uncompressed" }) {
       if (dest instanceof Writable || typeof dest === "string") {
         return _df.writeAvro(dest, options.compression) as any;
       }
@@ -2243,7 +2225,7 @@ export const _DataFrame = (_df: any): DataFrame => {
     toIPC(dest?, options?) {
       return this.writeIPC(dest, options);
     },
-    writeIPC(dest?, options = {compression: "uncompressed"}) {
+    writeIPC(dest?, options = { compression: "uncompressed" }) {
       if (dest instanceof Writable || typeof dest === "string") {
         return _df.writeIpc(dest, options.compression) as any;
       }
@@ -2271,7 +2253,7 @@ export const _DataFrame = (_df: any): DataFrame => {
       let df = wrap(
         "transpose",
         options?.includeHeader ?? false,
-        options?.headerName
+        options?.headerName,
       );
       if (options?.columnNames) {
         function* namesIter() {
@@ -2287,11 +2269,11 @@ export const _DataFrame = (_df: any): DataFrame => {
         }
 
         const newColumns = Array.from(
-          {length: df.width},
+          { length: df.width },
           (
             (i) => () =>
               i.next().value
-          )(namesIter())
+          )(namesIter()),
         );
 
         df.columns = newColumns;
@@ -2325,19 +2307,19 @@ export const _DataFrame = (_df: any): DataFrame => {
       if (isSeriesArray(columns)) {
         return columns.reduce(
           (acc, curr) => acc.withColumn(curr),
-          _DataFrame(_df)
+          _DataFrame(_df),
         );
       } else {
         return this.lazy()
           .withColumns(columns)
-          .collectSync({noOptimization: true, stringCache: false});
+          .collectSync({ noOptimization: true, stringCache: false });
       }
     },
     withColumnRenamed(opt, replacement?) {
       if (typeof opt === "string") {
-        return this.rename({[opt]: replacement});
+        return this.rename({ [opt]: replacement });
       } else {
-        return this.rename({[opt.existing]: opt.replacement});
+        return this.rename({ [opt.existing]: opt.replacement });
       }
     },
     withRowCount(name = "row_nr") {
@@ -2400,8 +2382,33 @@ export const _DataFrame = (_df: any): DataFrame => {
   });
 };
 
+/**
+ * DataFrame constructor
+ */
 export interface DataFrameConstructor extends Deserialize<DataFrame> {
+  /**
+   * Create an empty DataFrame
+   */
   (): DataFrame;
+  /**
+   * Create a DataFrame from a JavaScript object
+   * @example
+   * ```
+   * data = {'a': [1n, 2n], 'b': [3, 4]}
+   * df = pl.DataFrame(data)
+   * df
+   * shape: (2, 2)
+   * ╭─────┬─────╮
+   * │ a   ┆ b   │
+   * │ --- ┆ --- │
+   * │ u64 ┆ i64 │
+   * ╞═════╪═════╡
+   * │ 1   ┆ 3   │
+   * ├╌╌╌╌╌┼╌╌╌╌╌┤
+   * │ 2   ┆ 4   │
+   * ╰─────┴─────╯
+   * ```
+   */
   (
     data: any,
     options?: {
@@ -2409,7 +2416,7 @@ export interface DataFrameConstructor extends Deserialize<DataFrame> {
       orient?: "row" | "col";
       schema?: Record<string, string | DataType>;
       inferSchemaLength?: number;
-    }
+    },
   ): DataFrame;
   isDataFrame(arg: any): arg is DataFrame;
 }
@@ -2445,5 +2452,5 @@ export const DataFrame: DataFrameConstructor = Object.assign(
     isDataFrame,
     deserialize: (buf, fmt) =>
       _DataFrame(pli.JsDataFrame.deserialize(buf, fmt)),
-  }
+  },
 );

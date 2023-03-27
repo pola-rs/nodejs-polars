@@ -1,54 +1,141 @@
 import { ColumnsOrExpr } from "./utils";
 import { Expr, _Expr } from "./lazy/expr";
-import { Series } from "./series/series";
-import { concatList } from "./lazy/functions";
 
-import pli from "./internals/polars_internal";
+import {
+  InterpolationMethod,
+  RollingOptions,
+  RollingQuantileOptions,
+  RollingSkewOptions,
+} from "./types";
+import { DataType } from "./datatypes";
 
-export type RollingOptions = {
-  windowSize: number;
-  weights?: Array<number>;
-  minPeriods?: number;
-  center?: boolean;
-};
-
-export type Interpolation =
-  | "nearest"
-  | "higher"
-  | "lower"
-  | "midpoint"
-  | "linear";
-
+/**
+ * Arithmetic operations
+ */
 export interface Arithmetic<T> {
-  add(rhs: any): T;
-  sub(rhs: any): T;
-  div(rhs: any): T;
-  mul(rhs: any): T;
-  rem(rhs: any): T;
-  plus(rhs: any): T;
-  minus(rhs: any): T;
-  divideBy(rhs: any): T;
-  multiplyBy(rhs: any): T;
-  modulo(rhs: any): T;
+  /**
+   * Add self to other
+   * @category Arithmetic
+   */
+  add(other: any): T;
+  /**
+   * Subtract other from self
+   * @category Arithmetic
+   */
+  sub(other: any): T;
+  /**
+   * Divide self by other
+   * @category Arithmetic
+   */
+  div(other: any): T;
+  /**
+   * Multiply self by other
+   * @category Arithmetic
+   */
+  mul(other: any): T;
+  /**
+   * Get the remainder of self divided by other
+   * @category Arithmetic
+   */
+  rem(other: any): T;
+  /**
+   * Add self to other
+   * @category Arithmetic
+   */
+  plus(other: any): T;
+  /**
+   * Subtract other from self
+   * @category Arithmetic
+   */
+  minus(other: any): T;
+  /**
+   * Divide self by other
+   * @category Arithmetic
+   */
+  divideBy(other: any): T;
+  /**
+   * Multiply self by other
+   * @category Arithmetic
+   */
+  multiplyBy(other: any): T;
+  /**
+   * Get the remainder of self divided by other
+   * @category Arithmetic
+   */
+  modulo(other: any): T;
 }
 
 export interface Comparison<T> {
-  eq(rhs: any): T;
-  equals(rhs: any): T;
-  gtEq(rhs: any): T;
-  greaterThanEquals(rhs: any): T;
-  gt(rhs: any): T;
-  greaterThan(rhs: any): T;
-  ltEq(rhs: any): T;
-  lessThanEquals(rhs: any): T;
-  lt(rhs: any): T;
-  lessThan(rhs: any): T;
-  neq(rhs: any): T;
-  notEquals(rhs: any): T;
+  /**
+   * Compare self to other: `self == other`
+   * @category Comparison
+   */
+  eq(other: any): T;
+  /**
+   * Compare self to other: `self == other`
+   * @category Comparison
+   */
+  equals(other: any): T;
+  /**
+   * Compare self to other:  `self >= other`
+   * @category Comparison
+   */
+  gtEq(other: any): T;
+  /**
+   * Compare self to other:  `self >= other`
+   * @category Comparison
+   */
+  greaterThanEquals(other: any): T;
+  /**
+   * Compare self to other:  `self > other`
+   * @category Comparison
+   */
+  gt(other: any): T;
+  /**
+   * Compare self to other:  `self > other`
+   * @category Comparison
+   */
+  greaterThan(other: any): T;
+  /**
+   * Compare self to other:  `self <= other`
+   * @category Comparison
+   */
+  ltEq(other: any): T;
+  /**
+   * Compare self to other:  `self =< other`
+   * @category Comparison
+   */
+  lessThanEquals(other: any): T;
+  /**
+   * Compare self to other:  `self < other`
+   * @category Comparison
+   */
+  lt(other: any): T;
+  /**
+   * Compare self to other:  `self < other`
+   * @category Comparison
+   */
+  lessThan(other: any): T;
+  /**
+   * Compare self to other:  `self !== other`
+   * @category Comparison
+   */
+  neq(other: any): T;
+  /**
+   * Compare self to other:  `self !== other`
+   * @category Comparison
+   */
+  notEquals(other: any): T;
 }
 
+/**
+ * A trait for cumulative operations.
+ */
 export interface Cumulative<T> {
-  /** Get an array with the cumulative count computed at every element. */
+  /**
+   * Get an array with the cumulative count computed at every element.
+   * @category Cumulative
+   */
   cumCount(reverse?: boolean): T;
   cumCount({ reverse }: { reverse: boolean }): T;
   /**
@@ -57,8 +144,8 @@ export interface Cumulative<T> {
    * @param reverse - reverse the operation
    * @example
    * ```
-   * > const s = pl.Series("a", [1, 2, 3])
-   * > s.cumMax()
+   * >  const s = pl.Series("a", [1, 2, 3])
+   * >  s.cumMax()
    * shape: (3,)
    * Series: 'b' [i64]
    * [
@@ -67,6 +154,7 @@ export interface Cumulative<T> {
    *         3
    * ]
    * ```
+   * @category Cumulative
    */
   cumMax(reverse?: boolean): T;
   cumMax({ reverse }: { reverse: boolean }): T;
@@ -76,8 +164,8 @@ export interface Cumulative<T> {
    * @param reverse - reverse the operation
    * @example
    * ```
-   * > const s = pl.Series("a", [1, 2, 3])
-   * > s.cumMin()
+   * >  const s = pl.Series("a", [1, 2, 3])
+   * >  s.cumMin()
    * shape: (3,)
    * Series: 'b' [i64]
    * [
@@ -86,6 +174,7 @@ export interface Cumulative<T> {
    *         1
    * ]
    * ```
+   * @category Cumulative
    */
   cumMin(reverse?: boolean): T;
   cumMin({ reverse }: { reverse: boolean }): T;
@@ -95,8 +184,8 @@ export interface Cumulative<T> {
    * @param reverse - reverse the operation
    * @example
    * ```
-   * > const s = pl.Series("a", [1, 2, 3])
-   * > s.cumProd()
+   * >  const s = pl.Series("a", [1, 2, 3])
+   * >  s.cumProd()
    * shape: (3,)
    * Series: 'b' [i64]
    * [
@@ -105,6 +194,7 @@ export interface Cumulative<T> {
    *         6
    * ]
    * ```
+   * @category Cumulative
    */
   cumProd(reverse?: boolean): T;
   cumProd({ reverse }: { reverse: boolean }): T;
@@ -114,8 +204,8 @@ export interface Cumulative<T> {
    * @param reverse - reverse the operation
    * @example
    * ```
-   * > const s = pl.Series("a", [1, 2, 3])
-   * > s.cumSum()
+   * >  const s = pl.Series("a", [1, 2, 3])
+   * >  s.cumSum()
    * shape: (3,)
    * Series: 'b' [i64]
    * [
@@ -124,11 +214,15 @@ export interface Cumulative<T> {
    *         6
    * ]
    * ```
+   * @category Cumulative
    */
   cumSum(reverse?: boolean): T;
   cumSum({ reverse }: { reverse: boolean }): T;
 }
 
+/**
+ * __A trait for DataFrame and Series that allows for the application of a rolling window.__
+ */
 export interface Rolling<T> {
   /**
    * __Apply a rolling max (moving max) over the values in this Series.__
@@ -144,6 +238,7 @@ export interface Rolling<T> {
    * @param minPeriods The number of values in the window that should be non-null before computing a result.
    * If undefined, it will be set equal to window size.
    * @param center - Set the labels at the center of the window
+   * @category Rolling
    */
   rollingMax(options: RollingOptions): T;
   rollingMax(
@@ -166,6 +261,7 @@ export interface Rolling<T> {
    * @param minPeriods The number of values in the window that should be non-null before computing a result.
    * If undefined, it will be set equal to window size.
    * @param center - Set the labels at the center of the window
+   * @category Rolling
    */
   rollingMean(options: RollingOptions): T;
   rollingMean(
@@ -188,6 +284,7 @@ export interface Rolling<T> {
    * @param minPeriods The number of values in the window that should be non-null before computing a result.
    * If undefined, it will be set equal to window size.
    * @param center - Set the labels at the center of the window
+   * @category Rolling
    */
   rollingMin(options: RollingOptions): T;
   rollingMin(
@@ -209,6 +306,7 @@ export interface Rolling<T> {
    * @param minPeriods The number of values in the window that should be non-null before computing a result.
    * If undefined, it will be set equal to window size.
    * @param center - Set the labels at the center of the window
+   * @category Rolling
    */
   rollingStd(options: RollingOptions): T;
   rollingStd(
@@ -231,6 +329,7 @@ export interface Rolling<T> {
    * @param minPeriods The number of values in the window that should be non-null before computing a result.
    * If undefined, it will be set equal to window size.
    * @param center - Set the labels at the center of the window
+   * @category Rolling
    */
   rollingSum(options: RollingOptions): T;
   rollingSum(
@@ -253,6 +352,7 @@ export interface Rolling<T> {
    * @param minPeriods The number of values in the window that should be non-null before computing a result.
    * If undefined, it will be set equal to window size.
    * @param center - Set the labels at the center of the window
+   * @category Rolling
    */
   rollingVar(options: RollingOptions): T;
   rollingVar(
@@ -261,7 +361,10 @@ export interface Rolling<T> {
     minPeriods?: Array<number>,
     center?: boolean,
   ): T;
-  /** Compute a rolling median */
+  /**
+   * Compute a rolling median
+   * @category Rolling
+   */
   rollingMedian(options: RollingOptions): T;
   rollingMedian(
     windowSize: number,
@@ -279,16 +382,12 @@ export interface Rolling<T> {
    * @param minPeriods The number of values in the window that should be non-null before computing a result.
    * If undefined, it will be set equal to window size.
    * @param center - Set the labels at the center of the window
+   * @category Rolling
    */
-  rollingQuantile(
-    options: RollingOptions & {
-      quantile: number;
-      interpolation?: Interpolation;
-    },
-  ): T;
+  rollingQuantile(options: RollingQuantileOptions): T;
   rollingQuantile(
     quantile: number,
-    interpolation?: Interpolation,
+    interpolation?: InterpolationMethod,
     windowSize?: number,
     weights?: Array<number>,
     minPeriods?: Array<number>,
@@ -298,9 +397,17 @@ export interface Rolling<T> {
    * Compute a rolling skew
    * @param windowSize Size of the rolling window
    * @param bias If false, then the calculations are corrected for statistical bias.
+   * @category Rolling
    */
   rollingSkew(windowSize: number, bias?: boolean): T;
-  rollingSkew({ windowSize, bias }: { windowSize: number; bias?: boolean }): T;
+  /**
+   * Compute a rolling skew
+   * @param options
+   * @param options.windowSize Size of the rolling window
+   * @param options.bias If false, then the calculations are corrected for statistical bias.
+   * @category Rolling
+   */
+  rollingSkew(options: RollingSkewOptions): T;
 }
 
 export interface Round<T> {
@@ -309,17 +416,20 @@ export interface Round<T> {
    *
    * Similar functionality to javascript `toFixed`
    * @param decimals number of decimals to round by.
+   * @category Math
    */
   round(decimals: number): T;
   round(options: { decimals: number }): T;
   /**
    * Floor underlying floating point array to the lowest integers smaller or equal to the float value.
    * Only works on floating point Series
+   * @category Math
    */
   floor(): T;
   /**
    * Ceil underlying floating point array to the highest integers smaller or equal to the float value.
    * Only works on floating point Series
+   * @category Math
    */
   ceil(): T;
 
@@ -329,6 +439,7 @@ export interface Round<T> {
    * If you want to clip other dtypes, consider writing a when -> then -> otherwise expression
    * @param min Minimum value
    * @param max Maximum value
+   * @category Math
    */
   clip(min: number, max: number): T;
   clip(options: { min: number; max: number });
@@ -343,12 +454,12 @@ export interface Sample<T> {
    * @param seed - Seed initialization. If not provided, a random seed will be used
    * @example
    * ```
-   * >>> df = pl.DataFrame({
-   * >>>   "foo": [1, 2, 3],
-   * >>>   "bar": [6, 7, 8],
-   * >>>   "ham": ['a', 'b', 'c']
-   * >>> })
-   * >>> df.sample({n: 2})
+   * > df = pl.DataFrame({
+   * >   "foo": [1, 2, 3],
+   * >   "bar": [6, 7, 8],
+   * >   "ham": ['a', 'b', 'c']
+   * > })
+   * > df.sample({n: 2})
    * shape: (2, 3)
    * ╭─────┬─────┬─────╮
    * │ foo ┆ bar ┆ ham │
@@ -360,6 +471,7 @@ export interface Sample<T> {
    * │ 3   ┆ 8   ┆ "c" │
    * ╰─────┴─────┴─────╯
    * ```
+   * @category Math
    */
 
   sample(opts?: {
@@ -385,6 +497,9 @@ export interface Bincode<T> {
   getState(T): Uint8Array;
 }
 
+/**
+ * Functions that can be applied to dtype List
+ */
 export interface ListFunctions<T> {
   argMin(): T;
   argMax(): T;
@@ -410,6 +525,7 @@ export interface ListFunctions<T> {
    * │ ["x", "y", "z"] │
    * └─────────────────┘
    * ```
+   * @category List
    */
   concat(other: (string | T)[] | string | T): T;
   /**
@@ -433,6 +549,7 @@ export interface ListFunctions<T> {
    * │ true  │
    * └───────┘
    * ```
+   * @category List
    */
   contains(item: any): T;
   /**
@@ -450,6 +567,7 @@ export interface ListFunctions<T> {
    *     [null, -8, -1]
    * ]
    * ```
+   * @category List
    */
   diff(n?: number, nullBehavior?: "ignore" | "drop"): T;
   /**
@@ -457,45 +575,49 @@ export interface ListFunctions<T> {
    * So index `0` would return the first item of every sublist
    * and index `-1` would return the last item of every sublist
    * if an index is out of bounds, it will return a `null`.
+   * @category List
    */
   get(index: number | Expr): T;
   /**
-      Run any polars expression against the lists' elements
-      Parameters
-      ----------
-      @param expr
-          Expression to run. Note that you can select an element with `pl.first()`, or `pl.col()`
-      @param parallel
-          Run all expression parallel. Don't activate this blindly.
-          Parallelism is worth it if there is enough work to do per thread.
-          This likely should not be use in the groupby context, because we already parallel execution per group
-      @example
-      --------
-      >>> df = pl.DataFrame({"a": [1, 8, 3], "b": [4, 5, 2]})
-      >>> df.withColumn(
-      ...   pl.concatList(["a", "b"]).lst.eval(pl.first().rank()).alias("rank")
-      ... )
-      shape: (3, 3)
-      ┌─────┬─────┬────────────┐
-      │ a   ┆ b   ┆ rank       │
-      │ --- ┆ --- ┆ ---        │
-      │ i64 ┆ i64 ┆ list [f32] │
-      ╞═════╪═════╪════════════╡
-      │ 1   ┆ 4   ┆ [1.0, 2.0] │
-      ├╌╌╌╌╌┼╌╌╌╌╌┼╌╌╌╌╌╌╌╌╌╌╌╌┤
-      │ 8   ┆ 5   ┆ [2.0, 1.0] │
-      ├╌╌╌╌╌┼╌╌╌╌╌┼╌╌╌╌╌╌╌╌╌╌╌╌┤
-      │ 3   ┆ 2   ┆ [2.0, 1.0] │
-      └─────┴─────┴────────────┘
+   *  Run any polars expression against the lists' elements
+   *  Parameters
+   *  ----------
+   * @param expr
+   *   Expression to run. Note that you can select an element with `pl.first()`, or `pl.col()`
+   * @param parallel
+   *   Run all expression parallel. Don't activate this blindly.
+   *   Parallelism is worth it if there is enough work to do per thread.
+   *   This likely should not be use in the groupby context, because we already parallel execution per group
+   * @example
+   *  >df = pl.DataFrame({"a": [1, 8, 3], "b": [4, 5, 2]})
+   *  >df.withColumn(
+   *  ...   pl.concatList(["a", "b"]).lst.eval(pl.first().rank()).alias("rank")
+   *  ... )
+   *  shape: (3, 3)
+   *  ┌─────┬─────┬────────────┐
+   *  │ a   ┆ b   ┆ rank       │
+   *  │ --- ┆ --- ┆ ---        │
+   *  │ i64 ┆ i64 ┆ list [f32] │
+   *  ╞═════╪═════╪════════════╡
+   *  │ 1   ┆ 4   ┆ [1.0, 2.0] │
+   *  ├╌╌╌╌╌┼╌╌╌╌╌┼╌╌╌╌╌╌╌╌╌╌╌╌┤
+   *  │ 8   ┆ 5   ┆ [2.0, 1.0] │
+   *  ├╌╌╌╌╌┼╌╌╌╌╌┼╌╌╌╌╌╌╌╌╌╌╌╌┤
+   *  │ 3   ┆ 2   ┆ [2.0, 1.0] │
+   *  └─────┴─────┴────────────┘
+   * @category List
    */
   eval(expr: Expr, parallel?: boolean): T;
-  /** Get the first value of the sublists. */
+  /**
+   * Get the first value of the sublists.
+   * @category List
+   */
   first(): T;
   /**
    * Slice the head of every sublist
-   * @param n How many values to take in the slice.
+   * @param n - How many values to take in the slice.
    * @example
-   * --------
+   * ```
    * s = pl.Series("a", [[1, 2, 3, 4], [10, 2, 1]])
    * s.lst.head(2)
    * shape: (2,)
@@ -504,13 +626,15 @@ export interface ListFunctions<T> {
    *     [1, 2]
    *     [10, 2]
    * ]
+   * ```
+   * @category List
    */
   head(n: number): T;
   /**
    * Slice the tail of every sublist
-   * @param n How many values to take in the slice.
+   * @param n - How many values to take in the slice.
    * @example
-   * --------
+   * ```
    * s = pl.Series("a", [[1, 2, 3, 4], [10, 2, 1]])
    * s.lst.tail(2)
    * shape: (2,)
@@ -519,6 +643,8 @@ export interface ListFunctions<T> {
    *     [3, 4]
    *     [2, q]
    * ]
+   * ```
+   * @category List
    */
   tail(n: number): T;
   /**
@@ -526,23 +652,74 @@ export interface ListFunctions<T> {
    * This errors if inner type of list `!= Utf8`.
    * @param separator A string used to separate one element of the list from the next in the resulting string.
    * If omitted, the list elements are separated with a comma.
+   * @category List
    */
   join(separator?: string): T;
-  /** Get the last value of the sublists. */
+  /**
+   * Get the last value of the sublists.
+   * @category List
+   */
   last(): T;
+  /**
+   * Get the length of the sublists.
+   * @category List
+   */
   lengths(): T;
+  /**
+   * Get the maximum value of the sublists.
+   * @category List
+   */
   max(): T;
+  /**
+   * Get the mean value of the sublists.
+   * @category List
+   */
   mean(): T;
+  /**
+   * Get the median value of the sublists.
+   * @category List
+   */
   min(): T;
+  /**
+   * Reverse the sublists.
+   * @category List
+   */
   reverse(): T;
+  /**
+   * Shift the sublists.
+   * @param periods - Number of periods to shift. Can be positive or negative.
+   * @category List
+   */
   shift(periods: number): T;
+  /**
+   * Slice the sublists.
+   * @param offset - The offset of the slice.
+   * @param length - The length of the slice.
+   * @category List
+   */
   slice(offset: number, length: number): T;
+  /**
+   * Sort the sublists.
+   * @param reverse - Sort in reverse order.
+   * @category List
+   */
   sort(reverse?: boolean): T;
   sort(opt: { reverse: boolean }): T;
+  /**
+   * Sum all elements of the sublists.
+   * @category List
+   */
   sum(): T;
+  /**
+   * Get the unique values of the sublists.
+   * @category List
+   */
   unique(): T;
 }
 
+/**
+ * Functions that can be applied to a Date or Datetime column.
+ */
 export interface DateFunctions<T> {
   /**
    * Extract day from underlying Date representation.
@@ -637,6 +814,174 @@ export interface DateFunctions<T> {
   year(): T;
 }
 
+export interface StringFunctions<T> {
+  /**
+   * Vertically concat the values in the Series to a single string value.
+   * @example
+   * ```
+   * > df = pl.DataFrame({"foo": [1, null, 2]})
+   * > df = df.select(pl.col("foo").str.concat("-"))
+   * > df
+   * shape: (1, 1)
+   * ┌──────────┐
+   * │ foo      │
+   * │ ---      │
+   * │ str      │
+   * ╞══════════╡
+   * │ 1-null-2 │
+   * └──────────┘
+   * ```
+   */
+  concat(delimiter: string): T;
+  /** Check if strings in Series contain regex pattern. */
+  contains(pat: string | RegExp): T;
+  /**
+   * Decodes a value using the provided encoding
+   * @param encoding - hex | base64
+   * @param strict - how to handle invalid inputs
+   *
+   *     - true: method will throw error if unable to decode a value
+   *     - false: unhandled values will be replaced with `null`
+   * @example
+   * ```
+   * > df = pl.DataFrame({"strings": ["666f6f", "626172", null]})
+   * > df.select(col("strings").str.decode("hex"))
+   * shape: (3, 1)
+   * ┌─────────┐
+   * │ strings │
+   * │ ---     │
+   * │ str     │
+   * ╞═════════╡
+   * │ foo     │
+   * ├╌╌╌╌╌╌╌╌╌┤
+   * │ bar     │
+   * ├╌╌╌╌╌╌╌╌╌┤
+   * │ null    │
+   * └─────────┘
+   * ```
+   */
+  decode(encoding: "hex" | "base64", strict?: boolean): T;
+  decode(options: { encoding: "hex" | "base64"; strict?: boolean }): T;
+  /**
+   * Encodes a value using the provided encoding
+   * @param encoding - hex | base64
+   * @example
+   * ```
+   * > df = pl.DataFrame({"strings", ["foo", "bar", null]})
+   * > df.select(col("strings").str.encode("hex"))
+   * shape: (3, 1)
+   * ┌─────────┐
+   * │ strings │
+   * │ ---     │
+   * │ str     │
+   * ╞═════════╡
+   * │ 666f6f  │
+   * ├╌╌╌╌╌╌╌╌╌┤
+   * │ 626172  │
+   * ├╌╌╌╌╌╌╌╌╌┤
+   * │ null    │
+   * └─────────┘
+   * ```
+   */
+  encode(encoding: "hex" | "base64"): T;
+  /**
+   * Extract the target capture group from provided patterns.
+   * @param pattern A valid regex pattern
+   * @param groupIndex Index of the targeted capture group.
+   * Group 0 mean the whole pattern, first group begin at index 1
+   * Default to the first capture group
+   * @returns Utf8 array. Contain null if original value is null or regex capture nothing.
+   * @example
+   * ```
+   * >  df = pl.DataFrame({
+   * ...   'a': [
+   * ...       'http://vote.com/ballon_dor?candidate=messi&ref=polars',
+   * ...       'http://vote.com/ballon_dor?candidat=jorginho&ref=polars',
+   * ...       'http://vote.com/ballon_dor?candidate=ronaldo&ref=polars'
+   * ...   ]})
+   * >  df.select(pl.col('a').str.extract(/candidate=(\w+)/, 1))
+   * shape: (3, 1)
+   * ┌─────────┐
+   * │ a       │
+   * │ ---     │
+   * │ str     │
+   * ╞═════════╡
+   * │ messi   │
+   * ├╌╌╌╌╌╌╌╌╌┤
+   * │ null    │
+   * ├╌╌╌╌╌╌╌╌╌┤
+   * │ ronaldo │
+   * └─────────┘
+   * ```
+   */
+  extract(pat: string | RegExp, groupIndex: number): T;
+  /**
+   * Extract the first match of json string with provided JSONPath expression.
+   * Throw errors if encounter invalid json strings.
+   * All return value will be casted to Utf8 regardless of the original value.
+   * @see https://goessner.net/articles/JsonPath/
+   * @param jsonPath - A valid JSON path query string
+   * @returns Utf8 array. Contain null if original value is null or the `jsonPath` return nothing.
+   * @example
+   * ```
+   * > df = pl.DataFrame({
+   * ...   'json_val': [
+   * ...     '{"a":"1"}',
+   * ...     null,
+   * ...     '{"a":2}',
+   * ...     '{"a":2.1}',
+   * ...     '{"a":true}'
+   * ...   ]
+   * ... })
+   * > df.select(pl.col('json_val').str.jsonPathMatch('$.a')
+   * shape: (5,)
+   * Series: 'json_val' [str]
+   * [
+   *     "1"
+   *     null
+   *     "2"
+   *     "2.1"
+   *     "true"
+   * ]
+   * ```
+   */
+  jsonPathMatch(pat: string): T;
+  /**  Get length of the string values in the Series. */
+  lengths(): T;
+  /** Remove leading whitespace. */
+  lstrip(): T;
+  /** Replace first regex match with a string value. */
+  replace(pat: string | RegExp, val: string): T;
+  /** Replace all regex matches with a string value. */
+  replaceAll(pat: string | RegExp, val: string): T;
+  /** Modify the strings to their lowercase equivalent. */
+  toLowerCase(): T;
+  /** Modify the strings to their uppercase equivalent. */
+  toUpperCase(): T;
+  /** Remove trailing whitespace. */
+  rstrip(): T;
+  /**
+   * Create subslices of the string values of a Utf8 Series.
+   * @param start - Start of the slice (negative indexing may be used).
+   * @param length - Optional length of the slice.
+   */
+  slice(start: number, length?: number): T;
+  /**
+   * Split a string into substrings using the specified separator and return them as a Series.
+   * @param separator — A string that identifies character or characters to use in separating the string.
+   * @param inclusive Include the split character/string in the results
+   */
+  split(by: string, options?: { inclusive?: boolean } | boolean): T;
+  /** Remove leading and trailing whitespace. */
+  strip(): T;
+  /**
+   * Parse a Series of dtype Utf8 to a Date/Datetime Series.
+   * @param datatype Date or Datetime.
+   * @param fmt formatting syntax. [Read more](https://docs.rs/chrono/0.4.19/chrono/format/strftime/index.html)
+   */
+  strptime(datatype: DataType.Date | DataType.Datetime, fmt?: string): T;
+}
+
 export interface Serialize {
   /**
    * Serializes object to desired format via [serde](https://serde.rs/)
@@ -656,6 +1001,9 @@ export interface Deserialize<T> {
   deserialize(buf: Buffer, format: "json" | "bincode"): T;
 }
 
+/**
+ * GroupBy operations that can be applied to a DataFrame or LazyFrame.
+ */
 export interface GroupByOps<T> {
   /**
     Create rolling groups based on a time column (or index value of type Int32, Int64).
@@ -703,7 +1051,7 @@ export interface GroupByOps<T> {
     @example
     ```
 
-    >>> dates = [
+    >dates = [
     ...     "2020-01-01 13:45:48",
     ...     "2020-01-01 16:42:13",
     ...     "2020-01-01 16:45:09",
@@ -711,20 +1059,20 @@ export interface GroupByOps<T> {
     ...     "2020-01-03 19:45:32",
     ...     "2020-01-08 23:16:43",
     ... ]
-    >>> df = pl.DataFrame({"dt": dates, "a": [3, 7, 5, 9, 2, 1]}).withColumn(
+    >df = pl.DataFrame({"dt": dates, "a": [3, 7, 5, 9, 2, 1]}).withColumn(
     ...     pl.col("dt").str.strptime(pl.Datetime)
     ... )
-    >>> out = df.groupbyRolling({indexColumn:"dt", period:"2d"}).agg(
+    >out = df.groupbyRolling({indexColumn:"dt", period:"2d"}).agg(
     ...     [
     ...         pl.sum("a").alias("sum_a"),
     ...         pl.min("a").alias("min_a"),
     ...         pl.max("a").alias("max_a"),
     ...     ]
     ... )
-    >>> assert(out["sum_a"].toArray() === [3, 10, 15, 24, 11, 1])
-    >>> assert(out["max_a"].toArray() === [3, 7, 7, 9, 9, 1])
-    >>> assert(out["min_a"].toArray() === [3, 3, 3, 3, 2, 1])
-    >>> out
+    >assert(out["sum_a"].toArray() === [3, 10, 15, 24, 11, 1])
+    >assert(out["max_a"].toArray() === [3, 7, 7, 9, 9, 1])
+    >assert(out["min_a"].toArray() === [3, 3, 3, 3, 2, 1])
+    >out
     shape: (6, 4)
     ┌─────────────────────┬───────┬───────┬───────┐
     │ dt                  ┆ a_sum ┆ a_max ┆ a_min │

@@ -1,0 +1,30 @@
+{
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "recommended": true,
+      "suspicious": {
+        "noExplicitAny": "off"
+      }
+    },
+    "ignore": [
+      "polars/native-polars.js",
+      "./docs/*",
+      "./bin/*"
+    ]
+  },
+  "formatter": {
+    "indentSize": 2,
+    "indentStyle": "space",
+    "ignore": [
+      "polars/native-polars.js",
+      "./docs/*",
+      "./bin/*"
+    ]
+  },
+  "javascript": {
+    "formatter": {
+      "quoteStyle": "double"
+    }
+  }
+}

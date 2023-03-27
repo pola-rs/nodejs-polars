@@ -80,7 +80,7 @@ class LineBatcher extends Stream.Transform {
       if (chunk[i] === 10) {
         // '\n'
         this.#accumulatedLines++;
-        if (this.#accumulatedLines == this.#batchSize) {
+        if (this.#accumulatedLines === this.#batchSize) {
           this.#lines.push(chunk.subarray(begin, i + 1));
           this.push(Buffer.concat(this.#lines));
           this.#lines = [];
@@ -106,27 +106,27 @@ class LineBatcher extends Stream.Transform {
 
 function readCSVBuffer(buff, options) {
   return _DataFrame(
-    pli.readCsv(buff, { ...readCsvDefaultOptions, ...options })
+    pli.readCsv(buff, { ...readCsvDefaultOptions, ...options }),
   );
 }
 
 export function readRecords(
   records: Record<string, any>[],
-  options?: { schema: Record<string, DataType> }
+  options?: { schema: Record<string, DataType> },
 ): DataFrame;
 export function readRecords(
   records: Record<string, any>[],
-  options?: { inferSchemaLength?: number }
+  options?: { inferSchemaLength?: number },
 ): DataFrame;
 export function readRecords(
   records: Record<string, any>[],
-  options
+  options,
 ): DataFrame {
   if (options?.schema) {
     return _DataFrame(pli.fromRows(records, options.schema));
   } else {
     return _DataFrame(
-      pli.fromRows(records, undefined, options?.inferSchemaLength)
+      pli.fromRows(records, undefined, options?.inferSchemaLength),
     );
   }
 }
@@ -170,7 +170,7 @@ export function readRecords(
  */
 export function readCSV(
   pathOrBody: string | Buffer,
-  options?: Partial<ReadCsvOptions>
+  options?: Partial<ReadCsvOptions>,
 ): DataFrame;
 export function readCSV(pathOrBody, options?) {
   options = { ...readCsvDefaultOptions, ...options };
@@ -257,7 +257,7 @@ const scanCsvDefaultOptions: Partial<ScanCsvOptions> = {
  */
 export function scanCSV(
   path: string,
-  options?: Partial<ScanCsvOptions>
+  options?: Partial<ScanCsvOptions>,
 ): LazyDataFrame;
 export function scanCSV(path, options?) {
   options = { ...scanCsvDefaultOptions, ...options };
@@ -298,11 +298,11 @@ export function scanCSV(path, options?) {
  */
 export function readJSON(
   pathOrBody: string | Buffer,
-  options?: Partial<ReadJsonOptions>
+  options?: Partial<ReadJsonOptions>,
 ): DataFrame;
 export function readJSON(
   pathOrBody,
-  options: Partial<ReadJsonOptions> = readJsonDefaultOptions
+  options: Partial<ReadJsonOptions> = readJsonDefaultOptions,
 ) {
   options = { ...readJsonDefaultOptions, ...options };
   let method = options.format === "lines" ? pli.readJsonLines : pli.readJson;
@@ -366,7 +366,7 @@ interface ScanJsonOptions {
  */
 export function scanJson(
   path: string,
-  options?: Partial<ScanJsonOptions>
+  options?: Partial<ScanJsonOptions>,
 ): LazyDataFrame;
 export function scanJson(path: string, options?: Partial<ScanJsonOptions>) {
   options = { ...readJsonDefaultOptions, ...options };
@@ -396,7 +396,7 @@ interface ReadParquetOptions {
    */
 export function readParquet(
   pathOrBody: string | Buffer,
-  options?: Partial<ReadParquetOptions>
+  options?: Partial<ReadParquetOptions>,
 ): DataFrame {
   const pliOptions: any = {};
 
@@ -418,7 +418,7 @@ export function readParquet(
     const inline = !isPath(pathOrBody, [".parquet"]);
     if (inline) {
       return _DataFrame(
-        pli.readParquet(Buffer.from(pathOrBody), pliOptions, parallel)
+        pli.readParquet(Buffer.from(pathOrBody), pliOptions, parallel),
       );
     } else {
       return _DataFrame(pli.readParquet(pathOrBody, pliOptions, parallel));
@@ -445,7 +445,7 @@ export interface ReadAvroOptions {
  */
 export function readAvro(
   pathOrBody: string | Buffer,
-  options?: Partial<ReadAvroOptions>
+  options?: Partial<ReadAvroOptions>,
 ): DataFrame;
 export function readAvro(pathOrBody, options = {}) {
   if (Buffer.isBuffer(pathOrBody)) {
@@ -515,7 +515,7 @@ export interface ReadIPCOptions {
  */
 export function readIPC(
   pathOrBody: string | Buffer,
-  options?: Partial<ReadIPCOptions>
+  options?: Partial<ReadIPCOptions>,
 ): DataFrame;
 export function readIPC(pathOrBody, options = {}) {
   if (Buffer.isBuffer(pathOrBody)) {
@@ -550,7 +550,7 @@ export interface ScanIPCOptions {
  */
 export function scanIPC(
   path: string,
-  options?: Partial<ScanIPCOptions>
+  options?: Partial<ScanIPCOptions>,
 ): LazyDataFrame;
 export function scanIPC(path, options = {}) {
   return _LazyDataFrame(pli.scanIpc(path, options));
@@ -623,7 +623,7 @@ export function scanIPC(path, options = {}) {
  */
 export function readCSVStream(
   stream: Readable,
-  options?: Partial<ReadCsvOptions>
+  options?: Partial<ReadCsvOptions>,
 ): Promise<DataFrame>;
 export function readCSVStream(stream, options?) {
   let batchSize = options?.batchSize ?? 10000;
@@ -690,7 +690,7 @@ export function readCSVStream(stream, options?) {
  */
 export function readJSONStream(
   stream: Readable,
-  options?: Partial<ReadJsonOptions>
+  options?: Partial<ReadJsonOptions>,
 ): Promise<DataFrame>;
 export function readJSONStream(stream, options = readJsonDefaultOptions) {
   options = { ...readJsonDefaultOptions, ...options };

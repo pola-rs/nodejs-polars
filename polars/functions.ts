@@ -1,11 +1,10 @@
 /* eslint-disable no-redeclare */
-import {jsTypeToPolarsType} from "./internals/construction";
-import {Series, _Series} from "./series/series";
-import {DataFrame, _DataFrame} from "./dataframe";
+import { jsTypeToPolarsType } from "./internals/construction";
+import { Series, _Series } from "./series";
+import { DataFrame, _DataFrame } from "./dataframe";
 import pli from "./internals/polars_internal";
-import {isDataFrameArray, isSeriesArray} from "./utils";
-
-type ConcatOptions = {rechunk?: boolean, how?: "vertical" | "horizontal"}
+import { isDataFrameArray, isSeriesArray } from "./utils";
+import { ConcatOptions } from "./types";
 
 /**
  * _Repeat a single value n times and collect into a Series._
@@ -16,13 +15,13 @@ type ConcatOptions = {rechunk?: boolean, how?: "vertical" | "horizontal"}
  *
  * ```
  *
- * > const s = pl.repeat("a", 5)
- * > s.toArray()
+ * >  const s = pl.repeat("a", 5)
+ * >  s.toArray()
  * ["a", "a", "a", "a", "a"]
  *
  * ```
  */
-export function repeat<V>(value: V, n: number, name= ""): Series {
+export function repeat<V>(value: V, n: number, name = ""): Series {
   const dtype = jsTypeToPolarsType(value);
   const s = pli.JsSeries.repeat(name, value, n, dtype);
 
@@ -38,9 +37,9 @@ export function repeat<V>(value: V, n: number, name= ""): Series {
  *     - Horizontal: Stacks Series horizontally and fills with nulls if the lengths don't match.
  *
  * @example
- * >>> const df1 = pl.DataFrame({"a": [1], "b": [3]})
- * >>> const df2 = pl.DataFrame({"a": [2], "b": [4]})
- * >>> pl.concat([df1, df2])
+ * > const df1 = pl.DataFrame({"a": [1], "b": [3]})
+ * > const df2 = pl.DataFrame({"a": [2], "b": [4]})
+ * > pl.concat([df1, df2])
  * shape: (2, 2)
  * ┌─────┬─────┐
  * │ a   ┆ b   │
@@ -52,20 +51,28 @@ export function repeat<V>(value: V, n: number, name= ""): Series {
  * │ 2   ┆ 4   │
  * └─────┴─────┘
  */
-export function concat(items: Array<DataFrame>, options?: ConcatOptions): DataFrame;
-export function concat<T>(items: Array<Series>, options?: {rechunk: boolean}): Series;
-export function concat<T>(items, options: ConcatOptions =  {rechunk: true, how: "vertical"}) {
-  const {rechunk, how} = options;
+export function concat(
+  items: Array<DataFrame>,
+  options?: ConcatOptions,
+): DataFrame;
+export function concat<T>(
+  items: Array<Series>,
+  options?: { rechunk: boolean },
+): Series;
+export function concat<T>(
+  items,
+  options: ConcatOptions = { rechunk: true, how: "vertical" },
+) {
+  const { rechunk, how } = options;
 
-  if(!items.length) {
+  if (!items.length) {
     throw new RangeError("cannot concat empty list");
   }
 
-  if(isDataFrameArray(items)) {
+  if (isDataFrameArray(items)) {
     let df;
-    if(how === "vertical") {
-      df =  items.reduce((acc, curr) => acc.vstack(curr));
-
+    if (how === "vertical") {
+      df = items.reduce((acc, curr) => acc.vstack(curr));
     } else {
       df = _DataFrame(pli.horizontalConcat(items.map((i: any) => i.inner())));
     }
@@ -73,8 +80,8 @@ export function concat<T>(items, options: ConcatOptions =  {rechunk: true, how: 
     return rechunk ? df.rechunk() : df;
   }
 
-  if(isSeriesArray<T>(items)) {
-    const s =  items.reduce((acc, curr) => acc.concat(curr));
+  if (isSeriesArray<T>(items)) {
+    const s = items.reduce((acc, curr) => acc.concat(curr));
 
     return rechunk ? s.rechunk() : s;
   }

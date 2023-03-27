@@ -1,11 +1,12 @@
-import {DataType} from "../../datatypes";
+import { StringFunctions } from "../../shared_traits";
+import { DataType } from "../../datatypes";
 import { regexToString } from "../../utils";
-import {Expr, _Expr} from "../expr";
+import { Expr, _Expr } from "../expr";
 
 /**
  * namespace containing expr string functions
  */
-export interface ExprString {
+export interface StringNamespace extends StringFunctions<Expr> {
   /**
    * Vertically concat the values in the Series to a single string value.
    * @example
@@ -272,19 +273,19 @@ export interface ExprString {
   strptime(datatype: DataType.Datetime, fmt?: string): Expr;
 }
 
-export const ExprStringFunctions = (_expr: any): ExprString => {
+export const ExprStringFunctions = (_expr: any): StringNamespace => {
   const wrap = (method, ...args: any[]): Expr => {
     return _Expr(_expr[method](...args));
   };
 
   const handleDecode = (encoding, strict) => {
     switch (encoding) {
-    case "hex":
-      return wrap(`strHexDecode`, strict);
-    case "base64":
-      return wrap(`strBase64Decode`, strict);
-    default:
-      throw new RangeError("supported encodings are 'hex' and 'base64'");
+      case "hex":
+        return wrap("strHexDecode", strict);
+      case "base64":
+        return wrap("strBase64Decode", strict);
+      default:
+        throw new RangeError("supported encodings are 'hex' and 'base64'");
     }
   };
 
@@ -295,8 +296,8 @@ export const ExprStringFunctions = (_expr: any): ExprString => {
     contains(pat: string | RegExp) {
       return wrap("strContains", regexToString(pat));
     },
-    decode(arg, strict=false) {
-      if(typeof arg === "string") {
+    decode(arg, strict = false) {
+      if (typeof arg === "string") {
         return handleDecode(arg, strict);
       }
 
@@ -304,12 +305,12 @@ export const ExprStringFunctions = (_expr: any): ExprString => {
     },
     encode(encoding) {
       switch (encoding) {
-      case "hex":
-        return wrap(`strHexEncode`);
-      case "base64":
-        return wrap(`strBase64Encode`);
-      default:
-        throw new RangeError("supported encodings are 'hex' and 'base64'");
+        case "hex":
+          return wrap("strHexEncode");
+        case "base64":
+          return wrap("strBase64Encode");
+        default:
+          throw new RangeError("supported encodings are 'hex' and 'base64'");
       }
     },
     extract(pat: string | RegExp, groupIndex: number) {
@@ -333,7 +334,7 @@ export const ExprStringFunctions = (_expr: any): ExprString => {
     rstrip() {
       return wrap("strRstrip");
     },
-    padStart(length: number, fillChar: string){
+    padStart(length: number, fillChar: string) {
       return wrap("strPadStart", length, fillChar);
     },
     zFill(length: number) {
@@ -346,7 +347,8 @@ export const ExprStringFunctions = (_expr: any): ExprString => {
       return wrap("strSlice", start, length);
     },
     split(by: string, options?) {
-      const inclusive = typeof options === "boolean" ? options : options?.inclusive;
+      const inclusive =
+        typeof options === "boolean" ? options : options?.inclusive;
 
       return wrap("strSplit", by, inclusive);
     },
@@ -359,7 +361,9 @@ export const ExprStringFunctions = (_expr: any): ExprString => {
       } else if (dtype.equals(DataType.Datetime("ms"))) {
         return wrap("strParseDatetime", fmt, false, false);
       } else {
-        throw new Error(`only "DataType.Date" and "DataType.Datetime" are supported`);
+        throw new Error(
+          `only "DataType.Date" and "DataType.Datetime" are supported`,
+        );
       }
     },
     toLowerCase() {
