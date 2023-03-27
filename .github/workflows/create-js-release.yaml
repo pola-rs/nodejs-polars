@@ -116,7 +116,7 @@ jobs:
       - name: Copy rust-toolchain to root
         run: cp rust-toolchain.toml ..
       - name: Install
-        uses: actions-rs/toolchain@v1
+        uses: actions-rs/toolchain@v2
         if: ${{ !matrix.settings.docker }}
         with:
           override: true
