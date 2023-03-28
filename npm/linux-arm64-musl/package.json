@@ -1,15 +1,15 @@
 {
-  "name": "nodejs-polars-linux-x64-gnu",
+  "name": "nodejs-polars-linux-arm64-musl",
   "version": "0.7.2",
   "os": [
     "linux"
   ],
   "cpu": [
-    "x64"
+    "arm64"
   ],
-  "main": "nodejs-polars.linux-x64-gnu.node",
+  "main": "nodejs-polars.linux-arm64-musl.node",
   "files": [
-    "nodejs-polars.linux-x64-gnu.node"
+    "nodejs-polars.linux-arm64-musl.node"
   ],
   "keywords": [
     "csv",
@@ -31,6 +31,6 @@
   },
   "repository": "https://github.com/pola-rs/nodejs-polars.git",
   "libc": [
-    "glibc"
+    "musl"
   ]
 }
