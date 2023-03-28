@@ -1,6 +1,6 @@
 {
   "name": "nodejs-polars-win32-ia32-msvc",
-  "version": "0.0.0",
+  "version": "0.7.2",
   "os": [
     "win32"
   ],
@@ -11,8 +11,23 @@
   "files": [
     "nodejs-polars.win32-ia32-msvc.node"
   ],
-  "license": "MIT",
+  "keywords": [
+    "csv",
+    "transform",
+    "parse",
+    "json",
+    "polars",
+    "dataframe",
+    "data-processing",
+    "rust"
+  ],
+  "license": "SEE LICENSE IN LICENSE",
   "engines": {
-    "node": ">= 10"
-  }
+    "node": ">= 16"
+  },
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/",
+    "access": "public"
+  },
+  "repository": "https://github.com/pola-rs/nodejs-polars.git"
 }
