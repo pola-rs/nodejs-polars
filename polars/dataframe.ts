@@ -13,6 +13,7 @@ import {
   WriteAvroOptions,
   FillNullStrategy,
   JoinOptions,
+  JoinType,
 } from "./types";
 
 import { DataType } from "./datatypes";
@@ -722,7 +723,7 @@ export interface DataFrame
       rightOn: ValueOrArray<string>;
     } & Omit<JoinOptions, "on">,
   ): DataFrame;
-  join(other: DataFrame, options: { how: "cross"; suffix?: string }): DataFrame;
+  join(other: DataFrame, options: { how: JoinType; suffix?: string }): DataFrame;
 
   /**
    * Perform an asof join. This is similar to a left-join except that we

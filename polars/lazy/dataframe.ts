@@ -11,7 +11,7 @@ import {
 } from "../utils";
 import { _LazyGroupBy, LazyGroupBy } from "./groupby";
 import { Deserialize, GroupByOps, Serialize } from "../shared_traits";
-import { LazyOptions, LazyJoinOptions } from "../types";
+import { LazyOptions, LazyJoinOptions, JoinType } from "../types";
 
 const inspect = Symbol.for("nodejs.util.inspect.custom");
 
@@ -211,7 +211,7 @@ export interface LazyDataFrame extends Serialize, GroupByOps<LazyGroupBy> {
   join(
     other: LazyDataFrame,
     options: {
-      how: "cross";
+      how: JoinType;
       suffix?: string;
       allowParallel?: boolean;
       forceParallel?: boolean;
