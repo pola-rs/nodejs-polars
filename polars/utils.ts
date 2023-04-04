@@ -51,7 +51,7 @@ export const range = (start: number, end: number) => {
 export const isDataFrameArray = (ty: any): ty is DataFrame[] =>
   Array.isArray(ty) && DataFrame.isDataFrame(ty[0]);
 export const isSeriesArray = <T>(ty: any): ty is Series[] =>
-  Array.isArray(ty) && Series.isSeries(ty[0]);
+  Array.isArray(ty) && ty.every(Series.isSeries);
 export const isExprArray = (ty: any): ty is Expr[] =>
   Array.isArray(ty) && Expr.isExpr(ty[0]);
 export const isIterator = <T>(ty: any): ty is Iterable<T> =>

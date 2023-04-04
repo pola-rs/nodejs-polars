@@ -12,6 +12,7 @@ import {
 import { _LazyGroupBy, LazyGroupBy } from "./groupby";
 import { Deserialize, GroupByOps, Serialize } from "../shared_traits";
 import { LazyOptions, LazyJoinOptions } from "../types";
+import { Series } from "@polars/series";
 
 const inspect = Symbol.for("nodejs.util.inspect.custom");
 
@@ -446,8 +447,8 @@ export interface LazyDataFrame extends Serialize, GroupByOps<LazyGroupBy> {
    * @param exprs - List of Expressions that evaluate to columns.
    *
    */
-  withColumns(exprs: Expr[]): LazyDataFrame;
-  withColumns(expr: Expr, ...exprs: Expr[]): LazyDataFrame;
+  withColumns(exprs: (Expr | Series)[]): LazyDataFrame;
+  withColumns(...exprs: (Expr | Series)[]): LazyDataFrame;
   withColumnRenamed(existing: string, replacement: string): LazyDataFrame;
   /**
    * Add a column at index 0 that counts the rows.
