@@ -1190,7 +1190,7 @@ export interface DataFrame
    * └─────┘
    * ```
    */
-  select(column: ExprOrString, ...columns: ExprOrString[]): DataFrame;
+  select(...columns: ExprOrString[]): DataFrame;
   /**
    * Shift the values by a given period and fill the parts that will be empty due to this operation
    * with `Nones`.

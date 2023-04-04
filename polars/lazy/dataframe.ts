@@ -368,7 +368,7 @@ export interface LazyDataFrame extends Serialize, GroupByOps<LazyGroupBy> {
    */
   select(column: ExprOrString): LazyDataFrame;
   select(columns: ExprOrString[]): LazyDataFrame;
-  select(column: ExprOrString, ...columns: ExprOrString[]): LazyDataFrame;
+  select(...columns: ExprOrString[]): LazyDataFrame;
   /**
    * @see {@link DataFrame.shift}
    */
