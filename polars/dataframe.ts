@@ -1661,7 +1661,7 @@ export interface DataFrame
    */
   withColumn(column: Series | Expr): DataFrame;
   withColumn(column: Series | Expr): DataFrame;
-  withColumns(column: Series | Expr, ...columns: Expr[] | Series[]): DataFrame;
+  withColumns(...columns: (Expr | Series)[]): DataFrame;
   /**
    * Return a new DataFrame with the column renamed.
    * @param existingName
@@ -2301,9 +2301,7 @@ export const _DataFrame = (_df: any): DataFrame => {
         return this.withColumns(column);
       }
     },
-    withColumns(column, ...columns: Expr[] | Series[]) {
-      columns.unshift(column as any);
-
+    withColumns(...columns: (Expr | Series)[]) {
       if (isSeriesArray(columns)) {
         return columns.reduce(
           (acc, curr) => acc.withColumn(curr),
