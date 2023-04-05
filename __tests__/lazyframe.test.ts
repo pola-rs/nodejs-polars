@@ -797,6 +797,7 @@ describe("lazyframe", () => {
     expect(actual.getColumn("ham")).toSeriesEqual(ham);
   });
   test("select:strings", () => {
+    const columns = ["ham", "foo"]
     const actual = pl
       .DataFrame({
         foo: [1, 2, 3, 1],
@@ -804,7 +805,7 @@ describe("lazyframe", () => {
         ham: ["a", "b", "c", null],
       })
       .lazy()
-      .select("ham", "foo")
+      .select(...columns)
       .collectSync();
     const foo = pl.Series("foo", [1, 2, 3, 1]);
     const ham = pl.Series("ham", ["a", "b", "c", null]);

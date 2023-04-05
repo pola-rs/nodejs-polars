@@ -751,13 +751,14 @@ describe("dataframe", () => {
     expect(fn).toThrow(TypeError);
   });
   test("select:strings", () => {
+    const columns = ["ham", "foo"]
     const actual = pl
       .DataFrame({
         foo: [1, 2, 3, 1],
         bar: [6, 7, 8, 1],
         ham: ["a", "b", "c", null],
       })
-      .select("ham", "foo");
+      .select(...columns);
     const foo = pl.Series("foo", [1, 2, 3, 1]);
     const ham = pl.Series("ham", ["a", "b", "c", null]);
     expect(actual.width).toStrictEqual(2);
