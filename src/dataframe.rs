@@ -1524,37 +1524,44 @@ fn obj_to_pairs(rows: &Array, len: usize) -> impl '_ + Iterator<Item = Vec<(Stri
         let keys = Object::keys(&obj).unwrap();
         keys.iter()
             .map(|key| {
-                let value = obj.get::<_, napi::JsUnknown>(&key).unwrap().unwrap();
-                let ty = value.get_type().unwrap();
-                let dtype = match ty {
-                    ValueType::Boolean => DataType::Boolean,
-                    ValueType::Number => DataType::Float64,
-                    ValueType::String => DataType::Utf8,
-                    ValueType::Object => {
-                        if value.is_array().unwrap() {
-                            let arr: napi::JsObject = unsafe { value.cast() };
-                            let len = arr.get_array_length().unwrap();
-                            // dont compare too many items, as it could be expensive
-                            let max_take = std::cmp::min(len as usize, 10);
-                            let mut dtypes: Vec<DataType> = Vec::with_capacity(len as usize);
+                let value = obj.get::<_, napi::JsUnknown>(&key).unwrap_or(None);
+                let dtype = match value {
+                    Some(val) => {
+                        let ty = val.get_type().unwrap();
+                        match ty {
+                            ValueType::Boolean => DataType::Boolean,
+                            ValueType::Number => DataType::Float64,
+                            ValueType::String => DataType::Utf8,
+                            ValueType::Object => {
+                                if val.is_array().unwrap() {
+                                    let arr: napi::JsObject = unsafe { val.cast() };
+                                    let len = arr.get_array_length().unwrap();
+                                    // dont compare too many items, as it could be expensive
+                                    let max_take = std::cmp::min(len as usize, 10);
+                                    let mut dtypes: Vec<DataType> = Vec::with_capacity(len as usize);
 
-                            for idx in 0..max_take {
-                                let item: napi::JsUnknown = arr.get_element(idx as u32).unwrap();
-                                let ty = item.get_type().unwrap();
-                                let dt: Wrap<DataType> = ty.into();
-                                dtypes.push(dt.0)
+                                    for idx in 0..max_take {
+                                        let item: napi::JsUnknown = arr.get_element(idx as u32).unwrap();
+                                        let ty = item.get_type().unwrap();
+                                        let dt: Wrap<DataType> = ty.into();
+                                        dtypes.push(dt.0)
+                                    }
+                                    let dtype = coerce_data_type(&dtypes);
+
+                                    DataType::List(dtype.into())
+                                } else if val.is_date().unwrap() {
+                                    DataType::Datetime(TimeUnit::Milliseconds, None)
+                                } else {
+                                    DataType::Struct(vec![])
+                                }
                             }
-                            let dtype = coerce_data_type(&dtypes);
-
-                            DataType::List(dtype.into())
-                        } else if value.is_date().unwrap() {
-                            DataType::Datetime(TimeUnit::Milliseconds, None)
-                        } else {
-                            DataType::Struct(vec![])
+                            ValueType::BigInt => DataType::UInt64,
+                            _ => DataType::Null,
                         }
                     }
-                    ValueType::BigInt => DataType::UInt64,
-                    _ => DataType::Null,
+                    None => {
+                        DataType::Null
+                    }
                 };
                 (key.to_owned(), dtype)
             })
