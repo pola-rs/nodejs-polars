@@ -192,6 +192,20 @@ describe("dataframe", () => {
       expect(actual).toFrameEqual(expected);
     });
   });
+  test("DF with nulls", () => {
+    const actual = pl
+      .DataFrame([
+        { foo: 1,   bar: 6.0, ham: "a" },
+        { foo: null,bar: 0.5, ham: "b" },
+        { foo: 3,   bar: 7.0, ham: "c" },
+      ]);
+    const expected = pl.DataFrame({
+      foo: [1, null, 3],
+      bar: [6.0, 0.5, 7.0],
+      ham: ["a", "b", "c"],
+    });
+    expect(actual).toFrameEqual(expected);
+  });
   test("dropNulls", () => {
     const actual = pl
       .DataFrame({
