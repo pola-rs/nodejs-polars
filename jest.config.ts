@@ -2,10 +2,11 @@ import { pathsToModuleNameMapper } from "ts-jest";
 import {compilerOptions} from "./tsconfig.json";
 
 export default {
-  globals: {
-    "ts-jest": {
-      tsconfig: "tsconfig.test.json",
-    },
+  transform: {
+    '^.+\\.ts?$': [
+      'ts-jest',
+      {tsconfig: 'tsconfig.test.json'},
+    ],
   },
   preset: "ts-jest",
   testEnvironment: "node",

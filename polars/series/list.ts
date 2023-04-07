@@ -2,7 +2,7 @@ import { Series, _Series } from ".";
 import { col } from "../lazy/functions";
 import { ListFunctions } from "../shared_traits";
 
-export interface ListNamespace extends ListFunctions<Series> {}
+export type ListNamespace = ListFunctions<Series>
 
 export const SeriesListFunctions = (_s): ListFunctions<Series> => {
   const wrap = (method, ...args) => {

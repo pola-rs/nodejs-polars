@@ -683,7 +683,7 @@ describe("StringFunctions", () => {
     ${"lengths"}     | ${pl.Series(["apple", "ham"]).str.lengths()}   | ${pl.Series([5, 3])}
     ${"slice"}       | ${pl.Series(["apple", "ham"]).str.slice(1)}    | ${pl.Series(["pple", "am"])}
   `("$# $name expected matches actual", ({ expected, actual }) => {
-    expect(expected).toStrictEqual(actual);
+    expect(expected).toSeriesEqual(actual);
   });
 
   test("hex encode", () => {

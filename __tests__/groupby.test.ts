@@ -153,7 +153,7 @@ describe("groupby", () => {
 });
 describe("groupby ops", () => {
   test("rolling", () => {
-    let dates = [
+    const dates = [
       "2020-01-01 13:45:48",
       "2020-01-01 16:42:13",
       "2020-01-01 16:45:09",
