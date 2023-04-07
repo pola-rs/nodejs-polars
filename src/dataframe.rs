@@ -1559,9 +1559,7 @@ fn obj_to_pairs(rows: &Array, len: usize) -> impl '_ + Iterator<Item = Vec<(Stri
                             _ => DataType::Null,
                         }
                     }
-                    None => {
-                        DataType::Null
-                    }
+                    None => DataType::Null,
                 };
                 (key.to_owned(), dtype)
             })

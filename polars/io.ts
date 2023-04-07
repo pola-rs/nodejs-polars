@@ -72,8 +72,8 @@ class LineBatcher extends Stream.Transform {
   }
 
   _transform(chunk, _encoding, done) {
-    var begin = 0;
-    var position = 0;
+    let begin = 0;
+    const position = 0;
 
     let i = 0;
     while (i < chunk.length) {
@@ -305,7 +305,7 @@ export function readJSON(
   options: Partial<ReadJsonOptions> = readJsonDefaultOptions,
 ) {
   options = { ...readJsonDefaultOptions, ...options };
-  let method = options.format === "lines" ? pli.readJsonLines : pli.readJson;
+  const method = options.format === "lines" ? pli.readJsonLines : pli.readJson;
   const extensions = [".ndjson", ".json", ".jsonl"];
   if (Buffer.isBuffer(pathOrBody)) {
     return _DataFrame(pli.readJson(pathOrBody, options));
@@ -626,9 +626,9 @@ export function readCSVStream(
   options?: Partial<ReadCsvOptions>,
 ): Promise<DataFrame>;
 export function readCSVStream(stream, options?) {
-  let batchSize = options?.batchSize ?? 10000;
+  const batchSize = options?.batchSize ?? 10000;
   let count = 0;
-  let end = options?.endRows ?? Number.POSITIVE_INFINITY;
+  const end = options?.endRows ?? Number.POSITIVE_INFINITY;
 
   return new Promise((resolve, reject) => {
     const s = stream.pipe(new LineBatcher({ batchSize }));
@@ -644,7 +644,7 @@ export function readCSVStream(stream, options?) {
       count += batchSize;
     }).on("end", () => {
       try {
-        let buff = Buffer.concat(chunks);
+        const buff = Buffer.concat(chunks);
         const df = readCSVBuffer(buff, options);
         resolve(df);
       } catch (err) {

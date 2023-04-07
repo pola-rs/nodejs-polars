@@ -193,12 +193,11 @@ describe("dataframe", () => {
     });
   });
   test("DF with nulls", () => {
-    const actual = pl
-      .DataFrame([
-        { foo: 1,   bar: 6.0, ham: "a" },
-        { foo: null,bar: 0.5, ham: "b" },
-        { foo: 3,   bar: 7.0, ham: "c" },
-      ]);
+    const actual = pl.DataFrame([
+      { foo: 1, bar: 6.0, ham: "a" },
+      { foo: null, bar: 0.5, ham: "b" },
+      { foo: 3, bar: 7.0, ham: "c" },
+    ]);
     const expected = pl.DataFrame({
       foo: [1, null, 3],
       bar: [6.0, 0.5, 7.0],
@@ -765,7 +764,7 @@ describe("dataframe", () => {
     expect(fn).toThrow(TypeError);
   });
   test("select:strings", () => {
-    const columns = ["ham", "foo"]
+    const columns = ["ham", "foo"];
     const actual = pl
       .DataFrame({
         foo: [1, 2, 3, 1],
@@ -1036,7 +1035,7 @@ describe("dataframe", () => {
       const baseName = "col_";
       let count = 0;
       while (true) {
-        let name = `${baseName}${count}`;
+        const name = `${baseName}${count}`;
         yield name;
         count++;
       }

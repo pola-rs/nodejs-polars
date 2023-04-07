@@ -46,7 +46,7 @@
     "build:ts": " rm -rf bin; tsc -p tsconfig.build.json",
     "cp:bin": "cp ./polars/*.node bin/",
     "format:rs": "cargo fmt",
-    "lint:ts:fix": "rome check --apply-suggested  {polars,__tests__} && rome format --write {polars,__tests__}",
+    "lint:ts:fix": "rome check --apply-unsafe {polars,__tests__} && rome format --write {polars,__tests__}",
     "lint:ts": "rome check {polars,__tests__} && rome format {polars,__tests__}",
     "lint": "yarn lint:ts && yarn format:rs",
     "prepublishOnly": "napi prepublish -t npm",
