@@ -76,6 +76,12 @@ describe("read:csv", () => {
     const maxRowCount = df.getColumn("rc").max();
     expect(expectedMaxRowCount).toStrictEqual(maxRowCount);
   });
+  test("csv with dtypes", () => {
+    const df = pl.readCSV(csvpath, { dtypes: { calories: pl.Utf8 }});
+    expect(df.dtypes[1].equals(pl.Utf8)).toBeTruthy();
+    const df2 = pl.readCSV(csvpath);
+    expect(df2.dtypes[1].equals(pl.Int64)).toBeTruthy();
+  });
   it.todo("can read from a stream");
 });
 

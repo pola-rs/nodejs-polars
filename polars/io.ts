@@ -20,7 +20,7 @@ export interface ReadCsvOptions {
   rechunk: boolean;
   encoding: "utf8" | "utf8-lossy";
   numThreads: number;
-  dtype: any;
+  dtypes: Record<string, DataType>;
   lowMemory: boolean;
   commentChar: string;
   quotChar: string;
