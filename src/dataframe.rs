@@ -8,6 +8,7 @@ use polars::io::RowCount;
 use std::borrow::Borrow;
 use std::fs::File;
 use std::io::{BufReader, BufWriter, Cursor};
+use std::collections::HashMap;
 
 #[napi]
 #[repr(transparent)]
@@ -59,6 +60,7 @@ pub struct ReadCsvOptions {
     pub columns: Option<Vec<String>>,
     pub encoding: String,
     pub n_threads: Option<u32>,
+    pub dtypes: Option<HashMap<String, Wrap<DataType>>>,
     pub null_values: Option<Wrap<NullValues>>,
     pub path: Option<String>,
     pub low_memory: bool,
@@ -98,6 +100,15 @@ pub fn read_csv(
         "utf8-lossy" => CsvEncoding::LossyUtf8,
         e => return Err(JsPolarsErr::Other(format!("encoding not {} not implemented.", e)).into()),
     };
+
+    let dtypes = options.dtypes.map(|map| {
+        let fields = map.iter().map(|(key, val)| {
+            let value = val.clone().0;
+            Field::new(key, value)
+        });
+        Schema::from(fields)
+    });
+
     let df = match path_or_buffer {
         Either::A(path) => CsvReader::from_path(path)
             .expect("unable to read file")
@@ -112,6 +123,7 @@ pub fn read_csv(
             .with_encoding(encoding)
             .with_columns(options.columns)
             .with_n_threads(n_threads)
+            .with_dtypes(dtypes.as_ref())
             .low_memory(options.low_memory)
             .with_comment_char(comment_char)
             .with_null_values(null_values)
