@@ -98,6 +98,7 @@ export namespace pl {
   export import spearmanRankCorr = lazy.spearmanRankCorr;
   export import tail = lazy.tail;
   export import list = lazy.list;
+  export import when = lazy.when;
   export const version = pli.version();
 }
 // eslint-disable-next-line no-undef
