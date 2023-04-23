@@ -146,6 +146,7 @@ pub fn read_csv(
                 .with_encoding(encoding)
                 .with_columns(options.columns)
                 .with_n_threads(n_threads)
+                .with_dtypes(dtypes.as_ref())
                 .low_memory(options.low_memory)
                 .with_comment_char(comment_char)
                 .with_null_values(null_values)
