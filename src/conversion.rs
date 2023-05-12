@@ -7,6 +7,7 @@ use napi::{
 use polars::frame::NullStrategy;
 use polars::io::RowCount;
 use polars::lazy::dsl::Expr;
+use polars_io::parquet::ParallelStrategy;
 use polars::prelude::*;
 use polars_core::prelude::FillNullStrategy;
 use polars_core::prelude::{Field, Schema};
@@ -87,7 +88,7 @@ impl ToNapiValue for Wrap<&Series> {
                     for col in df.get_columns() {
                         let key = col.name();
                         let val = col.get(idx);
-                        row.set(key, Wrap(val))?;
+                        row.set(key, Wrap(val.unwrap()))?;
                     }
                     rows.set(idx as u32, row)?;
                 }
@@ -480,6 +481,7 @@ impl From<JsRollingOptions> for RollingOptionsImpl<'static> {
             center: o.center,
             by: None,
             tu: None,
+            tz: None,
             closed_window: None,
         }
     }
@@ -683,10 +685,11 @@ impl FromNapiValue for Wrap<SortOptions> {
         } else {
             obj.get::<_, bool>("nullsLast")?.unwrap_or(false)
         };
-
+        let multithreaded = obj.get::<_, bool>("multithreaded")?.unwrap();
         let options = SortOptions {
             descending,
             nulls_last,
+            multithreaded
         };
         Ok(Wrap(options))
     }
@@ -809,7 +812,7 @@ impl ToNapiValue for Wrap<DataType> {
                     let name = fld.name().clone();
                     let dtype = Wrap(fld.data_type().clone());
                     let mut fld_obj = env_ctx.create_object()?;
-                    fld_obj.set("name", name)?;
+                    fld_obj.set("name", name.to_string())?;
                     fld_obj.set("dtype", dtype)?;
                     js_flds.set(idx as u32, fld_obj)?;
                 }
@@ -1042,4 +1045,24 @@ unsafe fn struct_dict<'a>(
         obj.set(key, val)?;
     }
     Object::to_napi_value(env_raw, obj)
+}
+pub(crate) fn parse_fill_null_strategy(
+    strategy: &str,
+    limit: FillNullLimit,
+) -> JsResult<FillNullStrategy> {
+    let parsed = match strategy {
+        "forward" => FillNullStrategy::Forward(limit),
+        "backward" => FillNullStrategy::Backward(limit),
+        "min" => FillNullStrategy::Min,
+        "max" => FillNullStrategy::Max,
+        "mean" => FillNullStrategy::Mean,
+        "zero" => FillNullStrategy::Zero,
+        "one" => FillNullStrategy::One,
+        e => {
+            return Err(napi::Error::from_reason(
+                format!("Strategy {e} not supported").to_owned(),
+            ))
+        }
+    };
+    Ok(parsed)
 }

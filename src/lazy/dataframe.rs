@@ -1,9 +1,13 @@
 use super::dsl::*;
 use crate::dataframe::JsDataFrame;
 use crate::prelude::*;
+use std::collections::HashMap;
 use napi::{Env, Task};
 use polars::io::RowCount;
+use polars_core::cloud::CloudOptions;
 use polars::lazy::frame::{LazyCsvReader, LazyFrame, LazyGroupBy};
+use polars_io::parquet::ParallelStrategy;
+use smartstring::alias::String as SmartString;
 
 #[napi]
 #[repr(transparent)]
@@ -128,13 +132,14 @@ impl JsLazyFrame {
         ldf.into()
     }
     #[napi]
-    pub fn sort(&self, by_column: String, reverse: bool, nulls_last: bool) -> JsLazyFrame {
+    pub fn sort(&self, by_column: String, reverse: bool, nulls_last: bool, multithreaded: bool) -> JsLazyFrame {
         let ldf = self.ldf.clone();
         ldf.sort(
             &by_column,
             SortOptions {
                 descending: reverse,
                 nulls_last,
+                multithreaded
             },
         )
         .into()
@@ -206,7 +211,7 @@ impl JsLazyFrame {
     #[napi]
     pub fn groupby_rolling(
         &mut self,
-        index_column: String,
+        index_column: SmartString,
         period: String,
         offset: String,
         closed: Wrap<ClosedWindow>,
@@ -232,7 +237,7 @@ impl JsLazyFrame {
     #[napi]
     pub fn groupby_dynamic(
         &mut self,
-        index_column: String,
+        index_column: SmartString,
         every: String,
         period: String,
         offset: String,
@@ -267,14 +272,14 @@ impl JsLazyFrame {
         other: &JsLazyFrame,
         left_on: &JsExpr,
         right_on: &JsExpr,
-        left_by: Option<Vec<String>>,
-        right_by: Option<Vec<String>>,
+        left_by: Option<Vec<SmartString>>,
+        right_by: Option<Vec<SmartString>>,
         allow_parallel: bool,
         force_parallel: bool,
         suffix: String,
         strategy: String,
         tolerance: Option<Wrap<AnyValue<'_>>>,
-        tolerance_str: Option<String>,
+        tolerance_str: Option<SmartString>,
     ) -> JsLazyFrame {
         let strategy = match strategy.as_ref() {
             "forward" => AsofStrategy::Forward,
@@ -314,8 +319,8 @@ impl JsLazyFrame {
         force_parallel: bool,
         how: String,
         suffix: String,
-        asof_by_left: Vec<String>,
-        asof_by_right: Vec<String>,
+        asof_by_left: Vec<SmartString>,
+        asof_by_right: Vec<SmartString>,
     ) -> JsLazyFrame {
         let how = match how.as_ref() {
             "left" => JoinType::Left,
@@ -493,16 +498,18 @@ impl JsLazyFrame {
     #[napi]
     pub fn melt(
         &self,
-        id_vars: Vec<String>,
-        value_vars: Vec<String>,
-        value_name: Option<String>,
-        variable_name: Option<String>,
+        id_vars: Vec<SmartString>,
+        value_vars: Vec<SmartString>,
+        value_name: Option<SmartString>,
+        variable_name: Option<SmartString>,
+        streamable: bool,
     ) -> JsLazyFrame {
         let args = MeltArgs {
             id_vars,
             value_vars,
             value_name,
             variable_name,
+            streamable
         };
 
         let ldf = self.ldf.clone();
@@ -527,12 +534,8 @@ impl JsLazyFrame {
 
     #[napi(getter, js_name = "columns")]
     pub fn columns(&self) -> napi::Result<Vec<String>> {
-        Ok(self
-            .ldf
-            .schema()
-            .map_err(JsPolarsErr::from)?
-            .iter_names()
-            .cloned()
+        Ok(self.ldf.schema().map_err(JsPolarsErr::from)?
+            .iter_names().map(|s| s.as_str().into())
             .collect())
     }
 
@@ -594,7 +597,7 @@ pub fn scan_csv(path: String, options: ScanCsvOptions) -> napi::Result<JsLazyFra
         .with_infer_schema_length(Some(infer_schema_length))
         .with_delimiter(options.sep.as_bytes()[0])
         .has_header(has_header)
-        .with_ignore_parser_errors(parse_dates)
+        .with_ignore_errors(parse_dates)
         .with_skip_rows(skip_rows)
         .with_n_rows(n_rows)
         .with_cache(cache)
@@ -606,7 +609,7 @@ pub fn scan_csv(path: String, options: ScanCsvOptions) -> napi::Result<JsLazyFra
         .with_skip_rows_after_header(skip_rows)
         .with_encoding(encoding)
         .with_row_count(row_count)
-        .with_parse_dates(parse_dates)
+        .with_try_parse_dates(parse_dates)
         .finish()
         .map_err(JsPolarsErr::from)?;
     // .with_null_values(null_values)
@@ -617,22 +620,37 @@ pub fn scan_csv(path: String, options: ScanCsvOptions) -> napi::Result<JsLazyFra
 pub struct ScanParquetOptions {
     pub n_rows: Option<i64>,
     pub cache: Option<bool>,
+    pub parallel: Wrap<ParallelStrategy>,
+    pub row_count: Option<RowCount>,
     pub rechunk: Option<bool>,
-    pub row_count: Option<JsRowCount>,
+    pub row_count_name: Option<String>,
+    pub row_count_offset: Option<u32>,
+    pub storage_option: Option<HashMap<String, HashMap<String, String>>>,
     pub low_memory: Option<bool>,
+    pub use_statistics: Option<bool>,
 }
 
 #[napi]
 pub fn scan_parquet(
     path: String,
-    options: ScanParquetOptions,
-    parallel: Wrap<ParallelStrategy>,
+    options: ScanParquetOptions
 ) -> napi::Result<JsLazyFrame> {
     let n_rows = options.n_rows.map(|i| i as usize);
     let cache = options.cache.unwrap_or(true);
+    let paralle = options.parallel.unwrap_or(ParallelStrategy::Auto);
+    let row_count = options.row_count;
     let rechunk = options.rechunk.unwrap_or(false);
+    let row_count_name = options.row_count_name.unwrap();
+    let row_count_offset = options.row_count_offset.unwrap_or(0);
+    let storage_option: HashMap<String, HashMap<String, String>> = options.storage_option.unwrap();
     let low_memory = options.low_memory.unwrap_or(false);
-    let row_count: Option<RowCount> = options.row_count.map(|rc| rc.into());
+    let use_statistics = options.use_statistics.unwrap_or(false);
+    let cloud_options = storage_option   
+            .iter().map(|po| 
+                CloudOptions::from_untyped_config(&path, po.1).map_err(|e: PolarsError| e.to_string()));
+
+    // let row_count = row_count.map(|(name, offset)| RowCount { name, offset });
+
     let args = ScanArgsParquet {
         n_rows,
         cache,
@@ -640,6 +658,8 @@ pub fn scan_parquet(
         rechunk,
         row_count,
         low_memory,
+        cloud_options,
+        use_statistics
     };
     let lf = LazyFrame::scan_parquet(path, args).map_err(JsPolarsErr::from)?;
     Ok(lf.into())

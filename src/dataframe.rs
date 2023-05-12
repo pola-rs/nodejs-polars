@@ -9,6 +9,8 @@ use std::borrow::Borrow;
 use std::fs::File;
 use std::io::{BufReader, BufWriter, Cursor};
 use std::collections::HashMap;
+use std::sync::Arc;
+use smartstring::alias::String as SmartString;
 
 #[napi]
 #[repr(transparent)]
@@ -117,17 +119,17 @@ pub fn read_csv(
             .with_n_rows(n_rows)
             .with_delimiter(options.sep.as_bytes()[0])
             .with_skip_rows(skip_rows)
-            .with_ignore_parser_errors(options.ignore_errors)
+            .with_ignore_errors(options.ignore_errors)
             .with_rechunk(options.rechunk)
             .with_chunk_size(chunk_size)
             .with_encoding(encoding)
             .with_columns(options.columns)
             .with_n_threads(n_threads)
-            .with_dtypes(dtypes.as_ref())
+            .with_dtypes(Some(Arc::new(dtypes.unwrap())))
             .low_memory(options.low_memory)
             .with_comment_char(comment_char)
             .with_null_values(null_values)
-            .with_parse_dates(options.parse_dates)
+            .with_try_parse_dates(options.parse_dates)
             .with_quote_char(quote_char)
             .with_row_count(row_count)
             .finish()
@@ -140,17 +142,17 @@ pub fn read_csv(
                 .with_n_rows(n_rows)
                 .with_delimiter(options.sep.as_bytes()[0])
                 .with_skip_rows(skip_rows)
-                .with_ignore_parser_errors(options.ignore_errors)
+                .with_ignore_errors(options.ignore_errors)
                 .with_rechunk(options.rechunk)
                 .with_chunk_size(chunk_size)
                 .with_encoding(encoding)
                 .with_columns(options.columns)
                 .with_n_threads(n_threads)
-                .with_dtypes(dtypes.as_ref())
+                .with_dtypes(Some(Arc::new(dtypes.unwrap())))
                 .low_memory(options.low_memory)
                 .with_comment_char(comment_char)
                 .with_null_values(null_values)
-                .with_parse_dates(options.parse_dates)
+                .with_try_parse_dates(options.parse_dates)
                 .with_quote_char(quote_char)
                 .with_row_count(row_count)
                 .finish()
@@ -588,7 +590,7 @@ impl JsDataFrame {
     #[napi]
     pub fn get_columns(&self) -> Vec<JsSeries> {
         let cols = self.df.get_columns().clone();
-        to_jsseries_collection(cols)
+        to_jsseries_collection(cols.to_vec())
     }
 
     /// Get column names
@@ -741,6 +743,7 @@ impl JsDataFrame {
         by_column: String,
         reverse: bool,
         nulls_last: bool,
+        multithreaded: bool
     ) -> napi::Result<JsDataFrame> {
         let df = self
             .df
@@ -749,6 +752,7 @@ impl JsDataFrame {
                 SortOptions {
                     descending: reverse,
                     nulls_last,
+                    multithreaded
                 },
             )
             .map_err(JsPolarsErr::from)?;
@@ -858,9 +862,10 @@ impl JsDataFrame {
         values: Vec<String>,
         index: Vec<String>,
         columns: Vec<String>,
-        aggregate_expr: Wrap<Expr>,
+        aggregate_expr: Option<polars::prelude::Expr>,
         maintain_order: bool,
         sort_columns: bool,
+        separator: Option<&str>,
     ) -> napi::Result<JsDataFrame> {
         let fun = match maintain_order {
             true => polars::prelude::pivot::pivot_stable,
@@ -871,8 +876,9 @@ impl JsDataFrame {
             values,
             index,
             columns,
-            aggregate_expr.0,
             sort_columns,
+            aggregate_expr,
+            separator,
         )
         .map(|df| df.into())
         .map_err(|e| napi::Error::from_reason(format!("Could not pivot: {}", e)))
@@ -884,16 +890,18 @@ impl JsDataFrame {
     #[napi]
     pub fn melt(
         &self,
-        id_vars: Vec<String>,
-        value_vars: Vec<String>,
-        value_name: Option<String>,
-        variable_name: Option<String>,
+        id_vars: Vec<SmartString>,
+        value_vars: Vec<SmartString>,
+        value_name: Option<SmartString>,
+        variable_name: Option<SmartString>,
+        streamable: bool
     ) -> napi::Result<JsDataFrame> {
         let args = MeltArgs {
             id_vars,
             value_vars,
             value_name,
             variable_name,
+            streamable
         };
 
         let df = self.df.melt2(args).map_err(JsPolarsErr::from)?;
@@ -927,11 +935,12 @@ impl JsDataFrame {
         maintain_order: bool,
         subset: Option<Vec<String>>,
         keep: Wrap<UniqueKeepStrategy>,
+        slice: Option<(i64, usize)>
     ) -> napi::Result<JsDataFrame> {
         let subset = subset.as_ref().map(|v| v.as_ref());
         let df = match maintain_order {
-            true => self.df.unique_stable(subset, keep.0),
-            false => self.df.unique(subset, keep.0),
+            true => self.df.unique_stable(subset, keep.0, slice),
+            false => self.df.unique(subset, keep.0, slice),
         }
         .map_err(JsPolarsErr::from)?;
         Ok(df.into())
@@ -1009,8 +1018,8 @@ impl JsDataFrame {
     }
 
     #[napi]
-    pub fn to_dummies(&self) -> napi::Result<JsDataFrame> {
-        let df = self.df.to_dummies().map_err(JsPolarsErr::from)?;
+    pub fn to_dummies(&self, separator: Option<&str>) -> napi::Result<JsDataFrame> {
+        let df = self.df.to_dummies(separator).map_err(JsPolarsErr::from)?;
         Ok(df.into())
     }
 
@@ -1137,7 +1146,7 @@ impl JsDataFrame {
 
         for (i, col) in self.df.get_columns().iter().enumerate() {
             let val = col.get(idx);
-            row.set(i as u32, Wrap(val))?;
+            row.set(i as u32, Wrap(val.unwrap()))?;
         }
         Ok(row)
     }
@@ -1151,7 +1160,7 @@ impl JsDataFrame {
             let mut row = env.create_array(width as u32)?;
             for (i, col) in self.df.get_columns().iter().enumerate() {
                 let val = col.get(idx);
-                row.set(i as u32, Wrap(val))?;
+                row.set(i as u32, Wrap(val.unwrap()))?;
             }
             rows.set(idx as u32, row)?;
         }
@@ -1215,7 +1224,7 @@ impl JsDataFrame {
         for col in self.df.get_columns() {
             let key = col.name();
             let val = col.get(idx);
-            row.set(key, Wrap(val))?;
+            row.set(key, Wrap(val.unwrap()))?;
         }
         Ok(row)
     }
@@ -1229,7 +1238,7 @@ impl JsDataFrame {
             for col in self.df.get_columns() {
                 let key = col.name();
                 let val = col.get(idx);
-                row.set(key, Wrap(val))?;
+                row.set(key, Wrap(val.unwrap()))?;
             }
             rows.set(idx as u32, row)?;
         }
