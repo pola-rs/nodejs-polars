@@ -6,16 +6,17 @@ use napi::{
 };
 use polars::frame::NullStrategy;
 use polars::io::RowCount;
-use polars::lazy::dsl::Expr;
+use polars::prelude::Expr;
 use polars_io::parquet::ParallelStrategy;
 use polars::prelude::*;
 use polars_core::prelude::FillNullStrategy;
-use polars_core::prelude::{Field, Schema};
+use polars_core::prelude::{Field, Schema, CloudOptions};
 use polars_core::series::ops::NullBehavior;
+use smartstring::LazyCompact;
 use std::collections::HashMap;
 
 #[derive(Debug)]
-pub struct Wrap<T>(pub T);
+pub struct Wrap<T: ?Sized>(pub T);
 
 impl<T> Clone for Wrap<T>
 where
@@ -250,12 +251,15 @@ impl FromNapiValue for Wrap<ChunkedArray<UInt64Type>> {
         Ok(Wrap(builder.finish()))
     }
 }
-impl FromNapiValue for Wrap<Expr> {
+
+// the trait `napi::bindgen_prelude::FromNapiValue` is not implemented for `std::option::Option<polars::prelude::Expr>`
+
+impl FromNapiValue for Wrap<Option<Expr>> {
     unsafe fn from_napi_value(env: sys::napi_env, napi_val: sys::napi_value) -> JsResult<Self> {
         let obj = Object::from_napi_value(env, napi_val)?;
         let expr: &JsExpr = obj.get("_expr")?.unwrap();
         let expr = expr.inner.clone();
-        Ok(Wrap(expr))
+        Ok(Wrap(Some(expr)))
     }
 }
 
@@ -463,6 +467,21 @@ impl<'a> FromNapiValue for Wrap<&'a str> {
         Ok(Wrap(Box::leak::<'a>(s.into_boxed_str())))
     }
 }
+// impl FromNapiValue for Wrap<&str> {
+//     unsafe fn from_napi_value(env: sys::napi_env, napi_val: sys::napi_value) -> JsResult<Self> {
+//         let s = String::from_napi_value(env, napi_val)?;
+//         // Ok(Wrap(Box::leak::(s.into_boxed_str())))
+//         Ok(Wrap(&s))
+//     }
+// }
+
+// impl FromNapiValue for Wrap<str> {
+//     unsafe fn from_napi_value(env: sys::napi_env, napi_val: sys::napi_value) -> JsResult<Self> {
+//         let s = String::from_napi_value(env, napi_val)?;
+//         // Ok(Wrap(Box::leak::(s.into_boxed_str())))
+//         Ok(Wrap(s))
+//     }
+//   }
 
 #[napi(object)]
 pub struct JsRollingOptions {
@@ -601,6 +620,62 @@ impl FromNapiValue for Wrap<DataType> {
     }
 }
 
+impl ToNapiValue for Wrap<CloudOptions> {
+    unsafe fn to_napi_value(napi_env: sys::napi_env, val: Self) -> Result<sys::napi_value> {
+        let env = Env::from_raw(napi_env);
+        let mut cloud = env.create_object()?;
+        
+        for (name, dtype) in val.0.iter() {
+            cloud.set(name, dtype.clone())?;
+        }
+
+        Object::to_napi_value(napi_env, cloud)
+    }
+}
+
+impl FromNapiValue for Wrap<CloudOptions> {
+    unsafe fn from_napi_value(env: sys::napi_env, napi_val: sys::napi_value) -> napi::Result<Self> {
+        let s = String::from_napi_value(env, napi_val)?;
+
+        // let unit = cloud::CloudOptions::from_untyped_config(url, s).unwrap();
+
+        let unit = match s.as_ref() {
+            "aws" => CloudOptions::new(),
+            _ => {
+                return Err(Error::new(
+                    Status::InvalidArg,
+                    "expected one of {'auto', 'columns', 'row_groups', 'none'}".to_owned(),
+                ))
+            }
+        };
+        Ok(Wrap(unit))
+    }
+}
+
+impl ToNapiValue for Wrap<RowCount> {
+    unsafe fn to_napi_value(napi_env: sys::napi_env, val: Self) -> Result<sys::napi_value> {
+        let env = Env::from_raw(napi_env);
+        let row = env.create_object()?;
+        
+        Object::to_napi_value(napi_env, row)
+    }
+}
+
+impl FromNapiValue for Wrap<RowCount> {
+    unsafe fn from_napi_value(env: sys::napi_env, napi_val: sys::napi_value) -> napi::Result<Self> {
+        let ty = type_of!(env, napi_val)?;
+        let unit = match ty {
+            _ => {
+                return Err(Error::new(
+                    Status::InvalidArg,
+                    "expected one of {'auto', 'columns', 'row_groups', 'none'}".to_owned(),
+                ))
+            }
+        };
+        Ok(Wrap(unit))
+    }
+}
+
 impl FromNapiValue for Wrap<Schema> {
     unsafe fn from_napi_value(env: sys::napi_env, napi_val: sys::napi_value) -> napi::Result<Self> {
         let ty = type_of!(env, napi_val)?;
@@ -640,6 +715,27 @@ impl ToNapiValue for Wrap<Schema> {
     }
 }
 
+impl ToNapiValue for Wrap<ParallelStrategy> {
+    unsafe fn to_napi_value(napi_env: sys::napi_env, val: Self) -> Result<sys::napi_value> {
+        let env = Env::from_raw(napi_env);
+        let s = val.0;
+        let mut strategy = env.create_object()?;
+
+        let unit = match s {
+            ParallelStrategy::Auto => "auto",
+            ParallelStrategy::Columns => "columns",
+            ParallelStrategy::RowGroups => "row_groups",
+            ParallelStrategy::None => "none",
+            _ =>
+                return Err(Error::new(
+                    Status::InvalidArg,
+                    "expected one of {'auto', 'columns', 'row_groups', 'none'}".to_owned(),
+                ))
+        };
+        strategy.set("strategy", unit);
+        Object::to_napi_value(napi_env, strategy)
+    }
+}
 impl FromNapiValue for Wrap<ParallelStrategy> {
     unsafe fn from_napi_value(env: sys::napi_env, napi_val: sys::napi_value) -> napi::Result<Self> {
         let s = String::from_napi_value(env, napi_val)?;
@@ -695,6 +791,49 @@ impl FromNapiValue for Wrap<SortOptions> {
     }
 }
 
+impl FromNapiValue for Wrap<(i64, usize)> {
+    unsafe fn from_napi_value(env: sys::napi_env, napi_val: sys::napi_value) -> napi::Result<Self> {
+        let obj = Object::from_napi_value(env, napi_val)?;
+        Ok(Wrap((0,0)))
+    }
+}
+
+impl FromNapiValue for Wrap<usize> {
+    unsafe fn from_napi_value(env: sys::napi_env, napi_val: sys::napi_value) -> napi::Result<Self> {
+        let obj = Object::from_napi_value(env, napi_val)?;
+        Ok(Wrap(0))
+    }
+}
+
+impl FromNapiValue for Wrap<Vec<smartstring::SmartString<LazyCompact>>> {
+    unsafe fn from_napi_value(env: sys::napi_env, napi_val: sys::napi_value) -> JsResult<Self>{
+        let obj = Object::from_napi_value(env, napi_val)?;
+        // let lc = LazyCompact::into();
+        // let lc = SmartString::<LazyCompact>();
+        // type StrHashGlobal = SmartString<LazyCompact>;
+
+        // let lc = Vec<smartstring::SmartString::<LazyCompact>>::from("");
+
+        let mut v: Vec<smartstring::SmartString<LazyCompact>> = Vec::with_capacity(0 as usize);
+
+        Ok(Wrap(v))
+    }
+}
+
+impl FromNapiValue for Wrap<smartstring::SmartString<LazyCompact>> {
+    unsafe fn from_napi_value(env: sys::napi_env, napi_val: sys::napi_value) -> napi::Result<Self> {
+        let obj = Object::from_napi_value(env, napi_val)?;
+        // let lc = LazyCompact::into();
+        // let lc = SmartString::<LazyCompact>();
+        // type StrHashGlobal = SmartString<LazyCompact>;
+
+        let lc = smartstring::SmartString::<LazyCompact>::from("");
+
+        Ok(Wrap(lc))
+    }
+}
+
+
 pub enum TypedArrayBuffer {
     Int8(Int8Array),
     Int16(Int16Array),
@@ -711,7 +850,7 @@ pub enum TypedArrayBuffer {
 impl From<&Series> for TypedArrayBuffer {
     fn from(series: &Series) -> Self {
         let dt = series.dtype();
-        match dt {
+        match dt {          
             DataType::Int8 => TypedArrayBuffer::Int8(Int8Array::with_data_copied(
                 series.i8().unwrap().rechunk().cont_slice().unwrap(),
             )),

@@ -862,7 +862,7 @@ impl JsDataFrame {
         values: Vec<String>,
         index: Vec<String>,
         columns: Vec<String>,
-        aggregate_expr: Option<polars::prelude::Expr>,
+        aggregate_expr: Wrap<Option<polars::prelude::Expr>>,
         maintain_order: bool,
         sort_columns: bool,
         separator: Option<&str>,
@@ -877,7 +877,7 @@ impl JsDataFrame {
             index,
             columns,
             sort_columns,
-            aggregate_expr,
+            aggregate_expr.0,
             separator,
         )
         .map(|df| df.into())
@@ -890,17 +890,22 @@ impl JsDataFrame {
     #[napi]
     pub fn melt(
         &self,
-        id_vars: Vec<SmartString>,
-        value_vars: Vec<SmartString>,
-        value_name: Option<SmartString>,
-        variable_name: Option<SmartString>,
+        id_vars: Wrap<Vec<SmartString>>,
+        value_vars: Wrap<Vec<SmartString>>,
+        value_name: Option<Wrap<SmartString>>,
+        variable_name: Option<Wrap<SmartString>>,
         streamable: bool
     ) -> napi::Result<JsDataFrame> {
+        let idv = id_vars.0;
+        let valv = value_vars.0;
+        let valn = value_name.map(|v| v.0 as SmartString);
+        let varn = variable_name.map(|v| v.0 as SmartString);
+
         let args = MeltArgs {
-            id_vars,
-            value_vars,
-            value_name,
-            variable_name,
+            id_vars: idv,
+            value_vars: valv,
+            value_name: valn,
+            variable_name: varn,
             streamable
         };
 
@@ -935,12 +940,12 @@ impl JsDataFrame {
         maintain_order: bool,
         subset: Option<Vec<String>>,
         keep: Wrap<UniqueKeepStrategy>,
-        slice: Option<(i64, usize)>
+        slice: Option<Wrap<(i64, usize)>>
     ) -> napi::Result<JsDataFrame> {
         let subset = subset.as_ref().map(|v| v.as_ref());
         let df = match maintain_order {
-            true => self.df.unique_stable(subset, keep.0, slice),
-            false => self.df.unique(subset, keep.0, slice),
+            true => self.df.unique_stable(subset, keep.0, slice.map(|s| s.0 as (i64, usize))),
+            false => self.df.unique(subset, keep.0, slice.map(|s| s.0 as (i64, usize)))
         }
         .map_err(JsPolarsErr::from)?;
         Ok(df.into())

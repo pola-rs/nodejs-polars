@@ -257,12 +257,12 @@ impl JsSeries {
         format!("{}", self.series)
     }
     #[napi]
-    pub fn get_fmt(&self, index: usize, str_lengths: usize) -> String {
-        let val = format!("{}", self.series.get(index).unwrap());
+    pub fn get_fmt(&self, index: Wrap<usize>, str_lengths: Wrap<usize>) -> String {
+        let val = format!("{}", self.series.get(index.0).unwrap());
         if let DataType::Utf8 | DataType::Categorical(_) = self.series.dtype() {
             let v_trunc = &val[..val
                 .char_indices()
-                .take(str_lengths)
+                .take(str_lengths.0)
                 .last()
                 .map(|(i, c)| i + c.len_utf8())
                 .unwrap_or(0)];
@@ -725,10 +725,11 @@ impl JsSeries {
         quantile: f64,
         interpolation: Wrap<QuantileInterpolOptions>,
     ) -> JsAnyValue {
-        let v = self
+        let binding = self
             .series
             .quantile_as_series(quantile, interpolation.0)
-            .expect("invalid quantile").get(0).unwrap_or(AnyValue::Null);
+            .expect("invalid quantile");
+        let v = binding.get(0).unwrap_or(AnyValue::Null);
         v.into()
     }
     /// Rechunk and return a pointer to the start of the Series.
