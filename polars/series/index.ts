@@ -1133,7 +1133,7 @@ export function _Series(_s: any): Series {
     },
     argSort(reverse: any = false, nullsLast = true) {
       if (typeof reverse === "boolean") {
-        return _Series(_s.argsort(reverse, nullsLast));
+        return _Series(_s.argsort(reverse, nullsLast, false));
       }
 
       return _Series(

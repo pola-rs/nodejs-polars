@@ -108,7 +108,7 @@ pub fn read_csv(
             let value = val.clone().0;
             Field::new(key, value)
         });
-        Schema::from(fields)
+        Arc::new(Schema::from(fields))
     });
 
     let df = match path_or_buffer {
@@ -125,7 +125,7 @@ pub fn read_csv(
             .with_encoding(encoding)
             .with_columns(options.columns)
             .with_n_threads(n_threads)
-            .with_dtypes(Some(Arc::new(dtypes.unwrap())))
+            .with_dtypes(dtypes)
             .low_memory(options.low_memory)
             .with_comment_char(comment_char)
             .with_null_values(null_values)
@@ -148,7 +148,7 @@ pub fn read_csv(
                 .with_encoding(encoding)
                 .with_columns(options.columns)
                 .with_n_threads(n_threads)
-                .with_dtypes(Some(Arc::new(dtypes.unwrap())))
+                .with_dtypes(dtypes)
                 .low_memory(options.low_memory)
                 .with_comment_char(comment_char)
                 .with_null_values(null_values)

@@ -881,30 +881,26 @@ impl JsSeries {
         let s = ca.hex_encode().into_series();
         Ok(s.into())
     }
-
-    #[napi]
-    pub fn str_hex_decode(&self, strict: Option<bool>) -> napi::Result<JsSeries> {
+    #[cfg(feature = "binary_encoding")]
+    pub fn str_hex_decode(&self, strict: bool) -> napi::Result<JsSeries> {
         let ca = self.series.utf8().map_err(JsPolarsErr::from)?;
         let s = ca
-            .hex_decode()
+            .hex_decode(strict)
             .map_err(JsPolarsErr::from)?
             .into_series();
-
         Ok(s.into())
     }
-
     #[napi]
     pub fn str_base64_encode(&self) -> napi::Result<JsSeries> {
         let ca = self.series.utf8().map_err(JsPolarsErr::from)?;
         let s = ca.base64_encode().into_series();
         Ok(s.into())
     }
-
-    #[napi]
-    pub fn str_base64_decode(&self, strict: Option<bool>) -> napi::Result<JsSeries> {
+    #[cfg(feature = "binary_encoding")]
+    pub fn str_base64_decode(&self, strict: bool) -> napi::Result<JsSeries> {
         let ca = self.series.utf8().map_err(JsPolarsErr::from)?;
         let s = ca
-            .base64_decode()
+            .base64_decode(strict)
             .map_err(JsPolarsErr::from)?
             .into_series();
         Ok(s.into())

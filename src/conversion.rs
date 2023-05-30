@@ -15,6 +15,8 @@ use polars_core::series::ops::NullBehavior;
 use smartstring::LazyCompact;
 use std::collections::HashMap;
 
+use smartstring::alias::String as SmartString;
+
 #[derive(Debug)]
 pub struct Wrap<T: ?Sized>(pub T);
 
@@ -467,6 +469,41 @@ impl<'a> FromNapiValue for Wrap<&'a str> {
         Ok(Wrap(Box::leak::<'a>(s.into_boxed_str())))
     }
 }
+
+impl FromNapiValue for Wrap<Vec<&str>> {
+    unsafe fn from_napi_value(env: sys::napi_env, napi_val: sys::napi_value) -> JsResult<Self>{
+        let ty = type_of!(env, napi_val)?;
+        print!("Type: {:?}", ty);
+        match ty {
+            ValueType::Object => {
+                let obj = Object::from_napi_value(env, napi_val)?;
+                let keys = Object::keys(&obj);
+
+                let v: Vec<&str> = Vec::with_capacity(keys.iter().count() as usize);
+
+                let _ = keys.iter().map(|key| { 
+                    println!("##### keys: {:?}", key);
+                    // v.append(smartstring::SmartString::<LazyCompact>::from(&key));
+                 });
+                
+
+                Ok(Wrap(v))
+            }
+            _ => Err(Error::new(
+                Status::InvalidArg, "not a valid conversion to 'Schema'".to_owned(),
+            )),
+        }
+
+        // println!("obj: {}", obj.try_into(String));
+
+        // let lc = LazyCompact::into();
+        // let lc = SmartString::<LazyCompact>();
+        // type StrHashGlobal = SmartString<LazyCompact>;
+
+        // let lc = Vec<smartstring::SmartString::<LazyCompact>>::from("");
+    }
+}
+
 // impl FromNapiValue for Wrap<&str> {
 //     unsafe fn from_napi_value(env: sys::napi_env, napi_val: sys::napi_value) -> JsResult<Self> {
 //         let s = String::from_napi_value(env, napi_val)?;
@@ -805,18 +842,63 @@ impl FromNapiValue for Wrap<usize> {
     }
 }
 
+// let ty = type_of!(env, napi_val)?;
+// match ty {
+//     ValueType::Object => {
+//         let obj = Object::from_napi_value(env, napi_val)?;
+
+//         let keys = Object::keys(&obj)?;
+//         let fields: Vec<Field> = keys
+//             .iter()
+//             .map(|key| {
+//                 let value = obj.get::<_, Object>(&key)?.unwrap();
+//                 let napi_val = Object::to_napi_value(env, value)?;
+//                 let dtype = Wrap::<DataType>::from_napi_value(env, napi_val)?;
+
+//                 Ok(Field::new(key, dtype.0))
+//             })
+//             .collect::<Result<_>>()?;
+//         Ok(Wrap(Schema::from(fields.into_iter())))
+//     }
+//     _ => Err(Error::new(
+//         Status::InvalidArg,
+//         "not a valid conversion to 'Schema'".to_owned(),
+//     )),
+// }
+
+
+
 impl FromNapiValue for Wrap<Vec<smartstring::SmartString<LazyCompact>>> {
     unsafe fn from_napi_value(env: sys::napi_env, napi_val: sys::napi_value) -> JsResult<Self>{
-        let obj = Object::from_napi_value(env, napi_val)?;
+        let ty = type_of!(env, napi_val)?;
+        print!("Type: {:?}", ty);
+        match ty {
+            ValueType::Object => {
+                let obj = Object::from_napi_value(env, napi_val)?;
+                let keys = Object::keys(&obj);
+
+                let v: Vec<smartstring::SmartString<LazyCompact>> = Vec::with_capacity(keys.iter().count() as usize);
+
+                let _ = keys.iter().map(|key| { 
+                    println!("##### keys: {:?}", key);
+                    // v.append(smartstring::SmartString::<LazyCompact>::from(&key));
+                 });
+                
+
+                Ok(Wrap(v))
+            }
+            _ => Err(Error::new(
+                Status::InvalidArg, "not a valid conversion to 'Schema'".to_owned(),
+            )),
+        }
+
+        // println!("obj: {}", obj.try_into(String));
+
         // let lc = LazyCompact::into();
         // let lc = SmartString::<LazyCompact>();
         // type StrHashGlobal = SmartString<LazyCompact>;
 
         // let lc = Vec<smartstring::SmartString::<LazyCompact>>::from("");
-
-        let v: Vec<smartstring::SmartString<LazyCompact>> = Vec::with_capacity(0 as usize);
-
-        Ok(Wrap(v))
     }
 }
 
@@ -829,10 +911,23 @@ impl FromNapiValue for Wrap<smartstring::SmartString<LazyCompact>> {
 
         let lc = smartstring::SmartString::<LazyCompact>::from("");
 
+        println!("{:?}", "Hello from Wrap Vec");
+
         Ok(Wrap(lc))
     }
 }
 
+impl FromNapiValue for Wrap<String> {
+    unsafe fn from_napi_value(env: sys::napi_env, napi_val: sys::napi_value) -> napi::Result<Self> {
+        let obj = Object::from_napi_value(env, napi_val)?;
+        // let lc = LazyCompact::into();
+        // let lc = SmartString::<LazyCompact>();
+        // type StrHashGlobal = SmartString<LazyCompact>;
+
+        let lc = "Wrap<String>".to_string();
+        Ok(Wrap(lc))
+    }
+}
 
 pub enum TypedArrayBuffer {
     Int8(Int8Array),
@@ -1204,4 +1299,12 @@ pub(crate) fn parse_fill_null_strategy(
         }
     };
     Ok(parsed)
+}
+
+pub(crate) fn strings_to_smartstrings<I, S>(container: I) -> Vec<SmartString>
+where
+    I: IntoIterator<Item = S>,
+    S: AsRef<str>,
+{
+    container.into_iter().map(|s| s.as_ref().into()).collect()
 }

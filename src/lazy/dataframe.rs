@@ -2,11 +2,12 @@ use super::dsl::*;
 use crate::dataframe::JsDataFrame;
 use crate::prelude::*;
 use napi::{Env, Task};
+use std::collections::HashMap;
 use polars::io::RowCount;
 use polars_core::cloud::CloudOptions;
 use polars::lazy::frame::{LazyCsvReader, LazyFrame, LazyGroupBy};
 use polars_io::parquet::ParallelStrategy;
-use smartstring::alias::String as SmartString;
+use smartstring::{alias::String as SmartString};
 
 #[napi]
 #[repr(transparent)]
@@ -271,21 +272,20 @@ impl JsLazyFrame {
         other: &JsLazyFrame,
         left_on: &JsExpr,
         right_on: &JsExpr,
-        left_by: Option<Wrap<Vec<SmartString>>>,
-        right_by: Option<Wrap<Vec<SmartString>>>,
+        left_by: Option<Vec<&str>>,
+        right_by: Option<Vec<&str>>,
         allow_parallel: bool,
         force_parallel: bool,
         suffix: String,
         strategy: String,
         tolerance: Option<Wrap<AnyValue<'_>>>,
-        tolerance_str: Option<Wrap<SmartString>>,
+        tolerance_str: Option<String>,
     ) -> JsLazyFrame {
         let strategy = match strategy.as_ref() {
             "forward" => AsofStrategy::Forward,
             "backward" => AsofStrategy::Backward,
             _ => panic!("expected one of {{'forward', 'backward'}}"),
         };
-
         let ldf = self.ldf.clone();
         let other = other.ldf.clone();
         let left_on = left_on.inner.clone();
@@ -298,10 +298,10 @@ impl JsLazyFrame {
             .force_parallel(force_parallel)
             .how(JoinType::AsOf(AsOfOptions {
                 strategy,
-                left_by: left_by.map(|l| l.0),
-                right_by: right_by.map(|r| r.0),
+                left_by: left_by.map(strings_to_smartstrings),
+                right_by: right_by.map(strings_to_smartstrings),
                 tolerance: tolerance.map(|t| t.0.into_static().unwrap()),
-                tolerance_str: tolerance_str.map(|t| t.0 as SmartString)
+                tolerance_str: tolerance_str.map(|s| s.into()),
             }))
             .suffix(suffix)
             .finish()
@@ -550,6 +550,8 @@ impl JsLazyFrame {
 pub struct ScanCsvOptions {
     pub infer_schema_length: Option<u32>,
     pub cache: Option<bool>,
+    pub overwrite_dtype: Option<HashMap<String, Wrap<DataType>>>,
+    pub overwrite_dtype_slice: Option<Vec<Wrap<DataType>>>,
     pub has_header: Option<bool>,
     pub ignore_errors: bool,
     pub n_rows: Option<u32>,
@@ -588,13 +590,20 @@ pub fn scan_csv(path: String, options: ScanCsvOptions) -> napi::Result<JsLazyFra
         None
     };
 
+    let overwrite_dtype = options.overwrite_dtype.map(|map| {
+        let fields = map.iter().map(|(key, val)| {
+            let value = val.clone().0;
+            Field::new(key, value)
+        });
+        Schema::from(fields)
+    });
+
     let encoding = match options.encoding.as_ref() {
         "utf8" => CsvEncoding::Utf8,
         "utf8-lossy" => CsvEncoding::LossyUtf8,
         e => return Err(JsPolarsErr::Other(format!("encoding not {} not implemented.", e)).into()),
     };
     let r = LazyCsvReader::new(path)
-        // .with_chunk_size()
         .with_infer_schema_length(Some(infer_schema_length))
         .with_delimiter(options.sep.as_bytes()[0])
         .has_header(has_header)
@@ -602,7 +611,7 @@ pub fn scan_csv(path: String, options: ScanCsvOptions) -> napi::Result<JsLazyFra
         .with_skip_rows(skip_rows)
         .with_n_rows(n_rows)
         .with_cache(cache)
-        // // .with_dtype_overwrite(overwrite_dtype.as_ref())
+        .with_dtype_overwrite(overwrite_dtype.as_ref())
         .low_memory(low_memory)
         .with_comment_char(comment_char)
         .with_quote_char(quote_char)
