@@ -814,7 +814,7 @@ impl FromNapiValue for Wrap<Vec<smartstring::SmartString<LazyCompact>>> {
 
         // let lc = Vec<smartstring::SmartString::<LazyCompact>>::from("");
 
-        let mut v: Vec<smartstring::SmartString<LazyCompact>> = Vec::with_capacity(0 as usize);
+        let v: Vec<smartstring::SmartString<LazyCompact>> = Vec::with_capacity(0 as usize);
 
         Ok(Wrap(v))
     }
