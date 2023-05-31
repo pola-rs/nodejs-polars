@@ -2115,7 +2115,7 @@ export const _DataFrame = (_df: any): DataFrame => {
           .collectSync({ noOptimization: true, stringCache: false });
       }
 
-      return wrap("sort", arg, reverse, true);
+      return wrap("sort", arg, reverse, true, false);
     },
     std() {
       return wrap("std");
@@ -2253,7 +2253,7 @@ export const _DataFrame = (_df: any): DataFrame => {
       let df = wrap(
         "transpose",
         options?.includeHeader ?? false,
-        options?.headerName,
+        options?.headerName ?? ""
       );
       if (options?.columnNames) {
         function* namesIter() {

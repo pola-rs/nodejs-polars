@@ -849,7 +849,7 @@ export const _LazyDataFrame = (_ldf: any): LazyDataFrame => {
         return this.sort(arg.by, arg.reverse);
       }
       if (typeof arg === "string") {
-        return wrap("sort", arg, reverse, true);
+        return wrap("sort", arg, reverse, true, false);
       } else {
         reverse = [reverse].flat(3) as any;
         const by = selectionToExprList(arg, false);
