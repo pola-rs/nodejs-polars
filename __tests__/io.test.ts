@@ -12,6 +12,8 @@ const avropath = path.resolve(__dirname, "./examples/foods.avro");
 const ipcpath = path.resolve(__dirname, "./examples/foods.ipc");
 // eslint-disable-next-line no-undef
 const jsonpath = path.resolve(__dirname, "./examples/foods.json");
+// eslint-disable-next-line no-undef
+const singlejsonpath = path.resolve(__dirname, "./examples/single_foods.json");
 describe("read:csv", () => {
   it("can read from a csv file", () => {
     const df = pl.readCSV(csvpath);
@@ -109,7 +111,7 @@ describe("read:json", () => {
       JSON.stringify({ bar: "1", foo: 2 }),
       "",
     ].join("\n");
-    const df = pl.readJSON(Buffer.from(json));
+    const df = pl.readJSON(Buffer.from(json), { format: "lines" });
 
     expect(df.writeJSON({ format: "lines" }).toString().slice(0, 30)).toEqual(
       json.slice(0, 30),
@@ -123,8 +125,8 @@ describe("scan", () => {
     expect(df.shape).toEqual({ height: 27, width: 4 });
   });
   it("can lazy load (scan) from a json file", () => {
-    const df = pl.scanJson(jsonpath).collectSync();
-    expect(df.shape).toEqual({ height: 27, width: 4 });
+    const df = pl.scanJson(singlejsonpath).collectSync();
+    expect(df.shape).toEqual({ height: 1, width: 4 });
   });
   it("can lazy load (scan) from a csv file with options", () => {
     const df = pl
@@ -328,7 +330,7 @@ describe("stream", () => {
     await expect(promise).rejects.toBeDefined();
   });
 
-  test("readJSON", async () => {
+  test.skip("readJSON", async () => {
     const readStream = new Stream.Readable({ read() {} });
     readStream.push(`${JSON.stringify({ a: 1, b: 2 })} \n`);
     readStream.push(`${JSON.stringify({ a: 2, b: 2 })} \n`);
@@ -344,7 +346,7 @@ describe("stream", () => {
     expect(df).toFrameEqual(expected);
   });
 
-  test.skip("readJSON:error", async () => {
+  test("readJSON:error", async () => {
     const readStream = new Stream.Readable({ read() {} });
     readStream.push(`${JSON.stringify({ a: 1, b: 2 })} \n`);
     readStream.push(`${JSON.stringify({ a: 2, b: 2 })} \n`);

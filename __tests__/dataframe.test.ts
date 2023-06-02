@@ -45,7 +45,7 @@ describe("dataframe", () => {
     const actual = expected.clone();
     expect(actual).toFrameEqual(expected);
   });
-  test.skip("describe", () => {
+  test("describe", () => {
     const actual = pl
       .DataFrame({
         a: [1, 2, 3],
@@ -56,8 +56,8 @@ describe("dataframe", () => {
     const expected = pl.DataFrame({
       describe: ["mean", "std", "min", "max", "median"],
       a: [2, 1, 1, 3, 2],
-      b: [null, null, null, null, null],
-      c: [null, null, 0, 1, null],
+      b: [null, null, "a", "c", null],
+      c: [0.6666666666666666, 0.5773502588272095, 0, 1, 1],
     });
 
     expect(actual).toFrameEqual(expected);
@@ -986,7 +986,7 @@ describe("dataframe", () => {
     const expected = [9, 8];
     expect(actual).toEqual(expected);
   });
-  test.skip("transpose", () => {
+  test("transpose", () => {
     const expected = pl.DataFrame({
       column_0: [1, 1],
       column_1: [2, 2],
@@ -999,9 +999,9 @@ describe("dataframe", () => {
     const actual = df.transpose();
     expect(actual).toFrameEqual(expected);
   });
-  test.skip("transpose:includeHeader", () => {
+  test("transpose:includeHeader", () => {
     const expected = pl.DataFrame({
-      column: ["a", "b"],
+      "": ["a", "b"],
       column_0: [1, 1],
       column_1: [2, 2],
       column_2: [3, 3],
@@ -1013,7 +1013,7 @@ describe("dataframe", () => {
     const actual = df.transpose({ includeHeader: true });
     expect(actual).toFrameEqual(expected);
   });
-  test.skip("transpose:columnNames", () => {
+  test("transpose:columnNames", () => {
     const expected = pl.DataFrame({
       a: [1, 1],
       b: [2, 2],
@@ -1026,7 +1026,7 @@ describe("dataframe", () => {
     const actual = df.transpose({ includeHeader: false, columnNames: "abc" });
     expect(actual).toFrameEqual(expected);
   });
-  test.skip("transpose:columnNames:generator", () => {
+  test("transpose:columnNames:generator", () => {
     const expected = pl.DataFrame({
       col_0: [1, 1],
       col_1: [2, 2],
@@ -1553,7 +1553,7 @@ describe("io", () => {
         callback(null);
       },
     });
-    df.writeJSON(writeStream, { format: "lines" });
+    df.writeJSON(writeStream, { format: "json" });
     const newDF = pl.readJSON(body).select("foo", "bar");
     expect(newDF).toFrameEqual(df);
     done();
@@ -1563,7 +1563,7 @@ describe("io", () => {
       pl.Series("foo", [1, 2, 3], pl.UInt32),
       pl.Series("bar", ["a", "b", "c"]),
     ]);
-    df.writeJSON("./test.json", { format: "lines" });
+    df.writeJSON("./test.json", { format: "json" });
     const newDF = pl.readJSON("./test.json").select("foo", "bar");
     expect(newDF).toFrameEqual(df);
     fs.rmSync("./test.json");

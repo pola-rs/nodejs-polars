@@ -1467,33 +1467,33 @@ pub fn dtype_cols(dtypes: Vec<Wrap<DataType>>) -> crate::lazy::dsl::JsExpr {
     dsl::dtype_cols(dtypes).into()
 }
 
-// #[napi]
-// pub fn arange(low: Wrap<Expr>, high: Wrap<Expr>, step: Option<i64>) -> JsExpr {
-//     let step = step.unwrap_or(1) as usize;
-//     polars::lazy::dsl::arange(low.0, high.0, step).into()
-// }
+#[napi]
+pub fn arange(low: Wrap<Expr>, high: Wrap<Expr>, step: Option<i64>) -> JsExpr {
+    let step = step.unwrap_or(1) as usize;
+    polars::lazy::dsl::arange(low.0, high.0, step).into()
+}
 
-// #[napi]
-// pub fn pearson_corr(a: Wrap<Expr>, b: Wrap<Expr>, ddof: Option<u8>) -> JsExpr {
-//     let ddof = ddof.unwrap_or(1);
-//     polars::lazy::dsl::pearson_corr(a.0, b.0, ddof).into()
-// }
+#[napi]
+pub fn pearson_corr(a: Wrap<Expr>, b: Wrap<Expr>, ddof: Option<u8>) -> JsExpr {
+    let ddof = ddof.unwrap_or(1);
+    polars::lazy::dsl::pearson_corr(a.0, b.0, ddof).into()
+}
 
-// #[napi]
-// pub fn spearman_rank_corr(
-//     a: Wrap<Expr>,
-//     b: Wrap<Expr>,
-//     ddof: Option<u8>,
-//     propagate_nans: bool,
-// ) -> JsExpr {
-//     let ddof = ddof.unwrap_or(1);
-//     polars::lazy::dsl::spearman_rank_corr(a.0, b.0, ddof, propagate_nans).into()
-// }
+#[napi]
+pub fn spearman_rank_corr(
+    a: Wrap<Expr>,
+    b: Wrap<Expr>,
+    ddof: Option<u8>,
+    propagate_nans: bool,
+) -> JsExpr {
+    let ddof = ddof.unwrap_or(1);
+    polars::lazy::dsl::spearman_rank_corr(a.0, b.0, ddof, propagate_nans).into()
+}
 
-// #[napi]
-// pub fn cov(a: Wrap<Expr>, b: Wrap<Expr>) -> JsExpr {
-//     polars::lazy::dsl::cov(a.0, b.0).into()
-// }
+#[napi]
+pub fn cov(a: Wrap<Expr>, b: Wrap<Expr>) -> JsExpr {
+    polars::lazy::dsl::cov(a.0, b.0).into()
+}
 
 #[napi]
 pub fn argsort_by(by: Vec<&JsExpr>, reverse: Vec<bool>) -> JsExpr {
@@ -1536,12 +1536,12 @@ pub fn range(low: i64, high: i64, dtype: Wrap<DataType>) -> JsExpr {
     }
 }
 
-// #[napi]
-// pub fn concat_lst(s: Vec<&JsExpr>) -> JsResult<JsExpr> {
-//     let s = s.into_iter().map(|e| e.inner).collect::<Vec<_>>();
-//     let expr = polars::lazy::dsl::concat_lst(s).map_err(JsPolarsErr::from)?;
-//     Ok(expr.into())
-// }
+#[napi]
+pub fn concat_lst(s: Vec<&JsExpr>) -> JsResult<JsExpr> {
+    let s = s.into_iter().map(|e| e.inner.clone()).collect::<Vec<_>>();
+    let expr = polars::lazy::dsl::concat_lst(s).map_err(JsPolarsErr::from)?;
+    Ok(expr.into())
+}
 
 #[napi]
 pub fn concat_str(s: Vec<&JsExpr>, sep: String) -> JsExpr {

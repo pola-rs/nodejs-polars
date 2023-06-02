@@ -254,14 +254,12 @@ impl FromNapiValue for Wrap<ChunkedArray<UInt64Type>> {
     }
 }
 
-// the trait `napi::bindgen_prelude::FromNapiValue` is not implemented for `std::option::Option<polars::prelude::Expr>`
-
-impl FromNapiValue for Wrap<Option<Expr>> {
+impl FromNapiValue for Wrap<Expr> {
     unsafe fn from_napi_value(env: sys::napi_env, napi_val: sys::napi_value) -> JsResult<Self> {
         let obj = Object::from_napi_value(env, napi_val)?;
         let expr: &JsExpr = obj.get("_expr")?.unwrap();
         let expr = expr.inner.clone();
-        Ok(Wrap(Some(expr)))
+        Ok(Wrap(expr))
     }
 }
 

@@ -862,7 +862,7 @@ impl JsDataFrame {
         values: Vec<String>,
         index: Vec<String>,
         columns: Vec<String>,
-        aggregate_expr: Wrap<Option<polars::prelude::Expr>>,
+        aggregate_expr: Option<Wrap<polars::prelude::Expr>>,
         maintain_order: bool,
         sort_columns: bool,
         separator: Option<&str>,
@@ -877,7 +877,7 @@ impl JsDataFrame {
             index,
             columns,
             sort_columns,
-            aggregate_expr.0,
+            aggregate_expr.map(|e| e.0 as Expr),
             separator,
         )
         .map(|df| df.into())

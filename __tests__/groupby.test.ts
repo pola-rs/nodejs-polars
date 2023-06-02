@@ -10,9 +10,7 @@ describe("groupby", () => {
   });
 
   test("aggList", () => {
-    const s = pl.Series("a", [1], pl.Int16);
     const actual = df.groupBy("name").aggList().sort("name");
-
     const expected = pl.DataFrame({
       name: ["a", "b", "c"],
       foo: [[1, 3], [3, 7], [5]],
@@ -165,7 +163,6 @@ describe("groupby ops", () => {
     const df = pl
       .DataFrame({ dt: dates, a: [3, 7, 5, 9, 2, 1] })
       .withColumn(pl.col("dt").str.strptime(pl.Datetime("ms")));
-
     const a = pl.col("a");
     const out = df
       .groupByRolling({ indexColumn: "dt", period: "2d" })
