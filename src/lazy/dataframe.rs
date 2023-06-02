@@ -650,8 +650,6 @@ pub fn scan_parquet(
     let parallel = options.parallel;
     let row_count = options.row_count.map(|r| r.0);
     let rechunk = options.rechunk.unwrap_or(false);
-    let row_count_name = options.row_count_name.unwrap();
-    let row_count_offset = options.row_count_offset.unwrap_or(0);
     let low_memory = options.low_memory.unwrap_or(false);
     let use_statistics = options.use_statistics.unwrap_or(false);
     let cloud_options = Some(CloudOptions::default());

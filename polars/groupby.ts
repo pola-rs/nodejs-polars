@@ -208,7 +208,7 @@ export function _GroupBy(df: any, by: string[], maintainOrder = false) {
     [inspect]: customInspect,
     agg,
     pivot,
-    aggList: () => agg(exclude(by as any).list()),
+    aggList: () => agg(exclude(by as any)),
     count() {
       return _DataFrame(df.groupby([by].flat(), null, "count"));
     },

@@ -55,7 +55,7 @@ export interface ReadJsonOptions {
 const readJsonDefaultOptions: Partial<ReadJsonOptions> = {
   batchSize: 10000,
   inferSchemaLength: 50,
-  format: "lines",
+  format: "json",
 };
 
 // utility to read streams as lines.
@@ -494,9 +494,8 @@ export function scanParquet(path: string, options: ScanParquetOptions = {}) {
 
   pliOptions.nRows = options?.numRows;
   pliOptions.rowCount = options?.rowCount;
-  const parallel = options?.parallel ?? "auto";
-
-  return _LazyDataFrame(pli.scanParquet(path, pliOptions, parallel));
+  pliOptions.parallel = options?.parallel ?? "auto";
+  return _LazyDataFrame(pli.scanParquet(path, pliOptions));
 }
 
 export interface ReadIPCOptions {
