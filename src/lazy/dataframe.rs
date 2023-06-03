@@ -6,8 +6,8 @@ use std::collections::HashMap;
 use polars::io::RowCount;
 use polars_core::cloud::CloudOptions;
 use polars::lazy::frame::{LazyCsvReader, LazyFrame, LazyGroupBy};
+use polars::prelude::{ClosedWindow, CsvEncoding, DataFrame, Field, JoinType, Schema};
 use polars_io::parquet::ParallelStrategy;
-use smartstring::{alias::String as SmartString};
 
 #[napi]
 #[repr(transparent)]
@@ -209,20 +209,22 @@ impl JsLazyFrame {
     #[napi]
     pub fn groupby_rolling(
         &mut self,
-        index_column: Wrap<SmartString>,
+        index_column: String,
         period: String,
         offset: String,
         closed: Wrap<ClosedWindow>,
         by: Vec<&JsExpr>,
     ) -> JsLazyGroupBy {
         let closed_window = closed.0;
-        let ic = index_column.0;
         let ldf = self.ldf.clone();
-        let by = by.to_exprs();
+        let by = by
+            .into_iter()
+            .map(|jsexpr| jsexpr.inner.clone())
+            .collect::<Vec<_>>();
         let lazy_gb = ldf.groupby_rolling(
             by,
             RollingGroupOptions {
-                index_column: ic,
+                index_column: index_column.into(),
                 period: Duration::parse(&period),
                 offset: Duration::parse(&offset),
                 closed_window,
@@ -236,7 +238,7 @@ impl JsLazyFrame {
     #[napi]
     pub fn groupby_dynamic(
         &mut self,
-        index_column: Wrap<SmartString>,
+        index_column: String,
         every: String,
         period: String,
         offset: String,
@@ -244,22 +246,25 @@ impl JsLazyFrame {
         include_boundaries: bool,
         closed: Wrap<ClosedWindow>,
         by: Vec<&JsExpr>,
+        start_by: Wrap<StartBy>,
     ) -> JsLazyGroupBy {
-        let idx = index_column.0;
         let closed_window = closed.0;
-        let by = by.to_exprs();
+        let by = by
+            .into_iter()
+            .map(|pyexpr| pyexpr.inner.clone())
+            .collect::<Vec<_>>();
         let ldf = self.ldf.clone();
         let lazy_gb = ldf.groupby_dynamic(
             by,
             DynamicGroupOptions {
-                index_column: idx,
+                index_column: index_column.into(),
                 every: Duration::parse(&every),
                 period: Duration::parse(&period),
                 offset: Duration::parse(&offset),
                 truncate,
                 include_boundaries,
                 closed_window,
-                ..Default::default()
+                start_by: start_by.0,
             },
         );
 
@@ -316,36 +321,9 @@ impl JsLazyFrame {
         right_on: Vec<&JsExpr>,
         allow_parallel: bool,
         force_parallel: bool,
-        how: String,
-        suffix: String,
-        asof_by_left: Wrap<Vec<SmartString>>,
-        asof_by_right: Wrap<Vec<SmartString>>,
+        how: Wrap<JoinType>,
+        suffix: String
     ) -> JsLazyFrame {
-        let how = match how.as_ref() {
-            "left" => JoinType::Left,
-            "inner" => JoinType::Inner,
-            "outer" => JoinType::Outer,
-            "semi" => JoinType::Semi,
-            "anti" => JoinType::Anti,
-            "asof" => JoinType::AsOf(AsOfOptions {
-                strategy: AsofStrategy::Backward,
-                left_by: if asof_by_left.0.is_empty() {
-                    None
-                } else {
-                    Some(asof_by_left.0)
-                },
-                right_by: if asof_by_right.0.is_empty() {
-                    None
-                } else {
-                    Some(asof_by_right.0)
-                },
-                tolerance: None,
-                tolerance_str: None,
-            }),
-            "cross" => JoinType::Cross,
-            _ => panic!("not supported"),
-        };
-
         let ldf = self.ldf.clone();
         let other = other.ldf.clone();
         let left_on = left_on.to_exprs();
@@ -357,7 +335,7 @@ impl JsLazyFrame {
             .right_on(right_on)
             .allow_parallel(allow_parallel)
             .force_parallel(force_parallel)
-            .how(how)
+            .how(how.0)
             .suffix(suffix)
             .finish()
             .into()
@@ -497,22 +475,19 @@ impl JsLazyFrame {
     #[napi]
     pub fn melt(
         &self,
-        id_vars: Wrap<Vec<SmartString>>,
-        value_vars: Wrap<Vec<SmartString>>,
-        value_name: Option<Wrap<SmartString>>,
-        variable_name: Option<Wrap<SmartString>>,
+        id_vars: Vec<&str>,
+        value_vars: Vec<&str>,
+        value_name: Option<&str>,
+        variable_name: Option<&str>,
         streamable: bool,
     ) -> JsLazyFrame {
-        let idv = id_vars.0;
-        let valv = value_vars.0;
         let args = MeltArgs {
-            id_vars: idv,
-            value_vars: valv,
-            value_name: value_name.map(|v| v.0 as SmartString),
-            variable_name: variable_name.map(|v| v.0 as SmartString),
-            streamable
+            id_vars: strings_to_smartstrings(id_vars),
+            value_vars: strings_to_smartstrings(value_vars),
+            value_name: value_name.map(|s| s.into()),
+            variable_name: variable_name.map(|s| s.into()),
+            streamable,
         };
-
         let ldf = self.ldf.clone();
         ldf.melt(args).into()
     }
@@ -631,7 +606,7 @@ pub struct ScanParquetOptions {
     pub n_rows: Option<i64>,
     pub cache: Option<bool>,
     pub parallel: Wrap<ParallelStrategy>,
-    pub row_count: Option<Wrap<RowCount>>,
+    pub row_count: Option<JsRowCount>,
     pub rechunk: Option<bool>,
     pub row_count_name: Option<String>,
     pub row_count_offset: Option<u32>,
@@ -648,13 +623,12 @@ pub fn scan_parquet(
     let n_rows = options.n_rows.map(|i| i as usize);
     let cache = options.cache.unwrap_or(true);
     let parallel = options.parallel;
-    let row_count = options.row_count.map(|r| r.0);
+    let jrow = options.row_count.unwrap();
+    let row_count = Some(RowCount { name: jrow.name, offset: jrow.offset });
     let rechunk = options.rechunk.unwrap_or(false);
     let low_memory = options.low_memory.unwrap_or(false);
     let use_statistics = options.use_statistics.unwrap_or(false);
     let cloud_options = Some(CloudOptions::default());
-    
-    // options.cloud_options.map(|c| c.0);
 
     let args = ScanArgsParquet {
         n_rows,

@@ -890,23 +890,18 @@ impl JsDataFrame {
     #[napi]
     pub fn melt(
         &self,
-        id_vars: Wrap<Vec<SmartString>>,
-        value_vars: Wrap<Vec<SmartString>>,
-        value_name: Option<Wrap<SmartString>>,
-        variable_name: Option<Wrap<SmartString>>,
+        id_vars: Vec<String>,
+        value_vars: Vec<String>,
+        value_name: Option<String>,
+        variable_name: Option<String>,
         streamable: bool
     ) -> napi::Result<JsDataFrame> {
-        let idv = id_vars.0;
-        let valv = value_vars.0;
-        let valn = value_name.map(|v| v.0 as SmartString);
-        let varn = variable_name.map(|v| v.0 as SmartString);
-
         let args = MeltArgs {
-            id_vars: idv,
-            value_vars: valv,
-            value_name: valn,
-            variable_name: varn,
-            streamable
+            id_vars: strings_to_smartstrings(id_vars),
+            value_vars: strings_to_smartstrings(value_vars),
+            value_name: value_name.map(|s| s.into()),
+            variable_name: variable_name.map(|s| s.into()),
+            streamable,
         };
 
         let df = self.df.melt2(args).map_err(JsPolarsErr::from)?;
@@ -943,11 +938,8 @@ impl JsDataFrame {
         slice: Option<Wrap<(i64, usize)>>
     ) -> napi::Result<JsDataFrame> {
         let subset = subset.as_ref().map(|v| v.as_ref());
-        let df = match maintain_order {
-            true => self.df.unique_stable(subset, keep.0, slice.map(|s| s.0 as (i64, usize))),
-            false => self.df.unique(subset, keep.0, slice.map(|s| s.0 as (i64, usize)))
-        }
-        .map_err(JsPolarsErr::from)?;
+        let df = self.df.unique_impl(maintain_order, subset, keep.0, slice.map(|s| s.0 as (i64, usize)))
+            .map_err(JsPolarsErr::from)?;
         Ok(df.into())
     }
 
@@ -1171,9 +1163,9 @@ impl JsDataFrame {
         }
         Ok(rows)
     }
-    #[napi]
-    pub fn to_rows_cb(&self, callback: napi::JsFunction, env: Env) -> napi::Result<()> {
-        panic!("not implemented");
+    // #[napi]
+    // pub fn to_rows_cb(&self, callback: napi::JsFunction, env: Env) -> napi::Result<()> {
+    //     panic!("not implemented");
         // use napi::threadsafe_function::*;
         // use polars_core::utils::rayon::prelude::*;
         // let (height, _) = self.df.shape();
@@ -1210,7 +1202,7 @@ impl JsDataFrame {
         // );
 
         // Ok(())
-    }
+    // }
     #[napi]
     pub fn to_row_obj(&self, idx: Either<i64, f64>, env: Env) -> napi::Result<Object> {
         let idx = match idx {
@@ -1250,9 +1242,9 @@ impl JsDataFrame {
         Ok(rows)
     }
 
-    #[napi]
-    pub fn to_objects_cb(&self, callback: napi::JsFunction, env: Env) -> napi::Result<()> {
-        panic!("not implemented");
+    // #[napi]
+    // pub fn to_objects_cb(&self, callback: napi::JsFunction, env: Env) -> napi::Result<()> {
+    //     panic!("not implemented");
         // use napi::threadsafe_function::*;
         // use polars_core::utils::rayon::prelude::*;
         // use std::collections::HashMap;
@@ -1293,7 +1285,7 @@ impl JsDataFrame {
         // );
 
         // Ok(())
-    }
+    // }
 
     #[napi]
     pub fn write_csv(

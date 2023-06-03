@@ -12,7 +12,6 @@ use polars::prelude::*;
 use polars_core::prelude::FillNullStrategy;
 use polars_core::prelude::{Field, Schema, CloudOptions};
 use polars_core::series::ops::NullBehavior;
-use smartstring::LazyCompact;
 use std::collections::HashMap;
 
 use smartstring::alias::String as SmartString;
@@ -263,6 +262,15 @@ impl FromNapiValue for Wrap<Expr> {
     }
 }
 
+impl FromNapiValue for Wrap<JsExpr> {
+    unsafe fn from_napi_value(env: sys::napi_env, napi_val: sys::napi_value) -> JsResult<Self> {
+        let obj = Object::from_napi_value(env, napi_val)?;
+        let expr: &JsExpr = obj.get("_expr")?.unwrap();
+        // let expr = expr.inner.clone();
+        Ok(Wrap(expr.clone()))
+    }
+}
+
 impl TypeName for Wrap<QuantileInterpolOptions> {
     fn type_name() -> &'static str {
         "QuantileInterpolOptions"
@@ -287,6 +295,24 @@ impl FromNapiValue for Wrap<QuantileInterpolOptions> {
         Ok(Wrap(interpol))
     }
 }
+
+impl FromNapiValue for Wrap<StartBy> {
+    unsafe fn from_napi_value(env: sys::napi_env, napi_val: sys::napi_value) -> JsResult<Self> {
+        let start = String::from_napi_value(env, napi_val)?;
+        let parsed = match start.as_ref() {
+            "window" => StartBy::WindowBound,
+            "datapoint" => StartBy::DataPoint,
+            "monday" => StartBy::Monday,
+            v => {
+                return Err(napi::Error::from_reason(format!(
+                    "closed must be one of {{'window', 'datapoint', 'monday'}}, got {v}",
+                )))
+            }
+        };
+        Ok(Wrap(parsed))
+    }
+}
+
 impl FromNapiValue for Wrap<ClosedWindow> {
     unsafe fn from_napi_value(env: sys::napi_env, napi_val: sys::napi_value) -> JsResult<Self> {
         let s = String::from_napi_value(env, napi_val)?;
@@ -452,7 +478,6 @@ impl FromNapiValue for Wrap<f32> {
         Ok(Wrap(n as f32))
     }
 }
-
 impl FromNapiValue for Wrap<u64> {
     unsafe fn from_napi_value(env: sys::napi_env, napi_val: sys::napi_value) -> JsResult<Self> {
         let big = BigInt::from_napi_value(env, napi_val)?;
@@ -460,63 +485,12 @@ impl FromNapiValue for Wrap<u64> {
         Ok(Wrap(value))
     }
 }
-
 impl<'a> FromNapiValue for Wrap<&'a str> {
     unsafe fn from_napi_value(env: sys::napi_env, napi_val: sys::napi_value) -> JsResult<Self> {
         let s = String::from_napi_value(env, napi_val)?;
         Ok(Wrap(Box::leak::<'a>(s.into_boxed_str())))
     }
 }
-
-impl FromNapiValue for Wrap<Vec<&str>> {
-    unsafe fn from_napi_value(env: sys::napi_env, napi_val: sys::napi_value) -> JsResult<Self>{
-        let ty = type_of!(env, napi_val)?;
-        print!("Type: {:?}", ty);
-        match ty {
-            ValueType::Object => {
-                let obj = Object::from_napi_value(env, napi_val)?;
-                let keys = Object::keys(&obj);
-
-                let v: Vec<&str> = Vec::with_capacity(keys.iter().count() as usize);
-
-                let _ = keys.iter().map(|key| { 
-                    println!("##### keys: {:?}", key);
-                    // v.append(smartstring::SmartString::<LazyCompact>::from(&key));
-                 });
-                
-
-                Ok(Wrap(v))
-            }
-            _ => Err(Error::new(
-                Status::InvalidArg, "not a valid conversion to 'Schema'".to_owned(),
-            )),
-        }
-
-        // println!("obj: {}", obj.try_into(String));
-
-        // let lc = LazyCompact::into();
-        // let lc = SmartString::<LazyCompact>();
-        // type StrHashGlobal = SmartString<LazyCompact>;
-
-        // let lc = Vec<smartstring::SmartString::<LazyCompact>>::from("");
-    }
-}
-
-// impl FromNapiValue for Wrap<&str> {
-//     unsafe fn from_napi_value(env: sys::napi_env, napi_val: sys::napi_value) -> JsResult<Self> {
-//         let s = String::from_napi_value(env, napi_val)?;
-//         // Ok(Wrap(Box::leak::(s.into_boxed_str())))
-//         Ok(Wrap(&s))
-//     }
-// }
-
-// impl FromNapiValue for Wrap<str> {
-//     unsafe fn from_napi_value(env: sys::napi_env, napi_val: sys::napi_value) -> JsResult<Self> {
-//         let s = String::from_napi_value(env, napi_val)?;
-//         // Ok(Wrap(Box::leak::(s.into_boxed_str())))
-//         Ok(Wrap(s))
-//     }
-//   }
 
 #[napi(object)]
 pub struct JsRollingOptions {
@@ -687,30 +661,6 @@ impl FromNapiValue for Wrap<CloudOptions> {
     }
 }
 
-impl ToNapiValue for Wrap<RowCount> {
-    unsafe fn to_napi_value(napi_env: sys::napi_env, val: Self) -> Result<sys::napi_value> {
-        let env = Env::from_raw(napi_env);
-        let row = env.create_object()?;
-        
-        Object::to_napi_value(napi_env, row)
-    }
-}
-
-impl FromNapiValue for Wrap<RowCount> {
-    unsafe fn from_napi_value(env: sys::napi_env, napi_val: sys::napi_value) -> napi::Result<Self> {
-        let ty = type_of!(env, napi_val)?;
-        let unit = match ty {
-            _ => {
-                return Err(Error::new(
-                    Status::InvalidArg,
-                    "expected one of {'auto', 'columns', 'row_groups', 'none'}".to_owned(),
-                ))
-            }
-        };
-        Ok(Wrap(unit))
-    }
-}
-
 impl FromNapiValue for Wrap<Schema> {
     unsafe fn from_napi_value(env: sys::napi_env, napi_val: sys::napi_value) -> napi::Result<Self> {
         let ty = type_of!(env, napi_val)?;
@@ -767,7 +717,7 @@ impl ToNapiValue for Wrap<ParallelStrategy> {
                     "expected one of {'auto', 'columns', 'row_groups', 'none'}".to_owned(),
                 ))
         };
-        strategy.set("strategy", unit);
+        let _ = strategy.set("strategy", unit);
         Object::to_napi_value(napi_env, strategy)
     }
 }
@@ -827,103 +777,37 @@ impl FromNapiValue for Wrap<SortOptions> {
 }
 
 impl FromNapiValue for Wrap<(i64, usize)> {
-    unsafe fn from_napi_value(env: sys::napi_env, napi_val: sys::napi_value) -> napi::Result<Self> {
-        let obj = Object::from_napi_value(env, napi_val)?;
-        Ok(Wrap((0,0)))
+    unsafe fn from_napi_value(env: sys::napi_env, napi_val: sys::napi_value) -> napi::Result<Self> {        
+        let big = BigInt::from_napi_value(env, napi_val)?;
+        let (value, _) = big.get_i64();
+        Ok(Wrap((value, value as usize)))
     }
 }
 
 impl FromNapiValue for Wrap<usize> {
     unsafe fn from_napi_value(env: sys::napi_env, napi_val: sys::napi_value) -> napi::Result<Self> {
-        let obj = Object::from_napi_value(env, napi_val)?;
-        Ok(Wrap(0))
+        let i = i64::from_napi_value(env, napi_val)?;
+        Ok(Wrap(i as usize))
     }
 }
 
-// let ty = type_of!(env, napi_val)?;
-// match ty {
-//     ValueType::Object => {
-//         let obj = Object::from_napi_value(env, napi_val)?;
-
-//         let keys = Object::keys(&obj)?;
-//         let fields: Vec<Field> = keys
-//             .iter()
-//             .map(|key| {
-//                 let value = obj.get::<_, Object>(&key)?.unwrap();
-//                 let napi_val = Object::to_napi_value(env, value)?;
-//                 let dtype = Wrap::<DataType>::from_napi_value(env, napi_val)?;
-
-//                 Ok(Field::new(key, dtype.0))
-//             })
-//             .collect::<Result<_>>()?;
-//         Ok(Wrap(Schema::from(fields.into_iter())))
-//     }
-//     _ => Err(Error::new(
-//         Status::InvalidArg,
-//         "not a valid conversion to 'Schema'".to_owned(),
-//     )),
-// }
-
-
-
-impl FromNapiValue for Wrap<Vec<smartstring::SmartString<LazyCompact>>> {
-    unsafe fn from_napi_value(env: sys::napi_env, napi_val: sys::napi_value) -> JsResult<Self>{
-        let ty = type_of!(env, napi_val)?;
-        print!("Type: {:?}", ty);
-        match ty {
-            ValueType::Object => {
-                let obj = Object::from_napi_value(env, napi_val)?;
-                let keys = Object::keys(&obj);
-
-                let v: Vec<smartstring::SmartString<LazyCompact>> = Vec::with_capacity(keys.iter().count() as usize);
-
-                let _ = keys.iter().map(|key| { 
-                    println!("##### keys: {:?}", key);
-                    // v.append(smartstring::SmartString::<LazyCompact>::from(&key));
-                 });
-                
-
-                Ok(Wrap(v))
-            }
-            _ => Err(Error::new(
-                Status::InvalidArg, "not a valid conversion to 'Schema'".to_owned(),
-            )),
-        }
-
-        // println!("obj: {}", obj.try_into(String));
-
-        // let lc = LazyCompact::into();
-        // let lc = SmartString::<LazyCompact>();
-        // type StrHashGlobal = SmartString<LazyCompact>;
-
-        // let lc = Vec<smartstring::SmartString::<LazyCompact>>::from("");
-    }
-}
-
-impl FromNapiValue for Wrap<smartstring::SmartString<LazyCompact>> {
+impl FromNapiValue for Wrap<JoinType> {
     unsafe fn from_napi_value(env: sys::napi_env, napi_val: sys::napi_value) -> napi::Result<Self> {
-        let obj = Object::from_napi_value(env, napi_val)?;
-        // let lc = LazyCompact::into();
-        // let lc = SmartString::<LazyCompact>();
-        // type StrHashGlobal = SmartString<LazyCompact>;
-
-        let lc = smartstring::SmartString::<LazyCompact>::from("");
-
-        println!("{:?}", "Hello from Wrap Vec");
-
-        Ok(Wrap(lc))
-    }
-}
-
-impl FromNapiValue for Wrap<String> {
-    unsafe fn from_napi_value(env: sys::napi_env, napi_val: sys::napi_value) -> napi::Result<Self> {
-        let obj = Object::from_napi_value(env, napi_val)?;
-        // let lc = LazyCompact::into();
-        // let lc = SmartString::<LazyCompact>();
-        // type StrHashGlobal = SmartString<LazyCompact>;
-
-        let lc = "Wrap<String>".to_string();
-        Ok(Wrap(lc))
+        let s = String::from_napi_value(env, napi_val)?;
+        let parsed = match s.as_ref() {
+            "inner" => JoinType::Inner,
+            "left" => JoinType::Left,
+            "outer" => JoinType::Outer,
+            "semi" => JoinType::Semi,
+            "anti" => JoinType::Anti,
+            "cross" => JoinType::Cross,
+            v =>
+                return Err(Error::new(
+                    Status::InvalidArg,
+                    format!("how must be one of {{'inner', 'left', 'outer', 'semi', 'anti', 'cross'}}, got {v}")
+                ))
+        };
+        Ok(Wrap(parsed))
     }
 }
 

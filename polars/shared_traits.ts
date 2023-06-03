@@ -1,4 +1,4 @@
-import { ColumnsOrExpr } from "./utils";
+import { ColumnsOrExpr, StartBy } from "./utils";
 import { Expr, _Expr } from "./lazy/expr";
 
 import {
@@ -1161,5 +1161,6 @@ export interface GroupByOps<T> {
     includeBoundaries?: boolean;
     closed?: "left" | "right" | "both" | "none";
     by?: ColumnsOrExpr;
+    start_by: StartBy;
   }): T;
 }

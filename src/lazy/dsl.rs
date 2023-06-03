@@ -371,8 +371,8 @@ impl JsExpr {
     }
 
     #[napi]
-    pub fn fill_null_with_strategy(&self, strategy: Wrap<&str>, limit: FillNullLimit) -> JsResult<JsExpr> {
-        let strat = parse_fill_null_strategy(strategy.0, limit)?;
+    pub fn fill_null_with_strategy(&self, strategy: String, limit: FillNullLimit) -> JsResult<JsExpr> {
+        let strat = parse_fill_null_strategy(&strategy, limit)?;
         Ok(self.inner.clone().apply(
                 move |s| s.fill_null(strat).map(Some),
                 GetOutput::same_type(),

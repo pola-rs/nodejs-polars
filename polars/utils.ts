@@ -14,6 +14,8 @@ export type ColumnsOrExpr = ColumnSelection | ExpressionSelection;
 /** @ignore */
 export type ExprOrString = Expr | string;
 
+export type StartBy = "window" | "datapoint" | "monday";
+
 /** @ignore */
 export function columnOrColumns(
   columns: ColumnSelection | string | Array<string> | undefined,
