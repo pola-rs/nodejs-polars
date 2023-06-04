@@ -623,13 +623,11 @@ pub fn scan_parquet(
     let n_rows = options.n_rows.map(|i| i as usize);
     let cache = options.cache.unwrap_or(true);
     let parallel = options.parallel;
-    let jrow = options.row_count.unwrap();
-    let row_count = Some(RowCount { name: jrow.name, offset: jrow.offset });
+    let row_count: Option<RowCount> = options.row_count.map(|rc| rc.into());    
     let rechunk = options.rechunk.unwrap_or(false);
     let low_memory = options.low_memory.unwrap_or(false);
     let use_statistics = options.use_statistics.unwrap_or(false);
     let cloud_options = Some(CloudOptions::default());
-
     let args = ScanArgsParquet {
         n_rows,
         cache,

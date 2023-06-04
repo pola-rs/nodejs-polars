@@ -2,11 +2,6 @@ import { pathsToModuleNameMapper } from "ts-jest";
 import {compilerOptions} from "./tsconfig.json";
 
 export default {
-  globals: {
-    "ts-jest": {
-      tsconfig: "tsconfig.test.json",
-    },
-  },
   preset: "ts-jest",
   testEnvironment: "node",
   clearMocks: true,
@@ -15,5 +10,10 @@ export default {
   moduleFileExtensions: ["js", "ts"],
   setupFilesAfterEnv : ["<rootDir>/__tests__/setup.ts"],
   moduleNameMapper: pathsToModuleNameMapper(compilerOptions.paths, { prefix: "<rootDir>/polars" }),
-  testPathIgnorePatterns: ["<rootDir>/__tests__/setup.ts"]
+  testPathIgnorePatterns: ["<rootDir>/__tests__/setup.ts"],
+  transform: {
+    '^.+\\.{ts|tsx}?$': ['ts-jest', {
+      tsConfig: 'tsconfig.json',
+    }],
+  },
 };

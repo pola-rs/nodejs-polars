@@ -1801,9 +1801,9 @@ describe("arithmetic", () => {
       a: [2, 3, 4],
     });
     const actual = df.select(col("a").add(1));
-    expect(actual).toEqual(expected);
+    expect(actual).toFrameEqual(expected);
     const actual1 = df.select(col("a").plus(1));
-    expect(actual1).toEqual(expected);
+    expect(actual1).toFrameEqual(expected);
   });
   test("sub/minus", () => {
     const df = pl.DataFrame({
@@ -1813,9 +1813,9 @@ describe("arithmetic", () => {
       a: [0, 1, 2],
     });
     const actual = df.select(col("a").sub(1));
-    expect(actual).toEqual(expected);
+    expect(actual).toFrameEqual(expected);
     const actual1 = df.select(col("a").minus(1));
-    expect(actual1).toEqual(expected);
+    expect(actual1).toFrameEqual(expected);
   });
   test("div/divideBy", () => {
     const df = pl.DataFrame({
@@ -1825,9 +1825,9 @@ describe("arithmetic", () => {
       a: [1, 2, 3],
     });
     const actual = df.select(col("a").div(2));
-    expect(actual).toEqual(expected);
+    expect(actual).toFrameEqual(expected);
     const actual1 = df.select(col("a").divideBy(2));
-    expect(actual1).toEqual(expected);
+    expect(actual1).toFrameEqual(expected);
   });
   test("mul/multiplyBy", () => {
     const df = pl.DataFrame({
@@ -1837,9 +1837,9 @@ describe("arithmetic", () => {
       a: [2, 4, 6],
     });
     const actual = df.select(col("a").mul(2));
-    expect(actual).toEqual(expected);
+    expect(actual).toFrameEqual(expected);
     const actual1 = df.select(col("a").multiplyBy(2));
-    expect(actual1).toEqual(expected);
+    expect(actual1).toFrameEqual(expected);
   });
   test("rem/modulo", () => {
     const df = pl.DataFrame({
@@ -1849,9 +1849,9 @@ describe("arithmetic", () => {
       a: [1, 0, 1],
     });
     const actual = df.select(col("a").rem(2));
-    expect(actual).toEqual(expected);
+    expect(actual).toFrameEqual(expected);
     const actual1 = df.select(col("a").modulo(2));
-    expect(actual1).toEqual(expected);
+    expect(actual1).toFrameEqual(expected);
   });
 });
 
