@@ -92,6 +92,7 @@ features = [
   "avro",
   "list_eval",
   "arg_where",
+  "timezones",
 ]
 git = "https://github.com/pola-rs/polars.git"
 rev = "af2948a430846dae784d062a3c6f223e685af9ac"
