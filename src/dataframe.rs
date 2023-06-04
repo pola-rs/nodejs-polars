@@ -6,11 +6,10 @@ use polars::frame::row::{infer_schema, Row};
 use polars::frame::NullStrategy;
 use polars::io::RowCount;
 use std::borrow::Borrow;
+use std::collections::HashMap;
 use std::fs::File;
 use std::io::{BufReader, BufWriter, Cursor};
-use std::collections::HashMap;
 use std::sync::Arc;
-use smartstring::alias::String as SmartString;
 
 #[napi]
 #[repr(transparent)]
@@ -73,7 +72,7 @@ pub struct ReadCsvOptions {
     pub row_count: Option<JsRowCount>,
 }
 
-#[napi]
+#[napi(catch_unwind)]
 pub fn read_csv(
     path_or_buffer: Either<String, Buffer>,
     options: ReadCsvOptions,
@@ -173,7 +172,7 @@ pub struct WriteJsonOptions {
     pub format: String,
 }
 
-#[napi]
+#[napi(catch_unwind)]
 pub fn read_json_lines(
     path_or_buffer: Either<String, Buffer>,
     options: ReadJsonOptions,
@@ -199,7 +198,7 @@ pub fn read_json_lines(
     };
     Ok(df.into())
 }
-#[napi]
+#[napi(catch_unwind)]
 pub fn read_json(
     path_or_buffer: Either<String, Buffer>,
     options: ReadJsonOptions,
@@ -248,7 +247,7 @@ pub struct ReadParquetOptions {
     pub row_count: Option<JsRowCount>,
 }
 
-#[napi]
+#[napi(catch_unwind)]
 pub fn read_parquet(
     path_or_buffer: Either<String, Buffer>,
     options: ReadParquetOptions,
@@ -297,7 +296,7 @@ pub struct ReadIpcOptions {
     pub row_count: Option<JsRowCount>,
 }
 
-#[napi]
+#[napi(catch_unwind)]
 pub fn read_ipc(
     path_or_buffer: Either<String, Buffer>,
     options: ReadIpcOptions,
@@ -341,7 +340,7 @@ pub struct ReadAvroOptions {
     pub n_rows: Option<i64>,
 }
 
-#[napi]
+#[napi(catch_unwind)]
 pub fn read_avro(
     path_or_buffer: Either<String, Buffer>,
     options: ReadAvroOptions,
@@ -376,7 +375,7 @@ pub fn read_avro(
     Ok(JsDataFrame::new(df))
 }
 
-#[napi]
+#[napi(catch_unwind)]
 pub fn from_rows(
     rows: Array,
     schema: Option<Wrap<Schema>>,
@@ -425,12 +424,12 @@ pub fn from_rows(
 
 #[napi]
 impl JsDataFrame {
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn to_js(&self, env: Env) -> napi::Result<napi::JsUnknown> {
         env.to_js_value(&self.df)
     }
 
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn serialize(&self, format: String) -> napi::Result<Buffer> {
         let buf = match format.as_ref() {
             "bincode" => bincode::serialize(&self.df)
@@ -446,7 +445,7 @@ impl JsDataFrame {
         Ok(Buffer::from(buf))
     }
 
-    #[napi(factory)]
+    #[napi(factory, catch_unwind)]
     pub fn deserialize(buf: Buffer, format: String) -> napi::Result<JsDataFrame> {
         let df: DataFrame = match format.as_ref() {
             "bincode" => bincode::deserialize(&buf)
@@ -475,86 +474,86 @@ impl JsDataFrame {
         Ok(JsDataFrame::new(df))
     }
 
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn estimated_size(&self) -> u32 {
         self.df.estimated_size() as u32
     }
 
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn to_string(&self) -> String {
         format!("{:?}", self.df)
     }
 
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn add(&self, s: &JsSeries) -> napi::Result<JsDataFrame> {
         let df = (&self.df + &s.series).map_err(JsPolarsErr::from)?;
         Ok(df.into())
     }
 
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn sub(&self, s: &JsSeries) -> napi::Result<JsDataFrame> {
         let df = (&self.df - &s.series).map_err(JsPolarsErr::from)?;
         Ok(df.into())
     }
 
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn div(&self, s: &JsSeries) -> napi::Result<JsDataFrame> {
         let df = (&self.df / &s.series).map_err(JsPolarsErr::from)?;
         Ok(df.into())
     }
 
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn mul(&self, s: &JsSeries) -> napi::Result<JsDataFrame> {
         let df = (&self.df * &s.series).map_err(JsPolarsErr::from)?;
         Ok(df.into())
     }
 
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn rem(&self, s: &JsSeries) -> napi::Result<JsDataFrame> {
         let df = (&self.df % &s.series).map_err(JsPolarsErr::from)?;
         Ok(df.into())
     }
 
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn add_df(&self, s: &JsDataFrame) -> napi::Result<JsDataFrame> {
         let df = (&self.df + &s.df).map_err(JsPolarsErr::from)?;
         Ok(df.into())
     }
 
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn sub_df(&self, s: &JsDataFrame) -> napi::Result<JsDataFrame> {
         let df = (&self.df - &s.df).map_err(JsPolarsErr::from)?;
         Ok(df.into())
     }
 
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn div_df(&self, s: &JsDataFrame) -> napi::Result<JsDataFrame> {
         let df = (&self.df / &s.df).map_err(JsPolarsErr::from)?;
         Ok(df.into())
     }
 
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn mul_df(&self, s: &JsDataFrame) -> napi::Result<JsDataFrame> {
         let df = (&self.df * &s.df).map_err(JsPolarsErr::from)?;
         Ok(df.into())
     }
 
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn rem_df(&self, s: &JsDataFrame) -> napi::Result<JsDataFrame> {
         let df = (&self.df % &s.df).map_err(JsPolarsErr::from)?;
         Ok(df.into())
     }
 
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn rechunk(&mut self) -> JsDataFrame {
         self.df.agg_chunks().into()
     }
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn fill_null(&self, strategy: Wrap<FillNullStrategy>) -> napi::Result<JsDataFrame> {
         let df = self.df.fill_null(strategy.0).map_err(JsPolarsErr::from)?;
         Ok(JsDataFrame::new(df))
     }
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn join(
         &self,
         other: &JsDataFrame,
@@ -587,19 +586,19 @@ impl JsDataFrame {
         Ok(JsDataFrame::new(df))
     }
 
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn get_columns(&self) -> Vec<JsSeries> {
         let cols = self.df.get_columns().clone();
         to_jsseries_collection(cols.to_vec())
     }
 
     /// Get column names
-    #[napi(getter)]
+    #[napi(getter, catch_unwind)]
     pub fn columns(&self) -> Vec<&str> {
         self.df.get_column_names()
     }
 
-    #[napi(setter, js_name = "columns")]
+    #[napi(setter, js_name = "columns", catch_unwind)]
     pub fn set_columns(&mut self, names: Vec<&str>) -> napi::Result<()> {
         self.df
             .set_column_names(&names)
@@ -607,7 +606,7 @@ impl JsDataFrame {
         Ok(())
     }
 
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn with_column(&mut self, s: &JsSeries) -> napi::Result<JsDataFrame> {
         let mut df = self.df.clone();
         df.with_column(s.series.clone())
@@ -616,65 +615,65 @@ impl JsDataFrame {
     }
 
     /// Get datatypes
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn dtypes(&self) -> Vec<Wrap<DataType>> {
         self.df.iter().map(|s| Wrap(s.dtype().clone())).collect()
     }
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn n_chunks(&self) -> napi::Result<u32> {
         let n = self.df.n_chunks();
         Ok(n as u32)
     }
 
-    #[napi(getter)]
+    #[napi(getter, catch_unwind)]
     pub fn shape(&self) -> Shape {
         self.df.shape().into()
     }
-    #[napi(getter)]
+    #[napi(getter, catch_unwind)]
     pub fn height(&self) -> i64 {
         self.df.height() as i64
     }
-    #[napi(getter)]
+    #[napi(getter, catch_unwind)]
     pub fn width(&self) -> i64 {
         self.df.width() as i64
     }
-    #[napi(getter)]
+    #[napi(getter, catch_unwind)]
     pub fn schema(&self) -> Wrap<Schema> {
         self.df.schema().into()
     }
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn hstack_mut(&mut self, columns: Array) -> napi::Result<()> {
         let columns = to_series_collection(columns);
         self.df.hstack_mut(&columns).map_err(JsPolarsErr::from)?;
         Ok(())
     }
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn hstack(&self, columns: Array) -> napi::Result<JsDataFrame> {
         let columns = to_series_collection(columns);
         let df = self.df.hstack(&columns).map_err(JsPolarsErr::from)?;
         Ok(df.into())
     }
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn extend(&mut self, df: &JsDataFrame) -> napi::Result<()> {
         self.df.extend(&df.df).map_err(JsPolarsErr::from)?;
         Ok(())
     }
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn vstack_mut(&mut self, df: &JsDataFrame) -> napi::Result<()> {
         self.df.vstack_mut(&df.df).map_err(JsPolarsErr::from)?;
         Ok(())
     }
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn vstack(&mut self, df: &JsDataFrame) -> napi::Result<JsDataFrame> {
         let df = self.df.vstack(&df.df).map_err(JsPolarsErr::from)?;
         Ok(df.into())
     }
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn drop_in_place(&mut self, name: String) -> napi::Result<JsSeries> {
         let s = self.df.drop_in_place(&name).map_err(JsPolarsErr::from)?;
         Ok(JsSeries { series: s })
     }
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn drop_nulls(&self, subset: Option<Vec<String>>) -> napi::Result<JsDataFrame> {
         let df = self
             .df
@@ -683,23 +682,23 @@ impl JsDataFrame {
         Ok(df.into())
     }
 
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn drop(&self, name: String) -> napi::Result<JsDataFrame> {
         let df = self.df.drop(&name).map_err(JsPolarsErr::from)?;
         Ok(JsDataFrame::new(df))
     }
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn select_at_idx(&self, idx: i64) -> Option<JsSeries> {
         self.df
             .select_at_idx(idx as usize)
             .map(|s| JsSeries::new(s.clone()))
     }
 
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn find_idx_by_name(&self, name: String) -> Option<i64> {
         self.df.find_idx_by_name(&name).map(|i| i as i64)
     }
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn column(&self, name: String) -> napi::Result<JsSeries> {
         let series = self
             .df
@@ -708,12 +707,12 @@ impl JsDataFrame {
             .map_err(JsPolarsErr::from)?;
         Ok(series)
     }
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn select(&self, selection: Vec<&str>) -> napi::Result<JsDataFrame> {
         let df = self.df.select(&selection).map_err(JsPolarsErr::from)?;
         Ok(JsDataFrame::new(df))
     }
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn filter(&self, mask: &JsSeries) -> napi::Result<JsDataFrame> {
         let filter_series = &mask.series;
         if let Ok(ca) = filter_series.bool() {
@@ -725,19 +724,19 @@ impl JsDataFrame {
             ))
         }
     }
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn take(&self, indices: Vec<u32>) -> napi::Result<JsDataFrame> {
         let indices = UInt32Chunked::from_vec("", indices);
         let df = self.df.take(&indices).map_err(JsPolarsErr::from)?;
         Ok(JsDataFrame::new(df))
     }
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn take_with_series(&self, indices: &JsSeries) -> napi::Result<JsDataFrame> {
         let idx = indices.series.u32().map_err(JsPolarsErr::from)?;
         let df = self.df.take(idx).map_err(JsPolarsErr::from)?;
         Ok(JsDataFrame::new(df))
     }
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn sort(
         &self,
         by_column: String,
@@ -758,14 +757,14 @@ impl JsDataFrame {
             .map_err(JsPolarsErr::from)?;
         Ok(JsDataFrame::new(df))
     }
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn sort_in_place(&mut self, by_column: String, reverse: bool) -> napi::Result<()> {
         self.df
             .sort_in_place([&by_column], reverse)
             .map_err(JsPolarsErr::from)?;
         Ok(())
     }
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn replace(&mut self, column: String, new_col: &JsSeries) -> napi::Result<()> {
         self.df
             .replace(&column, new_col.series.clone())
@@ -773,7 +772,7 @@ impl JsDataFrame {
         Ok(())
     }
 
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn rename(&mut self, column: String, new_col: String) -> napi::Result<()> {
         self.df
             .rename(&column, &new_col)
@@ -781,7 +780,7 @@ impl JsDataFrame {
         Ok(())
     }
 
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn replace_at_idx(&mut self, index: f64, new_col: &JsSeries) -> napi::Result<()> {
         self.df
             .replace_at_idx(index as usize, new_col.series.clone())
@@ -789,7 +788,7 @@ impl JsDataFrame {
         Ok(())
     }
 
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn insert_at_idx(&mut self, index: f64, new_col: &JsSeries) -> napi::Result<()> {
         self.df
             .insert_at_idx(index as usize, new_col.series.clone())
@@ -797,35 +796,35 @@ impl JsDataFrame {
         Ok(())
     }
 
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn slice(&self, offset: i64, length: i64) -> JsDataFrame {
         let df = self.df.slice(offset as i64, length as usize);
         df.into()
     }
 
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn head(&self, length: Option<i64>) -> JsDataFrame {
         let length = length.map(|l| l as usize);
         let df = self.df.head(length);
         JsDataFrame::new(df)
     }
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn tail(&self, length: Option<i64>) -> JsDataFrame {
         let length = length.map(|l| l as usize);
         let df = self.df.tail(length);
         JsDataFrame::new(df)
     }
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn is_unique(&self) -> napi::Result<JsSeries> {
         let mask = self.df.is_unique().map_err(JsPolarsErr::from)?;
         Ok(mask.into_series().into())
     }
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn is_duplicated(&self) -> napi::Result<JsSeries> {
         let mask = self.df.is_duplicated().map_err(JsPolarsErr::from)?;
         Ok(mask.into_series().into())
     }
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn frame_equal(&self, other: &JsDataFrame, null_equal: bool) -> bool {
         if null_equal {
             self.df.frame_equal_missing(&other.df)
@@ -833,7 +832,7 @@ impl JsDataFrame {
             self.df.frame_equal(&other.df)
         }
     }
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn with_row_count(&self, name: String, offset: Option<u32>) -> napi::Result<JsDataFrame> {
         let df = self
             .df
@@ -841,7 +840,7 @@ impl JsDataFrame {
             .map_err(JsPolarsErr::from)?;
         Ok(df.into())
     }
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn groupby(
         &self,
         by: Vec<&str>,
@@ -856,7 +855,7 @@ impl JsDataFrame {
         finish_groupby(selection, &agg)
     }
 
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn pivot_expr(
         &self,
         values: Vec<String>,
@@ -883,11 +882,11 @@ impl JsDataFrame {
         .map(|df| df.into())
         .map_err(|e| napi::Error::from_reason(format!("Could not pivot: {}", e)))
     }
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn clone(&self) -> JsDataFrame {
         JsDataFrame::new(self.df.clone())
     }
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn melt(
         &self,
         id_vars: Vec<String>,
@@ -908,7 +907,7 @@ impl JsDataFrame {
         Ok(JsDataFrame::new(df))
     }
 
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn partition_by(
         &self,
         groups: Vec<String>,
@@ -925,11 +924,11 @@ impl JsDataFrame {
         Ok(unsafe { std::mem::transmute::<Vec<DataFrame>, Vec<JsDataFrame>>(out) })
     }
 
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn shift(&self, periods: i64) -> JsDataFrame {
         self.df.shift(periods).into()
     }
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn unique(
         &self,
         maintain_order: bool,
@@ -943,65 +942,65 @@ impl JsDataFrame {
         Ok(df.into())
     }
 
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn lazy(&self) -> crate::lazy::dataframe::JsLazyFrame {
         self.df.clone().lazy().into()
     }
 
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn max(&self) -> JsDataFrame {
         self.df.max().into()
     }
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn min(&self) -> JsDataFrame {
         self.df.min().into()
     }
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn sum(&self) -> JsDataFrame {
         self.df.sum().into()
     }
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn mean(&self) -> JsDataFrame {
         self.df.mean().into()
     }
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn std(&self, ddof: Option<u8>) -> JsDataFrame {
         let ddof = ddof.unwrap_or(1);
         self.df.std(ddof).into()
     }
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn var(&self, ddof: Option<u8>) -> JsDataFrame {
         let ddof = ddof.unwrap_or(1);
         self.df.var(ddof).into()
     }
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn median(&self) -> JsDataFrame {
         self.df.median().into()
     }
 
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn hmean(&self, null_strategy: Wrap<NullStrategy>) -> napi::Result<Option<JsSeries>> {
         let s = self.df.hmean(null_strategy.0).map_err(JsPolarsErr::from)?;
         Ok(s.map(|s| s.into()))
     }
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn hmax(&self) -> napi::Result<Option<JsSeries>> {
         let s = self.df.hmax().map_err(JsPolarsErr::from)?;
         Ok(s.map(|s| s.into()))
     }
 
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn hmin(&self) -> napi::Result<Option<JsSeries>> {
         let s = self.df.hmin().map_err(JsPolarsErr::from)?;
         Ok(s.map(|s| s.into()))
     }
 
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn hsum(&self, null_strategy: Wrap<NullStrategy>) -> napi::Result<Option<JsSeries>> {
         let s = self.df.hsum(null_strategy.0).map_err(JsPolarsErr::from)?;
         Ok(s.map(|s| s.into()))
     }
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn quantile(
         &self,
         quantile: f64,
@@ -1013,23 +1012,22 @@ impl JsDataFrame {
             .map_err(JsPolarsErr::from)?;
         Ok(df.into())
     }
-
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn to_dummies(&self, separator: Option<&str>) -> napi::Result<JsDataFrame> {
         let df = self.df.to_dummies(separator).map_err(JsPolarsErr::from)?;
         Ok(df.into())
     }
 
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn null_count(&self) -> JsDataFrame {
         let df = self.df.null_count();
         df.into()
     }
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn shrink_to_fit(&mut self) {
         self.df.shrink_to_fit();
     }
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn hash_rows(
         &mut self,
         k0: Wrap<u64>,
@@ -1042,7 +1040,7 @@ impl JsDataFrame {
         Ok(hash.into_series().into())
     }
 
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn transpose(&self, include_header: bool, names: String) -> napi::Result<JsDataFrame> {
         let mut df = self.df.transpose().map_err(JsPolarsErr::from)?;
         if include_header {
@@ -1056,7 +1054,7 @@ impl JsDataFrame {
         Ok(df.into())
     }
 
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn sample_n(
         &self,
         n: i64,
@@ -1076,7 +1074,7 @@ impl JsDataFrame {
         Ok(df.into())
     }
 
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn sample_frac(
         &self,
         frac: f64,
@@ -1091,7 +1089,7 @@ impl JsDataFrame {
         Ok(df.into())
     }
 
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn upsample(
         &self,
         by: Vec<String>,
@@ -1118,17 +1116,17 @@ impl JsDataFrame {
         let out = out.map_err(JsPolarsErr::from)?;
         Ok(out.into())
     }
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn to_struct(&self, name: String) -> JsSeries {
         let s = self.df.clone().into_struct(&name);
         s.into_series().into()
     }
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn unnest(&self, names: Vec<String>) -> napi::Result<JsDataFrame> {
         let df = self.df.unnest(names).map_err(JsPolarsErr::from)?;
         Ok(df.into())
     }
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn to_row(&self, idx: f64, env: Env) -> napi::Result<Array> {
         let idx = idx as i64;
 
@@ -1148,7 +1146,7 @@ impl JsDataFrame {
         Ok(row)
     }
 
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn to_rows(&self, env: Env) -> napi::Result<Array> {
         let (height, width) = self.df.shape();
 
@@ -1225,7 +1223,7 @@ impl JsDataFrame {
         }
         Ok(row)
     }
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn to_objects(&self, env: Env) -> napi::Result<Array> {
         let (height, _) = self.df.shape();
 
@@ -1287,7 +1285,7 @@ impl JsDataFrame {
         // Ok(())
     // }
 
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn write_csv(
         &mut self,
         path_or_buffer: JsUnknown,
@@ -1330,7 +1328,7 @@ impl JsDataFrame {
         Ok(())
     }
 
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn write_parquet(
         &mut self,
         path_or_buffer: JsUnknown,
@@ -1364,7 +1362,7 @@ impl JsDataFrame {
         };
         Ok(())
     }
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn write_ipc(
         &mut self,
         path_or_buffer: JsUnknown,
@@ -1396,7 +1394,7 @@ impl JsDataFrame {
         };
         Ok(())
     }
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn write_json(
         &mut self,
         path_or_buffer: JsUnknown,
@@ -1438,7 +1436,7 @@ impl JsDataFrame {
         };
         Ok(())
     }
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn write_avro(
         &mut self,
         path_or_buffer: JsUnknown,
@@ -1557,10 +1555,12 @@ fn obj_to_pairs(rows: &Array, len: usize) -> impl '_ + Iterator<Item = Vec<(Stri
                                     let len = arr.get_array_length().unwrap();
                                     // dont compare too many items, as it could be expensive
                                     let max_take = std::cmp::min(len as usize, 10);
-                                    let mut dtypes: Vec<DataType> = Vec::with_capacity(len as usize);
+                                    let mut dtypes: Vec<DataType> =
+                                        Vec::with_capacity(len as usize);
 
                                     for idx in 0..max_take {
-                                        let item: napi::JsUnknown = arr.get_element(idx as u32).unwrap();
+                                        let item: napi::JsUnknown =
+                                            arr.get_element(idx as u32).unwrap();
                                         let ty = item.get_type().unwrap();
                                         let dt: Wrap<DataType> = ty.into();
                                         dtypes.push(dt.0)
@@ -1578,9 +1578,7 @@ fn obj_to_pairs(rows: &Array, len: usize) -> impl '_ + Iterator<Item = Vec<(Stri
                             _ => DataType::Null,
                         }
                     }
-                    None => {
-                        DataType::Null
-                    }
+                    None => DataType::Null,
                 };
                 (key.to_owned(), dtype)
             })

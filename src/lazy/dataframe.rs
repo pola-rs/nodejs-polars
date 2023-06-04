@@ -30,17 +30,17 @@ impl From<LazyFrame> for JsLazyFrame {
 
 #[napi]
 impl JsLazyGroupBy {
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn agg(&mut self, aggs: Vec<&JsExpr>) -> JsLazyFrame {
         let lgb = self.lgb.take().unwrap();
         lgb.agg(aggs.to_exprs()).into()
     }
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn head(&mut self, n: i64) -> JsLazyFrame {
         let lgb = self.lgb.take().unwrap();
         lgb.head(Some(n as usize)).into()
     }
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn tail(&mut self, n: i64) -> JsLazyFrame {
         let lgb = self.lgb.take().unwrap();
         lgb.tail(Some(n as usize)).into()
@@ -49,11 +49,12 @@ impl JsLazyGroupBy {
 
 #[napi]
 impl JsLazyFrame {
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn to_js(&self, env: Env) -> napi::Result<napi::JsUnknown> {
         env.to_js_value(&self.ldf.logical_plan)
     }
-    #[napi]
+
+    #[napi(catch_unwind)]
     pub fn serialize(&self, format: String) -> napi::Result<Buffer> {
         let buf = match format.as_ref() {
             "bincode" => bincode::serialize(&self.ldf.logical_plan)
@@ -68,7 +69,8 @@ impl JsLazyFrame {
         };
         Ok(Buffer::from(buf))
     }
-    #[napi(factory)]
+
+    #[napi(factory, catch_unwind)]
     pub fn deserialize(buf: Buffer, format: String) -> napi::Result<JsLazyFrame> {
         let lp: LogicalPlan = match format.as_ref() {
             "bincode" => bincode::deserialize(&buf)
@@ -83,15 +85,15 @@ impl JsLazyFrame {
         };
         Ok(LazyFrame::from(lp).into())
     }
-    #[napi(factory)]
+    #[napi(factory, catch_unwind)]
     pub fn clone_external(lf: &JsLazyFrame) -> napi::Result<JsLazyFrame> {
         Ok(lf.clone())
     }
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn describe_plan(&self) -> String {
         self.ldf.describe_plan()
     }
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn describe_optimized_plan(&self) -> napi::Result<String> {
         let result = self
             .ldf
@@ -99,12 +101,12 @@ impl JsLazyFrame {
             .map_err(JsPolarsErr::from)?;
         Ok(result)
     }
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn to_dot(&self, optimized: bool) -> napi::Result<String> {
         let result = self.ldf.to_dot(optimized).map_err(JsPolarsErr::from)?;
         Ok(result)
     }
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn optimization_toggle(
         &self,
         type_coercion: Option<bool>,
@@ -129,7 +131,7 @@ impl JsLazyFrame {
             .with_projection_pushdown(projection_pushdown);
         ldf.into()
     }
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn sort(&self, by_column: String, reverse: bool, nulls_last: bool, multithreaded: bool) -> JsLazyFrame {
         let ldf = self.ldf.clone();
         ldf.sort(
@@ -142,7 +144,7 @@ impl JsLazyFrame {
         )
         .into()
     }
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn sort_by_exprs(
         &self,
         by_column: Vec<&JsExpr>,
@@ -153,48 +155,48 @@ impl JsLazyFrame {
         ldf.sort_by_exprs(by_column.to_exprs(), reverse, nulls_last)
             .into()
     }
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn cache(&self) -> JsLazyFrame {
         let ldf = self.ldf.clone();
         ldf.cache().into()
     }
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn collect_sync(&self) -> napi::Result<JsDataFrame> {
         let ldf = self.ldf.clone();
         let df = ldf.collect().map_err(JsPolarsErr::from)?;
         Ok(df.into())
     }
 
-    #[napi(ts_return_type = "Promise<JsDataFrame>")]
+    #[napi(ts_return_type = "Promise<JsDataFrame>", catch_unwind)]
     pub fn collect(&self) -> AsyncTask<AsyncCollect> {
         let ldf = self.ldf.clone();
         AsyncTask::new(AsyncCollect(ldf))
     }
 
-    #[napi(ts_return_type = "Promise<JsDataFrame>")]
+    #[napi(ts_return_type = "Promise<JsDataFrame>", catch_unwind)]
     pub fn fetch(&self, n_rows: i64) -> AsyncTask<AsyncFetch> {
         let ldf = self.ldf.clone();
         AsyncTask::new(AsyncFetch((ldf, n_rows as usize)))
     }
 
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn fetch_sync(&self, n_rows: i64) -> napi::Result<JsDataFrame> {
         let ldf = self.ldf.clone();
         let df = ldf.fetch(n_rows as usize).map_err(JsPolarsErr::from)?;
         Ok(df.into())
     }
 
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn filter(&mut self, predicate: &JsExpr) -> JsLazyFrame {
         let ldf = self.ldf.clone();
         ldf.filter(predicate.inner.clone()).into()
     }
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn select(&mut self, exprs: Vec<&JsExpr>) -> JsLazyFrame {
         let ldf = self.ldf.clone();
         ldf.select(exprs.to_exprs()).into()
     }
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn groupby(&mut self, by: Vec<&JsExpr>, maintain_order: bool) -> JsLazyGroupBy {
         let ldf = self.ldf.clone();
         let by = by.to_exprs();
@@ -206,7 +208,7 @@ impl JsLazyFrame {
 
         JsLazyGroupBy { lgb: Some(lazy_gb) }
     }
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn groupby_rolling(
         &mut self,
         index_column: String,
@@ -235,7 +237,7 @@ impl JsLazyFrame {
     }
 
     #[allow(clippy::too_many_arguments)]
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn groupby_dynamic(
         &mut self,
         index_column: String,
@@ -271,7 +273,7 @@ impl JsLazyFrame {
         JsLazyGroupBy { lgb: Some(lazy_gb) }
     }
     #[allow(clippy::too_many_arguments)]
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn join_asof(
         &self,
         other: &JsLazyFrame,
@@ -313,7 +315,7 @@ impl JsLazyFrame {
             .into()
     }
     #[allow(clippy::too_many_arguments)]
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn join(
         &self,
         other: &JsLazyFrame,
@@ -340,93 +342,93 @@ impl JsLazyFrame {
             .finish()
             .into()
     }
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn with_column(&mut self, expr: &JsExpr) -> JsLazyFrame {
         let ldf = self.ldf.clone();
         ldf.with_column(expr.inner.clone()).into()
     }
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn with_columns(&mut self, exprs: Vec<&JsExpr>) -> JsLazyFrame {
         let ldf = self.ldf.clone();
         ldf.with_columns(exprs.to_exprs()).into()
     }
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn rename(&mut self, existing: Vec<String>, new_names: Vec<String>) -> JsLazyFrame {
         let ldf = self.ldf.clone();
         ldf.rename(existing, new_names).into()
     }
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn reverse(&self) -> JsLazyFrame {
         let ldf = self.ldf.clone();
         ldf.reverse().into()
     }
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn shift(&self, periods: i64) -> JsLazyFrame {
         let ldf = self.ldf.clone();
         ldf.shift(periods).into()
     }
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn shift_and_fill(&self, periods: i64, fill_value: &JsExpr) -> JsLazyFrame {
         let ldf = self.ldf.clone();
         ldf.shift_and_fill(periods, fill_value.inner.clone()).into()
     }
 
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn fill_null(&self, fill_value: &JsExpr) -> JsLazyFrame {
         let ldf = self.ldf.clone();
         ldf.fill_null(fill_value.inner.clone()).into()
     }
 
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn fill_nan(&self, fill_value: &JsExpr) -> JsLazyFrame {
         let ldf = self.ldf.clone();
         ldf.fill_nan(fill_value.inner.clone()).into()
     }
 
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn min(&self) -> JsLazyFrame {
         let ldf = self.ldf.clone();
         ldf.min().into()
     }
 
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn max(&self) -> JsLazyFrame {
         let ldf = self.ldf.clone();
         ldf.max().into()
     }
 
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn sum(&self) -> JsLazyFrame {
         let ldf = self.ldf.clone();
         ldf.sum().into()
     }
 
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn mean(&self) -> JsLazyFrame {
         let ldf = self.ldf.clone();
         ldf.mean().into()
     }
 
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn std(&self, ddof: Option<u8>) -> JsLazyFrame {
         let ddof = ddof.unwrap_or(1);
         let ldf = self.ldf.clone();
         ldf.std(ddof).into()
     }
 
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn var(&self, ddof: Option<u8>) -> JsLazyFrame {
         let ddof = ddof.unwrap_or(1);
         let ldf = self.ldf.clone();
         ldf.var(ddof).into()
     }
 
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn median(&self) -> JsLazyFrame {
         let ldf = self.ldf.clone();
         ldf.median().into()
     }
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn quantile(
         &self,
         quantile: f64,
@@ -436,13 +438,13 @@ impl JsLazyFrame {
         ldf.quantile(lit(quantile), interpolation.0).into()
     }
 
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn explode(&self, column: Vec<&JsExpr>) -> JsLazyFrame {
         let ldf = self.ldf.clone();
 
         ldf.explode(column.to_exprs()).into()
     }
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn unique(
         &self,
         maintain_order: bool,
@@ -456,23 +458,23 @@ impl JsLazyFrame {
         }
         .into()
     }
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn drop_nulls(&self, subset: Option<Vec<String>>) -> JsLazyFrame {
         let ldf = self.ldf.clone();
         ldf.drop_nulls(subset.map(|v| v.into_iter().map(|s| col(&s)).collect()))
             .into()
     }
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn slice(&self, offset: i64, len: u32) -> JsLazyFrame {
         let ldf = self.ldf.clone();
         ldf.slice(offset, len).into()
     }
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn tail(&self, n: u32) -> JsLazyFrame {
         let ldf = self.ldf.clone();
         ldf.tail(n).into()
     }
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn melt(
         &self,
         id_vars: Vec<&str>,
@@ -492,30 +494,30 @@ impl JsLazyFrame {
         ldf.melt(args).into()
     }
 
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn with_row_count(&self, name: String, offset: Option<u32>) -> JsLazyFrame {
         let ldf = self.ldf.clone();
         ldf.with_row_count(&name, offset).into()
     }
 
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn drop_columns(&self, cols: Vec<String>) -> JsLazyFrame {
         let ldf = self.ldf.clone();
         ldf.drop_columns(cols).into()
     }
-    #[napi(js_name = "clone")]
+    #[napi(js_name = "clone", catch_unwind)]
     pub fn clone(&self) -> JsLazyFrame {
         self.ldf.clone().into()
     }
 
-    #[napi(getter, js_name = "columns")]
+    #[napi(getter, js_name = "columns", catch_unwind)]
     pub fn columns(&self) -> napi::Result<Vec<String>> {
         Ok(self.ldf.schema().map_err(JsPolarsErr::from)?
             .iter_names().map(|s| s.as_str().into())
             .collect())
     }
 
-    #[napi]
+    #[napi(catch_unwind)]
     pub fn unnest(&self, cols: Vec<String>) -> JsLazyFrame {
         self.ldf.clone().unnest(cols).into()
     }
@@ -542,7 +544,7 @@ pub struct ScanCsvOptions {
     pub skip_rows_after_header: u32,
     pub row_count: Option<JsRowCount>,
 }
-#[napi]
+#[napi(catch_unwind)]
 pub fn scan_csv(path: String, options: ScanCsvOptions) -> napi::Result<JsLazyFrame> {
     let cache = options.cache.unwrap_or(true);
     let has_header = options.has_header.unwrap_or(true);
@@ -615,7 +617,7 @@ pub struct ScanParquetOptions {
     pub use_statistics: Option<bool>,
 }
 
-#[napi]
+#[napi(catch_unwind)]
 pub fn scan_parquet(
     path: String,
     options: ScanParquetOptions
@@ -651,7 +653,7 @@ pub struct ScanIPCOptions {
     pub memmap: Option<bool>,
 }
 
-#[napi]
+#[napi(catch_unwind)]
 pub fn scan_ipc(path: String, options: ScanIPCOptions) -> napi::Result<JsLazyFrame> {
     let n_rows = options.n_rows.map(|i| i as usize);
     let cache = options.cache.unwrap_or(true);
@@ -680,7 +682,7 @@ pub struct JsonScanOptions {
     pub row_count: Option<JsRowCount>,
 }
 
-#[napi]
+#[napi(catch_unwind)]
 pub fn scan_json(path: String, options: JsonScanOptions) -> napi::Result<JsLazyFrame> {
     LazyJsonLineReader::new(path)
         .with_batch_size(Some(options.batch_size as usize))
