@@ -884,7 +884,7 @@ impl JsSeries {
         let s = ca.hex_encode().into_series();
         Ok(s.into())
     }
-    #[cfg(feature = "binary_encoding")]
+    #[napi(catch_unwind)]
     pub fn str_hex_decode(&self, strict: bool) -> napi::Result<JsSeries> {
         let ca = self.series.utf8().map_err(JsPolarsErr::from)?;
         let s = ca
@@ -899,7 +899,7 @@ impl JsSeries {
         let s = ca.base64_encode().into_series();
         Ok(s.into())
     }
-    #[cfg(feature = "binary_encoding")]
+    #[napi(catch_unwind)]
     pub fn str_base64_decode(&self, strict: bool) -> napi::Result<JsSeries> {
         let ca = self.series.utf8().map_err(JsPolarsErr::from)?;
         let s = ca

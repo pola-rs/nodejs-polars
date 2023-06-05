@@ -685,14 +685,13 @@ describe("StringFunctions", () => {
   `("$# $name expected matches actual", ({ expected, actual }) => {
     expect(expected).toSeriesEqual(actual);
   });
-
   test("hex encode", () => {
     const s = pl.Series("strings", ["foo", "bar", null]);
     const expected = pl.Series("encoded", ["666f6f", "626172", null]);
     const encoded = s.str.encode("hex").alias("encoded");
     expect(encoded).toSeriesEqual(expected);
   });
-  test.skip("hex decode", () => {
+  test("hex decode", () => {
     const s = pl.Series("encoded", ["666f6f", "626172", "invalid", null]);
     const expected = pl.Series("decoded", ["foo", "bar", null, null]);
     const decoded = s.str.decode("hex").alias("decoded");
@@ -725,7 +724,7 @@ describe("StringFunctions", () => {
     expect(fn0).toThrow();
     expect(fn1).toThrow();
   });
-  test.skip("base64 decode", () => {
+  test("base64 decode", () => {
     const s = pl.Series("encoded", ["Zm9v", "YmFy", "invalid", null]);
     const decoded = pl.Series("decoded", ["foo", "bar", null, null]);
 
