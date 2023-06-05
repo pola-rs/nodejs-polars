@@ -7,11 +7,11 @@ use napi::{
 use polars::frame::NullStrategy;
 use polars::io::RowCount;
 use polars::prelude::Expr;
-use polars_io::parquet::ParallelStrategy;
 use polars::prelude::*;
 use polars_core::prelude::FillNullStrategy;
-use polars_core::prelude::{Field, Schema, CloudOptions};
+use polars_core::prelude::{CloudOptions, Field, Schema};
 use polars_core::series::ops::NullBehavior;
+use polars_io::parquet::ParallelStrategy;
 use std::collections::HashMap;
 
 use smartstring::alias::String as SmartString;
@@ -633,7 +633,7 @@ impl ToNapiValue for Wrap<CloudOptions> {
     unsafe fn to_napi_value(napi_env: sys::napi_env, val: Self) -> Result<sys::napi_value> {
         let env = Env::from_raw(napi_env);
         let mut cloud = env.create_object()?;
-        
+
         for (name, dtype) in val.0.iter() {
             cloud.set(name, dtype.clone())?;
         }
@@ -711,11 +711,12 @@ impl ToNapiValue for Wrap<ParallelStrategy> {
             ParallelStrategy::Columns => "columns",
             ParallelStrategy::RowGroups => "row_groups",
             ParallelStrategy::None => "none",
-            _ =>
+            _ => {
                 return Err(Error::new(
                     Status::InvalidArg,
                     "expected one of {'auto', 'columns', 'row_groups', 'none'}".to_owned(),
                 ))
+            }
         };
         let _ = strategy.set("strategy", unit);
         Object::to_napi_value(napi_env, strategy)
@@ -770,14 +771,14 @@ impl FromNapiValue for Wrap<SortOptions> {
         let options = SortOptions {
             descending,
             nulls_last,
-            multithreaded
+            multithreaded,
         };
         Ok(Wrap(options))
     }
 }
 
 impl FromNapiValue for Wrap<(i64, usize)> {
-    unsafe fn from_napi_value(env: sys::napi_env, napi_val: sys::napi_value) -> napi::Result<Self> {        
+    unsafe fn from_napi_value(env: sys::napi_env, napi_val: sys::napi_value) -> napi::Result<Self> {
         let big = BigInt::from_napi_value(env, napi_val)?;
         let (value, _) = big.get_i64();
         Ok(Wrap((value, value as usize)))
@@ -827,7 +828,7 @@ pub enum TypedArrayBuffer {
 impl From<&Series> for TypedArrayBuffer {
     fn from(series: &Series) -> Self {
         let dt = series.dtype();
-        match dt {          
+        match dt {
             DataType::Int8 => TypedArrayBuffer::Int8(Int8Array::with_data_copied(
                 series.i8().unwrap().rechunk().cont_slice().unwrap(),
             )),

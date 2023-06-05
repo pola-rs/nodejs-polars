@@ -45,7 +45,7 @@ export const jsTypeToPolarsType = (value: unknown): DataType => {
   }
   if (typeof value === "object" && (value as any).constructor === Object) {
     const flds = Object.entries(value as any).map(([name, value]) => {
-      let dtype = jsTypeToPolarsType(value);
+      const dtype = jsTypeToPolarsType(value);
 
       return Field.from(name, dtype);
     });
@@ -125,7 +125,7 @@ const fromTypedArray = (name, value) => {
  * Construct an internal `JsSeries` from an array
  */
 export function arrayToJsSeries(
-  name: string = "",
+  name = "",
   values: any[] = [],
   dtype?: any,
   strict = false,
@@ -179,7 +179,7 @@ export function arrayToJsSeries(
 }
 
 export function arrayToJsDataFrame(data: any[], options?): any {
-  let columns = options?.columns;
+  const columns = options?.columns;
   let orient = options?.orient;
 
   let dataSeries: any[];
@@ -210,7 +210,7 @@ export function arrayToJsDataFrame(data: any[], options?): any {
 
     if (orient === "row") {
       const df = pli.fromRows(data);
-      columns && (df.columns = columns);
+      if (columns) df.columns = columns;
 
       return df;
     } else {

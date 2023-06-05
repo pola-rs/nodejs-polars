@@ -2,12 +2,12 @@ use super::dsl::*;
 use crate::dataframe::JsDataFrame;
 use crate::prelude::*;
 use napi::{Env, Task};
-use std::collections::HashMap;
 use polars::io::RowCount;
-use polars_core::cloud::CloudOptions;
 use polars::lazy::frame::{LazyCsvReader, LazyFrame, LazyGroupBy};
 use polars::prelude::{ClosedWindow, CsvEncoding, DataFrame, Field, JoinType, Schema};
+use polars_core::cloud::CloudOptions;
 use polars_io::parquet::ParallelStrategy;
+use std::collections::HashMap;
 
 #[napi]
 #[repr(transparent)]
@@ -132,14 +132,20 @@ impl JsLazyFrame {
         ldf.into()
     }
     #[napi(catch_unwind)]
-    pub fn sort(&self, by_column: String, reverse: bool, nulls_last: bool, multithreaded: bool) -> JsLazyFrame {
+    pub fn sort(
+        &self,
+        by_column: String,
+        reverse: bool,
+        nulls_last: bool,
+        multithreaded: bool,
+    ) -> JsLazyFrame {
         let ldf = self.ldf.clone();
         ldf.sort(
             &by_column,
             SortOptions {
                 descending: reverse,
                 nulls_last,
-                multithreaded
+                multithreaded,
             },
         )
         .into()
@@ -324,7 +330,7 @@ impl JsLazyFrame {
         allow_parallel: bool,
         force_parallel: bool,
         how: Wrap<JoinType>,
-        suffix: String
+        suffix: String,
     ) -> JsLazyFrame {
         let ldf = self.ldf.clone();
         let other = other.ldf.clone();
@@ -512,8 +518,12 @@ impl JsLazyFrame {
 
     #[napi(getter, js_name = "columns", catch_unwind)]
     pub fn columns(&self) -> napi::Result<Vec<String>> {
-        Ok(self.ldf.schema().map_err(JsPolarsErr::from)?
-            .iter_names().map(|s| s.as_str().into())
+        Ok(self
+            .ldf
+            .schema()
+            .map_err(JsPolarsErr::from)?
+            .iter_names()
+            .map(|s| s.as_str().into())
             .collect())
     }
 
@@ -618,14 +628,11 @@ pub struct ScanParquetOptions {
 }
 
 #[napi(catch_unwind)]
-pub fn scan_parquet(
-    path: String,
-    options: ScanParquetOptions
-) -> napi::Result<JsLazyFrame> {
+pub fn scan_parquet(path: String, options: ScanParquetOptions) -> napi::Result<JsLazyFrame> {
     let n_rows = options.n_rows.map(|i| i as usize);
     let cache = options.cache.unwrap_or(true);
     let parallel = options.parallel;
-    let row_count: Option<RowCount> = options.row_count.map(|rc| rc.into());    
+    let row_count: Option<RowCount> = options.row_count.map(|rc| rc.into());
     let rechunk = options.rechunk.unwrap_or(false);
     let low_memory = options.low_memory.unwrap_or(false);
     let use_statistics = options.use_statistics.unwrap_or(false);
@@ -638,7 +645,7 @@ pub fn scan_parquet(
         row_count,
         low_memory,
         cloud_options,
-        use_statistics
+        use_statistics,
     };
     let lf = LazyFrame::scan_parquet(path, args).map_err(JsPolarsErr::from)?;
     Ok(lf.into())

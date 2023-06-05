@@ -1073,7 +1073,7 @@ export function _Series(_s: any): Series {
     },
     *[Symbol.iterator]() {
       let start = 0;
-      let len = _s.len();
+      const len = _s.len();
       while (start < len) {
         const v = _s.getIdx(start);
         start++;
@@ -1779,7 +1779,7 @@ export interface SeriesConstructor extends Deserialize<Series> {
   // fromBinary(binary: Buffer): Series
 }
 
-let SeriesConstructor = function (
+const SeriesConstructor = function (
   arg0: any,
   arg1?: any,
   dtype?: any,

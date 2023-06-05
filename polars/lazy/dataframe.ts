@@ -652,7 +652,7 @@ export const _LazyDataFrame = (_ldf: any): LazyDataFrame => {
         includeBoundaries,
         closed,
         by,
-        start_by
+        start_by,
       );
 
       return _LazyGroupBy(lgb);

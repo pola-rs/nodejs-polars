@@ -109,7 +109,7 @@ export function col(col: string | string[] | Series): Expr {
 }
 
 export function cols(col: string | string[]): Expr;
-export function cols(col: string, ...cols: string[]): Expr;
+export function cols(col: string, ...cols2: string[]): Expr;
 export function cols(...cols): Expr {
   return col(cols.flat());
 }

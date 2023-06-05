@@ -1,10 +1,10 @@
+use crate::conversion::{parse_fill_null_strategy, Wrap};
 use crate::prelude::*;
 use crate::utils::reinterpret;
 use polars::lazy::dsl;
 use polars::lazy::dsl::Expr;
 use polars::lazy::dsl::Operator;
 use polars_core::series::ops::NullBehavior;
-use crate::conversion::{parse_fill_null_strategy, Wrap};
 use std::borrow::Cow;
 
 #[napi]
@@ -308,7 +308,7 @@ impl JsExpr {
             .sort_with(SortOptions {
                 descending,
                 nulls_last,
-                multithreaded
+                multithreaded,
             })
             .into()
     }
@@ -320,7 +320,7 @@ impl JsExpr {
             .arg_sort(SortOptions {
                 descending: reverse,
                 nulls_last: true,
-                multithreaded
+                multithreaded,
             })
             .into()
     }
@@ -371,9 +371,16 @@ impl JsExpr {
     }
 
     #[napi(catch_unwind)]
-    pub fn fill_null_with_strategy(&self, strategy: String, limit: FillNullLimit) -> JsResult<JsExpr> {
+    pub fn fill_null_with_strategy(
+        &self,
+        strategy: String,
+        limit: FillNullLimit,
+    ) -> JsResult<JsExpr> {
         let strat = parse_fill_null_strategy(&strategy, limit)?;
-        Ok(self.inner.clone().apply(
+        Ok(self
+            .inner
+            .clone()
+            .apply(
                 move |s| s.fill_null(strat).map(Some),
                 GetOutput::same_type(),
             )
@@ -588,7 +595,9 @@ impl JsExpr {
     pub fn str_rstrip(&self) -> JsExpr {
         let function = |s: Series| {
             let ca = s.utf8()?;
-            Ok(Some(ca.apply(|s| Cow::Borrowed(s.trim_end())).into_series()))
+            Ok(Some(
+                ca.apply(|s| Cow::Borrowed(s.trim_end())).into_series(),
+            ))
         };
         self.clone()
             .inner
@@ -601,7 +610,9 @@ impl JsExpr {
     pub fn str_lstrip(&self) -> JsExpr {
         let function = |s: Series| {
             let ca = s.utf8()?;
-            Ok(Some(ca.apply(|s| Cow::Borrowed(s.trim_start())).into_series()))
+            Ok(Some(
+                ca.apply(|s| Cow::Borrowed(s.trim_start())).into_series(),
+            ))
         };
         self.clone()
             .inner
@@ -614,9 +625,10 @@ impl JsExpr {
     pub fn str_pad_start(&self, length: i64, fill_char: String) -> JsExpr {
         let function = move |s: Series| {
             let ca = s.utf8()?;
-            Ok(Some(ca
-                .rjust(length as usize, fill_char.chars().nth(0).unwrap())
-                .into_series()))
+            Ok(Some(
+                ca.rjust(length as usize, fill_char.chars().nth(0).unwrap())
+                    .into_series(),
+            ))
         };
 
         self.clone()
@@ -630,8 +642,10 @@ impl JsExpr {
     pub fn str_pad_end(&self, length: i64, fill_char: String) -> JsExpr {
         let function = move |s: Series| {
             let ca = s.utf8()?;
-            Ok(Some(ca.ljust(length as usize, fill_char.chars().nth(0).unwrap())
-                .into_series()))
+            Ok(Some(
+                ca.ljust(length as usize, fill_char.chars().nth(0).unwrap())
+                    .into_series(),
+            ))
         };
 
         self.clone()
@@ -791,7 +805,11 @@ impl JsExpr {
         self.clone()
             .inner
             .map(
-                move |s| s.utf8()?.base64_decode(strict).map(|s| Some(s.into_series())),
+                move |s| {
+                    s.utf8()?
+                        .base64_decode(strict)
+                        .map(|s| Some(s.into_series()))
+                },
                 GetOutput::same_type(),
             )
             .with_fmt("str.base64_decode")
@@ -1263,7 +1281,14 @@ impl JsExpr {
             .into()
     }
     #[napi(catch_unwind)]
-    pub fn ewm_mean(&self, alpha: f64, adjust: bool, min_periods: i64, bias: bool, ignore_nulls: bool) -> JsExpr {
+    pub fn ewm_mean(
+        &self,
+        alpha: f64,
+        adjust: bool,
+        min_periods: i64,
+        bias: bool,
+        ignore_nulls: bool,
+    ) -> JsExpr {
         let options = EWMOptions {
             alpha,
             adjust,
@@ -1274,7 +1299,14 @@ impl JsExpr {
         self.inner.clone().ewm_mean(options).into()
     }
     #[napi(catch_unwind)]
-    pub fn ewm_std(&self, alpha: f64, adjust: bool, min_periods: i64, bias: bool, ignore_nulls: bool) -> Self {
+    pub fn ewm_std(
+        &self,
+        alpha: f64,
+        adjust: bool,
+        min_periods: i64,
+        bias: bool,
+        ignore_nulls: bool,
+    ) -> Self {
         let options = EWMOptions {
             alpha,
             adjust,
@@ -1285,7 +1317,14 @@ impl JsExpr {
         self.inner.clone().ewm_std(options).into()
     }
     #[napi(catch_unwind)]
-    pub fn ewm_var(&self, alpha: f64, adjust: bool, min_periods: i64, bias: bool, ignore_nulls: bool) -> Self {
+    pub fn ewm_var(
+        &self,
+        alpha: f64,
+        adjust: bool,
+        min_periods: i64,
+        bias: bool,
+        ignore_nulls: bool,
+    ) -> Self {
         let options = EWMOptions {
             alpha,
             adjust,

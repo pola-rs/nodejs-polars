@@ -742,7 +742,7 @@ impl JsDataFrame {
         by_column: String,
         reverse: bool,
         nulls_last: bool,
-        multithreaded: bool
+        multithreaded: bool,
     ) -> napi::Result<JsDataFrame> {
         let df = self
             .df
@@ -751,7 +751,7 @@ impl JsDataFrame {
                 SortOptions {
                     descending: reverse,
                     nulls_last,
-                    multithreaded
+                    multithreaded,
                 },
             )
             .map_err(JsPolarsErr::from)?;
@@ -893,7 +893,7 @@ impl JsDataFrame {
         value_vars: Vec<String>,
         value_name: Option<String>,
         variable_name: Option<String>,
-        streamable: bool
+        streamable: bool,
     ) -> napi::Result<JsDataFrame> {
         let args = MeltArgs {
             id_vars: strings_to_smartstrings(id_vars),
@@ -934,10 +934,17 @@ impl JsDataFrame {
         maintain_order: bool,
         subset: Option<Vec<String>>,
         keep: Wrap<UniqueKeepStrategy>,
-        slice: Option<Wrap<(i64, usize)>>
+        slice: Option<Wrap<(i64, usize)>>,
     ) -> napi::Result<JsDataFrame> {
         let subset = subset.as_ref().map(|v| v.as_ref());
-        let df = self.df.unique_impl(maintain_order, subset, keep.0, slice.map(|s| s.0 as (i64, usize)))
+        let df = self
+            .df
+            .unique_impl(
+                maintain_order,
+                subset,
+                keep.0,
+                slice.map(|s| s.0 as (i64, usize)),
+            )
             .map_err(JsPolarsErr::from)?;
         Ok(df.into())
     }
@@ -1164,42 +1171,42 @@ impl JsDataFrame {
     // #[napi]
     // pub fn to_rows_cb(&self, callback: napi::JsFunction, env: Env) -> napi::Result<()> {
     //     panic!("not implemented");
-        // use napi::threadsafe_function::*;
-        // use polars_core::utils::rayon::prelude::*;
-        // let (height, _) = self.df.shape();
-        // let tsfn: ThreadsafeFunction<
-        //     Either<Vec<JsAnyValue>, napi::JsNull>,
-        //     ErrorStrategy::CalleeHandled,
-        // > = callback.create_threadsafe_function(
-        //     0,
-        //     |ctx: ThreadSafeCallContext<Either<Vec<JsAnyValue>, napi::JsNull>>| Ok(vec![ctx.value]),
-        // )?;
+    // use napi::threadsafe_function::*;
+    // use polars_core::utils::rayon::prelude::*;
+    // let (height, _) = self.df.shape();
+    // let tsfn: ThreadsafeFunction<
+    //     Either<Vec<JsAnyValue>, napi::JsNull>,
+    //     ErrorStrategy::CalleeHandled,
+    // > = callback.create_threadsafe_function(
+    //     0,
+    //     |ctx: ThreadSafeCallContext<Either<Vec<JsAnyValue>, napi::JsNull>>| Ok(vec![ctx.value]),
+    // )?;
 
-        // polars_core::POOL.install(|| {
-        //     (0..height).into_par_iter().for_each(|idx| {
-        //         let tsfn = tsfn.clone();
-        //         let values = self
-        //             .df
-        //             .get_columns()
-        //             .iter()
-        //             .map(|s| {
-        //                 let av: JsAnyValue = s.get(idx).into();
-        //                 av
-        //             })
-        //             .collect::<Vec<_>>();
+    // polars_core::POOL.install(|| {
+    //     (0..height).into_par_iter().for_each(|idx| {
+    //         let tsfn = tsfn.clone();
+    //         let values = self
+    //             .df
+    //             .get_columns()
+    //             .iter()
+    //             .map(|s| {
+    //                 let av: JsAnyValue = s.get(idx).into();
+    //                 av
+    //             })
+    //             .collect::<Vec<_>>();
 
-        //         tsfn.call(
-        //             Ok(Either::A(values)),
-        //             ThreadsafeFunctionCallMode::NonBlocking,
-        //         );
-        //     });
-        // });
-        // tsfn.call(
-        //     Ok(Either::B(env.get_null().unwrap())),
-        //     ThreadsafeFunctionCallMode::NonBlocking,
-        // );
+    //         tsfn.call(
+    //             Ok(Either::A(values)),
+    //             ThreadsafeFunctionCallMode::NonBlocking,
+    //         );
+    //     });
+    // });
+    // tsfn.call(
+    //     Ok(Either::B(env.get_null().unwrap())),
+    //     ThreadsafeFunctionCallMode::NonBlocking,
+    // );
 
-        // Ok(())
+    // Ok(())
     // }
     #[napi]
     pub fn to_row_obj(&self, idx: Either<i64, f64>, env: Env) -> napi::Result<Object> {
@@ -1243,46 +1250,46 @@ impl JsDataFrame {
     // #[napi]
     // pub fn to_objects_cb(&self, callback: napi::JsFunction, env: Env) -> napi::Result<()> {
     //     panic!("not implemented");
-        // use napi::threadsafe_function::*;
-        // use polars_core::utils::rayon::prelude::*;
-        // use std::collections::HashMap;
-        // let (height, _) = self.df.shape();
-        // let tsfn: ThreadsafeFunction<
-        //     Either<HashMap<String, JsAnyValue>, napi::JsNull>,
-        //     ErrorStrategy::CalleeHandled,
-        // > = callback.create_threadsafe_function(
-        //     0,
-        //     |ctx: ThreadSafeCallContext<Either<HashMap<String, JsAnyValue>, napi::JsNull>>| {
-        //         Ok(vec![ctx.value])
-        //     },
-        // )?;
+    // use napi::threadsafe_function::*;
+    // use polars_core::utils::rayon::prelude::*;
+    // use std::collections::HashMap;
+    // let (height, _) = self.df.shape();
+    // let tsfn: ThreadsafeFunction<
+    //     Either<HashMap<String, JsAnyValue>, napi::JsNull>,
+    //     ErrorStrategy::CalleeHandled,
+    // > = callback.create_threadsafe_function(
+    //     0,
+    //     |ctx: ThreadSafeCallContext<Either<HashMap<String, JsAnyValue>, napi::JsNull>>| {
+    //         Ok(vec![ctx.value])
+    //     },
+    // )?;
 
-        // polars_core::POOL.install(|| {
-        //     (0..height).into_par_iter().for_each(|idx| {
-        //         let tsfn = tsfn.clone();
-        //         let values = self
-        //             .df
-        //             .get_columns()
-        //             .iter()
-        //             .map(|s| {
-        //                 let key = s.name().to_owned();
-        //                 let av: JsAnyValue = s.get(idx).into();
-        //                 (key, av)
-        //             })
-        //             .collect::<HashMap<_, _>>();
+    // polars_core::POOL.install(|| {
+    //     (0..height).into_par_iter().for_each(|idx| {
+    //         let tsfn = tsfn.clone();
+    //         let values = self
+    //             .df
+    //             .get_columns()
+    //             .iter()
+    //             .map(|s| {
+    //                 let key = s.name().to_owned();
+    //                 let av: JsAnyValue = s.get(idx).into();
+    //                 (key, av)
+    //             })
+    //             .collect::<HashMap<_, _>>();
 
-        //         tsfn.call(
-        //             Ok(Either::A(values)),
-        //             ThreadsafeFunctionCallMode::NonBlocking,
-        //         );
-        //     });
-        // });
-        // tsfn.call(
-        //     Ok(Either::B(env.get_null().unwrap())),
-        //     ThreadsafeFunctionCallMode::NonBlocking,
-        // );
+    //         tsfn.call(
+    //             Ok(Either::A(values)),
+    //             ThreadsafeFunctionCallMode::NonBlocking,
+    //         );
+    //     });
+    // });
+    // tsfn.call(
+    //     Ok(Either::B(env.get_null().unwrap())),
+    //     ThreadsafeFunctionCallMode::NonBlocking,
+    // );
 
-        // Ok(())
+    // Ok(())
     // }
 
     #[napi(catch_unwind)]

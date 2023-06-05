@@ -1337,9 +1337,9 @@ describe("expr.str", () => {
 });
 describe("expr.lst", () => {
   test.skip("concat", () => {
-    let s0 = pl.Series("a", [[1, 2]]);
-    let s1 = pl.Series("b", [[3, 4, 5]]);
-    let expected = pl.Series("a", [[1, 2, 3, 4, 5]]);
+    const s0 = pl.Series("a", [[1, 2]]);
+    const s1 = pl.Series("b", [[3, 4, 5]]);
+    const expected = pl.Series("a", [[1, 2, 3, 4, 5]]);
 
     let out = s0.lst.concat([s1]);
     expect(out.seriesEqual(expected)).toBeTruthy();
@@ -1347,7 +1347,7 @@ describe("expr.lst", () => {
     out = s0.lst.concat(s1);
     expect(out.seriesEqual(expected)).toBeTruthy();
 
-    let df = pl.DataFrame([s0, s1]);
+    const df = pl.DataFrame([s0, s1]);
     expect(
       df
         .select(pl.concatList(["a", "b"]).alias("a"))

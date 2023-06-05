@@ -459,7 +459,7 @@ impl JsSeries {
             .arg_sort(SortOptions {
                 descending: reverse,
                 nulls_last,
-                multithreaded
+                multithreaded,
             })
             .into_series()
             .into()
@@ -807,7 +807,10 @@ impl JsSeries {
     #[napi]
     pub fn str_contains(&self, pat: String, strict: bool) -> napi::Result<JsSeries> {
         let ca = self.series.utf8().map_err(JsPolarsErr::from)?;
-        let s = ca.contains(&pat, strict).map_err(JsPolarsErr::from)?.into_series();
+        let s = ca
+            .contains(&pat, strict)
+            .map_err(JsPolarsErr::from)?
+            .into_series();
         Ok(s.into())
     }
 
@@ -1035,8 +1038,8 @@ impl JsSeries {
     #[napi(catch_unwind)]
     pub fn is_first(&self) -> napi::Result<JsSeries> {
         let out = is_first(&self.series)
-                    .map_err(JsPolarsErr::from)?
-                    .into_series();
+            .map_err(JsPolarsErr::from)?
+            .into_series();
         Ok(out.into())
     }
 

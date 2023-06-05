@@ -797,7 +797,7 @@ describe("lazyframe", () => {
     expect(actual.getColumn("ham")).toSeriesEqual(ham);
   });
   test("select:strings", () => {
-    const columns = ["ham", "foo"]
+    const columns = ["ham", "foo"];
     const actual = pl
       .DataFrame({
         foo: [1, 2, 3, 1],

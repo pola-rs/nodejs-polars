@@ -1025,7 +1025,8 @@ export const _Expr = (_expr: any): Expr => {
       return wrap(
         "sortWith",
         reverse?.reverse ?? false,
-        reverse?.nullsLast ?? nullsLast, false
+        reverse?.nullsLast ?? nullsLast,
+        false,
       );
     },
     sortBy(arg, reverse = false) {

@@ -7,7 +7,7 @@ import { concatList } from "../functions";
 /**
  * namespace containing expr list functions
  */
-export interface ExprList extends ListFunctions<Expr> {}
+export type ExprList = ListFunctions<Expr>;
 export const ExprListFunctions = (_expr: any): ExprList => {
   const wrap = (method, ...args: any[]): Expr => {
     return _Expr(_expr[method](...args));

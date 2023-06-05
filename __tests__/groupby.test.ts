@@ -151,7 +151,7 @@ describe("groupby", () => {
 });
 describe("groupby ops", () => {
   test("rolling", () => {
-    let dates = [
+    const dates = [
       "2020-01-01 13:45:48",
       "2020-01-01 16:42:13",
       "2020-01-01 16:45:09",
@@ -189,7 +189,7 @@ describe("groupby ops", () => {
         by: ["admin", "five_type", "actor"],
         indexColumn: "event_date",
         every: "1mo",
-        start_by: "datapoint"
+        start_by: "datapoint",
       })
       .agg(pl.col("adm1_code").unique(), pl.col("fatalities").gt(0).sum());
     const expected = [
@@ -218,7 +218,7 @@ describe("groupby ops", () => {
         indexColumn: "event_date",
         every: "1mo",
         by: ["admin", "five_type", "actor"],
-        start_by: "datapoint"
+        start_by: "datapoint",
       })
       .agg(pl.col("adm1_code").unique(), pl.col("fatalities").gt(0).sum());
     const expected = [
@@ -245,7 +245,7 @@ describe("groupby ops", () => {
         indexColumn: "dt",
         every: "1mo",
         closed: "right",
-        start_by: "datapoint"
+        start_by: "datapoint",
       })
       .agg(pl.col("idx"));
     const expected = pl.DataFrame({
@@ -254,7 +254,7 @@ describe("groupby ops", () => {
         new Date("2020-01-30"),
         new Date("2020-02-29"),
       ],
-      idx: [[0,1], [2], [3]],
+      idx: [[0, 1], [2], [3]],
     });
     expect(actual).toFrameEqual(expected);
   });

@@ -156,7 +156,7 @@ describe("lazy functions", () => {
       .select(pl.argSortBy(["int_nulls", "floats"], [false, true]))
       .getColumn("literal");
     const expected = pl.Series("literal", [0]);
-    expect(actual).toSeriesEqual(expected);  
+    expect(actual).toSeriesEqual(expected);
   });
   test("avg", () => {
     const df = pl.DataFrame({ foo: [4, 5, 6, 4, 5, 6] });
