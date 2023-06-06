@@ -893,14 +893,14 @@ impl JsDataFrame {
         value_vars: Vec<String>,
         value_name: Option<String>,
         variable_name: Option<String>,
-        streamable: bool,
+        streamable: Option<bool>,
     ) -> napi::Result<JsDataFrame> {
         let args = MeltArgs {
             id_vars: strings_to_smartstrings(id_vars),
             value_vars: strings_to_smartstrings(value_vars),
             value_name: value_name.map(|s| s.into()),
             variable_name: variable_name.map(|s| s.into()),
-            streamable,
+            streamable: streamable.unwrap_or(false)
         };
 
         let df = self.df.melt2(args).map_err(JsPolarsErr::from)?;

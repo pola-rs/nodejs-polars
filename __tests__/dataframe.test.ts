@@ -295,12 +295,12 @@ describe("dataframe", () => {
     const expected = 2;
     expect(actual).toEqual(expected);
   });
-  // test("fold:single column", () => {
-  //   const expected = pl.Series([1, 2, 3]);
-  //   const df = pl.DataFrame([expected]);
-  //   const actual = df.fold((a, b) => a.concat(b));
-  //   expect(actual).toSeriesEqual(expected);
-  // });
+  test("fold:single column", () => {
+    const expected = pl.Series([1, 2, 3]);
+    const df = pl.DataFrame([expected]);
+    const actual = df.fold((a, b) => a.concat(b));
+    expect(actual).toSeriesEqual(expected);
+  });
   // test("fold", () => {
   //   const s1 = pl.Series([1, 2, 3]);
   //   const s2 = pl.Series([4, 5, 6]);
@@ -613,7 +613,22 @@ describe("dataframe", () => {
 
     expect(actual.row(0)).toEqual([2, 7, null]);
   });
-  test.todo("melt");
+  test("melt", () => {
+    const df = pl.DataFrame({
+                  'id': [1],
+                  'asset_key_1': ['123'],
+                  'asset_key_2': ['456'],
+                  'asset_key_3': ['abc'],
+                })                
+    const actual = df.melt('id', ['asset_key_1', 'asset_key_2', 'asset_key_3']);
+    const expected = pl
+          .DataFrame({
+            id: [1, 1, 1],
+            variable: ["asset_key_1", "asset_key_2", "asset_key_3"],
+            value: ["123", "456", "abc"],
+          })
+    expect(actual).toFrameEqual(expected);
+  }),
   test("min:axis:0", () => {
     const actual = pl
       .DataFrame({

@@ -487,14 +487,14 @@ impl JsLazyFrame {
         value_vars: Vec<&str>,
         value_name: Option<&str>,
         variable_name: Option<&str>,
-        streamable: bool,
+        streamable: Option<bool>,
     ) -> JsLazyFrame {
         let args = MeltArgs {
             id_vars: strings_to_smartstrings(id_vars),
             value_vars: strings_to_smartstrings(value_vars),
             value_name: value_name.map(|s| s.into()),
             variable_name: variable_name.map(|s| s.into()),
-            streamable,
+            streamable: streamable.unwrap_or(false)
         };
         let ldf = self.ldf.clone();
         ldf.melt(args).into()
