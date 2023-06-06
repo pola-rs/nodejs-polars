@@ -367,7 +367,8 @@ describe("lazy functions", () => {
     const actual = df
       .groupBy("a")
       .agg(pl.list("b").keepName())
-      .sort({ by: "a" });
+      .sort({ by: "a" })
+      .explode("b");
     expect(actual).toFrameEqual(expected);
   });
   test("mean:series", () => {

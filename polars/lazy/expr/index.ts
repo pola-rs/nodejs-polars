@@ -853,7 +853,7 @@ export const _Expr = (_expr: any): Expr => {
       return _Expr(_expr.last());
     },
     list() {
-      return _Expr(_expr);
+      return _Expr(_expr.list());
     },
     lowerBound() {
       return _Expr(_expr.lowerBound());

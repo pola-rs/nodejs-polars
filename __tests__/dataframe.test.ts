@@ -192,6 +192,16 @@ describe("dataframe", () => {
       expect(actual).toFrameEqual(expected);
     });
   });
+  test("unnest", () => {
+    const expected = pl.DataFrame({
+      int: [1, 2],
+      str: ["a", "b"],
+      bool: [true, null],
+      list: [[1, 2], [3]],
+    });
+    const actual = expected.toStruct("my_struct").toFrame().unnest("my_struct");
+    expect(actual).toFrameEqual(expected);
+  });
   test("DF with nulls", () => {
     const actual = pl.DataFrame([
       { foo: 1, bar: 6.0, ham: "a" },
@@ -283,7 +293,35 @@ describe("dataframe", () => {
     });
     expect(actual).toFrameEqual(expected);
   });
-  // test.todo("filter");
+  test("filter", () => {
+    const df = pl.DataFrame({
+      foo: [1, 2, 3],
+      bar: [6, 7, 8],
+      ham: ["a", "b", "c"],
+    });
+    // Filter on one condition
+    let actual = df.filter(pl.col("foo").lt(3));
+    let expected = pl.DataFrame({
+      foo: [1, 2],
+      bar: [6, 7],
+      ham: ["a", "b"],
+    });
+    expect(actual).toFrameEqual(expected);
+
+    // Filter on multiple conditions
+    actual = df.filter(
+      pl
+        .col("foo")
+        .lt(3)
+        .and(pl.col("ham").eq(pl.lit("a"))),
+    );
+    expected = pl.DataFrame({
+      foo: [1],
+      bar: [6],
+      ham: ["a"],
+    });
+    expect(actual).toFrameEqual(expected);
+  });
   test("findIdxByName", () => {
     const actual = pl
       .DataFrame({

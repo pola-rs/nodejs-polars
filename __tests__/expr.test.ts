@@ -441,7 +441,7 @@ describe("expr", () => {
     const actual = df.select(col("a").isUnique().as("isUnique"));
     expect(actual).toFrameEqual(expected);
   });
-  test.skip("keepName", () => {
+  test("keepName", () => {
     const df = pl.DataFrame({
       a: [1, 2, 3],
       b: ["a", "b", "c"],
@@ -453,7 +453,8 @@ describe("expr", () => {
     const actual = df
       .groupBy("a")
       .agg(col("b").list().keepName())
-      .sort({ by: "a" });
+      .sort({ by: "a" })
+      .explode("b");
     expect(actual).toFrameEqual(expected);
   });
   test("kurtosis", () => {
@@ -477,7 +478,7 @@ describe("expr", () => {
       a: ["a", "b", "c"],
     });
     const expected = pl.DataFrame({
-      list: ["a", "b", "c"],
+      list: [["a", "b", "c"]],
     });
     const actual = df.select(col("a").list().alias("list"));
     expect(actual).toFrameEqual(expected);
@@ -1254,7 +1255,7 @@ describe("expr.str", () => {
     expect(actual).toFrameEqual(expected);
     expect(seriesActual).toFrameEqual(expected);
   });
-  test.skip("hex decode", () => {
+  test("hex decode", () => {
     const df = pl.DataFrame({
       encoded: ["666f6f", "626172", null],
     });
@@ -1302,8 +1303,7 @@ describe("expr.str", () => {
     expect(actual).toFrameEqual(expected);
     expect(seriesActual).toFrameEqual(expected);
   });
-  test.skip("base64 decode", () => {
-    const _df = pl.DataFrame({ strings: ["666f6f", "626172", null] });
+  test("base64 decode", () => {
     const df = pl.DataFrame({
       encoded: ["Zm9v", "YmFy", null],
     });
@@ -1336,7 +1336,7 @@ describe("expr.str", () => {
   });
 });
 describe("expr.lst", () => {
-  test.skip("concat", () => {
+  test("concat", () => {
     const s0 = pl.Series("a", [[1, 2]]);
     const s1 = pl.Series("b", [[3, 4, 5]]);
     const expected = pl.Series("a", [[1, 2, 3, 4, 5]]);

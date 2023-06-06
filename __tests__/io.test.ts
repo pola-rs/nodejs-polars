@@ -233,7 +233,7 @@ describe("ipc", () => {
     expect(ipcDF).toFrameEqual(csvDF);
   });
 
-  test.skip("read:options", () => {
+  test("read:options", () => {
     const df = pl.readIPC(ipcpath, { nRows: 4 });
     expect(df.shape).toEqual({ height: 4, width: 4 });
   });
@@ -243,7 +243,7 @@ describe("ipc", () => {
     expect(df.shape).toEqual({ height: 27, width: 4 });
   });
 
-  test.skip("scan:options", () => {
+  test("scan:options", () => {
     const df = pl.scanIPC(ipcpath, { nRows: 4 }).collectSync();
     expect(df.shape).toEqual({ height: 4, width: 4 });
   });
@@ -290,7 +290,7 @@ describe("avro", () => {
     expect(df).toFrameEqual(csvDF);
   });
 
-  test.skip("read:options", () => {
+  test("read:options", () => {
     const df = pl.readAvro(avropath, { nRows: 4 });
     expect(df.shape).toEqual({ height: 4, width: 4 });
   });
