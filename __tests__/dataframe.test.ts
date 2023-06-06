@@ -610,25 +610,23 @@ describe("dataframe", () => {
         ham: ["a", "b", "c"],
       })
       .median();
-
     expect(actual.row(0)).toEqual([2, 7, null]);
   });
   test("melt", () => {
     const df = pl.DataFrame({
-                  'id': [1],
-                  'asset_key_1': ['123'],
-                  'asset_key_2': ['456'],
-                  'asset_key_3': ['abc'],
-                })                
-    const actual = df.melt('id', ['asset_key_1', 'asset_key_2', 'asset_key_3']);
-    const expected = pl
-          .DataFrame({
-            id: [1, 1, 1],
-            variable: ["asset_key_1", "asset_key_2", "asset_key_3"],
-            value: ["123", "456", "abc"],
-          })
+      id: [1],
+      asset_key_1: ["123"],
+      asset_key_2: ["456"],
+      asset_key_3: ["abc"],
+    });
+    const actual = df.melt("id", ["asset_key_1", "asset_key_2", "asset_key_3"]);
+    const expected = pl.DataFrame({
+      id: [1, 1, 1],
+      variable: ["asset_key_1", "asset_key_2", "asset_key_3"],
+      value: ["123", "456", "abc"],
+    });
     expect(actual).toFrameEqual(expected);
-  }),
+  });
   test("min:axis:0", () => {
     const actual = pl
       .DataFrame({
