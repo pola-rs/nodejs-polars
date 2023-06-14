@@ -12,7 +12,7 @@ import {
 import { _LazyGroupBy, LazyGroupBy } from "./groupby";
 import { Deserialize, GroupByOps, Serialize } from "../shared_traits";
 import { LazyOptions, LazyJoinOptions } from "../types";
-import { Series } from "@polars/series";
+import { Series } from "../series";
 
 const inspect = Symbol.for("nodejs.util.inspect.custom");
 
