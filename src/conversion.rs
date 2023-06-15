@@ -710,13 +710,7 @@ impl ToNapiValue for Wrap<ParallelStrategy> {
             ParallelStrategy::Auto => "auto",
             ParallelStrategy::Columns => "columns",
             ParallelStrategy::RowGroups => "row_groups",
-            ParallelStrategy::None => "none",
-            _ => {
-                return Err(Error::new(
-                    Status::InvalidArg,
-                    "expected one of {'auto', 'columns', 'row_groups', 'none'}".to_owned(),
-                ))
-            }
+            ParallelStrategy::None => "none"
         };
         let _ = strategy.set("strategy", unit);
         Object::to_napi_value(napi_env, strategy)

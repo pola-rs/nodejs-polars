@@ -732,3 +732,36 @@ describe("StringFunctions", () => {
     expect(actual).toSeriesEqual(decoded);
   });
 });
+describe("series struct", () => {
+  test("struct:fields", () => {
+    const expected = [{ foo: 1, bar: 2, ham: "c" }];
+    const actual = pl.Series(expected);
+    const actualFields = actual.struct.fields;
+    const expectedKeys = new Set(expected.flatMap((item) => Object.keys(item)));
+    const expectedFields = [...expectedKeys];
+    expect(actualFields).toEqual(expectedFields);
+  });
+  test("struct:field", () => {
+    const expected = [{ foo: 1, bar: 2, ham: "c" }];
+    const actual = pl.Series(expected).struct.field("foo").toArray();
+    expect(actual).toEqual([expected[0]["foo"]]);
+  });
+  test("struct:frame", () => {
+    const array = [{ foo: 1, bar: 2, ham: "c" }];
+    const actual = pl.Series(array).struct.toFrame();
+    const expected = pl.DataFrame({
+      foo: [1],
+      bar: [2],
+      ham: ["c"],
+    });
+    expect(actual).toFrameEqual(expected);
+  });
+  test("struct:renameFields", () => {
+    const expected = [{ foo: 1, bar: 2, ham: "c" }];
+    const actual = pl
+      .Series(expected)
+      .struct.renameFields(["foo", "bar", "ham"])
+      .toArray();
+    expect(actual).toEqual(expected);
+  });
+});
