@@ -1558,7 +1558,7 @@ pub fn lit(value: JsAnyValue) -> JsExpr {
         JsAnyValue::Float64(v) => dsl::lit(v),
         JsAnyValue::Date(v) => dsl::lit(v),
         JsAnyValue::Datetime(v, _, _) => dsl::lit(v),
-        // JsAnyValue::Duration(v, _) => dsl::lit(v),
+        JsAnyValue::Duration(v, _) => dsl::lit(v),
         JsAnyValue::Time(v) => dsl::lit(v),
         JsAnyValue::List(v) => dsl::lit(v),
         _ => dsl::lit(polars::prelude::Null {}),

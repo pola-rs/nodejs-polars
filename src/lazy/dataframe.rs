@@ -609,7 +609,6 @@ pub fn scan_csv(path: String, options: ScanCsvOptions) -> napi::Result<JsLazyFra
         .with_try_parse_dates(parse_dates)
         .finish()
         .map_err(JsPolarsErr::from)?;
-    // .with_null_values(null_values)
     Ok(r.into())
 }
 
@@ -622,7 +621,6 @@ pub struct ScanParquetOptions {
     pub rechunk: Option<bool>,
     pub row_count_name: Option<String>,
     pub row_count_offset: Option<u32>,
-    // pub cloud_options: Option<Wrap<CloudOptions>>,
     pub low_memory: Option<bool>,
     pub use_statistics: Option<bool>,
 }

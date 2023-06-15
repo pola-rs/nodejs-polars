@@ -9,7 +9,7 @@ use polars::io::RowCount;
 use polars::prelude::Expr;
 use polars::prelude::*;
 use polars_core::prelude::FillNullStrategy;
-use polars_core::prelude::{CloudOptions, Field, Schema};
+use polars_core::prelude::{Field, Schema};
 use polars_core::series::ops::NullBehavior;
 use polars_io::parquet::ParallelStrategy;
 use std::collections::HashMap;
@@ -626,38 +626,6 @@ impl FromNapiValue for Wrap<DataType> {
                 todo!()
             }
         }
-    }
-}
-
-impl ToNapiValue for Wrap<CloudOptions> {
-    unsafe fn to_napi_value(napi_env: sys::napi_env, val: Self) -> Result<sys::napi_value> {
-        let env = Env::from_raw(napi_env);
-        let mut cloud = env.create_object()?;
-
-        for (name, dtype) in val.0.iter() {
-            cloud.set(name, dtype.clone())?;
-        }
-
-        Object::to_napi_value(napi_env, cloud)
-    }
-}
-
-impl FromNapiValue for Wrap<CloudOptions> {
-    unsafe fn from_napi_value(env: sys::napi_env, napi_val: sys::napi_value) -> napi::Result<Self> {
-        let s = String::from_napi_value(env, napi_val)?;
-
-        // let unit = cloud::CloudOptions::from_untyped_config(url, s).unwrap();
-
-        let unit = match s.as_ref() {
-            "aws" => CloudOptions::new(),
-            _ => {
-                return Err(Error::new(
-                    Status::InvalidArg,
-                    "expected one of {'auto', 'columns', 'row_groups', 'none'}".to_owned(),
-                ))
-            }
-        };
-        Ok(Wrap(unit))
     }
 }
 
