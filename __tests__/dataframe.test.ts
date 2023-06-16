@@ -1468,11 +1468,15 @@ describe("join", () => {
     expect(actual).toFrameEqual(expected);
   });
   test("asof_cross_join", () => {
-    const left = pl.DataFrame({ a: [-10, 5, 10], left_val: ["a", "b", "c"] });
-    const right = pl.DataFrame({
-      a: [1, 2, 3, 6, 7],
-      right_val: [1, 2, 3, 6, 7],
-    });
+    const left = pl
+      .DataFrame({ a: [-10, 5, 10], left_val: ["a", "b", "c"] })
+      .sort("a");
+    const right = pl
+      .DataFrame({
+        a: [1, 2, 3, 6, 7],
+        right_val: [1, 2, 3, 6, 7],
+      })
+      .sort("a");
 
     //  only test dispatch of asof join
     let out = left.joinAsof(right, { on: "a" });

@@ -217,11 +217,12 @@ impl JsLazyFrame {
     #[napi(catch_unwind)]
     pub fn groupby_rolling(
         &mut self,
-        index_column: String,
+        index_column: &JsExpr,
         period: String,
         offset: String,
         closed: Wrap<ClosedWindow>,
         by: Vec<&JsExpr>,
+        check_sorted: bool,
     ) -> JsLazyGroupBy {
         let closed_window = closed.0;
         let ldf = self.ldf.clone();
@@ -230,12 +231,14 @@ impl JsLazyFrame {
             .map(|jsexpr| jsexpr.inner.clone())
             .collect::<Vec<_>>();
         let lazy_gb = ldf.groupby_rolling(
+            index_column.inner.clone(),
             by,
             RollingGroupOptions {
-                index_column: index_column.into(),
+                index_column: "".into(),
                 period: Duration::parse(&period),
                 offset: Duration::parse(&offset),
                 closed_window,
+                check_sorted,
             },
         );
 
@@ -246,7 +249,7 @@ impl JsLazyFrame {
     #[napi(catch_unwind)]
     pub fn groupby_dynamic(
         &mut self,
-        index_column: String,
+        index_column: &JsExpr,
         every: String,
         period: String,
         offset: String,
@@ -255,6 +258,7 @@ impl JsLazyFrame {
         closed: Wrap<ClosedWindow>,
         by: Vec<&JsExpr>,
         start_by: Wrap<StartBy>,
+        check_sorted: bool,
     ) -> JsLazyGroupBy {
         let closed_window = closed.0;
         let by = by
@@ -263,9 +267,9 @@ impl JsLazyFrame {
             .collect::<Vec<_>>();
         let ldf = self.ldf.clone();
         let lazy_gb = ldf.groupby_dynamic(
+            index_column.inner.clone(),
             by,
             DynamicGroupOptions {
-                index_column: index_column.into(),
                 every: Duration::parse(&every),
                 period: Duration::parse(&period),
                 offset: Duration::parse(&offset),
@@ -273,6 +277,8 @@ impl JsLazyFrame {
                 include_boundaries,
                 closed_window,
                 start_by: start_by.0,
+                check_sorted,
+                ..Default::default()
             },
         );
 
@@ -494,7 +500,7 @@ impl JsLazyFrame {
             value_vars: strings_to_smartstrings(value_vars),
             value_name: value_name.map(|s| s.into()),
             variable_name: variable_name.map(|s| s.into()),
-            streamable: streamable.unwrap_or(false)
+            streamable: streamable.unwrap_or(false),
         };
         let ldf = self.ldf.clone();
         ldf.melt(args).into()
@@ -577,12 +583,14 @@ pub fn scan_csv(path: String, options: ScanCsvOptions) -> napi::Result<JsLazyFra
         None
     };
 
-    let overwrite_dtype = options.overwrite_dtype.map(|map| {
-        let fields = map.iter().map(|(key, val)| {
-            let value = val.clone().0;
-            Field::new(key, value)
-        });
-        Schema::from(fields)
+    let overwrite_dtype = options.overwrite_dtype.map(|overwrite_dtype| {
+        overwrite_dtype
+            .iter()
+            .map(|(name, dtype)| {
+                let dtype = dtype.0.clone();
+                Field::new(name, dtype)
+            })
+            .collect::<Schema>()
     });
 
     let encoding = match options.encoding.as_ref() {

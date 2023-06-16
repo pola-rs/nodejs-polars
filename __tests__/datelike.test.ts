@@ -2,35 +2,48 @@ import pl from "@polars";
 describe("datelike", () => {
   test("asof join", () => {
     const fmt = "%F %T%.3f";
-    const quotes = pl.DataFrame({
-      dates: pl
-        .Series([
-          "2016-05-25 13:30:00.023",
-          "2016-05-25 13:30:00.023",
-          "2016-05-25 13:30:00.030",
-          "2016-05-25 13:30:00.041",
-          "2016-05-25 13:30:00.048",
-          "2016-05-25 13:30:00.049",
-          "2016-05-25 13:30:00.072",
-          "2016-05-25 13:30:00.075",
-        ])
-        .str.strptime(pl.Datetime("ms"), fmt),
-      ticker: ["GOOG", "MSFT", "MSFT", "MSFT", "GOOG", "AAPL", "GOOG", "MSFT"],
-      bid: [720.5, 51.95, 51.97, 51.99, 720.5, 97.99, 720.5, 52.01],
-    });
-    const trades = pl.DataFrame({
-      dates: pl
-        .Series([
-          "2016-05-25 13:30:00.023",
-          "2016-05-25 13:30:00.038",
-          "2016-05-25 13:30:00.048",
-          "2016-05-25 13:30:00.048",
-          "2016-05-25 13:30:00.048",
-        ])
-        .str.strptime(pl.Datetime("ms"), fmt),
-      ticker: ["MSFT", "MSFT", "GOOG", "GOOG", "AAPL"],
-      bid: [51.95, 51.95, 720.77, 720.92, 98.0],
-    });
+    const quotes = pl
+      .DataFrame({
+        dates: pl
+          .Series([
+            "2016-05-25 13:30:00.023",
+            "2016-05-25 13:30:00.023",
+            "2016-05-25 13:30:00.030",
+            "2016-05-25 13:30:00.041",
+            "2016-05-25 13:30:00.048",
+            "2016-05-25 13:30:00.049",
+            "2016-05-25 13:30:00.072",
+            "2016-05-25 13:30:00.075",
+          ])
+          .str.strptime(pl.Datetime("ms"), fmt),
+        ticker: [
+          "GOOG",
+          "MSFT",
+          "MSFT",
+          "MSFT",
+          "GOOG",
+          "AAPL",
+          "GOOG",
+          "MSFT",
+        ],
+        bid: [720.5, 51.95, 51.97, 51.99, 720.5, 97.99, 720.5, 52.01],
+      })
+      .sort("dates");
+    const trades = pl
+      .DataFrame({
+        dates: pl
+          .Series([
+            "2016-05-25 13:30:00.023",
+            "2016-05-25 13:30:00.038",
+            "2016-05-25 13:30:00.048",
+            "2016-05-25 13:30:00.048",
+            "2016-05-25 13:30:00.048",
+          ])
+          .str.strptime(pl.Datetime("ms"), fmt),
+        ticker: ["MSFT", "MSFT", "GOOG", "GOOG", "AAPL"],
+        bid: [51.95, 51.95, 720.77, 720.92, 98.0],
+      })
+      .sort("dates");
     let out: any = trades.joinAsof(quotes, { on: "dates" });
     expect(out.columns).toEqual([
       "dates",
@@ -41,8 +54,8 @@ describe("datelike", () => {
     ]);
     expect(out.getColumn("dates").cast(pl.Float64).div(1000).toArray()).toEqual(
       [
-        1464183000023, 1464183000038, 1464183000048, 1464183000048,
-        1464183000048,
+        1464183000.023, 1464183000.038, 1464183000.048, 1464183000.048,
+        1464183000.048,
       ],
     );
     out = trades

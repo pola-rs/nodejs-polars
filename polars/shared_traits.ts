@@ -1044,6 +1044,12 @@ export interface GroupByOps<T> {
     @param period length of the window
     @param offset offset of the window. Default is `-period`
     @param closed Defines if the window interval is closed or not.
+    @param check_sorted
+            When the ``by`` argument is given, polars can not check sortedness
+            by the metadata and has to do a full scan on the index column to
+            verify data is sorted. This is expensive. If you are sure the
+            data within the by groups is sorted, you can set this to ``False``.
+            Doing so incorrectly will lead to incorrect output
 
     Any of `{"left", "right", "both" "none"}`
     @param by Also group by this column/these columns
@@ -1094,11 +1100,12 @@ export interface GroupByOps<T> {
     ```
    */
   groupByRolling(opts: {
-    indexColumn: string;
+    indexColumn: ColumnsOrExpr;
     by?: ColumnsOrExpr;
     period: string;
     offset?: string;
     closed?: "left" | "right" | "both" | "none";
+    check_sorted?: boolean;
   }): T;
 
   /**
@@ -1150,6 +1157,12 @@ export interface GroupByOps<T> {
   @param includeBoundaries add the lower and upper bound of the window to the "_lower_bound" and "_upper_bound" columns. This will impact performance because it's harder to parallelize
   @param closed Defines if the window interval is closed or not.
       Any of {"left", "right", "both" "none"}
+  @param check_sorted
+      When the ``by`` argument is given, polars can not check sortedness
+      by the metadata and has to do a full scan on the index column to
+      verify data is sorted. This is expensive. If you are sure the
+      data within the by groups is sorted, you can set this to ``False``.
+      Doing so incorrectly will lead to incorrect output
   @param by Also group by this column/these columns
  */
   groupByDynamic(options: {
@@ -1162,5 +1175,6 @@ export interface GroupByOps<T> {
     closed?: "left" | "right" | "both" | "none";
     by?: ColumnsOrExpr;
     start_by: StartBy;
+    check_sorted?: boolean;
   }): T;
 }

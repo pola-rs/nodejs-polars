@@ -616,11 +616,19 @@ export const _LazyDataFrame = (_ldf: any): LazyDataFrame => {
 
       return _LazyGroupBy(_ldf.groupby(by, maintainOrder));
     },
-    groupByRolling({ indexColumn, by, period, offset, closed }) {
+    groupByRolling({ indexColumn, by, period, offset, closed, check_sorted }) {
       offset = offset ?? `-${period}`;
       closed = closed ?? "right";
       by = prepareGroupbyInputs(by);
-      const lgb = _ldf.groupbyRolling(indexColumn, period, offset, closed, by);
+      check_sorted = check_sorted ?? false;
+      const lgb = _ldf.groupbyRolling(
+        pli.col(indexColumn),
+        period,
+        offset,
+        closed,
+        by,
+        check_sorted,
+      );
 
       return _LazyGroupBy(lgb);
     },
@@ -634,6 +642,7 @@ export const _LazyDataFrame = (_ldf: any): LazyDataFrame => {
       closed,
       by,
       start_by,
+      check_sorted,
     }) {
       period = period ?? every;
       offset = offset ?? `-${period}`;
@@ -642,9 +651,10 @@ export const _LazyDataFrame = (_ldf: any): LazyDataFrame => {
       truncate = truncate ?? true;
       includeBoundaries = includeBoundaries ?? false;
       start_by = start_by ?? "monday";
+      check_sorted = check_sorted ?? false;
 
       const lgb = _ldf.groupbyDynamic(
-        indexColumn,
+        pli.col(indexColumn),
         every,
         period,
         offset,
@@ -653,6 +663,7 @@ export const _LazyDataFrame = (_ldf: any): LazyDataFrame => {
         closed,
         by,
         start_by,
+        check_sorted,
       );
 
       return _LazyGroupBy(lgb);

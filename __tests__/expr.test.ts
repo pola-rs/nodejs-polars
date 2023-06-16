@@ -453,8 +453,7 @@ describe("expr", () => {
     const actual = df
       .groupBy("a")
       .agg(col("b").list().keepName())
-      .sort({ by: "a" })
-      .explode("b");
+      .sort({ by: "a" });
     expect(actual).toFrameEqual(expected);
   });
   test("kurtosis", () => {
@@ -478,7 +477,7 @@ describe("expr", () => {
       a: ["a", "b", "c"],
     });
     const expected = pl.DataFrame({
-      list: [["a", "b", "c"]],
+      list: ["a", "b", "c"],
     });
     const actual = df.select(col("a").list().alias("list"));
     expect(actual).toFrameEqual(expected);

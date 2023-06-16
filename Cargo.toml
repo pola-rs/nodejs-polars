@@ -15,11 +15,12 @@ crate-type = ["cdylib", "lib"]
 [dependencies]
 ahash = "0.8.3"
 bincode = "1.3.3"
-napi = {version = "2.13.1", default-features = false, features = ["napi8", "serde-json", "experimental"]}
+napi = {version = "2.13.2", default-features = false, features = ["napi8", "serde-json", "experimental"]}
 napi-derive = {version = "2.13.0", default-features = false}
-polars-core = {git = "https://github.com/pola-rs/polars.git", rev = "af2948a430846dae784d062a3c6f223e685af9ac", default-features = false}
-polars-ops = {git = "https://github.com/pola-rs/polars.git", rev = "af2948a430846dae784d062a3c6f223e685af9ac", default-features = false}
-polars-io = {git = "https://github.com/pola-rs/polars.git", rev = "af2948a430846dae784d062a3c6f223e685af9ac", default-features = false}
+polars-core = {git = "https://github.com/pola-rs/polars.git", rev = "ee2366b68f35c4b69dfe34cbf1eae107d4ebe97b", default-features = false}
+polars-ops = {git = "https://github.com/pola-rs/polars.git", rev = "ee2366b68f35c4b69dfe34cbf1eae107d4ebe97b", default-features = false}
+polars-io = {git = "https://github.com/pola-rs/polars.git", rev = "ee2366b68f35c4b69dfe34cbf1eae107d4ebe97b", default-features = false}
+polars-plan = {git = "https://github.com/pola-rs/polars.git", rev = "ee2366b68f35c4b69dfe34cbf1eae107d4ebe97b", default-features = false}
 thiserror = "1.0.40"
 smartstring = { version = "1" }
 serde_json = {version = "1"}
@@ -37,7 +38,6 @@ features = [
   "temporal",
   "random",
   "object",
-  "csv-file",
   "fmt",
   "performant",
   "dtype-full",
@@ -95,7 +95,7 @@ features = [
   "timezones",
 ]
 git = "https://github.com/pola-rs/polars.git"
-rev = "af2948a430846dae784d062a3c6f223e685af9ac"
+rev = "ee2366b68f35c4b69dfe34cbf1eae107d4ebe97b"
 
 [build-dependencies]
 napi-build = "2.0.1"

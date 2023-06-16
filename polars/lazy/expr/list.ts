@@ -45,13 +45,13 @@ export const ExprListFunctions = (_expr: any): ExprList => {
       throw new Error("not yet implemented");
     },
     diff(n = 1, nullBehavior = "ignore") {
-      return wrap("lstDiff", n, nullBehavior);
+      return wrap("listDiff", n, nullBehavior);
     },
     get(index: number | Expr) {
       if (Expr.isExpr(index)) {
-        return wrap("lstGet", index._expr);
+        return wrap("listGet", index._expr);
       } else {
-        return wrap("lstGet", pli.lit(index));
+        return wrap("listGet", pli.lit(index));
       }
     },
     head(n = 5) {
@@ -62,51 +62,51 @@ export const ExprListFunctions = (_expr: any): ExprList => {
     },
     eval(expr, parallel = true) {
       if (Expr.isExpr(expr)) {
-        return wrap("lstEval", expr._expr, parallel);
+        return wrap("listEval", expr._expr, parallel);
       } else {
-        return wrap("lstEval", expr, parallel);
+        return wrap("listEval", expr, parallel);
       }
     },
     first() {
       return this.get(0);
     },
     join(separator = ",") {
-      return wrap("lstJoin", separator);
+      return wrap("listJoin", separator);
     },
     last() {
       return this.get(-1);
     },
     lengths() {
-      return wrap("lstLengths");
+      return wrap("listLengths");
     },
     max() {
-      return wrap("lstMax");
+      return wrap("listMax");
     },
     mean() {
-      return wrap("lstMean");
+      return wrap("listMean");
     },
     min() {
-      return wrap("lstMin");
+      return wrap("listMin");
     },
     reverse() {
-      return wrap("lstReverse");
+      return wrap("listReverse");
     },
     shift(n) {
-      return wrap("lstShift", n);
+      return wrap("listShift", n);
     },
     slice(offset, length) {
-      return wrap("lstSlice", offset, length);
+      return wrap("listSlice", offset, length);
     },
     sort(reverse: any = false) {
       return typeof reverse === "boolean"
-        ? wrap("lstSort", reverse)
-        : wrap("lstSort", reverse.reverse);
+        ? wrap("listSort", reverse)
+        : wrap("listSort", reverse.reverse);
     },
     sum() {
-      return wrap("lstSum");
+      return wrap("listSum");
     },
     unique() {
-      return wrap("lstUnique");
+      return wrap("listUnique");
     },
   };
 };
