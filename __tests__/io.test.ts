@@ -330,12 +330,16 @@ describe("stream", () => {
     await expect(promise).rejects.toBeDefined();
   });
 
-  test.skip("readJSON", async () => {
+  test("readJSON", async () => {
     const readStream = new Stream.Readable({ read() {} });
-    readStream.push(`${JSON.stringify({ a: 1, b: 2 })} \n`);
-    readStream.push(`${JSON.stringify({ a: 2, b: 2 })} \n`);
-    readStream.push(`${JSON.stringify({ a: 3, b: 2 })} \n`);
-    readStream.push(`${JSON.stringify({ a: 4, b: 2 })} \n`);
+    readStream.push(
+      `${JSON.stringify([
+        { a: 1, b: 2 },
+        { a: 2, b: 2 },
+        { a: 3, b: 2 },
+        { a: 4, b: 2 },
+      ])}`,
+    );
     readStream.push(null);
 
     const expected = pl.DataFrame({

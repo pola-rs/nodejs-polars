@@ -339,7 +339,7 @@ impl JsExpr {
 
     #[napi(catch_unwind)]
     pub fn sort_by(&self, by: Vec<&JsExpr>, reverse: Vec<bool>) -> JsExpr {
-        let by = by.into_iter().map(|e| e.inner.clone()).collect::<Vec<_>>();
+        let by = by.to_exprs();
         self.clone().inner.sort_by(by, reverse).into()
     }
     #[napi(catch_unwind)]
@@ -1575,7 +1575,7 @@ pub fn range(low: i64, high: i64, dtype: Wrap<DataType>) -> JsExpr {
 
 #[napi(catch_unwind)]
 pub fn concat_lst(s: Vec<&JsExpr>) -> JsResult<JsExpr> {
-    let s = s.into_iter().map(|e| e.inner.clone()).collect::<Vec<_>>();
+    let s = s.to_exprs();
     let expr = polars::lazy::dsl::concat_list(s).map_err(JsPolarsErr::from)?;
     Ok(expr.into())
 }

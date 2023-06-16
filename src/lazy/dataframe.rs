@@ -226,10 +226,7 @@ impl JsLazyFrame {
     ) -> JsLazyGroupBy {
         let closed_window = closed.0;
         let ldf = self.ldf.clone();
-        let by = by
-            .into_iter()
-            .map(|jsexpr| jsexpr.inner.clone())
-            .collect::<Vec<_>>();
+        let by = by.to_exprs();
         let lazy_gb = ldf.groupby_rolling(
             index_column.inner.clone(),
             by,
@@ -261,10 +258,7 @@ impl JsLazyFrame {
         check_sorted: bool,
     ) -> JsLazyGroupBy {
         let closed_window = closed.0;
-        let by = by
-            .into_iter()
-            .map(|pyexpr| pyexpr.inner.clone())
-            .collect::<Vec<_>>();
+        let by = by.to_exprs();
         let ldf = self.ldf.clone();
         let lazy_gb = ldf.groupby_dynamic(
             index_column.inner.clone(),

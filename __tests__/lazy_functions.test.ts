@@ -151,11 +151,13 @@ describe("lazy functions", () => {
     );
     expect(actual).toFrameEqual(expected);
   });
-  test.skip("argSortBy", () => {
+  test("argSortBy", () => {
     const actual = _df()
-      .select(pl.argSortBy(["int_nulls", "floats"], [false, true]))
-      .getColumn("literal");
-    const expected = pl.Series("literal", [0]);
+      .select(
+        pl.argSortBy([pl.col("int_nulls"), pl.col("floats")], [false, true]),
+      )
+      .getColumn("int_nulls");
+    const expected = pl.Series("int_nulls", [1, 0, 2]);
     expect(actual).toSeriesEqual(expected);
   });
   test("avg", () => {

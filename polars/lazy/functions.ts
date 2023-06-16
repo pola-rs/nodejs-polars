@@ -194,14 +194,17 @@ export function all(): Expr {
  */
 export function argSortBy(
   exprs: Expr[] | string[],
-  reverse: boolean | boolean[] = false,
+  descending: boolean | boolean[] = false,
 ): Expr {
-  if (!Array.isArray(reverse)) {
-    reverse = Array.from({ length: exprs.length }, () => reverse) as any;
+  if (!Array.isArray(descending)) {
+    descending = Array.from(
+      { length: exprs.length },
+      () => descending,
+    ) as boolean[];
   }
   const by = selectionToExprList(exprs);
 
-  return _Expr(pli.argsortBy(by, reverse as any));
+  return _Expr(pli.argsortBy(by, descending as boolean | boolean[]));
 }
 /** Alias for mean. @see {@link mean} */
 export function avg(column: string): Expr;
