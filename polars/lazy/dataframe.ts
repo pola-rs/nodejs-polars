@@ -633,6 +633,7 @@ export const _LazyDataFrame = (_ldf: any): LazyDataFrame => {
       includeBoundaries,
       closed,
       by,
+      start_by,
     }) {
       period = period ?? every;
       offset = offset ?? `-${period}`;
@@ -640,6 +641,7 @@ export const _LazyDataFrame = (_ldf: any): LazyDataFrame => {
       by = prepareGroupbyInputs(by);
       truncate = truncate ?? true;
       includeBoundaries = includeBoundaries ?? false;
+      start_by = start_by ?? "monday";
 
       const lgb = _ldf.groupbyDynamic(
         indexColumn,
@@ -650,6 +652,7 @@ export const _LazyDataFrame = (_ldf: any): LazyDataFrame => {
         includeBoundaries,
         closed,
         by,
+        start_by,
       );
 
       return _LazyGroupBy(lgb);
@@ -849,7 +852,7 @@ export const _LazyDataFrame = (_ldf: any): LazyDataFrame => {
         return this.sort(arg.by, arg.reverse);
       }
       if (typeof arg === "string") {
-        return wrap("sort", arg, reverse, true);
+        return wrap("sort", arg, reverse, true, false);
       } else {
         reverse = [reverse].flat(3) as any;
         const by = selectionToExprList(arg, false);

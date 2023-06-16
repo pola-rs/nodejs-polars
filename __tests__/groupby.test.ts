@@ -10,9 +10,7 @@ describe("groupby", () => {
   });
 
   test("aggList", () => {
-    const s = pl.Series("a", [1], pl.Int16);
     const actual = df.groupBy("name").aggList().sort("name");
-
     const expected = pl.DataFrame({
       name: ["a", "b", "c"],
       foo: [[1, 3], [3, 7], [5]],
@@ -153,7 +151,7 @@ describe("groupby", () => {
 });
 describe("groupby ops", () => {
   test("rolling", () => {
-    let dates = [
+    const dates = [
       "2020-01-01 13:45:48",
       "2020-01-01 16:42:13",
       "2020-01-01 16:45:09",
@@ -165,7 +163,6 @@ describe("groupby ops", () => {
     const df = pl
       .DataFrame({ dt: dates, a: [3, 7, 5, 9, 2, 1] })
       .withColumn(pl.col("dt").str.strptime(pl.Datetime("ms")));
-
     const a = pl.col("a");
     const out = df
       .groupByRolling({ indexColumn: "dt", period: "2d" })
@@ -192,12 +189,13 @@ describe("groupby ops", () => {
         by: ["admin", "five_type", "actor"],
         indexColumn: "event_date",
         every: "1mo",
+        start_by: "datapoint",
       })
       .agg(pl.col("adm1_code").unique(), pl.col("fatalities").gt(0).sum());
     const expected = [
-      new Date("2021-04-01"),
-      new Date("2021-05-01"),
-      new Date("2021-04-01"),
+      new Date("2021-04-05"),
+      new Date("2021-05-05"),
+      new Date("2021-04-26"),
     ];
     const actual = out.getColumn("event_date");
     expect(actual.toArray()).toEqual(expected);
@@ -220,12 +218,13 @@ describe("groupby ops", () => {
         indexColumn: "event_date",
         every: "1mo",
         by: ["admin", "five_type", "actor"],
+        start_by: "datapoint",
       })
       .agg(pl.col("adm1_code").unique(), pl.col("fatalities").gt(0).sum());
     const expected = [
-      new Date("2021-04-01"),
-      new Date("2021-05-01"),
-      new Date("2021-04-01"),
+      new Date("2021-04-05"),
+      new Date("2021-05-05"),
+      new Date("2021-04-26"),
     ];
     const actual = out.getColumn("event_date").toArray();
     expect(actual).toEqual(expected);
@@ -246,15 +245,16 @@ describe("groupby ops", () => {
         indexColumn: "dt",
         every: "1mo",
         closed: "right",
+        start_by: "datapoint",
       })
       .agg(pl.col("idx"));
     const expected = pl.DataFrame({
       dt: [
-        new Date("2019-12-01"),
-        new Date("2020-01-01"),
-        new Date("2020-02-01"),
+        new Date("2019-12-30"),
+        new Date("2020-01-30"),
+        new Date("2020-02-29"),
       ],
-      idx: [[0], [1, 2], [3]],
+      idx: [[0, 1], [2], [3]],
     });
     expect(actual).toFrameEqual(expected);
   });

@@ -4,6 +4,10 @@ use crate::prelude::*;
 use napi::{Env, Task};
 use polars::io::RowCount;
 use polars::lazy::frame::{LazyCsvReader, LazyFrame, LazyGroupBy};
+use polars::prelude::{ClosedWindow, CsvEncoding, DataFrame, Field, JoinType, Schema};
+use polars_core::cloud::CloudOptions;
+use polars_io::parquet::ParallelStrategy;
+use std::collections::HashMap;
 
 #[napi]
 #[repr(transparent)]
@@ -128,13 +132,20 @@ impl JsLazyFrame {
         ldf.into()
     }
     #[napi(catch_unwind)]
-    pub fn sort(&self, by_column: String, reverse: bool, nulls_last: bool) -> JsLazyFrame {
+    pub fn sort(
+        &self,
+        by_column: String,
+        reverse: bool,
+        nulls_last: bool,
+        multithreaded: bool,
+    ) -> JsLazyFrame {
         let ldf = self.ldf.clone();
         ldf.sort(
             &by_column,
             SortOptions {
                 descending: reverse,
                 nulls_last,
+                multithreaded,
             },
         )
         .into()
@@ -214,11 +225,14 @@ impl JsLazyFrame {
     ) -> JsLazyGroupBy {
         let closed_window = closed.0;
         let ldf = self.ldf.clone();
-        let by = by.to_exprs();
+        let by = by
+            .into_iter()
+            .map(|jsexpr| jsexpr.inner.clone())
+            .collect::<Vec<_>>();
         let lazy_gb = ldf.groupby_rolling(
             by,
             RollingGroupOptions {
-                index_column,
+                index_column: index_column.into(),
                 period: Duration::parse(&period),
                 offset: Duration::parse(&offset),
                 closed_window,
@@ -240,21 +254,25 @@ impl JsLazyFrame {
         include_boundaries: bool,
         closed: Wrap<ClosedWindow>,
         by: Vec<&JsExpr>,
+        start_by: Wrap<StartBy>,
     ) -> JsLazyGroupBy {
         let closed_window = closed.0;
-        let by = by.to_exprs();
+        let by = by
+            .into_iter()
+            .map(|pyexpr| pyexpr.inner.clone())
+            .collect::<Vec<_>>();
         let ldf = self.ldf.clone();
         let lazy_gb = ldf.groupby_dynamic(
             by,
             DynamicGroupOptions {
-                index_column,
+                index_column: index_column.into(),
                 every: Duration::parse(&every),
                 period: Duration::parse(&period),
                 offset: Duration::parse(&offset),
                 truncate,
                 include_boundaries,
                 closed_window,
-                ..Default::default()
+                start_by: start_by.0,
             },
         );
 
@@ -267,8 +285,8 @@ impl JsLazyFrame {
         other: &JsLazyFrame,
         left_on: &JsExpr,
         right_on: &JsExpr,
-        left_by: Option<Vec<String>>,
-        right_by: Option<Vec<String>>,
+        left_by: Option<Vec<&str>>,
+        right_by: Option<Vec<&str>>,
         allow_parallel: bool,
         force_parallel: bool,
         suffix: String,
@@ -281,7 +299,6 @@ impl JsLazyFrame {
             "backward" => AsofStrategy::Backward,
             _ => panic!("expected one of {{'forward', 'backward'}}"),
         };
-
         let ldf = self.ldf.clone();
         let other = other.ldf.clone();
         let left_on = left_on.inner.clone();
@@ -294,10 +311,10 @@ impl JsLazyFrame {
             .force_parallel(force_parallel)
             .how(JoinType::AsOf(AsOfOptions {
                 strategy,
-                left_by,
-                right_by,
+                left_by: left_by.map(strings_to_smartstrings),
+                right_by: right_by.map(strings_to_smartstrings),
                 tolerance: tolerance.map(|t| t.0.into_static().unwrap()),
-                tolerance_str,
+                tolerance_str: tolerance_str.map(|s| s.into()),
             }))
             .suffix(suffix)
             .finish()
@@ -312,36 +329,9 @@ impl JsLazyFrame {
         right_on: Vec<&JsExpr>,
         allow_parallel: bool,
         force_parallel: bool,
-        how: String,
+        how: Wrap<JoinType>,
         suffix: String,
-        asof_by_left: Vec<String>,
-        asof_by_right: Vec<String>,
     ) -> JsLazyFrame {
-        let how = match how.as_ref() {
-            "left" => JoinType::Left,
-            "inner" => JoinType::Inner,
-            "outer" => JoinType::Outer,
-            "semi" => JoinType::Semi,
-            "anti" => JoinType::Anti,
-            "asof" => JoinType::AsOf(AsOfOptions {
-                strategy: AsofStrategy::Backward,
-                left_by: if asof_by_left.is_empty() {
-                    None
-                } else {
-                    Some(asof_by_left)
-                },
-                right_by: if asof_by_right.is_empty() {
-                    None
-                } else {
-                    Some(asof_by_right)
-                },
-                tolerance: None,
-                tolerance_str: None,
-            }),
-            "cross" => JoinType::Cross,
-            _ => panic!("not supported"),
-        };
-
         let ldf = self.ldf.clone();
         let other = other.ldf.clone();
         let left_on = left_on.to_exprs();
@@ -353,7 +343,7 @@ impl JsLazyFrame {
             .right_on(right_on)
             .allow_parallel(allow_parallel)
             .force_parallel(force_parallel)
-            .how(how)
+            .how(how.0)
             .suffix(suffix)
             .finish()
             .into()
@@ -493,18 +483,19 @@ impl JsLazyFrame {
     #[napi(catch_unwind)]
     pub fn melt(
         &self,
-        id_vars: Vec<String>,
-        value_vars: Vec<String>,
-        value_name: Option<String>,
-        variable_name: Option<String>,
+        id_vars: Vec<&str>,
+        value_vars: Vec<&str>,
+        value_name: Option<&str>,
+        variable_name: Option<&str>,
+        streamable: Option<bool>,
     ) -> JsLazyFrame {
         let args = MeltArgs {
-            id_vars,
-            value_vars,
-            value_name,
-            variable_name,
+            id_vars: strings_to_smartstrings(id_vars),
+            value_vars: strings_to_smartstrings(value_vars),
+            value_name: value_name.map(|s| s.into()),
+            variable_name: variable_name.map(|s| s.into()),
+            streamable: streamable.unwrap_or(false)
         };
-
         let ldf = self.ldf.clone();
         ldf.melt(args).into()
     }
@@ -532,7 +523,7 @@ impl JsLazyFrame {
             .schema()
             .map_err(JsPolarsErr::from)?
             .iter_names()
-            .cloned()
+            .map(|s| s.as_str().into())
             .collect())
     }
 
@@ -546,6 +537,8 @@ impl JsLazyFrame {
 pub struct ScanCsvOptions {
     pub infer_schema_length: Option<u32>,
     pub cache: Option<bool>,
+    pub overwrite_dtype: Option<HashMap<String, Wrap<DataType>>>,
+    pub overwrite_dtype_slice: Option<Vec<Wrap<DataType>>>,
     pub has_header: Option<bool>,
     pub ignore_errors: bool,
     pub n_rows: Option<u32>,
@@ -584,21 +577,28 @@ pub fn scan_csv(path: String, options: ScanCsvOptions) -> napi::Result<JsLazyFra
         None
     };
 
+    let overwrite_dtype = options.overwrite_dtype.map(|map| {
+        let fields = map.iter().map(|(key, val)| {
+            let value = val.clone().0;
+            Field::new(key, value)
+        });
+        Schema::from(fields)
+    });
+
     let encoding = match options.encoding.as_ref() {
         "utf8" => CsvEncoding::Utf8,
         "utf8-lossy" => CsvEncoding::LossyUtf8,
         e => return Err(JsPolarsErr::Other(format!("encoding not {} not implemented.", e)).into()),
     };
     let r = LazyCsvReader::new(path)
-        // .with_chunk_size()
         .with_infer_schema_length(Some(infer_schema_length))
         .with_delimiter(options.sep.as_bytes()[0])
         .has_header(has_header)
-        .with_ignore_parser_errors(parse_dates)
+        .with_ignore_errors(parse_dates)
         .with_skip_rows(skip_rows)
         .with_n_rows(n_rows)
         .with_cache(cache)
-        // // .with_dtype_overwrite(overwrite_dtype.as_ref())
+        .with_dtype_overwrite(overwrite_dtype.as_ref())
         .low_memory(low_memory)
         .with_comment_char(comment_char)
         .with_quote_char(quote_char)
@@ -606,10 +606,9 @@ pub fn scan_csv(path: String, options: ScanCsvOptions) -> napi::Result<JsLazyFra
         .with_skip_rows_after_header(skip_rows)
         .with_encoding(encoding)
         .with_row_count(row_count)
-        .with_parse_dates(parse_dates)
+        .with_try_parse_dates(parse_dates)
         .finish()
         .map_err(JsPolarsErr::from)?;
-    // .with_null_values(null_values)
     Ok(r.into())
 }
 
@@ -617,22 +616,25 @@ pub fn scan_csv(path: String, options: ScanCsvOptions) -> napi::Result<JsLazyFra
 pub struct ScanParquetOptions {
     pub n_rows: Option<i64>,
     pub cache: Option<bool>,
-    pub rechunk: Option<bool>,
+    pub parallel: Wrap<ParallelStrategy>,
     pub row_count: Option<JsRowCount>,
+    pub rechunk: Option<bool>,
+    pub row_count_name: Option<String>,
+    pub row_count_offset: Option<u32>,
     pub low_memory: Option<bool>,
+    pub use_statistics: Option<bool>,
 }
 
 #[napi(catch_unwind)]
-pub fn scan_parquet(
-    path: String,
-    options: ScanParquetOptions,
-    parallel: Wrap<ParallelStrategy>,
-) -> napi::Result<JsLazyFrame> {
+pub fn scan_parquet(path: String, options: ScanParquetOptions) -> napi::Result<JsLazyFrame> {
     let n_rows = options.n_rows.map(|i| i as usize);
     let cache = options.cache.unwrap_or(true);
+    let parallel = options.parallel;
+    let row_count: Option<RowCount> = options.row_count.map(|rc| rc.into());
     let rechunk = options.rechunk.unwrap_or(false);
     let low_memory = options.low_memory.unwrap_or(false);
-    let row_count: Option<RowCount> = options.row_count.map(|rc| rc.into());
+    let use_statistics = options.use_statistics.unwrap_or(false);
+    let cloud_options = Some(CloudOptions::default());
     let args = ScanArgsParquet {
         n_rows,
         cache,
@@ -640,6 +642,8 @@ pub fn scan_parquet(
         rechunk,
         row_count,
         low_memory,
+        cloud_options,
+        use_statistics,
     };
     let lf = LazyFrame::scan_parquet(path, args).map_err(JsPolarsErr::from)?;
     Ok(lf.into())

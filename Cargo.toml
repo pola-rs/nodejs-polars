@@ -13,17 +13,20 @@ repository = "https://github.com/pola-rs/nodejs-polars"
 crate-type = ["cdylib", "lib"]
 
 [dependencies]
-ahash = "0.7"
-bincode = "1.3"
-napi = {version = "2.10.9", default-features = false, features = ["napi8", "serde-json", "experimental"]}
-napi-derive = {version = "2.9.4", default-features = false}
-polars-core = {git = "https://github.com/pola-rs/polars.git", rev = "43598c3e21a2b6c1246a565005045ef553e4f688", default-features = false}
-thiserror = "1.0.20"
-
+ahash = "0.8.3"
+bincode = "1.3.3"
+napi = {version = "2.13.1", default-features = false, features = ["napi8", "serde-json", "experimental"]}
+napi-derive = {version = "2.13.0", default-features = false}
+polars-core = {git = "https://github.com/pola-rs/polars.git", rev = "af2948a430846dae784d062a3c6f223e685af9ac", default-features = false}
+polars-ops = {git = "https://github.com/pola-rs/polars.git", rev = "af2948a430846dae784d062a3c6f223e685af9ac", default-features = false}
+polars-io = {git = "https://github.com/pola-rs/polars.git", rev = "af2948a430846dae784d062a3c6f223e685af9ac", default-features = false}
+thiserror = "1.0.40"
+smartstring = { version = "1" }
 serde_json = {version = "1"}
 
 [dependencies.polars]
 features = [
+  "binary_encoding",
   "rolling_window",
   "json",
   "dynamic_groupby",
@@ -41,6 +44,7 @@ features = [
   "rows",
   "private",
   "round_series",
+  "is_unique",
   "is_in",
   "is_first",
   "asof_join",
@@ -88,9 +92,10 @@ features = [
   "avro",
   "list_eval",
   "arg_where",
+  "timezones",
 ]
 git = "https://github.com/pola-rs/polars.git"
-rev = "43598c3e21a2b6c1246a565005045ef553e4f688"
+rev = "af2948a430846dae784d062a3c6f223e685af9ac"
 
 [build-dependencies]
 napi-build = "2.0.1"

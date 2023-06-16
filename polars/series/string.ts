@@ -261,7 +261,7 @@ export const SeriesStringFunctions = (_s: any): StringNamespace => {
         .getColumn(_s.name);
     },
     contains(pat: string | RegExp) {
-      return wrap("strContains", regexToString(pat));
+      return wrap("strContains", regexToString(pat), false);
     },
     decode(arg, strict = false) {
       if (typeof arg === "string") {

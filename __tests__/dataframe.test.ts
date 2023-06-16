@@ -45,7 +45,7 @@ describe("dataframe", () => {
     const actual = expected.clone();
     expect(actual).toFrameEqual(expected);
   });
-  test.skip("describe", () => {
+  test("describe", () => {
     const actual = pl
       .DataFrame({
         a: [1, 2, 3],
@@ -56,8 +56,8 @@ describe("dataframe", () => {
     const expected = pl.DataFrame({
       describe: ["mean", "std", "min", "max", "median"],
       a: [2, 1, 1, 3, 2],
-      b: [null, null, null, null, null],
-      c: [null, null, 0, 1, null],
+      b: [null, null, "a", "c", null],
+      c: [0.6666666666666666, 0.5773502588272095, 0, 1, 1],
     });
 
     expect(actual).toFrameEqual(expected);
@@ -192,13 +192,22 @@ describe("dataframe", () => {
       expect(actual).toFrameEqual(expected);
     });
   });
+  test("unnest", () => {
+    const expected = pl.DataFrame({
+      int: [1, 2],
+      str: ["a", "b"],
+      bool: [true, null],
+      list: [[1, 2], [3]],
+    });
+    const actual = expected.toStruct("my_struct").toFrame().unnest("my_struct");
+    expect(actual).toFrameEqual(expected);
+  });
   test("DF with nulls", () => {
-    const actual = pl
-      .DataFrame([
-        { foo: 1,   bar: 6.0, ham: "a" },
-        { foo: null,bar: 0.5, ham: "b" },
-        { foo: 3,   bar: 7.0, ham: "c" },
-      ]);
+    const actual = pl.DataFrame([
+      { foo: 1, bar: 6.0, ham: "a" },
+      { foo: null, bar: 0.5, ham: "b" },
+      { foo: 3, bar: 7.0, ham: "c" },
+    ]);
     const expected = pl.DataFrame({
       foo: [1, null, 3],
       bar: [6.0, 0.5, 7.0],
@@ -284,7 +293,35 @@ describe("dataframe", () => {
     });
     expect(actual).toFrameEqual(expected);
   });
-  // test.todo("filter");
+  test("filter", () => {
+    const df = pl.DataFrame({
+      foo: [1, 2, 3],
+      bar: [6, 7, 8],
+      ham: ["a", "b", "c"],
+    });
+    // Filter on one condition
+    let actual = df.filter(pl.col("foo").lt(3));
+    let expected = pl.DataFrame({
+      foo: [1, 2],
+      bar: [6, 7],
+      ham: ["a", "b"],
+    });
+    expect(actual).toFrameEqual(expected);
+
+    // Filter on multiple conditions
+    actual = df.filter(
+      pl
+        .col("foo")
+        .lt(3)
+        .and(pl.col("ham").eq(pl.lit("a"))),
+    );
+    expected = pl.DataFrame({
+      foo: [1],
+      bar: [6],
+      ham: ["a"],
+    });
+    expect(actual).toFrameEqual(expected);
+  });
   test("findIdxByName", () => {
     const actual = pl
       .DataFrame({
@@ -296,12 +333,12 @@ describe("dataframe", () => {
     const expected = 2;
     expect(actual).toEqual(expected);
   });
-  // test("fold:single column", () => {
-  //   const expected = pl.Series([1, 2, 3]);
-  //   const df = pl.DataFrame([expected]);
-  //   const actual = df.fold((a, b) => a.concat(b));
-  //   expect(actual).toSeriesEqual(expected);
-  // });
+  test("fold:single column", () => {
+    const expected = pl.Series([1, 2, 3]);
+    const df = pl.DataFrame([expected]);
+    const actual = df.fold((a, b) => a.concat(b));
+    expect(actual).toSeriesEqual(expected);
+  });
   // test("fold", () => {
   //   const s1 = pl.Series([1, 2, 3]);
   //   const s2 = pl.Series([4, 5, 6]);
@@ -611,10 +648,23 @@ describe("dataframe", () => {
         ham: ["a", "b", "c"],
       })
       .median();
-
     expect(actual.row(0)).toEqual([2, 7, null]);
   });
-  test.todo("melt");
+  test("melt", () => {
+    const df = pl.DataFrame({
+      id: [1],
+      asset_key_1: ["123"],
+      asset_key_2: ["456"],
+      asset_key_3: ["abc"],
+    });
+    const actual = df.melt("id", ["asset_key_1", "asset_key_2", "asset_key_3"]);
+    const expected = pl.DataFrame({
+      id: [1, 1, 1],
+      variable: ["asset_key_1", "asset_key_2", "asset_key_3"],
+      value: ["123", "456", "abc"],
+    });
+    expect(actual).toFrameEqual(expected);
+  });
   test("min:axis:0", () => {
     const actual = pl
       .DataFrame({
@@ -765,7 +815,7 @@ describe("dataframe", () => {
     expect(fn).toThrow(TypeError);
   });
   test("select:strings", () => {
-    const columns = ["ham", "foo"]
+    const columns = ["ham", "foo"];
     const actual = pl
       .DataFrame({
         foo: [1, 2, 3, 1],
@@ -986,7 +1036,7 @@ describe("dataframe", () => {
     const expected = [9, 8];
     expect(actual).toEqual(expected);
   });
-  test.skip("transpose", () => {
+  test("transpose", () => {
     const expected = pl.DataFrame({
       column_0: [1, 1],
       column_1: [2, 2],
@@ -999,9 +1049,9 @@ describe("dataframe", () => {
     const actual = df.transpose();
     expect(actual).toFrameEqual(expected);
   });
-  test.skip("transpose:includeHeader", () => {
+  test("transpose:includeHeader", () => {
     const expected = pl.DataFrame({
-      column: ["a", "b"],
+      "": ["a", "b"],
       column_0: [1, 1],
       column_1: [2, 2],
       column_2: [3, 3],
@@ -1013,7 +1063,7 @@ describe("dataframe", () => {
     const actual = df.transpose({ includeHeader: true });
     expect(actual).toFrameEqual(expected);
   });
-  test.skip("transpose:columnNames", () => {
+  test("transpose:columnNames", () => {
     const expected = pl.DataFrame({
       a: [1, 1],
       b: [2, 2],
@@ -1026,7 +1076,7 @@ describe("dataframe", () => {
     const actual = df.transpose({ includeHeader: false, columnNames: "abc" });
     expect(actual).toFrameEqual(expected);
   });
-  test.skip("transpose:columnNames:generator", () => {
+  test("transpose:columnNames:generator", () => {
     const expected = pl.DataFrame({
       col_0: [1, 1],
       col_1: [2, 2],
@@ -1036,7 +1086,7 @@ describe("dataframe", () => {
       const baseName = "col_";
       let count = 0;
       while (true) {
-        let name = `${baseName}${count}`;
+        const name = `${baseName}${count}`;
         yield name;
         count++;
       }
@@ -1553,7 +1603,7 @@ describe("io", () => {
         callback(null);
       },
     });
-    df.writeJSON(writeStream, { format: "lines" });
+    df.writeJSON(writeStream, { format: "json" });
     const newDF = pl.readJSON(body).select("foo", "bar");
     expect(newDF).toFrameEqual(df);
     done();
@@ -1563,7 +1613,7 @@ describe("io", () => {
       pl.Series("foo", [1, 2, 3], pl.UInt32),
       pl.Series("bar", ["a", "b", "c"]),
     ]);
-    df.writeJSON("./test.json", { format: "lines" });
+    df.writeJSON("./test.json", { format: "json" });
     const newDF = pl.readJSON("./test.json").select("foo", "bar");
     expect(newDF).toFrameEqual(df);
     fs.rmSync("./test.json");

@@ -1709,7 +1709,7 @@ export const _DataFrame = (_df: any): DataFrame => {
     },
     *[Symbol.iterator]() {
       let start = 0;
-      let len = this.width;
+      const len = this.width;
 
       while (start < len) {
         const s = this.toSeries(start);
@@ -2115,7 +2115,7 @@ export const _DataFrame = (_df: any): DataFrame => {
           .collectSync({ noOptimization: true, stringCache: false });
       }
 
-      return wrap("sort", arg, reverse, true);
+      return wrap("sort", arg, reverse, true, false);
     },
     std() {
       return wrap("std");
@@ -2138,7 +2138,7 @@ export const _DataFrame = (_df: any): DataFrame => {
       if (dest instanceof Writable || typeof dest === "string") {
         return _df.writeCsv(dest, options) as any;
       }
-      let buffers: Buffer[] = [];
+      const buffers: Buffer[] = [];
       const writeStream = new Stream.Writable({
         write(chunk, _encoding, callback) {
           buffers.push(chunk);
@@ -2172,7 +2172,7 @@ export const _DataFrame = (_df: any): DataFrame => {
       if (dest instanceof Writable || typeof dest === "string") {
         return _df.writeJson(dest, options) as any;
       }
-      let buffers: Buffer[] = [];
+      const buffers: Buffer[] = [];
       const writeStream = new Stream.Writable({
         write(chunk, _encoding, callback) {
           buffers.push(chunk);
@@ -2192,7 +2192,7 @@ export const _DataFrame = (_df: any): DataFrame => {
       if (dest instanceof Writable || typeof dest === "string") {
         return _df.writeParquet(dest, options.compression) as any;
       }
-      let buffers: Buffer[] = [];
+      const buffers: Buffer[] = [];
       const writeStream = new Stream.Writable({
         write(chunk, _encoding, callback) {
           buffers.push(chunk);
@@ -2209,7 +2209,7 @@ export const _DataFrame = (_df: any): DataFrame => {
       if (dest instanceof Writable || typeof dest === "string") {
         return _df.writeAvro(dest, options.compression) as any;
       }
-      let buffers: Buffer[] = [];
+      const buffers: Buffer[] = [];
       const writeStream = new Stream.Writable({
         write(chunk, _encoding, callback) {
           buffers.push(chunk);
@@ -2229,7 +2229,7 @@ export const _DataFrame = (_df: any): DataFrame => {
       if (dest instanceof Writable || typeof dest === "string") {
         return _df.writeIpc(dest, options.compression) as any;
       }
-      let buffers: Buffer[] = [];
+      const buffers: Buffer[] = [];
       const writeStream = new Stream.Writable({
         write(chunk, _encoding, callback) {
           buffers.push(chunk);
@@ -2250,10 +2250,10 @@ export const _DataFrame = (_df: any): DataFrame => {
       return _df.toString();
     },
     transpose(options?) {
-      let df = wrap(
+      const df = wrap(
         "transpose",
         options?.includeHeader ?? false,
-        options?.headerName,
+        options?.headerName ?? "",
       );
       if (options?.columnNames) {
         function* namesIter() {
@@ -2262,7 +2262,7 @@ export const _DataFrame = (_df: any): DataFrame => {
           }
           const gen = (options as any).columnNames[Symbol.iterator]();
           let next;
-          // eslint-disable-next-line no-cond-assign
+          // rome-ignore lint: no-cond-assign
           while ((next = gen.next())) {
             yield next.value;
           }

@@ -3,6 +3,9 @@
     "enabled": true,
     "rules": {
       "recommended": true,
+      "style": {
+        "noParameterAssign": "off"
+      },
       "suspicious": {
         "noExplicitAny": "off"
       }

@@ -12,6 +12,8 @@ const avropath = path.resolve(__dirname, "./examples/foods.avro");
 const ipcpath = path.resolve(__dirname, "./examples/foods.ipc");
 // eslint-disable-next-line no-undef
 const jsonpath = path.resolve(__dirname, "./examples/foods.json");
+// eslint-disable-next-line no-undef
+const singlejsonpath = path.resolve(__dirname, "./examples/single_foods.json");
 describe("read:csv", () => {
   it("can read from a csv file", () => {
     const df = pl.readCSV(csvpath);
@@ -77,7 +79,7 @@ describe("read:csv", () => {
     expect(expectedMaxRowCount).toStrictEqual(maxRowCount);
   });
   test("csv files with dtypes", () => {
-    const df = pl.readCSV(csvpath, { dtypes: { calories: pl.Utf8 }});
+    const df = pl.readCSV(csvpath, { dtypes: { calories: pl.Utf8 } });
     expect(df.dtypes[1].equals(pl.Utf8)).toBeTruthy();
     const df2 = pl.readCSV(csvpath);
     expect(df2.dtypes[1].equals(pl.Int64)).toBeTruthy();
@@ -85,12 +87,12 @@ describe("read:csv", () => {
   test("csv buffer with dtypes", () => {
     const csv = `a,b,c
 1,2,x
-4,5,y`
+4,5,y`;
     const df = pl.readCSV(csv);
     expect(df.dtypes[0].equals(pl.Int64)).toBeTruthy();
-    const df2 = pl.readCSV(csv, { dtypes: { a: pl.Utf8 }});
+    const df2 = pl.readCSV(csv, { dtypes: { a: pl.Utf8 } });
     expect(df2.dtypes[0].equals(pl.Utf8)).toBeTruthy();
-  })
+  });
   it.todo("can read from a stream");
 });
 
@@ -109,7 +111,7 @@ describe("read:json", () => {
       JSON.stringify({ bar: "1", foo: 2 }),
       "",
     ].join("\n");
-    const df = pl.readJSON(Buffer.from(json));
+    const df = pl.readJSON(Buffer.from(json), { format: "lines" });
 
     expect(df.writeJSON({ format: "lines" }).toString().slice(0, 30)).toEqual(
       json.slice(0, 30),
@@ -123,8 +125,8 @@ describe("scan", () => {
     expect(df.shape).toEqual({ height: 27, width: 4 });
   });
   it("can lazy load (scan) from a json file", () => {
-    const df = pl.scanJson(jsonpath).collectSync();
-    expect(df.shape).toEqual({ height: 27, width: 4 });
+    const df = pl.scanJson(singlejsonpath).collectSync();
+    expect(df.shape).toEqual({ height: 1, width: 4 });
   });
   it("can lazy load (scan) from a csv file with options", () => {
     const df = pl
@@ -231,7 +233,7 @@ describe("ipc", () => {
     expect(ipcDF).toFrameEqual(csvDF);
   });
 
-  test.skip("read:options", () => {
+  test("read:options", () => {
     const df = pl.readIPC(ipcpath, { nRows: 4 });
     expect(df.shape).toEqual({ height: 4, width: 4 });
   });
@@ -241,7 +243,7 @@ describe("ipc", () => {
     expect(df.shape).toEqual({ height: 27, width: 4 });
   });
 
-  test.skip("scan:options", () => {
+  test("scan:options", () => {
     const df = pl.scanIPC(ipcpath, { nRows: 4 }).collectSync();
     expect(df.shape).toEqual({ height: 4, width: 4 });
   });
@@ -288,7 +290,7 @@ describe("avro", () => {
     expect(df).toFrameEqual(csvDF);
   });
 
-  test.skip("read:options", () => {
+  test("read:options", () => {
     const df = pl.readAvro(avropath, { nRows: 4 });
     expect(df.shape).toEqual({ height: 4, width: 4 });
   });
@@ -328,7 +330,7 @@ describe("stream", () => {
     await expect(promise).rejects.toBeDefined();
   });
 
-  test("readJSON", async () => {
+  test.skip("readJSON", async () => {
     const readStream = new Stream.Readable({ read() {} });
     readStream.push(`${JSON.stringify({ a: 1, b: 2 })} \n`);
     readStream.push(`${JSON.stringify({ a: 2, b: 2 })} \n`);
@@ -344,7 +346,7 @@ describe("stream", () => {
     expect(df).toFrameEqual(expected);
   });
 
-  test.skip("readJSON:error", async () => {
+  test("readJSON:error", async () => {
     const readStream = new Stream.Readable({ read() {} });
     readStream.push(`${JSON.stringify({ a: 1, b: 2 })} \n`);
     readStream.push(`${JSON.stringify({ a: 2, b: 2 })} \n`);

@@ -29,8 +29,8 @@ export namespace Field {
   export function from([string, DataType]): Field;
   export function from(obj: { name: string; dtype: DataType }): Field;
   export function from(nameOrObj, dtype?: DataType): Field {
-    if (typeof nameOrObj === "string") {
-      return new Field(nameOrObj, dtype!);
+    if (typeof nameOrObj === "string" && dtype) {
+      return new Field(nameOrObj, dtype);
     } else if (Array.isArray(nameOrObj)) {
       return new Field(nameOrObj[0], nameOrObj[1]);
     } else {

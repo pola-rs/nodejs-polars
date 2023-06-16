@@ -257,8 +257,23 @@ impl JsSeries {
         format!("{}", self.series)
     }
     #[napi(catch_unwind)]
-    pub fn get_fmt(&self, index: f64) -> String {
-        format!("{}", self.series.get(index as usize))
+    pub fn get_fmt(&self, index: Wrap<usize>, str_lengths: Wrap<usize>) -> String {
+        let val = format!("{}", self.series.get(index.0).unwrap());
+        if let DataType::Utf8 | DataType::Categorical(_) = self.series.dtype() {
+            let v_trunc = &val[..val
+                .char_indices()
+                .take(str_lengths.0)
+                .last()
+                .map(|(i, c)| i + c.len_utf8())
+                .unwrap_or(0)];
+            if val == v_trunc {
+                val
+            } else {
+                format!("{v_trunc}…")
+            }
+        } else {
+            val
+        }
     }
     #[napi(catch_unwind)]
     pub fn estimated_size(&self) -> i64 {
@@ -277,7 +292,7 @@ impl JsSeries {
     }
     #[napi(catch_unwind)]
     pub fn get_idx(&self, idx: i64) -> Wrap<AnyValue> {
-        Wrap(self.series.get(idx as usize))
+        Wrap(self.series.get(idx as usize).unwrap())
     }
     #[napi(catch_unwind)]
     pub fn bitand(&self, other: &JsSeries) -> napi::Result<JsSeries> {
@@ -438,12 +453,13 @@ impl JsSeries {
         let reverse = reverse.unwrap_or(false);
         self.series.sort(reverse).into()
     }
-    #[napi(catch_unwind)]
-    pub fn argsort(&self, reverse: bool, nulls_last: bool) -> JsSeries {
+    #[napi]
+    pub fn argsort(&self, reverse: bool, nulls_last: bool, multithreaded: bool) -> JsSeries {
         self.series
-            .argsort(SortOptions {
+            .arg_sort(SortOptions {
                 descending: reverse,
                 nulls_last,
+                multithreaded,
             })
             .into_series()
             .into()
@@ -540,7 +556,7 @@ impl JsSeries {
 
     #[napi(catch_unwind)]
     pub fn is_unique(&self) -> napi::Result<JsSeries> {
-        let ca = self.series.is_unique().map_err(JsPolarsErr::from)?;
+        let ca = polars_ops::prelude::is_unique(&self.series).map_err(JsPolarsErr::from)?;
         Ok(ca.into_series().into())
     }
 
@@ -581,7 +597,7 @@ impl JsSeries {
     }
     #[napi(catch_unwind)]
     pub fn is_duplicated(&self) -> napi::Result<JsSeries> {
-        let ca = self.series.is_duplicated().map_err(JsPolarsErr::from)?;
+        let ca = polars_ops::prelude::is_duplicated(&self.series).map_err(JsPolarsErr::from)?;
         Ok(ca.into_series().into())
     }
     #[napi(catch_unwind)]
@@ -709,11 +725,11 @@ impl JsSeries {
         quantile: f64,
         interpolation: Wrap<QuantileInterpolOptions>,
     ) -> JsAnyValue {
-        let v = self
+        let binding = self
             .series
             .quantile_as_series(quantile, interpolation.0)
             .expect("invalid quantile");
-        let v = v.get(0);
+        let v = binding.get(0).unwrap_or(AnyValue::Null);
         v.into()
     }
     /// Rechunk and return a pointer to the start of the Series.
@@ -788,10 +804,13 @@ impl JsSeries {
         Ok(JsSeries::new(s))
     }
 
-    #[napi(catch_unwind)]
-    pub fn str_contains(&self, pat: String) -> napi::Result<JsSeries> {
+    #[napi]
+    pub fn str_contains(&self, pat: String, strict: bool) -> napi::Result<JsSeries> {
         let ca = self.series.utf8().map_err(JsPolarsErr::from)?;
-        let s = ca.contains(&pat).map_err(JsPolarsErr::from)?.into_series();
+        let s = ca
+            .contains(&pat, strict)
+            .map_err(JsPolarsErr::from)?
+            .into_series();
         Ok(s.into())
     }
 
@@ -865,27 +884,23 @@ impl JsSeries {
         let s = ca.hex_encode().into_series();
         Ok(s.into())
     }
-
     #[napi(catch_unwind)]
-    pub fn str_hex_decode(&self, strict: Option<bool>) -> napi::Result<JsSeries> {
+    pub fn str_hex_decode(&self, strict: bool) -> napi::Result<JsSeries> {
         let ca = self.series.utf8().map_err(JsPolarsErr::from)?;
         let s = ca
             .hex_decode(strict)
             .map_err(JsPolarsErr::from)?
             .into_series();
-
         Ok(s.into())
     }
-
-    #[napi(catch_unwind)]
+    #[napi]
     pub fn str_base64_encode(&self) -> napi::Result<JsSeries> {
         let ca = self.series.utf8().map_err(JsPolarsErr::from)?;
         let s = ca.base64_encode().into_series();
         Ok(s.into())
     }
-
     #[napi(catch_unwind)]
-    pub fn str_base64_decode(&self, strict: Option<bool>) -> napi::Result<JsSeries> {
+    pub fn str_base64_decode(&self, strict: bool) -> napi::Result<JsSeries> {
         let ca = self.series.utf8().map_err(JsPolarsErr::from)?;
         let s = ca
             .base64_decode(strict)
@@ -1022,9 +1037,7 @@ impl JsSeries {
 
     #[napi(catch_unwind)]
     pub fn is_first(&self) -> napi::Result<JsSeries> {
-        let out = self
-            .series
-            .is_first()
+        let out = is_first(&self.series)
             .map_err(JsPolarsErr::from)?
             .into_series();
         Ok(out.into())

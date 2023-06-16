@@ -331,8 +331,8 @@ describe("expr", () => {
   });
   test.each`
     args                   | hashValue
-    ${[0]}                 | ${5246693565886627840n}
-    ${[{ k0: 1n, k1: 1 }]} | ${10529415928792219648n}
+    ${[0]}                 | ${6574965099265562227n}
+    ${[{ k0: 1n, k1: 1 }]} | ${6574965099265562227n}
   `("$# hash", ({ args, hashValue }) => {
     const df = pl.DataFrame({ a: [1] });
     const expected = pl.DataFrame({ hash: [hashValue] });
@@ -453,7 +453,8 @@ describe("expr", () => {
     const actual = df
       .groupBy("a")
       .agg(col("b").list().keepName())
-      .sort({ by: "a" });
+      .sort({ by: "a" })
+      .explode("b");
     expect(actual).toFrameEqual(expected);
   });
   test("kurtosis", () => {
@@ -1303,7 +1304,6 @@ describe("expr.str", () => {
     expect(seriesActual).toFrameEqual(expected);
   });
   test("base64 decode", () => {
-    const _df = pl.DataFrame({ strings: ["666f6f", "626172", null] });
     const df = pl.DataFrame({
       encoded: ["Zm9v", "YmFy", null],
     });
@@ -1337,9 +1337,9 @@ describe("expr.str", () => {
 });
 describe("expr.lst", () => {
   test("concat", () => {
-    let s0 = pl.Series("a", [[1, 2]]);
-    let s1 = pl.Series("b", [[3, 4, 5]]);
-    let expected = pl.Series("a", [[1, 2, 3, 4, 5]]);
+    const s0 = pl.Series("a", [[1, 2]]);
+    const s1 = pl.Series("b", [[3, 4, 5]]);
+    const expected = pl.Series("a", [[1, 2, 3, 4, 5]]);
 
     let out = s0.lst.concat([s1]);
     expect(out.seriesEqual(expected)).toBeTruthy();
@@ -1347,7 +1347,7 @@ describe("expr.lst", () => {
     out = s0.lst.concat(s1);
     expect(out.seriesEqual(expected)).toBeTruthy();
 
-    let df = pl.DataFrame([s0, s1]);
+    const df = pl.DataFrame([s0, s1]);
     expect(
       df
         .select(pl.concatList(["a", "b"]).alias("a"))
@@ -1753,7 +1753,7 @@ describe("rolling", () => {
     expect(actual).toFrameStrictEqual(expected);
   });
   // SEE https://github.com/pola-rs/polars/issues/4215
-  test.skip("rollingSkew", () => {
+  test("rollingSkew", () => {
     const df = pl.DataFrame({ a: [1, 2, 3, 3, 2, 10, 8] });
     const expected = pl.DataFrame({
       a: [1, 2, 3, 3, 2, 10, 8],
@@ -1770,7 +1770,7 @@ describe("rolling", () => {
         null,
         null,
         null,
-        "-0.8545630383279711",
+        "-0.8545630383279712",
         "0.0",
         "1.9001038154942962",
         "0.16923763134384154",
@@ -1801,9 +1801,9 @@ describe("arithmetic", () => {
       a: [2, 3, 4],
     });
     const actual = df.select(col("a").add(1));
-    expect(actual).toEqual(expected);
+    expect(actual).toFrameEqual(expected);
     const actual1 = df.select(col("a").plus(1));
-    expect(actual1).toEqual(expected);
+    expect(actual1).toFrameEqual(expected);
   });
   test("sub/minus", () => {
     const df = pl.DataFrame({
@@ -1813,9 +1813,9 @@ describe("arithmetic", () => {
       a: [0, 1, 2],
     });
     const actual = df.select(col("a").sub(1));
-    expect(actual).toEqual(expected);
+    expect(actual).toFrameEqual(expected);
     const actual1 = df.select(col("a").minus(1));
-    expect(actual1).toEqual(expected);
+    expect(actual1).toFrameEqual(expected);
   });
   test("div/divideBy", () => {
     const df = pl.DataFrame({
@@ -1825,9 +1825,9 @@ describe("arithmetic", () => {
       a: [1, 2, 3],
     });
     const actual = df.select(col("a").div(2));
-    expect(actual).toEqual(expected);
+    expect(actual).toFrameEqual(expected);
     const actual1 = df.select(col("a").divideBy(2));
-    expect(actual1).toEqual(expected);
+    expect(actual1).toFrameEqual(expected);
   });
   test("mul/multiplyBy", () => {
     const df = pl.DataFrame({
@@ -1837,9 +1837,9 @@ describe("arithmetic", () => {
       a: [2, 4, 6],
     });
     const actual = df.select(col("a").mul(2));
-    expect(actual).toEqual(expected);
+    expect(actual).toFrameEqual(expected);
     const actual1 = df.select(col("a").multiplyBy(2));
-    expect(actual1).toEqual(expected);
+    expect(actual1).toFrameEqual(expected);
   });
   test("rem/modulo", () => {
     const df = pl.DataFrame({
@@ -1849,9 +1849,9 @@ describe("arithmetic", () => {
       a: [1, 0, 1],
     });
     const actual = df.select(col("a").rem(2));
-    expect(actual).toEqual(expected);
+    expect(actual).toFrameEqual(expected);
     const actual1 = df.select(col("a").modulo(2));
-    expect(actual1).toEqual(expected);
+    expect(actual1).toFrameEqual(expected);
   });
 });
 

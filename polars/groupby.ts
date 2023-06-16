@@ -192,7 +192,7 @@ export function _GroupBy(df: any, by: string[], maintainOrder = false) {
         .agg(...aggs)
         .collectSync({ noOptimization: true });
     } else {
-      let pairs = Object.entries(aggs[0]).flatMap(([key, values]) => {
+      const pairs = Object.entries(aggs[0]).flatMap(([key, values]) => {
         return [values].flat(2).map((v) => col(key)[v as any]());
       });
 
@@ -208,7 +208,7 @@ export function _GroupBy(df: any, by: string[], maintainOrder = false) {
     [inspect]: customInspect,
     agg,
     pivot,
-    aggList: () => agg(exclude(by as any).list()),
+    aggList: () => agg(exclude(by as any)),
     count() {
       return _DataFrame(df.groupby([by].flat(), null, "count"));
     },

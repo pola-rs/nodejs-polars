@@ -4,7 +4,7 @@ import { Expr, _Expr } from "../expr";
 /**
  * DateTime functions
  */
-export interface ExprDateTime extends DateFunctions<Expr> {}
+export type ExprDateTime = DateFunctions<Expr>;
 
 export const ExprDateTimeFunctions = (_expr: any): ExprDateTime => {
   const wrap = (method, ...args: any[]): Expr => {

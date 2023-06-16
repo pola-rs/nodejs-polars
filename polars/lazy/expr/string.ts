@@ -278,7 +278,7 @@ export const ExprStringFunctions = (_expr: any): StringNamespace => {
     return _Expr(_expr[method](...args));
   };
 
-  const handleDecode = (encoding, strict) => {
+  const handleDecode = (encoding, strict: boolean) => {
     switch (encoding) {
       case "hex":
         return wrap("strHexDecode", strict);
@@ -294,7 +294,7 @@ export const ExprStringFunctions = (_expr: any): StringNamespace => {
       return wrap("strConcat", delimiter);
     },
     contains(pat: string | RegExp) {
-      return wrap("strContains", regexToString(pat));
+      return wrap("strContains", regexToString(pat), false);
     },
     decode(arg, strict = false) {
       if (typeof arg === "string") {

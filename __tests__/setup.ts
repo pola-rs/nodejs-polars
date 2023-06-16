@@ -75,9 +75,9 @@ Received:
       };
     }
   },
-  toFrameEqualIgnoringOrder(actual, expected) {
-    actual = actual.sort(actual.columns.sort());
-    expected = expected.sort(expected.columns.sort());
+  toFrameEqualIgnoringOrder(act: pl.DataFrame, exp: pl.DataFrame) {
+    const actual = act.sort(act.columns.sort());
+    const expected = exp.sort(exp.columns.sort());
     const pass = actual.frameEqual(expected);
     if (pass) {
       return {

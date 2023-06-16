@@ -661,7 +661,7 @@ export const _Expr = (_expr: any): Expr => {
     argSort(reverse: any = false) {
       reverse = reverse?.reverse ?? reverse;
 
-      return _Expr(_expr.argSort(reverse));
+      return _Expr(_expr.argSort(reverse, false));
     },
     argUnique() {
       return _Expr(_expr.argUnique());
@@ -1019,13 +1019,14 @@ export const _Expr = (_expr: any): Expr => {
     },
     sort(reverse: any = false, nullsLast = false) {
       if (typeof reverse === "boolean") {
-        return wrap("sortWith", reverse, nullsLast);
+        return wrap("sortWith", reverse, nullsLast, false);
       }
 
       return wrap(
         "sortWith",
         reverse?.reverse ?? false,
         reverse?.nullsLast ?? nullsLast,
+        false,
       );
     },
     sortBy(arg, reverse = false) {
