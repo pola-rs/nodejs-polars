@@ -355,11 +355,19 @@ export const ExprStringFunctions = (_expr: any): StringNamespace => {
     strip() {
       return wrap("strStrip");
     },
-    strptime(dtype, fmt?) {
+    strptime(dtype, format?) {
       if (dtype.equals(DataType.Date)) {
-        return wrap("strParseDate", fmt, false, false);
+        return wrap("strToDate", format, false, false, false);
       } else if (dtype.equals(DataType.Datetime("ms"))) {
-        return wrap("strParseDatetime", fmt, false, false);
+        return wrap(
+          "strToDatetime",
+          format,
+          undefined,
+          undefined,
+          false,
+          false,
+          false,
+        );
       } else {
         throw new Error(
           `only "DataType.Date" and "DataType.Datetime" are supported`,

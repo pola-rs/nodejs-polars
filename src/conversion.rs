@@ -256,17 +256,19 @@ impl FromNapiValue for Wrap<ChunkedArray<UInt64Type>> {
 impl FromNapiValue for Wrap<Expr> {
     unsafe fn from_napi_value(env: sys::napi_env, napi_val: sys::napi_value) -> JsResult<Self> {
         let obj = Object::from_napi_value(env, napi_val)?;
-        let expr: &JsExpr = obj.get("_expr")?.unwrap();
-        let expr = expr.inner.clone();
-        Ok(Wrap(expr))
+        let expr: &JsExpr = obj
+            .get("_expr")?
+            .expect(&format!("field {} should exist", "_expr"));
+        Ok(Wrap(expr.inner.clone()))
     }
 }
 
 impl FromNapiValue for Wrap<JsExpr> {
     unsafe fn from_napi_value(env: sys::napi_env, napi_val: sys::napi_value) -> JsResult<Self> {
         let obj = Object::from_napi_value(env, napi_val)?;
-        let expr: &JsExpr = obj.get("_expr")?.unwrap();
-        // let expr = expr.inner.clone();
+        let expr: &JsExpr = obj
+            .get("_expr")?
+            .expect(&format!("field {} should exist", "_expr"));
         Ok(Wrap(expr.clone()))
     }
 }
@@ -635,19 +637,18 @@ impl FromNapiValue for Wrap<Schema> {
         match ty {
             ValueType::Object => {
                 let obj = Object::from_napi_value(env, napi_val)?;
-
                 let keys = Object::keys(&obj)?;
-                let fields: Vec<Field> = keys
-                    .iter()
-                    .map(|key| {
-                        let value = obj.get::<_, Object>(&key)?.unwrap();
-                        let napi_val = Object::to_napi_value(env, value)?;
-                        let dtype = Wrap::<DataType>::from_napi_value(env, napi_val)?;
+                Ok(Wrap(
+                    keys.iter()
+                        .map(|key| {
+                            let value = obj.get::<_, Object>(&key)?.unwrap();
+                            let napi_val = Object::to_napi_value(env, value)?;
+                            let dtype = Wrap::<DataType>::from_napi_value(env, napi_val)?;
 
-                        Ok(Field::new(key, dtype.0))
-                    })
-                    .collect::<Result<_>>()?;
-                Ok(Wrap(Schema::from(fields.into_iter())))
+                            Ok(Field::new(key, dtype.0))
+                        })
+                        .collect::<Result<Schema>>()?,
+                ))
             }
             _ => Err(Error::new(
                 Status::InvalidArg,
@@ -678,7 +679,7 @@ impl ToNapiValue for Wrap<ParallelStrategy> {
             ParallelStrategy::Auto => "auto",
             ParallelStrategy::Columns => "columns",
             ParallelStrategy::RowGroups => "row_groups",
-            ParallelStrategy::None => "none"
+            ParallelStrategy::None => "none",
         };
         let _ = strategy.set("strategy", unit);
         Object::to_napi_value(napi_env, strategy)

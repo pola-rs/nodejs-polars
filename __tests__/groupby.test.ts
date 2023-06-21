@@ -162,7 +162,8 @@ describe("groupby ops", () => {
 
     const df = pl
       .DataFrame({ dt: dates, a: [3, 7, 5, 9, 2, 1] })
-      .withColumn(pl.col("dt").str.strptime(pl.Datetime("ms")));
+      .withColumn(pl.col("dt").str.strptime(pl.Datetime("ms")))
+      .sort("dt");
     const a = pl.col("a");
     const out = df
       .groupByRolling({ indexColumn: "dt", period: "2d" })
@@ -231,28 +232,31 @@ describe("groupby ops", () => {
   });
   test("default negative every offset dynamic groupby", () => {
     const dates = [
-      new Date("2020-01-01"),
-      new Date("2020-01-02"),
-      new Date("2020-02-01"),
-      new Date("2020-03-01"),
+      new Date("2023-01-01"),
+      new Date("2023-01-02"),
+      new Date("2023-02-01"),
+      new Date("2023-03-01"),
     ];
-    const df = pl.DataFrame({
-      dt: dates,
-      idx: Array.from({ length: dates.length }, (_v, k) => k),
-    });
+    const df = pl
+      .DataFrame({
+        dt: dates,
+        idx: Array.from({ length: dates.length }, (_v, k) => k),
+      })
+      .sort("dt");
     const actual = df
       .groupByDynamic({
         indexColumn: "dt",
         every: "1mo",
         closed: "right",
         start_by: "datapoint",
+        check_sorted: true,
       })
       .agg(pl.col("idx"));
     const expected = pl.DataFrame({
       dt: [
-        new Date("2019-12-30"),
-        new Date("2020-01-30"),
-        new Date("2020-02-29"),
+        new Date("2022-12-26"),
+        new Date("2023-01-26"),
+        new Date("2023-02-26"),
       ],
       idx: [[0, 1], [2], [3]],
     });

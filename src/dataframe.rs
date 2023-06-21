@@ -102,12 +102,14 @@ pub fn read_csv(
         e => return Err(JsPolarsErr::Other(format!("encoding not {} not implemented.", e)).into()),
     };
 
-    let dtypes = options.dtypes.map(|map| {
-        let fields = map.iter().map(|(key, val)| {
-            let value = val.clone().0;
-            Field::new(key, value)
-        });
-        Arc::new(Schema::from(fields))
+    let overwrite_dtype = options.dtypes.map(|overwrite_dtype| {
+        overwrite_dtype
+            .iter()
+            .map(|(name, dtype)| {
+                let dtype = dtype.0.clone();
+                Field::new(name, dtype)
+            })
+            .collect::<Schema>()
     });
 
     let df = match path_or_buffer {
@@ -124,7 +126,7 @@ pub fn read_csv(
             .with_encoding(encoding)
             .with_columns(options.columns)
             .with_n_threads(n_threads)
-            .with_dtypes(dtypes)
+            .with_dtypes(overwrite_dtype.map(Arc::new))
             .low_memory(options.low_memory)
             .with_comment_char(comment_char)
             .with_null_values(null_values)
@@ -147,7 +149,7 @@ pub fn read_csv(
                 .with_encoding(encoding)
                 .with_columns(options.columns)
                 .with_n_threads(n_threads)
-                .with_dtypes(dtypes)
+                .with_dtypes(overwrite_dtype.map(Arc::new))
                 .low_memory(options.low_memory)
                 .with_comment_char(comment_char)
                 .with_null_values(null_values)
@@ -900,7 +902,7 @@ impl JsDataFrame {
             value_vars: strings_to_smartstrings(value_vars),
             value_name: value_name.map(|s| s.into()),
             variable_name: variable_name.map(|s| s.into()),
-            streamable: streamable.unwrap_or(false)
+            streamable: streamable.unwrap_or(false),
         };
 
         let df = self.df.melt2(args).map_err(JsPolarsErr::from)?;

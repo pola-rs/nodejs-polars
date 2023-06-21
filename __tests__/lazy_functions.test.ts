@@ -153,9 +153,11 @@ describe("lazy functions", () => {
   });
   test("argSortBy", () => {
     const actual = _df()
-      .select(pl.argSortBy(["int_nulls", "floats"], [false, true]))
-      .getColumn("literal");
-    const expected = pl.Series("literal", [0]);
+      .select(
+        pl.argSortBy([pl.col("int_nulls"), pl.col("floats")], [false, true]),
+      )
+      .getColumn("int_nulls");
+    const expected = pl.Series("int_nulls", [1, 0, 2]);
     expect(actual).toSeriesEqual(expected);
   });
   test("avg", () => {
@@ -367,8 +369,7 @@ describe("lazy functions", () => {
     const actual = df
       .groupBy("a")
       .agg(pl.list("b").keepName())
-      .sort({ by: "a" })
-      .explode("b");
+      .sort({ by: "a" });
     expect(actual).toFrameEqual(expected);
   });
   test("mean:series", () => {

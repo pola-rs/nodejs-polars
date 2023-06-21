@@ -12,7 +12,7 @@ pub fn version() -> &'static str {
 
 #[napi]
 pub fn toggle_string_cache(toggle: bool) {
-    polars::toggle_string_cache(toggle)
+    polars::enable_string_cache(toggle)
 }
 
 pub mod conversion;

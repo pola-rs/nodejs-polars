@@ -1088,18 +1088,29 @@ impl JsSeries {
     }
 
     #[napi(catch_unwind)]
-    pub fn rank(&self, method: Wrap<RankMethod>, reverse: Option<bool>) -> napi::Result<JsSeries> {
-        let reverse = reverse.unwrap_or(false);
-
+    pub fn rank(
+        &self,
+        method: Wrap<RankMethod>,
+        descending: Option<bool>,
+        seed: Option<Wrap<u64>>,
+    ) -> napi::Result<JsSeries> {
+        let descending = descending.unwrap_or(false);
+        // Safety:
+        // Wrap is transparent.
+        let seed: Option<u64> = unsafe { std::mem::transmute(seed) };
         let options = RankOptions {
             method: method.0,
-            descending: reverse,
+            descending: descending,
         };
-        Ok(self.series.rank(options).into())
+        Ok(self.series.rank(options, seed).into())
     }
     #[napi(catch_unwind)]
     pub fn diff(&self, n: i64, null_behavior: Wrap<NullBehavior>) -> napi::Result<JsSeries> {
-        Ok(self.series.diff(n as usize, null_behavior.0).into())
+        let s = self
+            .series
+            .diff(n, null_behavior.0)
+            .map_err(JsPolarsErr::from)?;
+        Ok(s.into())
     }
 
     #[napi(catch_unwind)]

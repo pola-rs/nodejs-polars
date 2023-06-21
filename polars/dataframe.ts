@@ -1862,6 +1862,7 @@ export const _DataFrame = (_df: any): DataFrame => {
         opts.offset,
         opts.closed,
         opts.by,
+        opts.check_sorted,
       );
     },
     groupByDynamic({

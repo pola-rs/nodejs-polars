@@ -252,7 +252,7 @@ impl JsExpr {
 
     #[napi(catch_unwind)]
     pub fn list(&self) -> JsExpr {
-        self.clone().inner.list().into()
+        self.clone().inner.into()
     }
 
     #[napi(catch_unwind)]
@@ -339,7 +339,7 @@ impl JsExpr {
 
     #[napi(catch_unwind)]
     pub fn sort_by(&self, by: Vec<&JsExpr>, reverse: Vec<bool>) -> JsExpr {
-        let by = by.into_iter().map(|e| e.inner.clone()).collect::<Vec<_>>();
+        let by = by.to_exprs();
         self.clone().inner.sort_by(by, reverse).into()
     }
     #[napi(catch_unwind)]
@@ -550,31 +550,43 @@ impl JsExpr {
     }
 
     #[napi(catch_unwind)]
-    pub fn str_parse_date(&self, fmt: Option<String>, strict: bool, exact: bool) -> JsExpr {
-        self.inner
-            .clone()
-            .str()
-            .strptime(StrpTimeOptions {
-                date_dtype: DataType::Date,
-                fmt,
-                strict,
-                exact,
-                ..Default::default()
-            })
-            .into()
+    pub fn str_to_date(
+        &self,
+        format: Option<String>,
+        strict: bool,
+        exact: bool,
+        cache: bool,
+    ) -> JsExpr {
+        let options = StrptimeOptions {
+            format,
+            strict,
+            exact,
+            cache,
+        };
+        self.inner.clone().str().to_date(options).into()
     }
+
     #[napi(catch_unwind)]
-    pub fn str_parse_datetime(&self, fmt: Option<String>, strict: bool, exact: bool) -> JsExpr {
+    #[allow(clippy::too_many_arguments)]
+    pub fn str_to_datetime(
+        &self,
+        format: Option<String>,
+        time_unit: Option<Wrap<TimeUnit>>,
+        time_zone: Option<TimeZone>,
+        strict: bool,
+        exact: bool,
+        cache: bool,
+    ) -> JsExpr {
+        let options = StrptimeOptions {
+            format,
+            strict,
+            exact,
+            cache,
+        };
         self.inner
             .clone()
             .str()
-            .strptime(StrpTimeOptions {
-                date_dtype: DataType::Datetime(TimeUnit::Microseconds, None),
-                fmt,
-                strict,
-                exact,
-                ..Default::default()
-            })
+            .to_datetime(time_unit.map(|tu| tu.0), time_zone, options)
             .into()
     }
 
@@ -1096,29 +1108,29 @@ impl JsExpr {
     }
 
     #[napi(catch_unwind)]
-    pub fn lst_max(&self) -> JsExpr {
-        self.inner.clone().arr().max().into()
+    pub fn list_max(&self) -> JsExpr {
+        self.inner.clone().list().max().into()
     }
     #[napi(catch_unwind)]
-    pub fn lst_min(&self) -> JsExpr {
-        self.inner.clone().arr().min().into()
-    }
-
-    #[napi(catch_unwind)]
-    pub fn lst_sum(&self) -> JsExpr {
-        self.inner.clone().arr().sum().with_fmt("arr.sum").into()
+    pub fn list_min(&self) -> JsExpr {
+        self.inner.clone().list().min().into()
     }
 
     #[napi(catch_unwind)]
-    pub fn lst_mean(&self) -> JsExpr {
-        self.inner.clone().arr().mean().with_fmt("arr.mean").into()
+    pub fn list_sum(&self) -> JsExpr {
+        self.inner.clone().list().sum().with_fmt("arr.sum").into()
     }
 
     #[napi(catch_unwind)]
-    pub fn lst_sort(&self, descending: bool) -> JsExpr {
+    pub fn list_mean(&self) -> JsExpr {
+        self.inner.clone().list().mean().with_fmt("arr.mean").into()
+    }
+
+    #[napi(catch_unwind)]
+    pub fn list_sort(&self, descending: bool) -> JsExpr {
         self.inner
             .clone()
-            .arr()
+            .list()
             .sort(SortOptions {
                 descending,
                 ..Default::default()
@@ -1128,95 +1140,82 @@ impl JsExpr {
     }
 
     #[napi(catch_unwind)]
-    pub fn lst_reverse(&self) -> JsExpr {
-        self.inner
-            .clone()
-            .arr()
-            .reverse()
-            .with_fmt("arr.reverse")
-            .into()
+    pub fn list_reverse(&self) -> JsExpr {
+        self.inner.clone().list().reverse().into()
     }
 
     #[napi(catch_unwind)]
-    pub fn lst_unique(&self) -> JsExpr {
-        self.inner
-            .clone()
-            .arr()
-            .unique()
-            .with_fmt("arr.unique")
-            .into()
+    pub fn list_unique(&self) -> JsExpr {
+        self.inner.clone().list().unique().into()
     }
     #[napi(catch_unwind)]
-    pub fn lst_lengths(&self) -> JsExpr {
-        self.inner
-            .clone()
-            .arr()
-            .lengths()
-            .with_fmt("arr.lengths")
-            .into()
+    pub fn list_lengths(&self) -> JsExpr {
+        self.inner.clone().list().lengths().into()
     }
     #[napi(catch_unwind)]
-    pub fn lst_get(&self, index: &JsExpr) -> JsExpr {
-        self.inner.clone().arr().get(index.inner.clone()).into()
+    pub fn list_get(&self, index: &JsExpr) -> JsExpr {
+        self.inner.clone().list().get(index.inner.clone()).into()
     }
     #[napi(catch_unwind)]
-    pub fn lst_join(&self, separator: String) -> JsExpr {
-        self.inner.clone().arr().join(&separator).into()
+    pub fn list_join(&self, separator: String) -> JsExpr {
+        self.inner.clone().list().join(&separator).into()
     }
     #[napi(catch_unwind)]
-    pub fn lst_arg_min(&self) -> JsExpr {
-        self.inner.clone().arr().arg_min().into()
+    pub fn list_arg_min(&self) -> JsExpr {
+        self.inner.clone().list().arg_min().into()
     }
 
     #[napi(catch_unwind)]
-    pub fn lst_arg_max(&self) -> JsExpr {
-        self.inner.clone().arr().lengths().into()
+    pub fn list_arg_max(&self) -> JsExpr {
+        self.inner.clone().list().arg_max().into()
     }
     #[napi(catch_unwind)]
-    pub fn lst_diff(&self, n: i64, null_behavior: Wrap<NullBehavior>) -> JsExpr {
-        self.inner
-            .clone()
-            .arr()
-            .diff(n as usize, null_behavior.0)
-            .into()
+    pub fn list_diff(&self, n: i64, null_behavior: Wrap<NullBehavior>) -> JsExpr {
+        self.inner.clone().list().diff(n, null_behavior.0).into()
     }
 
     #[napi(catch_unwind)]
-    pub fn lst_shift(&self, periods: i64) -> JsExpr {
-        self.inner.clone().arr().shift(periods).into()
+    pub fn list_shift(&self, periods: i64) -> JsExpr {
+        self.inner.clone().list().shift(periods).into()
     }
     #[napi(catch_unwind)]
-    pub fn lst_slice(&self, offset: &JsExpr, length: &JsExpr) -> JsExpr {
+    pub fn list_slice(&self, offset: &JsExpr, length: Option<&JsExpr>) -> JsExpr {
+        let length = match length {
+            Some(i) => i.inner.clone(),
+            None => dsl::lit(i64::MAX),
+        };
         self.inner
             .clone()
-            .arr()
-            .slice(offset.inner.clone(), length.inner.clone())
+            .list()
+            .slice(offset.inner.clone(), length)
             .into()
     }
     #[napi(catch_unwind)]
-    pub fn lst_eval(&self, expr: &JsExpr, parallel: bool) -> JsExpr {
+    pub fn list_eval(&self, expr: &JsExpr, parallel: bool) -> JsExpr {
         self.inner
             .clone()
-            .arr()
+            .list()
             .eval(expr.inner.clone(), parallel)
             .into()
     }
-
     #[napi(catch_unwind)]
-    pub fn rank(&self, method: Wrap<RankMethod>, reverse: bool) -> JsExpr {
+    pub fn rank(&self, method: Wrap<RankMethod>, reverse: bool, seed: Option<Wrap<u64>>) -> JsExpr {
+        // Safety:
+        // Wrap is transparent.
+        let seed: Option<u64> = unsafe { std::mem::transmute(seed) };
         let options = RankOptions {
             method: method.0,
             descending: reverse,
         };
-        self.inner.clone().rank(options).into()
+        self.inner.clone().rank(options, seed).into()
     }
     #[napi(catch_unwind)]
     pub fn diff(&self, n: i64, null_behavior: Wrap<NullBehavior>) -> JsExpr {
-        self.inner.clone().diff(n as usize, null_behavior.0).into()
+        self.inner.clone().diff(n, null_behavior.0).into()
     }
     #[napi(catch_unwind)]
     pub fn pct_change(&self, n: i64) -> JsExpr {
-        self.inner.clone().pct_change(n as usize).into()
+        self.inner.clone().pct_change(n).into()
     }
 
     #[napi(catch_unwind)]
@@ -1508,7 +1507,7 @@ pub fn dtype_cols(dtypes: Vec<Wrap<DataType>>) -> crate::lazy::dsl::JsExpr {
 
 #[napi(catch_unwind)]
 pub fn arange(low: Wrap<Expr>, high: Wrap<Expr>, step: Option<i64>) -> JsExpr {
-    let step = step.unwrap_or(1) as usize;
+    let step = step.unwrap_or(1);
     polars::lazy::dsl::arange(low.0, high.0, step).into()
 }
 
@@ -1537,7 +1536,6 @@ pub fn cov(a: Wrap<Expr>, b: Wrap<Expr>) -> JsExpr {
 #[napi(catch_unwind)]
 pub fn argsort_by(by: Vec<&JsExpr>, reverse: Vec<bool>) -> JsExpr {
     let by = by.to_exprs();
-
     polars::lazy::dsl::arg_sort_by(by, &reverse).into()
 }
 
@@ -1577,8 +1575,8 @@ pub fn range(low: i64, high: i64, dtype: Wrap<DataType>) -> JsExpr {
 
 #[napi(catch_unwind)]
 pub fn concat_lst(s: Vec<&JsExpr>) -> JsResult<JsExpr> {
-    let s = s.into_iter().map(|e| e.inner.clone()).collect::<Vec<_>>();
-    let expr = polars::lazy::dsl::concat_lst(s).map_err(JsPolarsErr::from)?;
+    let s = s.to_exprs();
+    let expr = polars::lazy::dsl::concat_list(s).map_err(JsPolarsErr::from)?;
     Ok(expr.into())
 }
 
