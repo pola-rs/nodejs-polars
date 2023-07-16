@@ -986,6 +986,27 @@ describe("expr.str", () => {
     expect(actual).toFrameEqual(expected);
     expect(seriesActual).toFrameEqual(expected);
   });
+  test("jsonExtract", () => {
+    const df = pl.DataFrame({
+      json: ['{"a":1, "b": true}', null, '{"a":2, "b": false}'],
+    });
+    const actual = df.select(pl.col("json").str.jsonExtract());
+    const expected = pl.DataFrame({
+      json: [
+        { a: 1, b: true },
+        { a: null, b: null },
+        { a: 2, b: false },
+      ],
+    });
+    expect(actual).toFrameEqual(expected);
+    let s = pl.Series(["[1, 2, 3]", null, "[4, 5, 6]"]);
+    const expSeries = pl.Series([[1, 2, 3], null, [4, 5, 6]]);
+    let actSeries = s.str.jsonExtract();
+    expect(actSeries).toSeriesEqual(expSeries);
+    s = pl.Series("json", ['{"a":1, "b": true}', null, '{"a":2, "b": false}']);
+    actSeries = s.str.jsonExtract().as("json");
+    expect(actSeries).toSeriesEqual(expected.getColumn("json"));
+  });
   test("jsonPathMatch", () => {
     const df = pl.DataFrame({
       data: [

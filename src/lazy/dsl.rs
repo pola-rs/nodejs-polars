@@ -828,6 +828,22 @@ impl JsExpr {
             .into()
     }
     #[napi(catch_unwind)]
+    pub fn str_json_extract(&self, dtype: Option<Wrap<DataType>>) -> JsExpr {
+        let function = move |s: Series| {
+            let ca = s.utf8()?;
+            let dt = dtype.clone().map(|d| d.0 as DataType);
+            match ca.json_extract(dt) {
+                Ok(ca) => Ok(Some(ca.into_series())),
+                Err(e) => Err(PolarsError::ComputeError(format!("{:?}", e).into())),
+            }
+        };
+        self.clone()
+            .inner
+            .map(function, GetOutput::same_type())
+            .with_fmt("str.json_extract")
+            .into()
+    }
+    #[napi(catch_unwind)]
     pub fn str_json_path_match(&self, pat: String) -> JsExpr {
         let function = move |s: Series| {
             let ca = s.utf8()?;

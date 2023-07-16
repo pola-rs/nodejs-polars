@@ -815,6 +815,17 @@ impl JsSeries {
     }
 
     #[napi(catch_unwind)]
+    pub fn str_json_extract(&self, dtype: Option<Wrap<DataType>>) -> napi::Result<JsSeries> {
+        let ca = self.series.utf8().map_err(JsPolarsErr::from)?;
+        let dt = dtype.clone().map(|d| d.0 as DataType);
+        let s = ca
+            .json_extract(dt)
+            .map_err(JsPolarsErr::from)?
+            .into_series();
+        Ok(s.into())
+    }
+
+    #[napi(catch_unwind)]
     pub fn str_json_path_match(&self, pat: String) -> napi::Result<JsSeries> {
         let ca = self.series.utf8().map_err(JsPolarsErr::from)?;
         let s = ca

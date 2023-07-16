@@ -1202,4 +1202,21 @@ describe("lazyframe", () => {
     });
     expect(actual).toFrameEqual(expected);
   });
+  test("json:extract", () => {
+    const expected = pl.DataFrame({
+      json: [
+        { a: 1, b: true },
+        { a: null, b: null },
+        { a: 2, b: false },
+      ],
+    });
+    const actual = pl
+      .DataFrame({
+        json: ['{"a": 1, "b": true}', null, '{"a": 2, "b": false}'],
+      })
+      .lazy()
+      .select(pl.col("json").str.jsonExtract())
+      .collectSync();
+    expect(actual).toFrameEqual(expected);
+  });
 });
