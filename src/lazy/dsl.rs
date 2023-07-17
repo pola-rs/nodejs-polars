@@ -1523,11 +1523,12 @@ pub fn dtype_cols(dtypes: Vec<Wrap<DataType>>) -> crate::lazy::dsl::JsExpr {
     dsl::dtype_cols(dtypes).into()
 }
 
+#[cfg(feature = "range")]
 #[napi(catch_unwind)]
-pub fn int_range(start: JsExpr, end: JsExpr, step: i64, dtype: Wrap<DataType>) -> JsExpr {
+pub fn int_range(start: Wrap<Expr>, end: Wrap<Expr>, step: i64, dtype: Wrap<DataType>) -> JsExpr {
     let dtype = dtype.0;
 
-    let mut result = dsl::int_range(start.inner, end.inner, step);
+    let mut result = dsl::int_range(start.0, end.0, step);
 
     if dtype != DataType::Int64 {
         result = result.cast(dtype)
@@ -1536,11 +1537,12 @@ pub fn int_range(start: JsExpr, end: JsExpr, step: i64, dtype: Wrap<DataType>) -
     result.into()
 }
 
+#[cfg(feature = "range")]
 #[napi(catch_unwind)]
-pub fn int_ranges(start: JsExpr, end: JsExpr, step: i64, dtype: Wrap<DataType>) -> JsExpr {
+pub fn int_ranges(start: Wrap<Expr>, end: Wrap<Expr>, step: i64, dtype: Wrap<DataType>) -> JsExpr {
     let dtype = dtype.0;
 
-    let mut result = dsl::int_ranges(start.inner, end.inner, step);
+    let mut result = dsl::int_ranges(start.0, end.0, step);
 
     if dtype != DataType::Int64 {
         result = result.cast(DataType::List(Box::new(dtype)))
@@ -1573,9 +1575,10 @@ pub fn cov(a: Wrap<Expr>, b: Wrap<Expr>) -> JsExpr {
 }
 
 #[napi(catch_unwind)]
-pub fn argsort_by(by: Vec<&JsExpr>, reverse: Vec<bool>) -> JsExpr {
+#[cfg(feature = "range")]
+pub fn arg_sort_by(by: Vec<&JsExpr>, descending: Vec<bool>) -> JsExpr {
     let by = by.to_exprs();
-    polars::lazy::dsl::arg_sort_by(by, &reverse).into()
+    polars::lazy::dsl::arg_sort_by(by, &descending).into()
 }
 
 #[napi(catch_unwind)]
@@ -1623,18 +1626,6 @@ pub fn concat_lst(s: Vec<&JsExpr>) -> JsResult<JsExpr> {
 pub fn concat_str(s: Vec<&JsExpr>, sep: String) -> JsExpr {
     let s = s.to_exprs();
     dsl::concat_str(s, &sep).into()
-}
-
-#[napi(catch_unwind)]
-pub fn min_exprs(exprs: Vec<&JsExpr>) -> JsExpr {
-    let exprs = exprs.to_exprs();
-    polars::lazy::dsl::min_exprs(exprs).into()
-}
-
-#[napi(catch_unwind)]
-pub fn max_exprs(exprs: Vec<&JsExpr>) -> JsExpr {
-    let exprs = exprs.to_exprs();
-    polars::lazy::dsl::max_exprs(exprs).into()
 }
 
 #[napi(catch_unwind)]
