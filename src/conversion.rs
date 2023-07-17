@@ -513,6 +513,7 @@ impl From<JsRollingOptions> for RollingOptionsImpl<'static> {
             tu: None,
             tz: None,
             closed_window: None,
+            ..Default::default()
         }
     }
 }
@@ -526,6 +527,7 @@ impl From<JsRollingOptions> for RollingOptions {
             center: o.center,
             by: None,
             closed_window: None,
+            ..Default::default()
         }
     }
 }
@@ -731,10 +733,12 @@ impl FromNapiValue for Wrap<SortOptions> {
             obj.get::<_, bool>("nullsLast")?.unwrap_or(false)
         };
         let multithreaded = obj.get::<_, bool>("multithreaded")?.unwrap();
+        let maintain_order: bool = obj.get::<_, bool>("maintain_order")?.unwrap();
         let options = SortOptions {
             descending,
             nulls_last,
             multithreaded,
+            maintain_order,
         };
         Ok(Wrap(options))
     }

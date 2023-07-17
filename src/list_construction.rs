@@ -43,7 +43,7 @@ macro_rules! typed_option_or_null {
                             }
                         }
                         let ser = inner_builder.finish().into_series();
-                        builder.append_series(&ser);
+                        let _ = builder.append_series(&ser);
                     }
                     Either::B(_) => builder.append_null(),
                 }
@@ -83,7 +83,7 @@ macro_rules! build_list_with_downcast {
                             }
                         }
                         let ser = inner_builder.finish().into_series();
-                        builder.append_series(&ser);
+                        let _ = builder.append_series(&ser);
                     }
                     Either::B(_) => builder.append_null(),
                 }
@@ -164,7 +164,7 @@ pub fn js_arr_to_list(name: &str, arr: &Array, dtype: &DataType) -> napi::Result
                             .into_series()
                             .cast(&DataType::Datetime(TimeUnit::Milliseconds, None))
                             .map_err(JsPolarsErr::from)?;
-                        builder.append_series(&dt_series);
+                        let _ = builder.append_series(&dt_series);
                     }
                     Either::B(_) => builder.append_null(),
                 }

@@ -6,6 +6,7 @@ import {
   RollingOptions,
   RollingQuantileOptions,
   RollingSkewOptions,
+  ClosedWindow,
 } from "./types";
 import { DataType } from "./datatypes";
 
@@ -392,6 +393,8 @@ export interface Rolling<T> {
     weights?: Array<number>,
     minPeriods?: Array<number>,
     center?: boolean,
+    by?: String,
+    closed?: ClosedWindow,
   ): T;
   /**
    * Compute a rolling skew
