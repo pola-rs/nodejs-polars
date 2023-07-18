@@ -831,11 +831,12 @@ impl JsExpr {
             .into()
     }
     #[napi(catch_unwind)]
-    pub fn str_json_extract(&self, dtype: Option<Wrap<DataType>>) -> JsExpr {
+    pub fn str_json_extract(&self, dtype: Option<Wrap<DataType>>, infer_schema_len: Option<i64>) -> JsExpr {
         let function = move |s: Series| {
             let ca = s.utf8()?;
             let dt = dtype.clone().map(|d| d.0 as DataType);
-            match ca.json_extract(dt) {
+            let infer_schema_len = infer_schema_len.map(|l| l as usize);
+            match ca.json_extract(dt, infer_schema_len) {
                 Ok(ca) => Ok(Some(ca.into_series())),
                 Err(e) => Err(PolarsError::ComputeError(format!("{:?}", e).into())),
             }

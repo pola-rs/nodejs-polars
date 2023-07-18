@@ -816,11 +816,12 @@ impl JsSeries {
     }
 
     #[napi(catch_unwind)]
-    pub fn str_json_extract(&self, dtype: Option<Wrap<DataType>>) -> napi::Result<JsSeries> {
+    pub fn str_json_extract(&self, dtype: Option<Wrap<DataType>>, infer_schema_len: Option<i64>) -> napi::Result<JsSeries> {
         let ca = self.series.utf8().map_err(JsPolarsErr::from)?;
         let dt = dtype.clone().map(|d| d.0 as DataType);
+        let infer_schema_len = infer_schema_len.map(|l| l as usize);
         let s = ca
-            .json_extract(dt)
+            .json_extract(dt, infer_schema_len)
             .map_err(JsPolarsErr::from)?
             .into_series();
         Ok(s.into())
