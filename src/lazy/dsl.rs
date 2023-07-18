@@ -1525,13 +1525,13 @@ pub fn dtype_cols(dtypes: Vec<Wrap<DataType>>) -> crate::lazy::dsl::JsExpr {
 
 #[cfg(feature = "range")]
 #[napi(catch_unwind)]
-pub fn int_range(start: Wrap<Expr>, end: Wrap<Expr>, step: i64, dtype: Wrap<DataType>) -> JsExpr {
-    let dtype = dtype.0;
+pub fn int_range(start: Wrap<Expr>, end: Wrap<Expr>, step: i64, dtype: Option<Wrap<DataType>>) -> JsExpr {
+    let dtype = dtype.map(|d| d.0 as DataType);
 
     let mut result = dsl::int_range(start.0, end.0, step);
 
-    if dtype != DataType::Int64 {
-        result = result.cast(dtype)
+    if dtype.is_some() && dtype.clone().unwrap() != DataType::Int64 {
+        result = result.cast(dtype.clone().unwrap());
     }
 
     result.into()
@@ -1539,13 +1539,13 @@ pub fn int_range(start: Wrap<Expr>, end: Wrap<Expr>, step: i64, dtype: Wrap<Data
 
 #[cfg(feature = "range")]
 #[napi(catch_unwind)]
-pub fn int_ranges(start: Wrap<Expr>, end: Wrap<Expr>, step: i64, dtype: Wrap<DataType>) -> JsExpr {
-    let dtype = dtype.0;
+pub fn int_ranges(start: Wrap<Expr>, end: Wrap<Expr>, step: i64, dtype: Option<Wrap<DataType>>) -> JsExpr {
+    let dtype = dtype.map(|d| d.0 as DataType);
 
     let mut result = dsl::int_ranges(start.0, end.0, step);
 
-    if dtype != DataType::Int64 {
-        result = result.cast(DataType::List(Box::new(dtype)))
+    if dtype.is_some() && dtype.clone().unwrap() != DataType::Int64 {
+        result = result.cast(DataType::List(Box::new(dtype.clone().unwrap())));
     }
 
     result.into()

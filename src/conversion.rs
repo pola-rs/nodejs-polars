@@ -624,11 +624,8 @@ impl FromNapiValue for Wrap<DataType> {
                 };
 
                 Ok(Wrap(dtype))
-                // Ok(Wrap(Schema::from(fields)))
             }
-            _ => {
-                todo!()
-            }
+            _ => Err(Error::new(Status::InvalidArg, "not a valid conversion to 'DataType'".to_owned()))
         }
     }
 }

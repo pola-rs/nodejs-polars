@@ -150,7 +150,7 @@ export function intRange<T>(opts: {
   low: any;
   high: any;
   step: number;
-  eager: boolean;
+  eager?: boolean;
 });
 export function intRange(
   low: any,
@@ -177,8 +177,7 @@ export function intRange(opts: any, high?, step = 1, eager?): Series | Expr {
         .select(intRange(low, high, step).alias("intRange") as any)
         .getColumn("intRange") as any;
     }
-
-    return _Expr(pli.intRange(low, high, step));
+    return _Expr(pli.intRange(low, high, step, eager));
   }
 }
 /**  Alias for `pl.col("*")` */
