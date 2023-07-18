@@ -14,7 +14,7 @@ jobs:
       - name: Install latest Rust nightly
         uses: actions-rs/toolchain@v1
         with:
-          toolchain: nightly-2022-11-24
+          toolchain: nightly-2023-06-23
           override: true
           components: rustfmt, clippy
       - name: Install ghp-import

@@ -138,6 +138,7 @@ impl JsLazyFrame {
         reverse: bool,
         nulls_last: bool,
         multithreaded: bool,
+        maintain_order: bool
     ) -> JsLazyFrame {
         let ldf = self.ldf.clone();
         ldf.sort(
@@ -146,6 +147,7 @@ impl JsLazyFrame {
                 descending: reverse,
                 nulls_last,
                 multithreaded,
+                maintain_order
             },
         )
         .into()
@@ -156,10 +158,10 @@ impl JsLazyFrame {
         by_column: Vec<&JsExpr>,
         reverse: Vec<bool>,
         nulls_last: bool,
+        maintain_order: bool,
     ) -> JsLazyFrame {
         let ldf = self.ldf.clone();
-        ldf.sort_by_exprs(by_column.to_exprs(), reverse, nulls_last)
-            .into()
+        ldf.sort_by_exprs(by_column.to_exprs(), reverse, nulls_last, maintain_order).into()
     }
     #[napi(catch_unwind)]
     pub fn cache(&self) -> JsLazyFrame {

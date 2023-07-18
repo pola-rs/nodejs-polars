@@ -113,8 +113,11 @@ export interface Expr
    *     - true -> order from large to small.
    * @returns UInt32 Series
    */
-  argSort(reverse?: boolean): Expr;
-  argSort({ reverse }: { reverse: boolean }): Expr;
+  argSort(reverse?: boolean, maintain_order?: boolean): Expr;
+  argSort({
+    reverse,
+    maintain_order,
+  }: { reverse?: boolean; maintain_order?: boolean }): Expr;
   /** Get index of first unique value. */
   argUnique(): Expr;
   /** @see {@link Expr.alias} */
@@ -580,7 +583,6 @@ export const _Expr = (_expr: any): Expr => {
 
   const wrapExprArg = (method: string, lit = false) => (other: any) => {
     const expr = exprToLitOrExpr(other, lit).inner();
-
     return wrap(method, expr);
   };
 
@@ -658,10 +660,10 @@ export const _Expr = (_expr: any): Expr => {
     argMin() {
       return _Expr(_expr.argMin());
     },
-    argSort(reverse: any = false) {
+    argSort(reverse: any = false, maintain_order?: boolean) {
       reverse = reverse?.reverse ?? reverse;
-
-      return _Expr(_expr.argSort(reverse, false));
+      maintain_order = reverse?.maintain_order ?? maintain_order;
+      return _Expr(_expr.argSort(reverse, false, false, maintain_order));
     },
     argUnique() {
       return _Expr(_expr.argUnique());
@@ -936,9 +938,11 @@ export const _Expr = (_expr: any): Expr => {
       weights?,
       minPeriods?,
       center?,
+      by?,
+      closedWindow?,
     ) {
       if (typeof val === "number") {
-        return wrap("rollingQuantile", val, interpolation ?? "nearest", {
+        return wrap("rollingQuantile", {
           windowSize: `${windowSize}i`,
           weights,
           minPeriods,
@@ -950,18 +954,16 @@ export const _Expr = (_expr: any): Expr => {
       if (windowSize === null) {
         throw new Error("window size is required");
       }
-      const options = {
-        windowSize: `${windowSize}i`,
-        weights: val?.["weights"] ?? weights,
-        minPeriods: val?.["minPeriods"] ?? minPeriods ?? windowSize,
-        center: val?.["center"] ?? center ?? false,
-      };
-
       return wrap(
         "rollingQuantile",
         val.quantile,
         val.interpolation ?? "nearest",
-        options,
+        `${windowSize}i`,
+        val?.["weights"] ?? weights ?? null,
+        val?.["minPeriods"] ?? minPeriods ?? windowSize,
+        val?.["center"] ?? center ?? false,
+        val?.["by"] ?? by,
+        val?.["closedWindow"] ?? closedWindow ?? "left",
       );
     },
     rollingSkew(val, bias = true) {
@@ -1017,9 +1019,9 @@ export const _Expr = (_expr: any): Expr => {
 
       return wrap("slice", pli.lit(arg.offset), pli.lit(arg.length));
     },
-    sort(reverse: any = false, nullsLast = false) {
+    sort(reverse: any = false, nullsLast = false, maintain_order = false) {
       if (typeof reverse === "boolean") {
-        return wrap("sortWith", reverse, nullsLast, false);
+        return wrap("sortWith", reverse, nullsLast, false, maintain_order);
       }
 
       return wrap(
@@ -1027,6 +1029,7 @@ export const _Expr = (_expr: any): Expr => {
         reverse?.reverse ?? false,
         reverse?.nullsLast ?? nullsLast,
         false,
+        reverse?.maintain_order ?? maintain_order,
       );
     },
     sortBy(arg, reverse = false) {

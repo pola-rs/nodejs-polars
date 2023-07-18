@@ -74,7 +74,7 @@ export namespace pl {
   export import col = lazy.col;
   export import cols = lazy.cols;
   export import lit = lazy.lit;
-  export import arange = lazy.arange;
+  export import intRange = lazy.intRange;
   export import argSortBy = lazy.argSortBy;
   export import avg = lazy.avg;
   export import concatList = lazy.concatList;

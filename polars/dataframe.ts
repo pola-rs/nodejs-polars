@@ -972,10 +972,15 @@ export interface DataFrame
    * ```
    */
   nullCount(): DataFrame;
-  partitionBy(cols: string | string[], stable?: boolean): DataFrame[];
+  partitionBy(
+    cols: string | string[],
+    stable?: boolean,
+    includeKey?: boolean,
+  ): DataFrame[];
   partitionBy<T>(
     cols: string | string[],
     stable: boolean,
+    includeKey: boolean,
     mapFn: (df: DataFrame) => T,
   ): T[];
   /**
@@ -1310,8 +1315,20 @@ export interface DataFrame
    * @param by - By which columns to sort. Only accepts string.
    * @param reverse - Reverse/descending sort.
    */
-  sort(by: ColumnsOrExpr, reverse?: boolean): DataFrame;
-  sort({ by, reverse }: { by: ColumnsOrExpr; reverse?: boolean }): DataFrame;
+  sort(
+    by: ColumnsOrExpr,
+    descending?: boolean,
+    maintain_order?: boolean,
+  ): DataFrame;
+  sort({
+    by,
+    descending,
+    maintain_order,
+  }: {
+    by: ColumnsOrExpr;
+    descending?: boolean;
+    maintain_order?: boolean;
+  }): DataFrame;
   /**
    * Aggregate the columns of this DataFrame to their standard deviation value.
    * ___
@@ -1985,10 +2002,11 @@ export const _DataFrame = (_df: any): DataFrame => {
     nullCount() {
       return wrap("nullCount");
     },
-    partitionBy(by, strict = false, mapFn = (df) => df) {
+    partitionBy(by, strict = false, includeKey?: boolean, mapFn = (df) => df) {
       by = Array.isArray(by) ? by : [by];
-
-      return _df.partitionBy(by, strict).map((d) => mapFn(_DataFrame(d)));
+      return _df
+        .partitionBy(by, strict, includeKey)
+        .map((d) => mapFn(_DataFrame(d)));
     },
     pivot(values, options?) {
       let {
@@ -2105,18 +2123,18 @@ export const _DataFrame = (_df: any): DataFrame => {
 
       return wrap("slice", opts.offset, opts.length);
     },
-    sort(arg, reverse = false) {
+    sort(arg, descending = false, maintain_order = false) {
       if (arg?.by !== undefined) {
-        return this.sort(arg.by, arg.reverse);
+        return this.sort(arg.by, arg.descending);
       }
       if (Array.isArray(arg) || Expr.isExpr(arg)) {
         return _DataFrame(_df)
           .lazy()
-          .sort(arg, reverse)
+          .sort(arg, descending, maintain_order)
           .collectSync({ noOptimization: true, stringCache: false });
       }
 
-      return wrap("sort", arg, reverse, true, false);
+      return wrap("sort", arg, descending, maintain_order, true, false);
     },
     std() {
       return wrap("std");

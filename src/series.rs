@@ -454,12 +454,13 @@ impl JsSeries {
         self.series.sort(reverse).into()
     }
     #[napi]
-    pub fn argsort(&self, reverse: bool, nulls_last: bool, multithreaded: bool) -> JsSeries {
+    pub fn argsort(&self, reverse: bool, nulls_last: bool, multithreaded: bool, maintain_order: bool) -> JsSeries {
         self.series
             .arg_sort(SortOptions {
                 descending: reverse,
                 nulls_last,
                 multithreaded,
+                maintain_order
             })
             .into_series()
             .into()
