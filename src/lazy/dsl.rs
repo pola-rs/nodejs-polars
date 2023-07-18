@@ -1,3 +1,4 @@
+use std::any::Any;
 use crate::conversion::{parse_fill_null_strategy, Wrap};
 use crate::prelude::*;
 use crate::utils::reinterpret;
@@ -302,25 +303,27 @@ impl JsExpr {
     }
 
     #[napi(catch_unwind)]
-    pub fn sort_with(&self, descending: bool, nulls_last: bool, multithreaded: bool) -> JsExpr {
+    pub fn sort_with(&self, descending: bool, nulls_last: bool, multithreaded: bool, maintain_order: bool) -> JsExpr {
         self.clone()
             .inner
             .sort_with(SortOptions {
                 descending,
                 nulls_last,
                 multithreaded,
+                maintain_order
             })
             .into()
     }
 
     #[napi(catch_unwind)]
-    pub fn arg_sort(&self, reverse: bool, multithreaded: bool) -> JsExpr {
+    pub fn arg_sort(&self, reverse: bool, multithreaded: bool, maintain_order: bool) -> JsExpr {
         self.clone()
             .inner
             .arg_sort(SortOptions {
                 descending: reverse,
                 nulls_last: true,
                 multithreaded,
+                maintain_order
             })
             .into()
     }
@@ -1097,12 +1100,26 @@ impl JsExpr {
         &self,
         quantile: f64,
         interpolation: Wrap<QuantileInterpolOptions>,
-        options: JsRollingOptions,
+        window_size: String,
+        weights: Option<Vec<f64>>,
+        min_periods: i64,
+        center: bool,
+        by: Option<String>,
+        closed: Option<Wrap<ClosedWindow>>,
     ) -> JsExpr {
-        self.inner
-            .clone()
-            .rolling_quantile(quantile, interpolation.0, options.into())
-            .into()
+        let options = RollingOptions {
+            window_size: Duration::parse(&window_size),
+            min_periods: min_periods as usize,
+            weights,
+            center,
+            by,
+            closed_window: closed.map(|c| c.0),
+            fn_params: Some(Arc::new(RollingQuantileParams {
+                prob: quantile,
+                interpol: interpolation.0,
+            }) as Arc<dyn Any + Send + Sync>),
+        };
+        self.inner.clone().rolling_quantile(options).into()
     }
     #[napi(catch_unwind)]
     pub fn rolling_skew(&self, window_size: i64, bias: bool) -> JsExpr {
@@ -1277,8 +1294,8 @@ impl JsExpr {
     }
 
     #[napi(catch_unwind)]
-    pub fn shuffle(&self, seed: Wrap<u64>) -> JsExpr {
-        self.inner.clone().shuffle(Some(seed.0)).into()
+    pub fn shuffle(&self, seed: Wrap<u64>, fixed_seed: bool) -> JsExpr {
+        self.inner.clone().shuffle(Some(seed.0), fixed_seed).into()
     }
 
     #[napi(catch_unwind)]
@@ -1288,11 +1305,12 @@ impl JsExpr {
         with_replacement: bool,
         shuffle: bool,
         seed: Option<i64>,
+        fixed_seed: bool,
     ) -> JsExpr {
         let seed = seed.map(|s| s as u64);
         self.inner
             .clone()
-            .sample_frac(frac, with_replacement, shuffle, seed)
+            .sample_frac(frac, with_replacement, shuffle, seed, fixed_seed)
             .into()
     }
     #[napi(catch_unwind)]
@@ -1522,10 +1540,31 @@ pub fn dtype_cols(dtypes: Vec<Wrap<DataType>>) -> crate::lazy::dsl::JsExpr {
 }
 
 #[napi(catch_unwind)]
-pub fn arange(low: Wrap<Expr>, high: Wrap<Expr>, step: Option<i64>) -> JsExpr {
-    let step = step.unwrap_or(1);
-    polars::lazy::dsl::arange(low.0, high.0, step).into()
+pub fn int_range(start: Wrap<Expr>, end: Wrap<Expr>, step: i64, dtype: Option<Wrap<DataType>>) -> JsExpr {
+    let dtype = dtype.map(|d| d.0 as DataType);
+
+    let mut result = dsl::int_range(start.0, end.0, step);
+
+    if dtype.is_some() && dtype.clone().unwrap() != DataType::Int64 {
+        result = result.cast(dtype.clone().unwrap());
+    }
+
+    result.into()
 }
+
+#[napi(catch_unwind)]
+pub fn int_ranges(start: Wrap<Expr>, end: Wrap<Expr>, step: i64, dtype: Option<Wrap<DataType>>) -> JsExpr {
+    let dtype = dtype.map(|d| d.0 as DataType);
+
+    let mut result = dsl::int_ranges(start.0, end.0, step);
+
+    if dtype.is_some() && dtype.clone().unwrap() != DataType::Int64 {
+        result = result.cast(DataType::List(Box::new(dtype.clone().unwrap())));
+    }
+
+    result.into()
+}
+
 
 #[napi(catch_unwind)]
 pub fn pearson_corr(a: Wrap<Expr>, b: Wrap<Expr>, ddof: Option<u8>) -> JsExpr {
@@ -1550,9 +1589,10 @@ pub fn cov(a: Wrap<Expr>, b: Wrap<Expr>) -> JsExpr {
 }
 
 #[napi(catch_unwind)]
-pub fn argsort_by(by: Vec<&JsExpr>, reverse: Vec<bool>) -> JsExpr {
+#[cfg(feature = "range")]
+pub fn arg_sort_by(by: Vec<&JsExpr>, descending: Vec<bool>) -> JsExpr {
     let by = by.to_exprs();
-    polars::lazy::dsl::arg_sort_by(by, &reverse).into()
+    polars::lazy::dsl::arg_sort_by(by, &descending).into()
 }
 
 #[napi(catch_unwind)]
@@ -1600,18 +1640,6 @@ pub fn concat_lst(s: Vec<&JsExpr>) -> JsResult<JsExpr> {
 pub fn concat_str(s: Vec<&JsExpr>, sep: String) -> JsExpr {
     let s = s.to_exprs();
     dsl::concat_str(s, &sep).into()
-}
-
-#[napi(catch_unwind)]
-pub fn min_exprs(exprs: Vec<&JsExpr>) -> JsExpr {
-    let exprs = exprs.to_exprs();
-    polars::lazy::dsl::min_exprs(exprs).into()
-}
-
-#[napi(catch_unwind)]
-pub fn max_exprs(exprs: Vec<&JsExpr>) -> JsExpr {
-    let exprs = exprs.to_exprs();
-    polars::lazy::dsl::max_exprs(exprs).into()
 }
 
 #[napi(catch_unwind)]

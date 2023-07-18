@@ -17,10 +17,10 @@ ahash = "0.8.3"
 bincode = "1.3.3"
 napi = {version = "2.13.2", default-features = false, features = ["napi8", "serde-json", "experimental"]}
 napi-derive = {version = "2.13.0", default-features = false}
-polars-core = {git = "https://github.com/pola-rs/polars.git", rev = "ee2366b68f35c4b69dfe34cbf1eae107d4ebe97b", default-features = false}
-polars-ops = {git = "https://github.com/pola-rs/polars.git", rev = "ee2366b68f35c4b69dfe34cbf1eae107d4ebe97b", default-features = false}
-polars-io = {git = "https://github.com/pola-rs/polars.git", rev = "ee2366b68f35c4b69dfe34cbf1eae107d4ebe97b", default-features = false}
-polars-plan = {git = "https://github.com/pola-rs/polars.git", rev = "ee2366b68f35c4b69dfe34cbf1eae107d4ebe97b", default-features = false}
+polars-core = {git = "https://github.com/pola-rs/polars.git", rev = "672922491bac1f144747d39b864106d90010fd1e", default-features = false}
+polars-io = {git = "https://github.com/pola-rs/polars.git", rev = "672922491bac1f144747d39b864106d90010fd1e", default-features = false}
+polars-lazy = {git = "https://github.com/pola-rs/polars.git", rev = "672922491bac1f144747d39b864106d90010fd1e", default-features = false}
+polars-ops = {git = "https://github.com/pola-rs/polars.git", rev = "672922491bac1f144747d39b864106d90010fd1e", default-features = false}
 thiserror = "1.0.40"
 smartstring = { version = "1" }
 serde_json = {version = "1"}
@@ -42,7 +42,6 @@ features = [
   "performant",
   "dtype-full",
   "rows",
-  "private",
   "round_series",
   "is_unique",
   "is_in",
@@ -67,7 +66,6 @@ features = [
   "diff",
   "pct_change",
   "moment",
-  "arange",
   "true_div",
   "dtype-categorical",
   "string_justify",
@@ -95,7 +93,7 @@ features = [
   "timezones",
 ]
 git = "https://github.com/pola-rs/polars.git"
-rev = "ee2366b68f35c4b69dfe34cbf1eae107d4ebe97b"
+rev = "672922491bac1f144747d39b864106d90010fd1e"
 
 [build-dependencies]
 napi-build = "2.0.1"
@@ -103,5 +101,9 @@ napi-build = "2.0.1"
 [profile.release]
 codegen-units = 1
 lto = "fat"
+
+[features]
+default = ["range"]
+range = ["polars-lazy/range"]
 
 [workspace]

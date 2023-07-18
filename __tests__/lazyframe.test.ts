@@ -956,7 +956,7 @@ describe("lazyframe", () => {
         bar: [6, 7, 8, 1],
       })
       .lazy()
-      .sort({ by: "bar", reverse: true })
+      .sort({ by: "bar", descending: true })
       .collectSync();
     const expected = pl.DataFrame({
       foo: [3, 2, 1, 1],

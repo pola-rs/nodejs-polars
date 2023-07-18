@@ -965,7 +965,7 @@ describe("dataframe", () => {
         foo: [1, 2, 3, 1],
         bar: [6, 7, 8, 1],
       })
-      .sort({ by: "bar", reverse: true });
+      .sort({ by: "bar", descending: true });
     const expected = pl.DataFrame({
       foo: [3, 2, 1, 1],
       bar: [8, 7, 6, 1],
@@ -1414,7 +1414,7 @@ describe("join", () => {
       bar: [6, 7, 8],
       ham: ["a", "b", "c"],
       apple: ["x", "y", null],
-      fooright: [1, 10, null],
+      foo_right: [1, 10, null],
     });
     expect(actual).toFrameEqual(expected);
   });
@@ -1438,7 +1438,7 @@ describe("join", () => {
       bar: [6, 7, 8, null],
       ham: ["a", "b", "c", "d"],
       apple: ["x", null, null, "y"],
-      fooright: [1, null, null, 10],
+      foo_right: [1, null, null, 10],
     });
     expect(actual).toFrameEqual(expected);
   });
@@ -1456,14 +1456,14 @@ describe("join", () => {
     const actual = df.join(otherDF, {
       on: "ham",
       how: "left",
-      suffix: "_other",
+      suffix: "_right",
     });
     const expected = pl.DataFrame({
       foo: [1, 2, 3],
       bar: [6, 7, 8],
       ham: ["a", "b", "c"],
       apple: ["x", "y", null],
-      foo_other: [1, 10, null],
+      foo_right: [1, 10, null],
     });
     expect(actual).toFrameEqual(expected);
   });
@@ -2209,7 +2209,9 @@ describe("additional", () => {
       label: ["a", "a", "b", "b"],
       value: [1, 2, 3, 4],
     });
-    const dfs = df.partitionBy(["label"], true).map((df) => df.toObject());
+    const dfs = df
+      .partitionBy(["label"], true, true)
+      .map((df) => df.toObject());
     const expected = [
       {
         label: ["a", "a"],
@@ -2228,7 +2230,8 @@ describe("additional", () => {
       label: ["a", "a", "b", "b"],
       value: [1, 2, 3, 4],
     });
-    const dfs = df.partitionBy(["label"], true, (df) => df.toObject());
+    const dfs = df.partitionBy(["label"], true, true, (df) => df.toObject());
+
     const expected = [
       {
         label: ["a", "a"],

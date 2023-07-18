@@ -562,7 +562,6 @@ impl JsDataFrame {
         left_on: Vec<&str>,
         right_on: Vec<&str>,
         how: String,
-        suffix: String,
     ) -> napi::Result<JsDataFrame> {
         let how = match how.as_ref() {
             "left" => JoinType::Left,
@@ -583,7 +582,7 @@ impl JsDataFrame {
 
         let df = self
             .df
-            .join(&other.df, left_on, right_on, how, Some(suffix))
+            .join(&other.df, left_on, right_on, how.into())
             .map_err(JsPolarsErr::from)?;
         Ok(JsDataFrame::new(df))
     }
@@ -742,27 +741,29 @@ impl JsDataFrame {
     pub fn sort(
         &self,
         by_column: String,
-        reverse: bool,
+        descending: bool,
         nulls_last: bool,
         multithreaded: bool,
+        maintain_order: bool
     ) -> napi::Result<JsDataFrame> {
         let df = self
             .df
             .sort_with_options(
                 &by_column,
                 SortOptions {
-                    descending: reverse,
+                    descending,
                     nulls_last,
                     multithreaded,
+                    maintain_order
                 },
             )
             .map_err(JsPolarsErr::from)?;
         Ok(JsDataFrame::new(df))
     }
     #[napi(catch_unwind)]
-    pub fn sort_in_place(&mut self, by_column: String, reverse: bool) -> napi::Result<()> {
+    pub fn sort_in_place(&mut self, by_column: String, descending: bool, maintain_order: bool) -> napi::Result<()> {
         self.df
-            .sort_in_place([&by_column], reverse)
+            .sort_in_place([&by_column], descending, maintain_order)
             .map_err(JsPolarsErr::from)?;
         Ok(())
     }
@@ -914,11 +915,12 @@ impl JsDataFrame {
         &self,
         groups: Vec<String>,
         stable: bool,
+        include_key: bool,
     ) -> napi::Result<Vec<JsDataFrame>> {
         let out = if stable {
-            self.df.partition_by_stable(groups)
+            self.df.partition_by_stable(groups, include_key)
         } else {
-            self.df.partition_by(groups)
+            self.df.partition_by(groups, include_key)
         }
         .map_err(JsPolarsErr::from)?;
         // Safety:
@@ -1022,8 +1024,8 @@ impl JsDataFrame {
         Ok(df.into())
     }
     #[napi(catch_unwind)]
-    pub fn to_dummies(&self, separator: Option<&str>) -> napi::Result<JsDataFrame> {
-        let df = self.df.to_dummies(separator).map_err(JsPolarsErr::from)?;
+    pub fn to_dummies(&self, separator: Option<&str>, drop_first: bool) -> napi::Result<JsDataFrame> {
+        let df = self.df.to_dummies(separator, drop_first).map_err(JsPolarsErr::from)?;
         Ok(df.into())
     }
 

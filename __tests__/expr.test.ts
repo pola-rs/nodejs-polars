@@ -1126,7 +1126,7 @@ describe("expr.str", () => {
 
     const datetimeSeries = df
       .getColumn("timestamp")
-      .str.strptime(pl.Datetime("ms"), "%FT%T%.3f%:z")
+      .str.strptime(pl.Datetime("ms"), "%FT%T%.3f")
       .rename("datetime");
     const dateSeries = df
       .getColumn("timestamp")
@@ -1137,7 +1137,7 @@ describe("expr.str", () => {
 
     const actual = df.select(
       col("timestamp")
-        .str.strptime(pl.Datetime("ms"), "%FT%T%.3f%:z")
+        .str.strptime(pl.Datetime("ms"), "%FT%T%.3f")
         .as("datetime"),
       col("timestamp").str.strptime(pl.Date, "%FT%T%.3f%:z").as("date"),
     );

@@ -1131,13 +1131,17 @@ export function _Series(_s: any): Series {
     argMin() {
       return _s.argMin();
     },
-    argSort(reverse: any = false, nullsLast = true) {
+    argSort(reverse: any = false, nullsLast = true, maintain_order = false) {
       if (typeof reverse === "boolean") {
-        return _Series(_s.argsort(reverse, nullsLast, false));
+        return _Series(_s.argsort(reverse, nullsLast, maintain_order, false));
       }
 
       return _Series(
-        _s.argsort(reverse.reverse, reverse.nullsLast ?? nullsLast),
+        _s.argsort(
+          reverse.reverse,
+          reverse.nullsLast ?? nullsLast,
+          reverse.maintain_order ?? maintain_order,
+        ),
       );
     },
     argTrue() {

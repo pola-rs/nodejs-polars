@@ -213,3 +213,8 @@ export interface RollingSkewOptions {
   windowSize: number;
   bias?: boolean;
 }
+
+/**
+ * ClosedWindow types
+ */
+export type ClosedWindow = "None" | "Both" | "Left" | "Right";

@@ -123,31 +123,31 @@ describe("lazy functions", () => {
       expect(actual).toFrameEqual(expected);
     });
   });
-  test("arange:positional", () => {
+  test("intRange:positional", () => {
     const df = pl.DataFrame({
       foo: [1, 1, 1],
     });
     const expected = pl.DataFrame({ foo: [1, 1] });
-    const actual = df.filter(pl.col("foo").gtEq(pl.arange(0, 3)));
+    const actual = df.filter(pl.col("foo").gtEq(pl.intRange(0, 3)));
     expect(actual).toFrameEqual(expected);
   });
-  test("arange:named", () => {
+  test("intRange:named", () => {
     const df = pl.DataFrame({
       foo: [1, 1, 1],
     });
     const expected = pl.DataFrame({ foo: [1, 1] });
     const actual = df.filter(
-      pl.col("foo").gtEq(pl.arange({ low: 0, high: 3 })),
+      pl.col("foo").gtEq(pl.intRange({ low: 0, high: 3 })),
     );
     expect(actual).toFrameEqual(expected);
   });
-  test("arange:eager", () => {
+  test("intRange:eager", () => {
     const df = pl.DataFrame({
       foo: [1, 1, 1],
     });
     const expected = pl.DataFrame({ foo: [1, 1] });
     const actual = df.filter(
-      pl.col("foo").gtEq(pl.arange({ low: 0, high: 3, eager: true })),
+      pl.col("foo").gtEq(pl.intRange({ low: 0, high: 3, eager: true })),
     );
     expect(actual).toFrameEqual(expected);
   });
