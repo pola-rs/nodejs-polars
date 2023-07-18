@@ -1523,7 +1523,6 @@ pub fn dtype_cols(dtypes: Vec<Wrap<DataType>>) -> crate::lazy::dsl::JsExpr {
     dsl::dtype_cols(dtypes).into()
 }
 
-#[cfg(feature = "range")]
 #[napi(catch_unwind)]
 pub fn int_range(start: Wrap<Expr>, end: Wrap<Expr>, step: i64, dtype: Option<Wrap<DataType>>) -> JsExpr {
     let dtype = dtype.map(|d| d.0 as DataType);
@@ -1537,7 +1536,6 @@ pub fn int_range(start: Wrap<Expr>, end: Wrap<Expr>, step: i64, dtype: Option<Wr
     result.into()
 }
 
-#[cfg(feature = "range")]
 #[napi(catch_unwind)]
 pub fn int_ranges(start: Wrap<Expr>, end: Wrap<Expr>, step: i64, dtype: Option<Wrap<DataType>>) -> JsExpr {
     let dtype = dtype.map(|d| d.0 as DataType);
