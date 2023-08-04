@@ -625,7 +625,10 @@ impl FromNapiValue for Wrap<DataType> {
 
                 Ok(Wrap(dtype))
             }
-            _ => Err(Error::new(Status::InvalidArg, "not a valid conversion to 'DataType'".to_owned()))
+            _ => Err(Error::new(
+                Status::InvalidArg,
+                "not a valid conversion to 'DataType'".to_owned(),
+            )),
         }
     }
 }
