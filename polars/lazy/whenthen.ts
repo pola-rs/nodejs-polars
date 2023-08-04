@@ -3,42 +3,51 @@ import pli from "../internals/polars_internal";
 
 export interface When {
   /** Values to return in case of the predicate being `true`.*/
-  then(expr: Expr): WhenThen;
+  then(expr: Expr): Then;
 }
 
-export interface WhenThen {
+export interface Then {
   /** Start another when, then, otherwise layer. */
-  when(predicate: Expr): WhenThenThen;
+  when(predicate: Expr): ChainedWhen;
   /** Values to return in case of the predicate being `false`. */
   otherwise(expr: Expr): Expr;
 }
 
-export interface WhenThenThen {
-  /** Start another when, then, otherwise layer. */
-  when(predicate: Expr): WhenThenThen;
+export interface ChainedWhen {
   /** Values to return in case of the predicate being `true`. */
-  then(expr: Expr): WhenThenThen;
+  then(expr: Expr): ChainedThen;
+}
+
+export interface ChainedThen {
+  /** Start another when, then, otherwise layer. */
+  when(predicate: Expr): ChainedWhen;
+  /** Values to return in case of the predicate being `true`. */
+  then(expr: Expr): ChainedThen;
   /** Values to return in case of the predicate being `false`. */
   otherwise(expr: Expr): Expr;
 }
 
-function WhenThenThen(_whenthenthen: any): WhenThenThen {
+function ChainedWhen(_chainedwhen: any): ChainedWhen {
   return {
-    when: ({ _expr }: Expr): WhenThenThen =>
-      WhenThenThen(_whenthenthen.when(_expr)),
-    then: ({ _expr }: Expr): WhenThenThen =>
-      WhenThenThen(_whenthenthen.then(_expr)),
+    then: ({ _expr }: Expr): ChainedThen =>
+      ChainedThen(_chainedwhen.then(_expr)),
+  };
+}
+function ChainedThen(_chainedthen: any): ChainedThen {
+  return {
+    when: ({ _expr }: Expr): ChainedWhen =>
+      ChainedWhen(_chainedthen.when(_expr)),
+    then: ({ _expr }: Expr): ChainedThen =>
+      ChainedThen(_chainedthen.then(_expr)),
     otherwise: ({ _expr }: Expr): Expr =>
-      (Expr as any)(_whenthenthen.otherwise(_expr)),
+      (Expr as any)(_chainedthen.otherwise(_expr)),
   };
 }
 
-function WhenThen(_whenthen: any): WhenThen {
+function Then(_then: any): Then {
   return {
-    when: ({ _expr }: Expr): WhenThenThen =>
-      WhenThenThen(_whenthen.when(_expr)),
-    otherwise: ({ _expr }: Expr): Expr =>
-      (Expr as any)(_whenthen.otherwise(_expr)),
+    when: ({ _expr }: Expr): ChainedWhen => ChainedWhen(_then.when(_expr)),
+    otherwise: ({ _expr }: Expr): Expr => (Expr as any)(_then.otherwise(_expr)),
   };
 }
 
@@ -48,7 +57,7 @@ function WhenThen(_whenthen: any): WhenThen {
  */
 function When(_when: any): When {
   return {
-    then: ({ _expr }: Expr): WhenThen => WhenThen(_when.then(_expr)),
+    then: ({ _expr }: Expr): Then => Then(_when.then(_expr)),
   };
 }
 

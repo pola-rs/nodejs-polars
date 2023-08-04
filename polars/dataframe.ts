@@ -2269,36 +2269,31 @@ export const _DataFrame = (_df: any): DataFrame => {
       return _df.toString();
     },
     transpose(options?) {
-      const df = wrap(
-        "transpose",
-        options?.includeHeader ?? false,
-        options?.headerName ?? "",
-      );
+      const includeHeader = options?.includeHeader ?? false;
+      const headeName = options?.headerName ?? "column";
+      const keep_names_as = includeHeader ? headeName : undefined;
       if (options?.columnNames) {
-        function* namesIter() {
-          if (options?.includeHeader) {
-            yield options.headerName;
+        function takeNItems(iterable: Iterable<string>, n) {
+          const result: Array<string> = [];
+          let i = 0;
+          for (const item of iterable) {
+            if (i >= n) {
+              break;
+            }
+            result.push(item);
+            i++;
           }
-          const gen = (options as any).columnNames[Symbol.iterator]();
-          let next;
-          // rome-ignore lint: no-cond-assign
-          while ((next = gen.next())) {
-            yield next.value;
-          }
+          return result;
         }
-
-        const newColumns = Array.from(
-          { length: df.width },
-          (
-            (i) => () =>
-              i.next().value
-          )(namesIter()),
-        );
-
-        df.columns = newColumns;
+        options.columnNames = Array.isArray(options.columnNames)
+          ? options.columnNames.slice(this.height)
+          : takeNItems(options.columnNames, this.height);
       }
-
-      return df;
+      if (!options?.columnNames) {
+        return wrap("transpose", keep_names_as, undefined);
+      } else {
+        return wrap("transpose", keep_names_as, options.columnNames);
+      }
     },
     unnest(names) {
       names = Array.isArray(names) ? names : [names];

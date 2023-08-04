@@ -744,7 +744,7 @@ impl JsDataFrame {
         descending: bool,
         nulls_last: bool,
         multithreaded: bool,
-        maintain_order: bool
+        maintain_order: bool,
     ) -> napi::Result<JsDataFrame> {
         let df = self
             .df
@@ -754,14 +754,19 @@ impl JsDataFrame {
                     descending,
                     nulls_last,
                     multithreaded,
-                    maintain_order
+                    maintain_order,
                 },
             )
             .map_err(JsPolarsErr::from)?;
         Ok(JsDataFrame::new(df))
     }
     #[napi(catch_unwind)]
-    pub fn sort_in_place(&mut self, by_column: String, descending: bool, maintain_order: bool) -> napi::Result<()> {
+    pub fn sort_in_place(
+        &mut self,
+        by_column: String,
+        descending: bool,
+        maintain_order: bool,
+    ) -> napi::Result<()> {
         self.df
             .sort_in_place([&by_column], descending, maintain_order)
             .map_err(JsPolarsErr::from)?;
@@ -1024,8 +1029,15 @@ impl JsDataFrame {
         Ok(df.into())
     }
     #[napi(catch_unwind)]
-    pub fn to_dummies(&self, separator: Option<&str>, drop_first: bool) -> napi::Result<JsDataFrame> {
-        let df = self.df.to_dummies(separator, drop_first).map_err(JsPolarsErr::from)?;
+    pub fn to_dummies(
+        &self,
+        separator: Option<&str>,
+        drop_first: bool,
+    ) -> napi::Result<JsDataFrame> {
+        let df = self
+            .df
+            .to_dummies(separator, drop_first)
+            .map_err(JsPolarsErr::from)?;
         Ok(df.into())
     }
 
@@ -1052,17 +1064,20 @@ impl JsDataFrame {
     }
 
     #[napi(catch_unwind)]
-    pub fn transpose(&self, include_header: bool, names: String) -> napi::Result<JsDataFrame> {
-        let mut df = self.df.transpose().map_err(JsPolarsErr::from)?;
-        if include_header {
-            let s = Utf8Chunked::from_iter_values(
-                &names,
-                self.df.get_columns().iter().map(|s| s.name()),
-            )
-            .into_series();
-            df.insert_at_idx(0, s).unwrap();
-        }
-        Ok(df.into())
+    pub fn transpose(
+        &self,
+        keep_names_as: Option<Wrap<&str>>,
+        names: Option<Either<String, Vec<String>>>,
+    ) -> napi::Result<JsDataFrame> {
+        let names = names.map(|e| match e {
+            Either::A(s) => either::Either::Left(s),
+            Either::B(v) => either::Either::Right(v),
+        });
+        Ok(self
+            .df
+            .transpose(keep_names_as.map(|s| s.0), names)
+            .map_err(JsPolarsErr::from)?
+            .into())
     }
 
     #[napi(catch_unwind)]

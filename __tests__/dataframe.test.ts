@@ -1051,7 +1051,7 @@ describe("dataframe", () => {
   });
   test("transpose:includeHeader", () => {
     const expected = pl.DataFrame({
-      "": ["a", "b"],
+      column: ["a", "b"],
       column_0: [1, 1],
       column_1: [2, 2],
       column_2: [3, 3],
