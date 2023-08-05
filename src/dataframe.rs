@@ -744,7 +744,7 @@ impl JsDataFrame {
         descending: bool,
         nulls_last: bool,
         multithreaded: bool,
-        maintain_order: bool
+        maintain_order: bool,
     ) -> napi::Result<JsDataFrame> {
         let df = self
             .df
@@ -754,14 +754,19 @@ impl JsDataFrame {
                     descending,
                     nulls_last,
                     multithreaded,
-                    maintain_order
+                    maintain_order,
                 },
             )
             .map_err(JsPolarsErr::from)?;
         Ok(JsDataFrame::new(df))
     }
     #[napi(catch_unwind)]
-    pub fn sort_in_place(&mut self, by_column: String, descending: bool, maintain_order: bool) -> napi::Result<()> {
+    pub fn sort_in_place(
+        &mut self,
+        by_column: String,
+        descending: bool,
+        maintain_order: bool,
+    ) -> napi::Result<()> {
         self.df
             .sort_in_place([&by_column], descending, maintain_order)
             .map_err(JsPolarsErr::from)?;
@@ -1024,8 +1029,15 @@ impl JsDataFrame {
         Ok(df.into())
     }
     #[napi(catch_unwind)]
-    pub fn to_dummies(&self, separator: Option<&str>, drop_first: bool) -> napi::Result<JsDataFrame> {
-        let df = self.df.to_dummies(separator, drop_first).map_err(JsPolarsErr::from)?;
+    pub fn to_dummies(
+        &self,
+        separator: Option<&str>,
+        drop_first: bool,
+    ) -> napi::Result<JsDataFrame> {
+        let df = self
+            .df
+            .to_dummies(separator, drop_first)
+            .map_err(JsPolarsErr::from)?;
         Ok(df.into())
     }
 

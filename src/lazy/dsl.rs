@@ -1,4 +1,3 @@
-use std::any::Any;
 use crate::conversion::{parse_fill_null_strategy, Wrap};
 use crate::prelude::*;
 use crate::utils::reinterpret;
@@ -6,6 +5,7 @@ use polars::lazy::dsl;
 use polars::lazy::dsl::Expr;
 use polars::lazy::dsl::Operator;
 use polars_core::series::ops::NullBehavior;
+use std::any::Any;
 use std::borrow::Cow;
 
 #[napi]
@@ -303,14 +303,20 @@ impl JsExpr {
     }
 
     #[napi(catch_unwind)]
-    pub fn sort_with(&self, descending: bool, nulls_last: bool, multithreaded: bool, maintain_order: bool) -> JsExpr {
+    pub fn sort_with(
+        &self,
+        descending: bool,
+        nulls_last: bool,
+        multithreaded: bool,
+        maintain_order: bool,
+    ) -> JsExpr {
         self.clone()
             .inner
             .sort_with(SortOptions {
                 descending,
                 nulls_last,
                 multithreaded,
-                maintain_order
+                maintain_order,
             })
             .into()
     }
@@ -323,7 +329,7 @@ impl JsExpr {
                 descending: reverse,
                 nulls_last: true,
                 multithreaded,
-                maintain_order
+                maintain_order,
             })
             .into()
     }
@@ -831,7 +837,11 @@ impl JsExpr {
             .into()
     }
     #[napi(catch_unwind)]
-    pub fn str_json_extract(&self, dtype: Option<Wrap<DataType>>, infer_schema_len: Option<i64>) -> JsExpr {
+    pub fn str_json_extract(
+        &self,
+        dtype: Option<Wrap<DataType>>,
+        infer_schema_len: Option<i64>,
+    ) -> JsExpr {
         let function = move |s: Series| {
             let ca = s.utf8()?;
             let dt = dtype.clone().map(|d| d.0 as DataType);
@@ -1541,7 +1551,12 @@ pub fn dtype_cols(dtypes: Vec<Wrap<DataType>>) -> crate::lazy::dsl::JsExpr {
 }
 
 #[napi(catch_unwind)]
-pub fn int_range(start: Wrap<Expr>, end: Wrap<Expr>, step: i64, dtype: Option<Wrap<DataType>>) -> JsExpr {
+pub fn int_range(
+    start: Wrap<Expr>,
+    end: Wrap<Expr>,
+    step: i64,
+    dtype: Option<Wrap<DataType>>,
+) -> JsExpr {
     let dtype = dtype.map(|d| d.0 as DataType);
 
     let mut result = dsl::int_range(start.0, end.0, step);
@@ -1554,7 +1569,12 @@ pub fn int_range(start: Wrap<Expr>, end: Wrap<Expr>, step: i64, dtype: Option<Wr
 }
 
 #[napi(catch_unwind)]
-pub fn int_ranges(start: Wrap<Expr>, end: Wrap<Expr>, step: i64, dtype: Option<Wrap<DataType>>) -> JsExpr {
+pub fn int_ranges(
+    start: Wrap<Expr>,
+    end: Wrap<Expr>,
+    step: i64,
+    dtype: Option<Wrap<DataType>>,
+) -> JsExpr {
     let dtype = dtype.map(|d| d.0 as DataType);
 
     let mut result = dsl::int_ranges(start.0, end.0, step);
@@ -1565,7 +1585,6 @@ pub fn int_ranges(start: Wrap<Expr>, end: Wrap<Expr>, step: i64, dtype: Option<W
 
     result.into()
 }
-
 
 #[napi(catch_unwind)]
 pub fn pearson_corr(a: Wrap<Expr>, b: Wrap<Expr>, ddof: Option<u8>) -> JsExpr {

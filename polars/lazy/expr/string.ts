@@ -131,13 +131,15 @@ export interface StringNamespace extends StringFunctions<Expr> {
   * ----------
   * jsonPathMatch : Extract the first match of json string with provided JSONPath expression.
   */
-  jsonExtract(dtype?: DataType, infer_schema_length?: number): Expr;
+  jsonExtract(dtype?: DataType, inferSchemaLength?: number): Expr;
   /**
    * Extract the first match of json string with provided JSONPath expression.
    * Throw errors if encounter invalid json strings.
    * All return value will be casted to Utf8 regardless of the original value.
    * @see https://goessner.net/articles/JsonPath/
    * @param jsonPath - A valid JSON path query string
+   * @param dtype - The dtype to cast the extracted value to. If None, the dtype will be inferred from the JSON value.
+   * @param inferSchemaLength - How many rows to parse to determine the schema. If ``None`` all rows are used.
    * @returns Utf8 array. Contain null if original value is null or the `jsonPath` return nothing.
    * @example
    * ```
@@ -341,8 +343,8 @@ export const ExprStringFunctions = (_expr: any): StringNamespace => {
     extract(pat: string | RegExp, groupIndex: number) {
       return wrap("strExtract", regexToString(pat), groupIndex);
     },
-    jsonExtract() {
-      return wrap("strJsonExtract");
+    jsonExtract(dtype?: DataType, inferSchemaLength?: number) {
+      return wrap("strJsonExtract", dtype, inferSchemaLength);
     },
     jsonPathMatch(pat: string) {
       return wrap("strJsonPathMatch", pat);

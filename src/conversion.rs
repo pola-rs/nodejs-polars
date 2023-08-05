@@ -619,13 +619,28 @@ impl FromNapiValue for Wrap<DataType> {
                     "Time" => DataType::Time,
                     "Object" => DataType::Object("object"),
                     "Categorical" => DataType::Categorical(None),
-                    "Struct" => DataType::Struct(vec![]),
+                    "Struct" => {
+                        let inner = obj.get::<_, Array>("fields")?.unwrap();
+                        let mut fldvec: Vec<Field> = Vec::new();
+                        for i in 0..inner.len() {
+                            let inner_dtype: Object = inner.get::<Object>(i)?.unwrap();
+                            let napi_dt = Object::to_napi_value(env, inner_dtype).unwrap();
+                            let obj = Object::from_napi_value(env, napi_dt)?;
+                            let name = obj.get::<_, String>("name")?.unwrap();
+                            let dt = obj.get::<_, Wrap<DataType>>("dtype")?.unwrap();
+                            let fld = Field::new(&name, dt.0);
+                            fldvec.push(fld);
+                        }
+                        DataType::Struct(fldvec)
+                    }
                     tp => panic!("Type {} not implemented in str_to_polarstype", tp),
                 };
-
                 Ok(Wrap(dtype))
             }
-            _ => Err(Error::new(Status::InvalidArg, "not a valid conversion to 'DataType'".to_owned()))
+            _ => Err(Error::new(
+                Status::InvalidArg,
+                "not a valid conversion to 'DataType'".to_owned(),
+            )),
         }
     }
 }
