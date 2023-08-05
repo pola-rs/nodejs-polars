@@ -1383,13 +1383,13 @@ impl JsExpr {
             .into()
     }
     #[napi(catch_unwind)]
-    pub fn any(&self) -> JsExpr {
-        self.inner.clone().any().into()
+    pub fn any(&self, drop_nulls: bool) -> JsExpr {
+        self.inner.clone().any(drop_nulls).into()
     }
 
     #[napi(catch_unwind)]
-    pub fn all(&self) -> JsExpr {
-        self.inner.clone().all().into()
+    pub fn all(&self, drop_nulls: bool) -> JsExpr {
+        self.inner.clone().all(drop_nulls).into()
     }
     #[napi(catch_unwind)]
     pub fn struct_field_by_name(&self, name: String) -> JsExpr {
@@ -1433,83 +1433,85 @@ impl JsExpr {
     }
 }
 
-#[napi]
-#[derive(Clone)]
-pub struct When {
-    predicate: Expr,
-}
-#[napi]
-#[derive(Clone)]
-pub struct WhenThen {
-    predicate: Expr,
-    then: Expr,
-}
-
-#[napi]
-#[derive(Clone)]
-pub struct WhenThenThen {
-    inner: dsl::WhenThenThen,
-}
-
-#[napi]
-impl When {
-    #[napi(catch_unwind)]
-    pub fn then(&self, expr: &JsExpr) -> WhenThen {
-        WhenThen {
-            predicate: self.predicate.clone(),
-            then: expr.inner.clone(),
-        }
-    }
-}
-#[napi]
-impl WhenThen {
-    #[napi(catch_unwind)]
-    pub fn when(&self, predicate: &JsExpr) -> WhenThenThen {
-        let e = dsl::when(self.predicate.clone())
-            .then(self.then.clone())
-            .when(predicate.inner.clone());
-        WhenThenThen { inner: e }
-    }
-
-    #[napi(catch_unwind)]
-    pub fn otherwise(&self, expr: &JsExpr) -> JsExpr {
-        dsl::ternary_expr(
-            self.predicate.clone(),
-            self.then.clone(),
-            expr.inner.clone(),
-        )
-        .into()
-    }
-}
-
-#[napi]
-impl WhenThenThen {
-    #[napi(catch_unwind)]
-    pub fn when(&self, predicate: &JsExpr) -> WhenThenThen {
-        Self {
-            inner: self.inner.clone().when(predicate.inner.clone()),
-        }
-    }
-
-    #[napi(catch_unwind)]
-    pub fn then(&self, expr: &JsExpr) -> WhenThenThen {
-        Self {
-            inner: self.inner.clone().then(expr.inner.clone()),
-        }
-    }
-    #[napi(catch_unwind)]
-    pub fn otherwise(&self, expr: &JsExpr) -> JsExpr {
-        self.inner.clone().otherwise(expr.inner.clone()).into()
-    }
-}
-
 #[napi(catch_unwind)]
-pub fn when(predicate: &JsExpr) -> When {
-    When {
-        predicate: predicate.inner.clone(),
+pub fn when(condition: &JsExpr) -> JsWhen {
+    JsWhen {
+        inner: dsl::when(condition.inner.clone()),
     }
 }
 
+#[napi]
+#[derive(Clone)]
+pub struct JsWhen {
+    inner: dsl::When,
+}
+
+#[napi]
+#[derive(Clone)]
+pub struct JsThen {
+    inner: dsl::Then,
+}
+
+#[napi]
+#[derive(Clone)]
+pub struct JsChainedWhen {
+    inner: dsl::ChainedWhen,
+}
+
+#[napi]
+#[derive(Clone)]
+pub struct JsChainedThen {
+    inner: dsl::ChainedThen,
+}
+
+#[napi]
+impl JsWhen {
+    #[napi(catch_unwind)]
+    pub fn then(&self, statement: &JsExpr) -> JsThen {
+        JsThen {
+            inner: self.inner.clone().then(statement.inner.clone()),
+        }
+    }
+}
+
+#[napi]
+impl JsThen {
+    #[napi(catch_unwind)]
+    pub fn when(&self, condition: &JsExpr) -> JsChainedWhen {
+        JsChainedWhen {
+            inner: self.inner.clone().when(condition.inner.clone()),
+        }
+    }
+    #[napi(catch_unwind)]
+    pub fn otherwise(&self, statement: &JsExpr) -> JsExpr {
+        self.inner.clone().otherwise(statement.inner.clone()).into()
+    }
+}
+
+#[napi]
+impl JsChainedWhen {
+    #[napi(catch_unwind)]
+    pub fn then(&self, statement: &JsExpr) -> JsChainedThen {
+        JsChainedThen {
+            inner: self.inner.clone().then(statement.inner.clone()),
+        }
+    }
+}
+
+#[napi]
+impl JsChainedThen {
+    #[napi(catch_unwind)]
+    pub fn when(&self, condition: &JsExpr) -> JsChainedWhen {
+        JsChainedWhen {
+            inner: self.inner.clone().when(condition.inner.clone()),
+        }
+    }
+    #[napi(catch_unwind)]
+
+    pub fn otherwise(&self, statement: &JsExpr) -> JsExpr {
+        self.inner.clone().otherwise(statement.inner.clone()).into()
+    }
+}
 #[napi(catch_unwind)]
 pub fn col(name: String) -> JsExpr {
     dsl::col(&name).into()

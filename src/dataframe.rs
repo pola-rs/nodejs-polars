@@ -1064,17 +1064,20 @@ impl JsDataFrame {
     }
 
     #[napi(catch_unwind)]
-    pub fn transpose(&self, include_header: bool, names: String) -> napi::Result<JsDataFrame> {
-        let mut df = self.df.transpose().map_err(JsPolarsErr::from)?;
-        if include_header {
-            let s = Utf8Chunked::from_iter_values(
-                &names,
-                self.df.get_columns().iter().map(|s| s.name()),
-            )
-            .into_series();
-            df.insert_at_idx(0, s).unwrap();
-        }
-        Ok(df.into())
+    pub fn transpose(
+        &self,
+        keep_names_as: Option<Wrap<&str>>,
+        names: Option<Either<String, Vec<String>>>,
+    ) -> napi::Result<JsDataFrame> {
+        let names = names.map(|e| match e {
+            Either::A(s) => either::Either::Left(s),
+            Either::B(v) => either::Either::Right(v),
+        });
+        Ok(self
+            .df
+            .transpose(keep_names_as.map(|s| s.0), names)
+            .map_err(JsPolarsErr::from)?
+            .into())
     }
 
     #[napi(catch_unwind)]

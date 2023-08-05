@@ -25,8 +25,9 @@ export namespace pl {
   export import Series = series.Series;
   export type LazyGroupBy = lazy.LazyGroupBy;
   export type When = lazy.When;
-  export type WhenThen = lazy.WhenThen;
-  export type WhenThenThen = lazy.WhenThenThen;
+  export type Then = lazy.Then;
+  export type ChainedWhen = lazy.ChainedWhen;
+  export type ChainedThen = lazy.ChainedThen;
   export import Config = cfg.Config;
   export import Int8 = DataType.Int8;
   export import Int16 = DataType.Int16;
