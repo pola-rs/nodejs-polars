@@ -621,7 +621,7 @@ impl FromNapiValue for Wrap<DataType> {
                     "Categorical" => DataType::Categorical(None),
                     "Struct" => {
                         let inner = obj.get::<_, Array>("fields")?.unwrap();
-                        let mut fldvec: Vec<Field> = Vec::new();
+                        let mut fldvec: Vec<Field> = Vec::with_capacity(inner.len() as usize);
                         for i in 0..inner.len() {
                             let inner_dtype: Object = inner.get::<Object>(i)?.unwrap();
                             let napi_dt = Object::to_napi_value(env, inner_dtype).unwrap();

@@ -842,19 +842,12 @@ impl JsExpr {
         dtype: Option<Wrap<DataType>>,
         infer_schema_len: Option<i64>,
     ) -> JsExpr {
-        let function = move |s: Series| {
-            let ca = s.utf8()?;
-            let dt = dtype.clone().map(|d| d.0 as DataType);
-            let infer_schema_len = infer_schema_len.map(|l| l as usize);
-            match ca.json_extract(dt, infer_schema_len) {
-                Ok(ca) => Ok(Some(ca.into_series())),
-                Err(e) => Err(PolarsError::ComputeError(format!("{:?}", e).into())),
-            }
-        };
-        self.clone()
-            .inner
-            .map(function, GetOutput::same_type())
-            .with_fmt("str.json_extract")
+        let dt = dtype.clone().map(|d| d.0 as DataType);
+        let infer_schema_len = infer_schema_len.map(|l| l as usize);
+        self.inner
+            .clone()
+            .str()
+            .json_extract(dt, infer_schema_len)
             .into()
     }
     #[napi(catch_unwind)]
