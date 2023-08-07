@@ -107,12 +107,39 @@ export interface StringNamespace extends StringFunctions<Expr> {
    * ```
    */
   extract(pat: string | RegExp, groupIndex: number): Expr;
+
+  /**
+  * Parse string values as JSON.
+  * Throw errors if encounter invalid JSON strings.
+  * @params Not implemented ATM
+  * @returns DF with struct
+  * @example
+
+  * >>> df = pl.DataFrame( {json: ['{"a":1, "b": true}', null, '{"a":2, "b": false}']} )
+  * >>> df.select(pl.col("json").str.jsonExtract())
+  * shape: (3, 1)
+  * ┌─────────────┐
+  * │ json        │
+  * │ ---         │
+  * │ struct[2]   │
+  * ╞═════════════╡
+  * │ {1,true}    │
+  * │ {null,null} │
+  * │ {2,false}   │
+  * └─────────────┘
+  * See Also
+  * ----------
+  * jsonPathMatch : Extract the first match of json string with provided JSONPath expression.
+  */
+  jsonExtract(dtype?: DataType, inferSchemaLength?: number): Expr;
   /**
    * Extract the first match of json string with provided JSONPath expression.
    * Throw errors if encounter invalid json strings.
    * All return value will be casted to Utf8 regardless of the original value.
    * @see https://goessner.net/articles/JsonPath/
    * @param jsonPath - A valid JSON path query string
+   * @param dtype - The dtype to cast the extracted value to. If None, the dtype will be inferred from the JSON value.
+   * @param inferSchemaLength - How many rows to parse to determine the schema. If ``None`` all rows are used.
    * @returns Utf8 array. Contain null if original value is null or the `jsonPath` return nothing.
    * @example
    * ```
@@ -315,6 +342,9 @@ export const ExprStringFunctions = (_expr: any): StringNamespace => {
     },
     extract(pat: string | RegExp, groupIndex: number) {
       return wrap("strExtract", regexToString(pat), groupIndex);
+    },
+    jsonExtract(dtype?: DataType, inferSchemaLength?: number) {
+      return wrap("strJsonExtract", dtype, inferSchemaLength);
     },
     jsonPathMatch(pat: string) {
       return wrap("strJsonPathMatch", pat);

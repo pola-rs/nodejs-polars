@@ -837,6 +837,20 @@ impl JsExpr {
             .into()
     }
     #[napi(catch_unwind)]
+    pub fn str_json_extract(
+        &self,
+        dtype: Option<Wrap<DataType>>,
+        infer_schema_len: Option<i64>,
+    ) -> JsExpr {
+        let dt = dtype.clone().map(|d| d.0 as DataType);
+        let infer_schema_len = infer_schema_len.map(|l| l as usize);
+        self.inner
+            .clone()
+            .str()
+            .json_extract(dt, infer_schema_len)
+            .into()
+    }
+    #[napi(catch_unwind)]
     pub fn str_json_path_match(&self, pat: String) -> JsExpr {
         let function = move |s: Series| {
             let ca = s.utf8()?;

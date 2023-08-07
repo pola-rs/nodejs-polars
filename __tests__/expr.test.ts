@@ -986,6 +986,40 @@ describe("expr.str", () => {
     expect(actual).toFrameEqual(expected);
     expect(seriesActual).toFrameEqual(expected);
   });
+  test("jsonExtract", () => {
+    const df = pl.DataFrame({
+      json: ['{"a":1, "b": true}', null, '{"a":2, "b": false}'],
+    });
+    const actual = df.select(pl.col("json").str.jsonExtract());
+    const expected = pl.DataFrame({
+      json: [
+        { a: 1, b: true },
+        { a: null, b: null },
+        { a: 2, b: false },
+      ],
+    });
+    expect(actual).toFrameEqual(expected);
+    let s = pl.Series(["[1, 2, 3]", null, "[4, 5, 6]"]);
+    let dtype = pl.List(pl.Int64);
+    const expSeries = pl.Series([[1, 2, 3], null, [4, 5, 6]]);
+    expect(s.str.jsonExtract()).toSeriesEqual(expSeries);
+    expect(s.str.jsonExtract(dtype)).toSeriesEqual(expSeries);
+    dtype = pl.Struct([
+      new pl.Field("a", pl.Int64),
+      new pl.Field("b", pl.Bool),
+    ]);
+    s = pl.Series("json", ['{"a":1, "b": true}', null, '{"a":2, "b": false}']);
+    expect(s.str.jsonExtract().as("json")).toSeriesEqual(
+      expected.getColumn("json"),
+    );
+    expect(s.str.jsonExtract(dtype).as("json")).toSeriesEqual(
+      expected.getColumn("json"),
+    );
+    s = pl.Series("col_a", [], pl.Utf8);
+    const exp = pl.Series("col_a", []).cast(pl.List(pl.Int64));
+    dtype = pl.List(pl.Int64);
+    expect(s.str.jsonExtract(dtype).as("col_a")).toSeriesEqual(exp);
+  });
   test("jsonPathMatch", () => {
     const df = pl.DataFrame({
       data: [
