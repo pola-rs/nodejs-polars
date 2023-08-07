@@ -828,7 +828,7 @@ impl JsSeries {
         infer_schema_len: Option<i64>,
     ) -> napi::Result<JsSeries> {
         let ca = self.series.utf8().map_err(JsPolarsErr::from)?;
-        let dt = dtype.clone().map(|d| d.0);
+        let dt = dtype.map(|d| d.0);
         let infer_schema_len = infer_schema_len.map(|l| l as usize);
         let s = ca
             .json_extract(dt, infer_schema_len)
