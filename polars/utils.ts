@@ -60,7 +60,7 @@ export const isIterator = <T>(ty: any): ty is Iterable<T> =>
   ty !== null && typeof ty[Symbol.iterator] === "function";
 export const regexToString = (r: string | RegExp): string => {
   if (isRegExp(r)) {
-    return r.source;
+    return r.ignoreCase ? `(?i)${r.source}` : r.source;
   }
 
   return r;

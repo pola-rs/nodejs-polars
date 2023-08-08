@@ -685,6 +685,17 @@ describe("StringFunctions", () => {
   `("$# $name expected matches actual", ({ expected, actual }) => {
     expect(expected).toSeriesEqual(actual);
   });
+  test("containsRegex", () => {
+    const s = pl.Series("text", ["foo", "FOO", "FoO"]);
+    let regex = new RegExp("foo", "i");
+    let actual = s.str.contains(regex).alias("result");
+    let expected = pl.Series("result", [true, true, true]);
+    expect(actual).toSeriesEqual(expected);
+    regex = new RegExp("foo");
+    actual = s.str.contains(regex).alias("result");
+    expected = pl.Series("result", [true, false, false]);
+    expect(actual).toSeriesEqual(expected);
+  });
   test("hex encode", () => {
     const s = pl.Series("strings", ["foo", "bar", null]);
     const expected = pl.Series("encoded", ["666f6f", "626172", null]);
