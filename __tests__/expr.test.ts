@@ -947,6 +947,23 @@ describe("expr.str", () => {
     expect(actual).toFrameEqual(expected);
     expect(seriesActual).toSeriesEqual(expected.getColumn("isLinux"));
   });
+
+  test("contains:regex", () => {
+    const df = pl.DataFrame({
+      a: ["Foo", "foo", "FoO"],
+    });
+
+    const re = new RegExp("foo", "i");
+    const expected = pl.DataFrame({
+      a: ["Foo", "foo", "FoO"],
+      contains: [true, true, true],
+    });
+    const seriesActual = df.getColumn("a").str.contains(re).rename("contains");
+    const actual = df.withColumn(col("a").str.contains(re).as("contains"));
+    expect(actual).toFrameEqual(expected);
+    expect(seriesActual).toSeriesEqual(expected.getColumn("contains"));
+  });
+
   test("split", () => {
     const df = pl.DataFrame({ a: ["ab,cd", "e,fg", "h"] });
     const expected = pl.DataFrame({
@@ -976,12 +993,12 @@ describe("expr.str", () => {
 
     const seriesActual = df
       .getColumn("a")
-      .str.extract(/candidate=(\w+)/g, 1)
+      .str.extract(/candidate=(\w+)/, 1)
       .rename("candidate")
       .toFrame();
 
     const actual = df.select(
-      col("a").str.extract(/candidate=(\w+)/g, 1).as("candidate"),
+      col("a").str.extract(/candidate=(\w+)/, 1).as("candidate"),
     );
     expect(actual).toFrameEqual(expected);
     expect(seriesActual).toFrameEqual(expected);

@@ -58,9 +58,16 @@ export const isExprArray = (ty: any): ty is Expr[] =>
   Array.isArray(ty) && Expr.isExpr(ty[0]);
 export const isIterator = <T>(ty: any): ty is Iterable<T> =>
   ty !== null && typeof ty[Symbol.iterator] === "function";
+
 export const regexToString = (r: string | RegExp): string => {
   if (isRegExp(r)) {
-    return r.source;
+    if (r.flags.includes("g")) {
+      throw new Error("global flag is not supported");
+    }
+    if (r.flags.includes("y")) {
+      throw new Error("sticky flag is not supported");
+    }
+    return r.flags ? `(?${r.flags})${r.source}` : r.source;
   }
 
   return r;
