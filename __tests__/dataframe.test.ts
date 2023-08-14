@@ -1575,6 +1575,23 @@ describe("io", () => {
     const actual = df.toRecords();
     expect(actual).toEqual(expected);
   });
+  test("toRecords:date", () => {
+    const df = pl
+      .DataFrame({
+        date: [new Date()],
+      })
+      .withColumn(pl.col("date").cast(pl.Date).alias("date"));
+    const dt = new Date();
+    const expected = [
+      {
+        date: new Date(
+          Date.UTC(dt.getFullYear(), dt.getMonth(), dt.getDate(), 0, 0, 0, 0),
+        ),
+      },
+    ];
+    const actual = df.toRecords();
+    expect(JSON.stringify(actual)).toEqual(JSON.stringify(expected));
+  });
   test("toObject", () => {
     const expected = {
       foo: [1],
