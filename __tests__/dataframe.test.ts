@@ -763,6 +763,20 @@ describe("dataframe", () => {
       [3, 8, "c"],
     ]);
   });
+  test("rows:categorical", () => {
+    const actual = pl
+      .DataFrame({
+        foo: ["one", "two", "one", "two", "three"],
+      })
+      .withColumns(pl.col("foo").cast(pl.Categorical).alias("cat"));
+    expect(actual.rows()).toEqual([
+      ["one", "one"],
+      ["two", "two"],
+      ["one", "one"],
+      ["two", "two"],
+      ["three", "three"],
+    ]);
+  });
   test("sample:n", () => {
     const actual = pl
       .DataFrame({

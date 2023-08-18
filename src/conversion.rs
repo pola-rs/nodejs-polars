@@ -124,6 +124,7 @@ impl<'a> ToNapiValue for Wrap<AnyValue<'a>> {
             AnyValue::Float32(n) => f64::to_napi_value(env, n as f64),
             AnyValue::Float64(n) => f64::to_napi_value(env, n),
             AnyValue::Utf8(s) => String::to_napi_value(env, s.to_owned()),
+            AnyValue::Utf8Owned(s) => String::to_napi_value(env, s.to_string()),
             AnyValue::Date(v) => {
                 let mut ptr = std::ptr::null_mut();
 
@@ -139,6 +140,15 @@ impl<'a> ToNapiValue for Wrap<AnyValue<'a>> {
                 napi::sys::napi_create_date(env, v as f64, &mut js_value);
 
                 Ok(js_value)
+            }
+            AnyValue::Categorical(idx, rev, arr) => {
+                let s = if arr.is_null() {
+                    rev.get(idx)
+                } else {
+                    unsafe { arr.deref_unchecked().value(idx as usize) }
+                };
+                let ptr = String::to_napi_value(env, s.to_string());
+                Ok(ptr.unwrap())
             }
             AnyValue::Duration(v, _) => i64::to_napi_value(env, v),
             AnyValue::Time(v) => i64::to_napi_value(env, v),
