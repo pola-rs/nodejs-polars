@@ -145,7 +145,7 @@ impl<'a> ToNapiValue for Wrap<AnyValue<'a>> {
                 let s = if arr.is_null() {
                     rev.get(idx)
                 } else {
-                    unsafe { arr.deref_unchecked().value(idx as usize) }
+                    arr.deref_unchecked().value(idx as usize)
                 };
                 let ptr = String::to_napi_value(env, s.to_string());
                 Ok(ptr.unwrap())
