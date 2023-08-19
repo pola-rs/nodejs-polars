@@ -767,15 +767,29 @@ describe("dataframe", () => {
     const actual = pl
       .DataFrame({
         foo: ["one", "two", "one", "two", "three"],
+        flt: [1, 2, 1, 2, 3],
       })
-      .withColumns(pl.col("foo").cast(pl.Categorical).alias("cat"));
-    expect(actual.rows()).toEqual([
-      ["one", "one"],
-      ["two", "two"],
-      ["one", "one"],
-      ["two", "two"],
-      ["three", "three"],
-    ]);
+      .withColumns(
+        pl.col("foo").cast(pl.Categorical).alias("cat"),
+        pl.col("flt").cast(pl.Int32).alias("int"),
+      );
+
+    const expected = [
+      ["one", 1.0, "one", 1],
+      ["two", 2.0, "two", 2],
+      ["one", 1.0, "one", 1],
+      ["two", 2.0, "two", 2],
+      ["three", 3.0, "three", 3],
+    ];
+
+    expect(actual.rows()).toEqual(expected);
+    const byType = actual.select(
+      pl.col(pl.Utf8),
+      pl.col(pl.Float64),
+      pl.col(pl.Categorical),
+      pl.col(pl.Int32),
+    );
+    expect(byType.rows()).toEqual(expected);
   });
   test("sample:n", () => {
     const actual = pl

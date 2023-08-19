@@ -1,4 +1,5 @@
 import { Expr, _Expr, exprToLitOrExpr } from "./expr";
+import { DataType } from "../datatypes";
 import { Series } from "../series";
 import { DataFrame } from "../dataframe";
 import { ExprOrString, range, selectionToExprList } from "../utils";
@@ -97,12 +98,14 @@ import pli from "../internals/polars_internal";
  * ╰───────────┴─────╯
  * ```
  */
-export function col(col: string | string[] | Series): Expr {
+export function col(col: string | string[] | Series | DataType): Expr {
   if (Series.isSeries(col)) {
     col = col.toArray();
   }
   if (Array.isArray(col)) {
     return _Expr(pli.cols(col));
+  } else if (typeof col === "object" && Object.values(col)[0] === "DataType") {
+    return _Expr(pli.dtypeCols([col]));
   } else {
     return _Expr(pli.col(col));
   }

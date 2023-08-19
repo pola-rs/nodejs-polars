@@ -599,7 +599,12 @@ impl FromNapiValue for Wrap<DataType> {
         match ty {
             ValueType::Object => {
                 let obj = Object::from_napi_value(env, napi_val)?;
-                let variant = obj.get::<_, String>("variant")?.unwrap();
+                let variant = if let Some(variant) = obj.get::<_, String>("variant")? {
+                    variant
+                } else {
+                    "".into()
+                };
+
                 let dtype = match variant.as_ref() {
                     "Int8" => DataType::Int8,
                     "Int16" => DataType::Int16,
