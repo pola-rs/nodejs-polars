@@ -127,8 +127,11 @@ impl<'a> ToNapiValue for Wrap<AnyValue<'a>> {
             AnyValue::Date(v) => {
                 let mut ptr = std::ptr::null_mut();
 
+                // Multiple days to get to Epoch time
+                let epoch_time: f64 = (v as f64) * 86400000.0;
+
                 check_status!(
-                    napi::sys::napi_create_date(env, v as f64, &mut ptr),
+                    napi::sys::napi_create_date(env, epoch_time, &mut ptr),
                     "Failed to convert rust type `AnyValue::Date` into napi value",
                 )?;
 
