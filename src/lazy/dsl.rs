@@ -565,12 +565,14 @@ impl JsExpr {
         strict: bool,
         exact: bool,
         cache: bool,
+        use_earliest: Option<bool>,
     ) -> JsExpr {
         let options = StrptimeOptions {
             format,
             strict,
             exact,
             cache,
+            use_earliest: use_earliest,
         };
         self.inner.clone().str().to_date(options).into()
     }
@@ -585,12 +587,14 @@ impl JsExpr {
         strict: bool,
         exact: bool,
         cache: bool,
+        use_earliest: Option<bool>,
     ) -> JsExpr {
         let options = StrptimeOptions {
             format,
             strict,
             exact,
             cache,
+            use_earliest: use_earliest,
         };
         self.inner
             .clone()
