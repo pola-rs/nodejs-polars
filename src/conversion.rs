@@ -124,6 +124,7 @@ impl<'a> ToNapiValue for Wrap<AnyValue<'a>> {
             AnyValue::Float32(n) => f64::to_napi_value(env, n as f64),
             AnyValue::Float64(n) => f64::to_napi_value(env, n),
             AnyValue::Utf8(s) => String::to_napi_value(env, s.to_owned()),
+            AnyValue::Utf8Owned(s) => String::to_napi_value(env, s.to_string()),
             AnyValue::Date(v) => {
                 let mut ptr = std::ptr::null_mut();
 
@@ -142,6 +143,15 @@ impl<'a> ToNapiValue for Wrap<AnyValue<'a>> {
                 napi::sys::napi_create_date(env, v as f64, &mut js_value);
 
                 Ok(js_value)
+            }
+            AnyValue::Categorical(idx, rev, arr) => {
+                let s = if arr.is_null() {
+                    rev.get(idx)
+                } else {
+                    arr.deref_unchecked().value(idx as usize)
+                };
+                let ptr = String::to_napi_value(env, s.to_string());
+                Ok(ptr.unwrap())
             }
             AnyValue::Duration(v, _) => i64::to_napi_value(env, v),
             AnyValue::Time(v) => i64::to_napi_value(env, v),
@@ -592,7 +602,12 @@ impl FromNapiValue for Wrap<DataType> {
         match ty {
             ValueType::Object => {
                 let obj = Object::from_napi_value(env, napi_val)?;
-                let variant = obj.get::<_, String>("variant")?.unwrap();
+                let variant = if let Some(variant) = obj.get::<_, String>("variant")? {
+                    variant
+                } else {
+                    "".into()
+                };
+
                 let dtype = match variant.as_ref() {
                     "Int8" => DataType::Int8,
                     "Int16" => DataType::Int16,
