@@ -269,7 +269,9 @@ describe("lazyframe", () => {
       foo: [1],
       bar: ["a"],
     });
-    const actual = df.lazy().select("*").fetchSync(1);
+    let actual = df.lazy().select("*").fetchSync(1);
+    expect(actual).toFrameEqual(expected);
+    actual = df.lazy().select("*").fetchSync(1, { noOptimization: true });
     expect(actual).toFrameEqual(expected);
   });
   test("fillNull:zero", () => {
