@@ -437,6 +437,7 @@ describe("series", () => {
     ${"argMax"}          | ${pl.Series([1, 2, 3]).argMax()}                                                           | ${2}
     ${"argMin"}          | ${pl.Series([1, 2, 3]).argMin()}                                                           | ${0}
     ${"argSort"}         | ${pl.Series([3, 2, 1]).argSort()}                                                          | ${pl.Series([2, 1, 0])}
+    ${"argSort"}         | ${pl.Series([null, 3, 2, 1]).argSort({ reverse: true })}                                   | ${pl.Series([1, 2, 3, 0])}
     ${"argTrue"}         | ${pl.Series([true, false]).argTrue()}                                                      | ${pl.Series([0])}
     ${"argUnique"}       | ${pl.Series([1, 1, 2]).argUnique()}                                                        | ${pl.Series([0, 2])}
     ${"cast-Int16"}      | ${pl.Series("", [1, 1, 2]).cast(pl.Int16)}                                                 | ${pl.Series("", [1, 1, 2], pl.Int16)}
@@ -526,7 +527,17 @@ describe("series", () => {
     ${"take"}            | ${pl.Series([1, 3, 2, 9, 1]).take([0, 1, 3])}                                              | ${pl.Series([1, 3, 9])}
     ${"toArray"}         | ${pl.Series([1, 2, 3]).toArray()}                                                          | ${[1, 2, 3]}
     ${"unique"}          | ${pl.Series([1, 2, 3, 3]).unique().sort()}                                                 | ${pl.Series([1, 2, 3])}
+    ${"cumCount"}        | ${pl.Series([1, 2, 3, 3]).cumCount()}                                                      | ${pl.Series([0, 1, 2, 3])}
     ${"shiftAndFill"}    | ${pl.Series("foo", [1, 2, 3]).shiftAndFill(1, 99)}                                         | ${pl.Series("foo", [99, 1, 2])}
+    ${"bitand"}          | ${pl
+  .Series("bit", [1, 2, 3], pl.Int32)
+  .bitand(pl.Series("bit", [0, 1, 1], pl.Int32))} | ${pl.Series("bit", [0, 0, 1])}
+    ${"bitor"}           | ${pl
+  .Series("bit", [1, 2, 3], pl.Int32)
+  .bitor(pl.Series("bit", [0, 1, 1], pl.Int32))}  | ${pl.Series("bit", [1, 3, 3])}
+    ${"bitxor"}          | ${pl
+  .Series("bit", [1, 2, 3], pl.Int32)
+  .bitxor(pl.Series("bit", [0, 1, 1], pl.Int32))} | ${pl.Series("bit", [1, 3, 2])}
   `("$# $name: expected matches actual ", ({ expected, actual }) => {
     if (pl.Series.isSeries(expected) && pl.Series.isSeries(actual)) {
       expect(actual).toSeriesEqual(expected);
@@ -535,14 +546,24 @@ describe("series", () => {
     }
   });
   it("describe", () => {
+    expect(() => pl.Series([]).describe()).toThrowError(
+      "Series must contain at least one value",
+    );
+    expect(() => pl.Series("dt", [null], pl.Date).describe()).toThrowError(
+      "Invalid operation: describe is not supported for DataType(Date)",
+    );
     let actual = pl.Series([true, false, true]).describe();
-    let expected =
-      '{"columns":[{"name":"statistic","datatype":"Utf8","bit_settings":"","values":["sum","null_count","count"]},{"name":"value","datatype":"Boolean","bit_settings":"","values":[false,null,null]}]}';
-    expect(JSON.stringify(actual)).toEqual(expected);
+    let expected = pl.DataFrame({
+      statistic: ["sum", "null_count", "count"],
+      value: [false, null, null],
+    });
+    expect(actual).toFrameEqual(expected);
     actual = pl.Series(["a", "b", "c", null]).describe();
-    expected =
-      '{"columns":[{"name":"statistic","datatype":"Utf8","bit_settings":"","values":["unique","null_count","count"]},{"name":"value","datatype":"Float64","bit_settings":"","values":[4,1,4]}]}';
-    expect(JSON.stringify(actual)).toEqual(expected);
+    expected = pl.DataFrame({
+      statistic: ["unique", "null_count", "count"],
+      value: [4, 1, 4],
+    });
+    expect(actual).toFrameEqual(expected);
   });
   it("set: expected matches actual", () => {
     const expected = pl.Series([99, 2, 3]);
