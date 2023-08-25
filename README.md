@@ -158,6 +158,9 @@ If you want a bleeding edge release or maximal performance you should compile **
      $ cd nodejs-polars && yarn build:debug && yarn build:ts # this will generate a /bin directory with the compiles TS code, as well as the rust binary
      ```
 
+## Webpack configuration
+To use `nodejs-polars` with [Webpack](https://webpack.js.org) please use [node-loader](https://github.com/webpack-contrib/node-loader) and `webpack.config.js`
+
 ## Acknowledgements
 
 Development of Polars is proudly powered by
