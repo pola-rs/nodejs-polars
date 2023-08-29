@@ -346,8 +346,23 @@ describe("stream", () => {
       a: pl.Series("a", [1, 2, 3, 4], pl.Int64),
       b: pl.Series("b", [2, 2, 2, 2], pl.Int64),
     });
-    const df = await pl.readJSONStream(readStream);
-    expect(df).toFrameEqual(expected);
+    const actual = await pl.readJSONStream(readStream);
+    expect(actual).toFrameEqual(expected);
+  });
+
+  test("readJSON:lines", async () => {
+    const readStream = new Stream.Readable({ read() {} });
+    readStream.push(`${JSON.stringify({ a: 1, b: 2 })} \n`);
+    readStream.push(`${JSON.stringify({ a: 2, b: 2 })} \n`);
+    readStream.push(`${JSON.stringify({ a: 3, b: 2 })} \n`);
+    readStream.push(`${JSON.stringify({ a: 4, b: 2 })} \n`);
+    readStream.push(null);
+    const actual = await pl.readJSONStream(readStream, { format: "lines" });
+    const expected = pl.DataFrame({
+      a: pl.Series("a", [1, 2, 3, 4], pl.Int64),
+      b: pl.Series("b", [2, 2, 2, 2], pl.Int64),
+    });
+    expect(actual).toFrameEqual(expected);
   });
 
   test("readJSON:error", async () => {
@@ -357,7 +372,8 @@ describe("stream", () => {
     readStream.push(`${JSON.stringify({ a: 3, b: 2 })} \n`);
     readStream.push("not parseable json ");
     readStream.push(null);
-
-    await expect(pl.readJSONStream(readStream)).rejects.toBeDefined();
+    await expect(
+      pl.readJSONStream(readStream, { format: "lines" }),
+    ).rejects.toBeDefined();
   });
 });
