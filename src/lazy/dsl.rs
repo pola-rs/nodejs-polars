@@ -1663,7 +1663,6 @@ pub fn as_struct(exprs: Vec<&JsExpr>) -> JsExpr {
     polars::lazy::dsl::as_struct(&exprs).into()
 }
 
-//
 #[napi(catch_unwind)]
 pub fn all_horizontal(exprs: Vec<&JsExpr>) -> JsExpr {
     let exprs = exprs.to_exprs();

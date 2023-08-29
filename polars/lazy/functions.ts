@@ -647,12 +647,12 @@ export function element(): Expr {
     --------
     >>> const df = pl.DataFrame(
     ...     {
-    ...         "a": [False, False, True, True],
-    ...         "b": [False, True, None, True],
+    ...         "a": [false, false, true, true],
+    ...         "b": [false, true, null, true],
     ...         "c": ["w", "x", "y", "z"],
     ...     }
     ... )
-    >>> df.with_columns(pl.all_horizontal("a", "b"))
+    >>> df.withColumns(pl.allHorizontal(["a", "b"]))
     shape: (4, 4)
     ┌───────┬───────┬─────┬───────┐
     │ a     ┆ b     ┆ c   ┆ all   │
@@ -685,14 +685,14 @@ Compute the bitwise OR horizontally across columns.
 
     Examples
     --------
-    >>> df = pl.DataFrame(
+    >>> const df = pl.DataFrame(
     ...     {
-    ...         "a": [False, False, True, None],
-    ...         "b": [False, True, None, None],
+    ...         "a": [false, false, true, null],
+    ...         "b": [false, true, null, null],
     ...         "c": ["w", "x", "y", "z"],
     ...     }
     ... )
-    >>> df.with_columns(pl.any_horizontal("a", "b"))
+    >>> df.withColumns(pl.anyHorizontal([pl.col("a"), pl.col("b")]))
     shape: (4, 4)
     ┌───────┬───────┬─────┬───────┐
     │ a     ┆ b     ┆ c   ┆ any   │
