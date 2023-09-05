@@ -630,9 +630,90 @@ export function struct(
   *  │ 3   ┆ 2   ┆ [6, 4]      │
   *  └─────┴─────┴─────────────┘
  */
+
 export function element(): Expr {
   return col("");
 }
+
+/** Compute the bitwise AND horizontally across columns.
+
+    Parameters
+    ----------
+    *exprs
+        Column(s) to use in the aggregation. Accepts expression input. Strings are
+        parsed as column names, other non-expression inputs are parsed as literals.
+
+    Examples
+    --------
+    >>> const df = pl.DataFrame(
+    ...     {
+    ...         "a": [false, false, true, true],
+    ...         "b": [false, true, null, true],
+    ...         "c": ["w", "x", "y", "z"],
+    ...     }
+    ... )
+    >>> df.withColumns(pl.allHorizontal(["a", "b"]))
+    shape: (4, 4)
+    ┌───────┬───────┬─────┬───────┐
+    │ a     ┆ b     ┆ c   ┆ all   │
+    │ ---   ┆ ---   ┆ --- ┆ ---   │
+    │ bool  ┆ bool  ┆ str ┆ bool  │
+    ╞═══════╪═══════╪═════╪═══════╡
+    │ false ┆ false ┆ w   ┆ false │
+    │ false ┆ true  ┆ x   ┆ false │
+    │ true  ┆ null  ┆ y   ┆ null  │
+    │ true  ┆ true  ┆ z   ┆ true  │
+    └───────┴───────┴─────┴───────┘
+ */
+
+export function allHorizontal(exprs: ExprOrString | ExprOrString[]): Expr {
+  exprs = Array.isArray(exprs) ? exprs : [exprs];
+
+  exprs = selectionToExprList(exprs);
+
+  return _Expr(pli.allHorizontal(exprs));
+}
+
+/*
+Compute the bitwise OR horizontally across columns.
+
+    Parameters
+    ----------
+    *exprs
+        Column(s) to use in the aggregation. Accepts expression input. Strings are
+        parsed as column names, other non-expression inputs are parsed as literals.
+
+    Examples
+    --------
+    >>> const df = pl.DataFrame(
+    ...     {
+    ...         "a": [false, false, true, null],
+    ...         "b": [false, true, null, null],
+    ...         "c": ["w", "x", "y", "z"],
+    ...     }
+    ... )
+    >>> df.withColumns(pl.anyHorizontal([pl.col("a"), pl.col("b")]))
+    shape: (4, 4)
+    ┌───────┬───────┬─────┬───────┐
+    │ a     ┆ b     ┆ c   ┆ any   │
+    │ ---   ┆ ---   ┆ --- ┆ ---   │
+    │ bool  ┆ bool  ┆ str ┆ bool  │
+    ╞═══════╪═══════╪═════╪═══════╡
+    │ false ┆ false ┆ w   ┆ false │
+    │ false ┆ true  ┆ x   ┆ true  │
+    │ true  ┆ null  ┆ y   ┆ true  │
+    │ null  ┆ null  ┆ z   ┆ null  │
+    └───────┴───────┴─────┴───────┘
+*/
+
+export function anyHorizontal(exprs: ExprOrString | ExprOrString[]): Expr {
+  exprs = Array.isArray(exprs) ? exprs : [exprs];
+
+  exprs = selectionToExprList(exprs);
+
+  return _Expr(pli.anyHorizontal(exprs));
+}
+
 // // export function collect_all() {}
 // // export function all() {} // fold
 // // export function any() {} // fold

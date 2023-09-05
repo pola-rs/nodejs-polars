@@ -65,3 +65,42 @@ describe("repeat", () => {
     expect(actual).toSeriesEqual(expected);
   });
 });
+describe("horizontal", () => {
+  it("compute the bitwise AND horizontally across columns.", () => {
+    const df = pl.DataFrame({
+      a: [false, false, true, false, null],
+      b: [false, false, false, null, null],
+      c: [true, true, false, true, false],
+    });
+    const actual = df.select(pl.allHorizontal([pl.col("b"), pl.col("c")]));
+    const expected = pl.DataFrame({ all: [false, false, false, null, false] });
+    expect(actual).toFrameEqual(expected);
+  });
+  it("compute the bitwise OR horizontally across columns.", () => {
+    const df = pl.DataFrame({
+      a: [false, false, true, false, null],
+      b: [false, false, false, null, null],
+      c: [true, true, false, true, false],
+    });
+    const actual = df.select(pl.anyHorizontal([pl.col("b"), pl.col("c")]));
+    const expected = pl.DataFrame({ any: [true, true, false, true, null] });
+    expect(actual).toFrameEqual(expected);
+  });
+  it("any and all expression", () => {
+    const lf = pl.DataFrame({
+      a: [1, null, 2, null],
+      b: [1, 2, null, null],
+    });
+
+    const actual = lf.select(
+      pl.anyHorizontal(pl.col("*").isNull()).alias("null_in_row"),
+      pl.allHorizontal(pl.col("*").isNull()).alias("all_null_in_row"),
+    );
+
+    const expected = pl.DataFrame({
+      null_in_row: [false, true, true, true],
+      all_null_in_row: [false, false, false, true],
+    });
+    expect(actual).toFrameEqual(expected);
+  });
+});

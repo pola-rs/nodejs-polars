@@ -97,6 +97,8 @@ export namespace pl {
   export import quantile = lazy.quantile;
   export import select = lazy.select;
   export import struct = lazy.struct;
+  export import allHorizontal = lazy.allHorizontal;
+  export import anyHorizontal = lazy.anyHorizontal;
   export import spearmanRankCorr = lazy.spearmanRankCorr;
   export import tail = lazy.tail;
   export import list = lazy.list;
