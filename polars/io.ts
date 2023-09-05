@@ -669,7 +669,7 @@ export function readCSVStream(stream, options?) {
  * >>> readStream.push(`${JSON.stringify({a: 4, b: 2})} \n`);
  * >>> readStream.push(null);
  *
- * >>> pl.readJSONStream(readStream).then(df => console.log(df));
+ * >>> pl.readJSONStream(readStream, { format: "lines" }).then(df => console.log(df));
  * shape: (4, 2)
  * ┌─────┬─────┐
  * │ a   ┆ b   │
