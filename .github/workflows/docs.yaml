@@ -14,13 +14,13 @@ jobs:
       - name: Install latest Rust nightly
         uses: actions-rs/toolchain@v1
         with:
-          toolchain: nightly-2023-06-23
+          toolchain: nightly-2023-07-27
           override: true
           components: rustfmt, clippy
       - name: Install ghp-import
         uses: actions/setup-python@v3
         with:
-          python-version: 3.9
+          python-version: 3.11
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
@@ -28,7 +28,7 @@ jobs:
       - name: Set up Node
         uses: actions/setup-node@v2
         with: 
-          node-version: 16
+          node-version: 20
       - name: Build node reference
         run: | 
           npm install
