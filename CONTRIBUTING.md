@@ -36,7 +36,7 @@ The following is a set of guidelines for contributing to nodejs-polars. These ar
 ### Vscode 
 If using VScode, it is recommended to install the following extensions
 - rust-analyzer 
-- rome
+- biome
 ---
 
 - Fork the repository, then clone it from your fork
