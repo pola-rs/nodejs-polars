@@ -38,11 +38,21 @@ export function selectionToExprList(columns: any[], stringToLit?) {
 }
 
 /** @ignore */
-export function isPath(s: string, expectedExtensions?: string[]): boolean {
-  const { base, ext, name } = path.parse(s);
+export const isPath = (s: string, expectedExtensions?: string[]): boolean => {
+  const { root, base, ext, name } = path.parse(s);
+  return (
+    Boolean(root && base && ext && name) && !!expectedExtensions?.includes(ext)
+  );
+};
 
-  return Boolean(base && ext && name) && !!expectedExtensions?.includes(ext);
-}
+export const isURL = (s: string): boolean => {
+  try {
+    const url = new URL(s);
+    return url.protocol === "http:" || url.protocol === "https:";
+  } catch (err) {
+    return false;
+  }
+};
 
 export const range = (start: number, end: number) => {
   const length = end - start;

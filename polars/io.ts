@@ -1,7 +1,7 @@
 import { DataType } from "./datatypes";
 import pli from "./internals/polars_internal";
 import { DataFrame, _DataFrame } from "./dataframe";
-import { isPath } from "./utils";
+import { isPath, isURL } from "./utils";
 import { LazyDataFrame, _LazyDataFrame } from "./lazy/dataframe";
 import { Readable, Stream } from "stream";
 import { concat } from "./functions";
@@ -174,18 +174,31 @@ export function readCSV(
 export function readCSV(pathOrBody, options?) {
   options = { ...readCsvDefaultOptions, ...options };
   const extensions = [".tsv", ".csv"];
-
   if (Buffer.isBuffer(pathOrBody)) {
     return _DataFrame(pli.readCsv(pathOrBody, options));
   }
   if (typeof pathOrBody === "string") {
-    const inline = !isPath(pathOrBody, extensions);
-    if (inline) {
-      const buf = Buffer.from(pathOrBody, "utf-8");
-
-      return _DataFrame(pli.readCsv(buf, options));
-    } else {
+    if (isPath(pathOrBody, extensions)) {
       return _DataFrame(pli.readCsv(pathOrBody, options));
+    } else {
+      if (isURL(pathOrBody)) {
+        return (async () => {
+          const res = await fetch(pathOrBody);
+          const buf = Buffer.from(await res.arrayBuffer());
+          if (buf) {
+            return _DataFrame(pli.readCsv(buf, options));
+          } else {
+            return new Error("must supply valid body buffer");
+          }
+        })();
+      } else {
+        const buf: Buffer = Buffer.from(pathOrBody, "utf-8");
+        if (buf) {
+          return _DataFrame(pli.readCsv(buf, options));
+        } else {
+          throw new Error("must supply valid body buffer");
+        }
+      }
     }
   } else {
     throw new Error("must supply either a path or body");

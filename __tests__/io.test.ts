@@ -15,11 +15,16 @@ const jsonpath = path.resolve(__dirname, "./examples/foods.json");
 // eslint-disable-next-line no-undef
 const singlejsonpath = path.resolve(__dirname, "./examples/single_foods.json");
 describe("read:csv", () => {
+  it("can read from a https", async () => {
+    const url =
+      "https://raw.githubusercontent.com/pola-rs/polars/main/examples/datasets/foods1.csv";
+    const df = await pl.readCSV(url);
+    expect(df.shape).toEqual({ height: 27, width: 4 });
+  });
   it("can read from a csv file", () => {
     const df = pl.readCSV(csvpath);
     expect(df.shape).toEqual({ height: 27, width: 4 });
   });
-
   it("can read from a relative file", () => {
     const df = pl.readCSV(csvpath);
     expect(df.shape).toEqual({ height: 27, width: 4 });
