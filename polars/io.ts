@@ -133,9 +133,10 @@ export function readRecords(
 /**
  * __Read a CSV file or string into a Dataframe.__
  * ___
- * @param pathOrBody - path or buffer or string
+ * @param pathOrBody - path or buffer or string or URL
  *   - path: Path to a file or a file like string. Any valid filepath can be used. Example: `file.csv`.
  *   - body: String or buffer to be read as a CSV
+ *   - URL: http or https will be fetched into buffer using node::fetch and read as buffer
  * @param options
  * @param options.inferSchemaLength -Maximum number of lines to read to infer schema. If set to 0, all columns will be read as pl.Utf8.
  *     If set to `null`, a full table scan will be done (slow).
@@ -165,7 +166,7 @@ export function readRecords(
  *     - `Array<string>` -> A null value per column.
  *     - `Record<string,string>` -> An object or map that maps column name to a null value string.Ex. {"column_1": 0}
  * @param options.parseDates -Whether to attempt to parse dates or not
- * @returns DataFrame
+ * @returns DataFrame or Promise<DataFrame> for URL reads
  */
 export function readCSV(
   pathOrBody: string | Buffer,
@@ -182,15 +183,13 @@ export function readCSV(pathOrBody, options?) {
       return _DataFrame(pli.readCsv(pathOrBody, options));
     } else {
       if (isURL(pathOrBody)) {
-        return (async () => {
-          const res = await fetch(pathOrBody);
-          const buf = Buffer.from(await res.arrayBuffer());
-          if (buf) {
-            return _DataFrame(pli.readCsv(buf, options));
-          } else {
-            return new Error("must supply valid body buffer");
-          }
-        })();
+        return fetch(pathOrBody)
+          .then(async (res) => Buffer.from(await res.arrayBuffer()))
+          .then((buf) =>
+            buf
+              ? _DataFrame(pli.readCsv(buf, options))
+              : new Error("must supply valid body buffer"),
+          );
       } else {
         const buf: Buffer = Buffer.from(pathOrBody, "utf-8");
         if (buf) {

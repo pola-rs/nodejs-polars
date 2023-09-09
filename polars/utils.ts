@@ -30,18 +30,16 @@ export function columnOrColumnsStrict(
 ): Array<string> {
   return columns.flat(3) as any;
 }
-/** @ignore */
 export function selectionToExprList(columns: any[], stringToLit?) {
   return [columns]
     .flat(3)
     .map((expr) => exprToLitOrExpr(expr, stringToLit)._expr);
 }
-
-/** @ignore */
 export const isPath = (s: string, expectedExtensions?: string[]): boolean => {
-  const { root, base, ext, name } = path.parse(s);
+  const { dir, base, ext, name } = path.parse(s);
   return (
-    Boolean(root && base && ext && name) && !!expectedExtensions?.includes(ext)
+    Boolean(dir && !dir.startsWith("http") && base && ext && name) &&
+    !!expectedExtensions?.includes(ext)
   );
 };
 
