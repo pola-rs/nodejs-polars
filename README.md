@@ -63,7 +63,7 @@ Series: 'foo' [f64]
 ...     "fruits",
 ...     "cars",
 ...     pl.lit("fruits").alias("literal_string_fruits"),
-...     pl.col("B").filter(pl.col("cars").eq(lit("beetle"))).sum(),
+...     pl.col("B").filter(pl.col("cars").eq(pl.lit("beetle"))).sum(),
 ...     pl.col("A").filter(pl.col("B").gt(2)).sum().over("cars").alias("sum_A_by_cars"),
 ...     pl.col("A").sum().over("fruits").alias("sum_A_by_fruits"),
 ...     pl.col("A").reverse().over("fruits").flatten().alias("rev_A_by_fruits")
