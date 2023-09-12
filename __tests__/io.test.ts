@@ -31,20 +31,35 @@ describe("read:csv", () => {
   it("can read from a csv string", () => {
     const csvString = "foo,bar,baz\n1,2,3\n4,5,6\n";
     const df = pl.readCSV(csvString);
-    expect(df.toCSV().toString().slice(0, 22)).toEqual(csvString.slice(0, 22));
+    expect(df.writeCSV().toString().slice(0, 22)).toEqual(
+      csvString.slice(0, 22),
+    );
   });
   it("can read from a csv buffer", () => {
     const csvBuffer = Buffer.from("foo,bar,baz\n1,2,3\n4,5,6\n", "utf-8");
     const df = pl.readCSV(csvBuffer);
-    expect(df.toCSV().toString("utf-8").slice(0, 22)).toEqual(
+    expect(df.writeCSV().toString("utf-8").slice(0, 22)).toEqual(
       csvBuffer.toString("utf-8").slice(0, 22),
     );
+  });
+  it("can read from a csv buffer quoted", () => {
+    const csvBuffer = Buffer.from('a,b,c,d\n1,test,"a,b,c",another test');
+    const df = pl.readCSV(csvBuffer, { quoteChar: '"' });
+    const expected = `shape: (1, 4)
+┌─────┬──────┬───────┬──────────────┐
+│ a   ┆ b    ┆ c     ┆ d            │
+│ --- ┆ ---  ┆ ---   ┆ ---          │
+│ i64 ┆ str  ┆ str   ┆ str          │
+╞═════╪══════╪═══════╪══════════════╡
+│ 1   ┆ test ┆ a,b,c ┆ another test │
+└─────┴──────┴───────┴──────────────┘`;
+    expect(df.toString()).toEqual(expected);
   });
   it("can read from a csv buffer with options", () => {
     const csvBuffer = Buffer.from("foo,bar,baz\n1,2,3\n4,5,6\n", "utf-8");
     const df = pl.readCSV(csvBuffer, { hasHeader: true, chunkSize: 10 });
     // the newline characters are confusing jest
-    expect(df.toCSV().toString("utf-8").slice(0, 22)).toEqual(
+    expect(df.writeCSV().toString("utf-8").slice(0, 22)).toEqual(
       csvBuffer.toString("utf-8").slice(0, 22),
     );
   });
