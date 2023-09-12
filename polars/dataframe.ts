@@ -2074,7 +2074,7 @@ export const _DataFrame = (_df: any): DataFrame => {
       return _df.toRows();
     },
     sample(opts?, frac?, withReplacement = false, seed?) {
-      // rome-ignore lint/style/noArguments: <explanation>
+      // biome-ignore lint/style/noArguments: <explanation>
       if (arguments.length === 0) {
         return wrap("sampleN", 1, withReplacement, false, seed);
       }

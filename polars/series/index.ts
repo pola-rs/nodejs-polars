@@ -1597,7 +1597,7 @@ export function _Series(_s: any): Series {
       return dtypeWrap("SetWithMask", mask.inner(), value);
     },
     sample(opts?, frac?, withReplacement = false, seed?) {
-      // rome-ignore lint/style/noArguments: <explanation>
+      // biome-ignore lint/style/noArguments: <explanation>
       if (arguments.length === 0) {
         return wrap("sampleN", 1, withReplacement, false, seed);
       }
