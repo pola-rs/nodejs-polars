@@ -42,11 +42,11 @@ export namespace pl {
   export import Bool = DataType.Bool;
   export import Utf8 = DataType.Utf8;
   export import List = DataType.List;
-  // rome-ignore lint/suspicious/noShadowRestrictedNames: pl.Date
+  // biome-ignore lint/suspicious/noShadowRestrictedNames: pl.Date
   export import Date = DataType.Date;
   export import Datetime = DataType.Datetime;
   export import Time = DataType.Time;
-  // rome-ignore lint/suspicious/noShadowRestrictedNames: pl.Object
+  // biome-ignore lint/suspicious/noShadowRestrictedNames: pl.Object
   export import Object = DataType.Object;
   export import Null = DataType.Null;
   export import Struct = DataType.Struct;

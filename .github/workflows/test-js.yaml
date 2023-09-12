@@ -53,6 +53,8 @@ jobs:
         run: bun install
       - name: Bun Build Binary
         run: bun run build:debug
+      - name: Bun Run Linting
+        run: bun lint:ts
       - name: Bun Run Tests
         run: bun run test
       - name: Bun Build JS
