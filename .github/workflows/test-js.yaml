@@ -9,7 +9,7 @@ jobs:
         os: ["ubuntu-latest", "macos-latest", "windows-latest"]
         node: ["18", "20"]
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: actions/setup-node@v3
         with:
           node-version: ${{ matrix.node }}
@@ -19,7 +19,6 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
         with:
           toolchain: nightly-2023-07-27
-          override: true
           components: rustfmt, clippy
       - run: yarn --version
       - name: Install Node Dependencies
@@ -36,3 +35,11 @@ jobs:
         uses: oven-sh/setup-bun@v1
         with:
           bun-version: latest
+      - name: Bun Install Dependencies
+        run: bun install
+      - name: Bun Build Binary
+        run: bun run build:debug
+      - name: Bun Run Tests
+        run: bun run test
+      - name: Bun Build JS
+        run: bun run build:ts
