@@ -181,6 +181,8 @@ export function arrayToJsSeries(
 export function arrayToJsDataFrame(data: any[], options?): any {
   const columns = options?.columns;
   let orient = options?.orient;
+  const schema = options?.schema;
+  const inferSchemaLength = options?.inferSchemaLength;
 
   let dataSeries: any[];
 
@@ -196,7 +198,7 @@ export function arrayToJsDataFrame(data: any[], options?): any {
       dataSeries.push(series._s);
     });
   } else if (data[0].constructor.name === "Object") {
-    const df = pli.fromRows(data, options);
+    const df = pli.fromRows(data, schema, inferSchemaLength);
 
     if (columns) {
       df.columns = columns;
