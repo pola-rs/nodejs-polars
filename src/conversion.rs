@@ -500,12 +500,6 @@ impl FromNapiValue for Wrap<u64> {
         Ok(Wrap(value))
     }
 }
-impl<'a> FromNapiValue for Wrap<&'a str> {
-    unsafe fn from_napi_value(env: sys::napi_env, napi_val: sys::napi_value) -> JsResult<Self> {
-        let s = String::from_napi_value(env, napi_val)?;
-        Ok(Wrap(Box::leak::<'a>(s.into_boxed_str())))
-    }
-}
 
 #[napi(object)]
 pub struct JsRollingOptions {
@@ -990,9 +984,7 @@ impl FromJsUnknown for AnyValue<'_> {
             ValueType::Undefined | ValueType::Null => Ok(AnyValue::Null),
             ValueType::Boolean => bool::from_js(val).map(AnyValue::Boolean),
             ValueType::Number => f64::from_js(val).map(AnyValue::Float64),
-            ValueType::String => {
-                String::from_js(val).map(|s| AnyValue::Utf8(Box::leak::<'_>(s.into_boxed_str())))
-            }
+            ValueType::String => String::from_js(val).map(|s| AnyValue::Utf8Owned(s.into())),
             ValueType::BigInt => u64::from_js(val).map(AnyValue::UInt64),
             ValueType::Object => {
                 if val.is_date()? {
@@ -1029,13 +1021,6 @@ impl FromJsUnknown for DataType {
     }
 }
 
-impl<'a> FromJsUnknown for &'a str {
-    fn from_js(val: JsUnknown) -> Result<Self> {
-        let s: JsString = val.try_into()?;
-        let s = s.into_utf8()?.into_owned()?;
-        Ok(Box::leak::<'a>(s.into_boxed_str()))
-    }
-}
 
 impl FromJsUnknown for bool {
     fn from_js(val: JsUnknown) -> Result<Self> {

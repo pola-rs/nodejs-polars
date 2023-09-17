@@ -204,28 +204,45 @@ impl JsSeries {
     #[napi(factory, catch_unwind)]
     pub fn repeat(
         name: String,
-        val: JsAnyValue,
+        val: Wrap<AnyValue>,
         n: i64,
         dtype: Wrap<DataType>,
     ) -> napi::Result<JsSeries> {
         let s: JsSeries = match dtype.0 {
             DataType::Utf8 => {
-                let val: String = val.try_into()?;
-                let mut ca: Utf8Chunked = (0..n).map(|_| val.clone()).collect_trusted();
-                ca.rename(&name);
-                ca.into_series().into()
+                if let AnyValue::Utf8Owned(v) = val.0 {
+                    let val = v.to_string();
+                    let mut ca: Utf8Chunked = (0..n).map(|_| val.clone()).collect_trusted();
+                    ca.rename(&name);
+                    ca.into_series().into()
+                } else {
+                    return Err(napi::Error::from_reason(
+                        "invalid primitive cast".to_owned(),
+                    ));
+                }
             }
             DataType::Int64 => {
-                let val: i64 = val.try_into()?;
-                let mut ca: NoNull<Int64Chunked> = (0..n).map(|_| val).collect_trusted();
-                ca.rename(&name);
-                ca.into_inner().into_series().into()
+                if let AnyValue::Int64(v) = val.0 {
+                    let mut ca: NoNull<Int64Chunked> = (0..n).map(|_| v).collect_trusted();
+                    ca.rename(&name);
+
+                    ca.into_inner().into_series().into()
+                } else {
+                    return Err(napi::Error::from_reason(
+                        "invalid primitive cast".to_owned(),
+                    ));
+                }
             }
             DataType::Float64 => {
-                let val: f64 = val.try_into()?;
-                let mut ca: NoNull<Float64Chunked> = (0..n).map(|_| val).collect_trusted();
-                ca.rename(&name);
-                ca.into_inner().into_series().into()
+                if let AnyValue::Float64(v) = val.0 {
+                    let mut ca: NoNull<Float64Chunked> = (0..n).map(|_| v).collect_trusted();
+                    ca.rename(&name);
+                    ca.into_inner().into_series().into()
+                } else {
+                    return Err(napi::Error::from_reason(
+                        "invalid primitive cast".to_owned(),
+                    ));
+                }
             }
             _ => todo!(),
         };
@@ -1259,7 +1276,7 @@ macro_rules! impl_set_with_mask {
     };
 }
 
-impl_set_with_mask_wrap!(series_set_with_mask_str, &str, utf8);
+impl_set_with_mask!(series_set_with_mask_str, &str, utf8);
 impl_set_with_mask!(series_set_with_mask_f64, f64, f64);
 impl_set_with_mask_wrap!(series_set_with_mask_f32, f32, f32);
 impl_set_with_mask_wrap!(series_set_with_mask_u8, u8, u8);
@@ -1320,7 +1337,7 @@ pub fn series_get_str(s: &JsSeries, index: i64) -> Option<String> {
 macro_rules! impl_arithmetic {
   ($name:ident, $type:ty, $operand:tt) => {
       #[napi(catch_unwind)]
-      pub fn $name(s: &JsSeries, other: JsAnyValue) -> napi::Result<JsSeries> {
+      pub fn $name(s: &JsSeries, other: Wrap<AnyValue>) -> napi::Result<JsSeries> {
           let other: $type = other.try_into()?;
           Ok(JsSeries::new(&s.series $operand other))
       }
@@ -1385,7 +1402,7 @@ macro_rules! impl_rhs_arithmetic {
     ($name:ident, $type:ty, $operand:ident) => {
         #[napi(catch_unwind)]
 
-        pub fn $name(s: &JsSeries, other: JsAnyValue) -> napi::Result<JsSeries> {
+        pub fn $name(s: &JsSeries, other: Wrap<AnyValue>) -> napi::Result<JsSeries> {
             let other: $type = other.try_into()?;
             Ok(JsSeries::new(other.$operand(&s.series)))
         }
@@ -1446,7 +1463,7 @@ impl_rhs_arithmetic!(series_rem_f64_rhs, f64, rem);
 macro_rules! impl_eq_num {
     ($name:ident, $type:ty) => {
         #[napi(catch_unwind)]
-        pub fn $name(s: &JsSeries, rhs: JsAnyValue) -> napi::Result<JsSeries> {
+        pub fn $name(s: &JsSeries, rhs: Wrap<AnyValue>) -> napi::Result<JsSeries> {
             let rhs: $type = rhs.try_into()?;
             Ok(JsSeries::new(
                 s.series
@@ -1473,7 +1490,7 @@ impl_eq_num!(series_eq_str, &str);
 macro_rules! impl_neq_num {
     ($name:ident, $type:ty) => {
         #[napi(catch_unwind)]
-        pub fn $name(s: &JsSeries, rhs: JsAnyValue) -> napi::Result<JsSeries> {
+        pub fn $name(s: &JsSeries, rhs: Wrap<AnyValue>) -> napi::Result<JsSeries> {
             let rhs: $type = rhs.try_into()?;
             Ok(JsSeries::new(
                 s.series
@@ -1499,7 +1516,7 @@ impl_neq_num!(series_neq_str, &str);
 macro_rules! impl_gt_num {
     ($name:ident, $type:ty) => {
         #[napi(catch_unwind)]
-        pub fn $name(s: &JsSeries, rhs: JsAnyValue) -> napi::Result<JsSeries> {
+        pub fn $name(s: &JsSeries, rhs: Wrap<AnyValue>) -> napi::Result<JsSeries> {
             let rhs: $type = rhs.try_into()?;
             Ok(JsSeries::new(
                 s.series.gt(rhs).map_err(JsPolarsErr::from)?.into_series(),
@@ -1522,7 +1539,7 @@ impl_gt_num!(series_gt_str, &str);
 macro_rules! impl_gt_eq_num {
     ($name:ident, $type:ty) => {
         #[napi(catch_unwind)]
-        pub fn $name(s: &JsSeries, rhs: JsAnyValue) -> napi::Result<JsSeries> {
+        pub fn $name(s: &JsSeries, rhs: Wrap<AnyValue>) -> napi::Result<JsSeries> {
             let rhs: $type = rhs.try_into()?;
             Ok(JsSeries::new(
                 s.series
@@ -1548,7 +1565,7 @@ impl_gt_eq_num!(series_gt_eq_str, &str);
 macro_rules! impl_lt_num {
     ($name:ident, $type:ty) => {
         #[napi(catch_unwind)]
-        pub fn $name(s: &JsSeries, rhs: JsAnyValue) -> napi::Result<JsSeries> {
+        pub fn $name(s: &JsSeries, rhs: Wrap<AnyValue>) -> napi::Result<JsSeries> {
             let rhs: $type = rhs.try_into()?;
             Ok(JsSeries::new(
                 s.series.lt(rhs).map_err(JsPolarsErr::from)?.into_series(),
@@ -1571,7 +1588,7 @@ impl_lt_num!(series_lt_str, &str);
 macro_rules! impl_lt_eq_num {
     ($name:ident, $type:ty) => {
         #[napi(catch_unwind)]
-        pub fn $name(s: &JsSeries, rhs: JsAnyValue) -> napi::Result<JsSeries> {
+        pub fn $name(s: &JsSeries, rhs: Wrap<AnyValue>) -> napi::Result<JsSeries> {
             let rhs: $type = rhs.try_into()?;
             Ok(JsSeries::new(
                 s.series

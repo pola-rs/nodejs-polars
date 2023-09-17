@@ -162,7 +162,7 @@ impl<'a> FromNapiValue for Wrap<AnyValue<'a>> {
             ValueType::Number => AnyValue::Float64(f64::from_napi_value(env, napi_val)?),
             ValueType::String => {
                 let s = String::from_napi_value(env, napi_val)?;
-                AnyValue::Utf8(Box::leak::<'_>(s.into_boxed_str()))
+                AnyValue::Utf8Owned(s.into())
             }
             ValueType::BigInt => AnyValue::UInt64(Wrap::<u64>::from_napi_value(env, napi_val)?.0),
             ValueType::Object => {
@@ -261,7 +261,7 @@ impl<'a> From<JsAnyValue> for AnyValue<'a> {
         match av {
             JsAnyValue::Null => AnyValue::Null,
             JsAnyValue::Boolean(v) => AnyValue::Boolean(v),
-            JsAnyValue::Utf8(v) => AnyValue::Utf8(Box::leak::<'_>(v.into_boxed_str())),
+            JsAnyValue::Utf8(v) => AnyValue::Utf8Owned(v.into()),
             JsAnyValue::UInt8(v) => AnyValue::UInt8(v),
             JsAnyValue::UInt16(v) => AnyValue::UInt16(v),
             JsAnyValue::UInt32(v) => AnyValue::UInt32(v),
@@ -335,10 +335,10 @@ impl From<&JsAnyValue> for DataType {
 
 macro_rules! impl_av_into {
     ($type:ty, $pattern:pat => $extracted_value:expr) => {
-        impl TryInto<$type> for JsAnyValue {
+        impl TryInto<$type> for Wrap<AnyValue<'_>> {
             type Error = napi::Error;
             fn try_into(self) -> napi::Result<$type> {
-                match self {
+                match self.0 {
                     $pattern => $extracted_value,
                     _ => Err(napi::Error::from_reason(
                         "invalid primitive cast".to_owned(),
@@ -348,20 +348,30 @@ macro_rules! impl_av_into {
         }
     };
 }
+impl <'a> TryInto<&'a str> for Wrap<AnyValue<'a>> {
+    type Error = napi::Error;
+    fn try_into(self) -> napi::Result<&'a str> {
+        match self.0 {
+            AnyValue::Utf8(v) =>  Ok(v),
+            _ => Err(napi::Error::from_reason(
+                "invalid primitive cast".to_owned(),
+            )),
+        }
+    }
+}
 
-impl_av_into!(&'static str, JsAnyValue::Utf8(v) =>  Ok(Box::leak::<'_>(v.into_boxed_str())));
-impl_av_into!(String, JsAnyValue::Utf8(v) => Ok(v));
-impl_av_into!(bool, JsAnyValue::Boolean(v) => Ok(v));
-impl_av_into!(u8, JsAnyValue::UInt8(v) => Ok(v));
-impl_av_into!(u16,JsAnyValue::UInt16(v) => Ok(v));
-impl_av_into!(u32,JsAnyValue::UInt32(v) => Ok(v));
-impl_av_into!(u64,JsAnyValue::UInt64(v) => Ok(v));
-impl_av_into!(i8,JsAnyValue::Int8(v) => Ok(v));
-impl_av_into!(i16,JsAnyValue::Int16(v) => Ok(v));
-impl_av_into!(i32,JsAnyValue::Int32(v) => Ok(v));
-impl_av_into!(i64,JsAnyValue::Int64(v) => Ok(v));
-impl_av_into!(f32,JsAnyValue::Float32(v) => Ok(v));
-impl_av_into!(f64,JsAnyValue::Float64(v) => Ok(v));
+impl_av_into!(String,  AnyValue::Utf8(v) => Ok(v.to_string()));
+impl_av_into!(bool,  AnyValue::Boolean(v) => Ok(v));
+impl_av_into!(u8,  AnyValue::UInt8(v) => Ok(v));
+impl_av_into!(u16, AnyValue::UInt16(v) => Ok(v));
+impl_av_into!(u32, AnyValue::UInt32(v) => Ok(v));
+impl_av_into!(u64, AnyValue::UInt64(v) => Ok(v));
+impl_av_into!(i8, AnyValue::Int8(v) => Ok(v));
+impl_av_into!(i16, AnyValue::Int16(v) => Ok(v));
+impl_av_into!(i32, AnyValue::Int32(v) => Ok(v));
+impl_av_into!(i64, AnyValue::Int64(v) => Ok(v));
+impl_av_into!(f32, AnyValue::Float32(v) => Ok(v));
+impl_av_into!(f64, AnyValue::Float64(v) => Ok(v));
 
 #[allow(clippy::from_over_into)]
 impl Into<DataType> for JsDataType {

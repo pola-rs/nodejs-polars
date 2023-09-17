@@ -1066,7 +1066,7 @@ impl JsDataFrame {
     #[napi(catch_unwind)]
     pub fn transpose(
         &self,
-        keep_names_as: Option<Wrap<&str>>,
+        keep_names_as: Option<String>,
         names: Option<Either<String, Vec<String>>>,
     ) -> napi::Result<JsDataFrame> {
         let names = names.map(|e| match e {
@@ -1075,7 +1075,7 @@ impl JsDataFrame {
         });
         Ok(self
             .df
-            .transpose(keep_names_as.map(|s| s.0), names)
+            .transpose(keep_names_as.as_deref(), names)
             .map_err(JsPolarsErr::from)?
             .into())
     }
