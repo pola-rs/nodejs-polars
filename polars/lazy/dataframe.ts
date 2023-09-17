@@ -420,7 +420,7 @@ export interface LazyDataFrame extends Serialize, GroupByOps<LazyGroupBy> {
   /**
    * compatibility with `JSON.stringify`
    */
-  toJSON(): String;
+  toJSON(): string;
   /**
    * Drop duplicate rows from this DataFrame.
    * Note that this fails if there is a column of type `List` in the DataFrame.

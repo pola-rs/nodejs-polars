@@ -393,7 +393,7 @@ export interface Rolling<T> {
     weights?: Array<number>,
     minPeriods?: Array<number>,
     center?: boolean,
-    by?: String,
+    by?: string,
     closed?: ClosedWindow,
   ): T;
   /**
