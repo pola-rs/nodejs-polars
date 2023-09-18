@@ -11,7 +11,9 @@
         "noParameterAssign": "off"
       },
       "suspicious": {
-        "noExplicitAny": "off"
+        "noExplicitAny": "off",
+        "noUnsafeDeclarationMerging": "off"
+
       },
       "complexity": {
         "useLiteralKeys": "off"

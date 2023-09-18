@@ -1615,28 +1615,9 @@ pub fn arg_sort_by(by: Vec<&JsExpr>, descending: Vec<bool>) -> JsExpr {
 }
 
 #[napi(catch_unwind)]
-pub fn lit(value: JsAnyValue) -> JsExpr {
-    match value {
-        JsAnyValue::Boolean(v) => dsl::lit(v),
-        JsAnyValue::Utf8(v) => dsl::lit(v),
-        JsAnyValue::UInt8(v) => dsl::lit(v),
-        JsAnyValue::UInt16(v) => dsl::lit(v),
-        JsAnyValue::UInt32(v) => dsl::lit(v),
-        JsAnyValue::UInt64(v) => dsl::lit(v),
-        JsAnyValue::Int8(v) => dsl::lit(v),
-        JsAnyValue::Int16(v) => dsl::lit(v),
-        JsAnyValue::Int32(v) => dsl::lit(v),
-        JsAnyValue::Int64(v) => dsl::lit(v),
-        JsAnyValue::Float32(v) => dsl::lit(v),
-        JsAnyValue::Float64(v) => dsl::lit(v),
-        JsAnyValue::Date(v) => dsl::lit(v),
-        JsAnyValue::Datetime(v, _, _) => dsl::lit(v),
-        JsAnyValue::Duration(v, _) => dsl::lit(v),
-        JsAnyValue::Time(v) => dsl::lit(v),
-        JsAnyValue::List(v) => dsl::lit(v),
-        _ => dsl::lit(polars::prelude::Null {}),
-    }
-    .into()
+pub fn lit(value: Wrap<AnyValue>) -> JsResult<JsExpr> {
+    let lit: LiteralValue = value.0.try_into().map_err(JsPolarsErr::from)?;
+    Ok(dsl::lit(lit).into())
 }
 
 #[napi(catch_unwind)]
@@ -1678,4 +1659,3 @@ pub fn any_horizontal(exprs: Vec<&JsExpr>) -> JsExpr {
     let exprs = exprs.to_exprs();
     dsl::any_horizontal(exprs).into()
 }
-
