@@ -99,6 +99,9 @@ export namespace pl {
   export import struct = lazy.struct;
   export import allHorizontal = lazy.allHorizontal;
   export import anyHorizontal = lazy.anyHorizontal;
+  export import minHorizontal = lazy.minHorizontal;
+  export import maxHorizontal = lazy.maxHorizontal;
+  export import sumHorizontal = lazy.sumHorizontal;
   export import spearmanRankCorr = lazy.spearmanRankCorr;
   export import tail = lazy.tail;
   export import list = lazy.list;
