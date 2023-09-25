@@ -115,14 +115,14 @@ describe("horizontal", () => {
         .alias("t"),
     );
 
-    const expected = pl.DataFrame({ a: [1], b: [2], c: [3], d: [4], t: [3]});
+    const expected = pl.DataFrame({ a: [1], b: [2], c: [3], d: [4], t: [3] });
     expect(actual).toFrameEqual(expected);
   });
 
   it("sum min and max across columns", () => {
-    const df = pl.DataFrame({ a: [1, 2, 3], b: [1.0, 2.0, 3.0]});
+    const df = pl.DataFrame({ a: [1, 2, 3], b: [1.0, 2.0, 3.0] });
     const out = df.select(
-      pl.sumHorizontal([pl.col("a"),pl.col("b")]),
+      pl.sumHorizontal([pl.col("a"), pl.col("b")]),
       pl.maxHorizontal([pl.col("a"), pl.col("b").pow(2)]),
       pl.minHorizontal([pl.col("a"), pl.col("b").pow(2)]),
     );

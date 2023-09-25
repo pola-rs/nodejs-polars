@@ -828,7 +828,6 @@ export function sumHorizontal(exprs: ExprOrString | ExprOrString[]): Expr {
   return _Expr(pli.sumHorizontal(exprs));
 }
 
-
 // // export function collect_all() {}
 // // export function all() {} // fold
 // // export function any() {} // fold
