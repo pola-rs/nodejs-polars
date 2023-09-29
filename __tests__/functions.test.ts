@@ -52,6 +52,17 @@ describe("concat", () => {
     });
     expect(actual).toFrameEqual(expected);
   });
+  test("diagonal concat", () => {
+    const df1 = pl.DataFrame({ a: [1], b: [3] });
+    const df2 = pl.DataFrame({ a: [2], c: [4] });
+    const actual = pl.concat([df1, df2], { how: "diagonal" });
+    const expected = pl.DataFrame({
+      a: [1, 2],
+      b: [3, null],
+      c: [null, 4],
+    });
+    expect(actual).toFrameEqual(expected);
+  });
 });
 describe("repeat", () => {
   it("repeats a value n number of times into a series", () => {
