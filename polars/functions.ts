@@ -39,7 +39,7 @@ export function repeat<V>(value: V, n: number, name = ""): Series {
  * @example
  * > const df1 = pl.DataFrame({"a": [1], "b": [3]});
  * > const df2 = pl.DataFrame({"a": [2], "b": [4]});
- * > pl.concat([df1, df2]);  // default is 'vertical' strategy
+ * > pl.concat([df1, df2]);
  * shape: (2, 2)
  * ┌─────┬─────┐
  * │ a   ┆ b   │
