@@ -11,6 +11,13 @@ pub fn horizontal_concat(dfs: Vec<&JsDataFrame>) -> napi::Result<JsDataFrame> {
 }
 
 #[napi(catch_unwind)]
+pub fn diagonal_concat(dfs: Vec<&JsDataFrame>) -> napi::Result<JsDataFrame> {
+    let dfs: Vec<DataFrame> = dfs.iter().map(|df| df.df.clone()).collect();
+    let df = pl_functions::diag_concat_df(&dfs).map_err(crate::error::JsPolarsErr::from)?;
+    Ok(df.into())
+}
+
+#[napi(catch_unwind)]
 pub fn arg_where(condition: &JsExpr) -> JsExpr {
     polars::lazy::dsl::arg_where(condition.inner.clone()).into()
 }

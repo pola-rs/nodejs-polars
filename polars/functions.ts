@@ -35,11 +35,11 @@ export function repeat<V>(value: V, n: number, name = ""): Series {
  * @param options.how Only used if the items are DataFrames. *Defaults to 'vertical'*
  *     - Vertical: Applies multiple `vstack` operations.
  *     - Horizontal: Stacks Series horizontally and fills with nulls if the lengths don't match.
- *
+ *     - Diagonal: Finds a union between the column schemas and fills missing column values with ``null``.
  * @example
- * > const df1 = pl.DataFrame({"a": [1], "b": [3]})
- * > const df2 = pl.DataFrame({"a": [2], "b": [4]})
- * > pl.concat([df1, df2])
+ * > const df1 = pl.DataFrame({"a": [1], "b": [3]});
+ * > const df2 = pl.DataFrame({"a": [2], "b": [4]});
+ * > pl.concat([df1, df2]);
  * shape: (2, 2)
  * ┌─────┬─────┐
  * │ a   ┆ b   │
@@ -50,6 +50,35 @@ export function repeat<V>(value: V, n: number, name = ""): Series {
  * ├╌╌╌╌╌┼╌╌╌╌╌┤
  * │ 2   ┆ 4   │
  * └─────┴─────┘
+ *
+ * > const a = pl.DataFrame({ a: ["a", "b"], b: [1, 2] });
+ * > const b = pl.DataFrame({ c: [5, 6], d: [7, 8], e: [9, 10]});
+ * > pl.concat([a, b], { how: "horizontal" });
+ *
+ * shape: (2, 5)
+ * ┌─────┬─────┬─────┬─────┬──────┐
+ * │ a   ┆ b   ┆ c   ┆ d   ┆ e    │
+ * │ --- ┆ --- ┆ --- ┆ --- ┆ ---  │
+ * │ str ┆ f64 ┆ f64 ┆ f64 ┆ f64  │
+ * ╞═════╪═════╪═════╪═════╪══════╡
+ * │ a   ┆ 1.0 ┆ 5.0 ┆ 7.0 ┆ 9.0  │
+ * │ b   ┆ 2.0 ┆ 6.0 ┆ 8.0 ┆ 10.0 │
+ * └─────┴─────┴─────┴─────┴──────┘
+ *
+ * > const df_d1 = pl.DataFrame({"a": [1], "b": [3]});
+ * > const df_d2 = pl.DataFrame({"a": [2], "c": [4]});
+ * > pl.concat([df_d1, df_d2], { how: "diagonal" });
+ *
+ * shape: (2, 3)
+ * ┌─────┬──────┬──────┐
+ * │ a   ┆ b    ┆ c    │
+ * │ --- ┆ ---  ┆ ---  │
+ * │ i64 ┆ i64  ┆ i64  │
+ * ╞═════╪══════╪══════╡
+ * │ 1   ┆ 3    ┆ null │
+ * │ 2   ┆ null ┆ 4    │
+ * └─────┴──────┴──────┘
+ *
  */
 export function concat(
   items: Array<DataFrame>,
@@ -70,13 +99,20 @@ export function concat<T>(
   }
 
   if (isDataFrameArray(items)) {
-    let df;
-    if (how === "vertical") {
-      df = items.reduce((acc, curr) => acc.vstack(curr));
-    } else {
-      df = _DataFrame(pli.horizontalConcat(items.map((i: any) => i.inner())));
+    let df: DataFrame;
+    switch (how) {
+      case "vertical":
+        df = items.reduce((acc, curr) => acc.vstack(curr));
+        break;
+      case "horizontal":
+        df = _DataFrame(pli.horizontalConcat(items.map((i: any) => i.inner())));
+        break;
+      case "diagonal":
+        df = _DataFrame(pli.diagonalConcat(items.map((i: any) => i.inner())));
+        break;
+      default:
+        throw new TypeError("unknown concat how option");
     }
-
     return rechunk ? df.rechunk() : df;
   }
 

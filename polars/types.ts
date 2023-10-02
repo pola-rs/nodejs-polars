@@ -36,7 +36,7 @@ export type RankMethod =
  */
 export interface ConcatOptions {
   rechunk?: boolean;
-  how?: "vertical" | "horizontal";
+  how?: "vertical" | "horizontal" | "diagonal";
 }
 /**
  * Options for {@link DataFrame.writeCSV}
