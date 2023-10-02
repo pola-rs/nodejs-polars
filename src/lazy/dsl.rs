@@ -1659,3 +1659,19 @@ pub fn any_horizontal(exprs: Vec<&JsExpr>) -> JsExpr {
     let exprs = exprs.to_exprs();
     dsl::any_horizontal(exprs).into()
 }
+#[napi(catch_unwind)]
+pub fn min_horizontal(exprs: Vec<&JsExpr>) -> JsExpr {
+    let exprs = exprs.to_exprs();
+    dsl::min_horizontal(exprs).into()
+}
+
+#[napi(catch_unwind)]
+pub fn max_horizontal(exprs: Vec<&JsExpr>) -> JsExpr {
+    let exprs = exprs.to_exprs();
+    dsl::max_horizontal(exprs).into()
+}
+#[napi(catch_unwind)]
+pub fn sum_horizontal(exprs: Vec<&JsExpr>) -> JsExpr {
+    let exprs = exprs.to_exprs();
+    dsl::sum_horizontal(exprs).into()
+}

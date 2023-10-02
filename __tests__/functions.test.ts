@@ -114,4 +114,31 @@ describe("horizontal", () => {
     });
     expect(actual).toFrameEqual(expected);
   });
+  it("min + max across columns", () => {
+    const df = pl.DataFrame({ a: [1], b: [2], c: [3], d: [4] });
+
+    const actual = df.withColumns(
+      pl
+        .maxHorizontal([
+          pl.minHorizontal([pl.col("a"), pl.col("b")]),
+          pl.minHorizontal([pl.col("c"), pl.col("d")]),
+        ])
+        .alias("t"),
+    );
+
+    const expected = pl.DataFrame({ a: [1], b: [2], c: [3], d: [4], t: [3] });
+    expect(actual).toFrameEqual(expected);
+  });
+
+  it("sum min and max across columns", () => {
+    const df = pl.DataFrame({ a: [1, 2, 3], b: [1.0, 2.0, 3.0] });
+    const out = df.select(
+      pl.sumHorizontal([pl.col("a"), pl.col("b")]),
+      pl.maxHorizontal([pl.col("a"), pl.col("b").pow(2)]),
+      pl.minHorizontal([pl.col("a"), pl.col("b").pow(2)]),
+    );
+    expect(out["sum"]).toSeriesEqual(pl.Series("sum", [2.0, 4.0, 6.0]));
+    expect(out["max"]).toSeriesEqual(pl.Series("max", [1.0, 4.0, 9.0]));
+    expect(out["min"]).toSeriesEqual(pl.Series("min", [1.0, 2.0, 3.0]));
+  });
 });
