@@ -714,7 +714,8 @@ export function anyHorizontal(exprs: ExprOrString | ExprOrString[]): Expr {
   return _Expr(pli.anyHorizontal(exprs));
 }
 
-/*Get the maximum value horizontally across columns.
+/*
+    Get the maximum value horizontally across columns.
 
     Parameters
     ----------
