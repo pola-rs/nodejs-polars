@@ -223,6 +223,228 @@ export interface Series
    */
   dropNulls(): Series;
   /**
+   * Exponentially-weighted moving average.
+   *
+   * Parameters
+   * ----------
+   * alpha
+   *   Specify smoothing factor alpha directly, :math:`0 < \alpha \leq 1`.
+   * adjust
+   *   Divide by decaying adjustment factor in beginning periods to account for
+   *   imbalance in relative weightings
+   *       - When ``adjust=true`` the EW function is calculated
+   *         using weights :math:`w_i = (1 - \alpha)^i`
+   *       - When ``adjust=false`` the EW function is calculated
+   *         recursively by
+   *         .. math::
+   *           y_0 &= x_0 \\
+   *           y_t &= (1 - \alpha)y_{t - 1} + \alpha x_t
+   * bias
+   *   When ``bias=False``, apply a correction to make the estimate statistically unbiased.
+   * minPeriods
+   *   Minimum number of observations in window required to have a value
+   *   (otherwise result is null).
+   * ignoreNulls
+   *   Ignore missing values when calculating weights.
+   *       - When ``ignoreNulls=false`` (default), weights are based on absolute
+   *         positions.
+   *         For example, the weights of :math:`x_0` and :math:`x_2` used in
+   *         calculating the final weighted average of
+   *         [:math:`x_0`, None, :math:`x_2`] are
+   *         :math:`(1-\alpha)^2` and :math:`1` if ``adjust=true``, and
+   *         :math:`(1-\alpha)^2` and :math:`\alpha` if ``adjust=false``.
+   *       - When ``ignoreNulls=true``, weights are based
+   *         on relative positions. For example, the weights of
+   *         :math:`x_0` and :math:`x_2` used in calculating the final weighted
+   *         average of [:math:`x_0`, None, :math:`x_2`] are
+   *         :math:`1-\alpha` and :math:`1` if ``adjust=true``,
+   *         and :math:`1-\alpha` and :math:`\alpha` if ``adjust=false``.
+
+   * Examples
+   * --------
+   * >>> const df = pl.DataFrame({a: [1, 2, 3]});
+   * >>> df.select(pl.col("a").ewmMean())
+   * shape: (3, 1)
+   * ┌──────────┐
+   * │ a        │
+   * | ---      │
+   * │ f64      │
+   * ╞══════════╡
+   * │ 1.0      │
+   * │ 1.666667 │
+   * │ 2.428571 │
+   * └──────────┘
+   */
+  ewmMean(): Series;
+  ewmMean(
+    alpha?: number,
+    adjust?: boolean,
+    minPeriods?: number,
+    bias?: boolean,
+    ignoreNulls?: boolean,
+  ): Series;
+  ewmMean({
+    alpha,
+    adjust,
+    minPeriods,
+    bias,
+    ignoreNulls,
+  }: {
+    alpha?: number;
+    adjust?: boolean;
+    minPeriods?: number;
+    bias?: boolean;
+    ignoreNulls?: boolean;
+  }): Series;
+  /**
+   * Exponentially-weighted moving standard deviation.
+   *
+   * Parameters
+   * ----------
+   * alpha
+   *   Specify smoothing factor alpha directly, :math:`0 < \alpha \leq 1`.
+   * adjust
+   *   Divide by decaying adjustment factor in beginning periods to account for
+   *   imbalance in relative weightings
+   *       - When ``adjust=true`` the EW function is calculated
+   *         using weights :math:`w_i = (1 - \alpha)^i`
+   *       - When ``adjust=false`` the EW function is calculated
+   *         recursively by
+   *         .. math::
+   *           y_0 &= x_0 \\
+   *           y_t &= (1 - \alpha)y_{t - 1} + \alpha x_t
+   * 
+   * bias
+   *   When ``bias=False``, apply a correction to make the estimate statistically unbiased.
+   * minPeriods
+   *   Minimum number of observations in window required to have a value
+   *   (otherwise result is null).
+   * ignoreNulls
+   *   Ignore missing values when calculating weights.
+   * 
+   *       - When ``ignoreNulls=false`` (default), weights are based on absolute
+   *         positions.
+   *         For example, the weights of :math:`x_0` and :math:`x_2` used in
+   *         calculating the final weighted average of
+   *         [:math:`x_0`, None, :math:`x_2`] are
+   *         :math:`(1-\alpha)^2` and :math:`1` if ``adjust=true``, and
+   *         :math:`(1-\alpha)^2` and :math:`\alpha` if ``adjust=false``.
+   * 
+   *       - When ``ignoreNulls=true``, weights are based
+   *         on relative positions. For example, the weights of
+   *         :math:`x_0` and :math:`x_2` used in calculating the final weighted
+   *         average of [:math:`x_0`, None, :math:`x_2`] are
+   *         :math:`1-\alpha` and :math:`1` if ``adjust=true``,
+   *         and :math:`1-\alpha` and :math:`\alpha` if ``adjust=false``.
+
+   * Examples
+   * --------
+   *  >>> const s = pl.Series("a", [1, 2, 3])
+   *  >>> s.ewmStd(com=1)
+   *  shape: (3,)
+   *  Series: 'a' [f64]
+   *  [
+   *      0.0
+   *      0.707107
+   *      0.963624
+   *  ]
+   */
+  ewmStd(): Series;
+  ewmStd(
+    alpha?: number,
+    adjust?: boolean,
+    minPeriods?: number,
+    bias?: boolean,
+    ignoreNulls?: boolean,
+  ): Series;
+  ewmStd({
+    alpha,
+    adjust,
+    minPeriods,
+    bias,
+    ignoreNulls,
+  }: {
+    alpha?: number;
+    adjust?: boolean;
+    minPeriods?: number;
+    bias?: boolean;
+    ignoreNulls?: boolean;
+  }): Series;
+  /**
+   * Exponentially-weighted moving variance.
+   *
+   * Parameters
+   * ----------
+   * alpha
+   *   Specify smoothing factor alpha directly, :math:`0 < \alpha \leq 1`.
+   * adjust
+   *   Divide by decaying adjustment factor in beginning periods to account for
+   *   imbalance in relative weightings
+   *       - When ``adjust=true`` the EW function is calculated
+   *         using weights :math:`w_i = (1 - \alpha)^i`
+   *       - When ``adjust=false`` the EW function is calculated
+   *         recursively by
+   *         .. math::
+   *           y_0 &= x_0 \\
+   *           y_t &= (1 - \alpha)y_{t - 1} + \alpha x_t
+   * 
+   * bias
+   *   When ``bias=False``, apply a correction to make the estimate statistically unbiased.
+   * minPeriods
+   *   Minimum number of observations in window required to have a value
+   *   (otherwise result is null).
+   * ignoreNulls
+   *   Ignore missing values when calculating weights.
+   * 
+   *       - When ``ignoreNulls=false`` (default), weights are based on absolute
+   *         positions.
+   *         For example, the weights of :math:`x_0` and :math:`x_2` used in
+   *         calculating the final weighted average of
+   *         [:math:`x_0`, None, :math:`x_2`] are
+   *         :math:`(1-\alpha)^2` and :math:`1` if ``adjust=true``, and
+   *         :math:`(1-\alpha)^2` and :math:`\alpha` if ``adjust=false``.
+   * 
+   *       - When ``ignoreNulls=true``, weights are based
+   *         on relative positions. For example, the weights of
+   *         :math:`x_0` and :math:`x_2` used in calculating the final weighted
+   *         average of [:math:`x_0`, None, :math:`x_2`] are
+   *         :math:`1-\alpha` and :math:`1` if ``adjust=true``,
+   *         and :math:`1-\alpha` and :math:`\alpha` if ``adjust=false``.
+
+   * Examples
+   * --------
+   *  >>> const s = pl.Series("a", [1, 2, 3])
+   *  >>> s.ewmVar()
+   *  shape: (3,)
+   *  Series: 'a' [f64]
+   *  [
+   *      0.0
+   *      0.5
+   *      0.928571
+   *  ]
+   */
+  ewmVar(): Series;
+  ewmVar(
+    alpha?: number,
+    adjust?: boolean,
+    minPeriods?: number,
+    bias?: boolean,
+    ignoreNulls?: boolean,
+  ): Series;
+  ewmVar({
+    alpha,
+    adjust,
+    minPeriods,
+    bias,
+    ignoreNulls,
+  }: {
+    alpha?: number;
+    adjust?: boolean;
+    minPeriods?: number;
+    bias?: boolean;
+    ignoreNulls?: boolean;
+  }): Series;
+  /**
    * __Explode a list or utf8 Series.__
    *
    * This means that every item is expanded to a new row.
@@ -1264,6 +1486,15 @@ export function _Series(_s: any): Series {
     },
     equals(field: Series) {
       return this.eq(field);
+    },
+    ewmMean(...args) {
+      return expr_op("ewmMean", ...args);
+    },
+    ewmStd(...args) {
+      return expr_op("ewmStd", ...args);
+    },
+    ewmVar(...args) {
+      return expr_op("ewmVar", ...args);
     },
     explode() {
       return wrap("explode");
