@@ -307,6 +307,9 @@ export interface Rolling<T> {
    * @param minPeriods The number of values in the window that should be non-null before computing a result.
    * If undefined, it will be set equal to window size.
    * @param center - Set the labels at the center of the window
+   * @param ddof
+   *        "Delta Degrees of Freedom”: the divisor used in the calculation is N - ddof, where N represents the number of elements.
+   *        By default ddof is 1.
    * @category Rolling
    */
   rollingStd(options: RollingOptions): T;
@@ -315,6 +318,7 @@ export interface Rolling<T> {
     weights?: Array<number>,
     minPeriods?: Array<number>,
     center?: boolean,
+    ddof?: number,
   ): T;
   /**
    * __Apply a rolling sum (moving sum) over the values in this Series.__
@@ -353,6 +357,9 @@ export interface Rolling<T> {
    * @param minPeriods The number of values in the window that should be non-null before computing a result.
    * If undefined, it will be set equal to window size.
    * @param center - Set the labels at the center of the window
+   * @param ddof
+   *        "Delta Degrees of Freedom”: the divisor used in the calculation is N - ddof, where N represents the number of elements.
+   *        By default ddof is 1.
    * @category Rolling
    */
   rollingVar(options: RollingOptions): T;
@@ -361,6 +368,7 @@ export interface Rolling<T> {
     weights?: Array<number>,
     minPeriods?: Array<number>,
     center?: boolean,
+    ddof?: number,
   ): T;
   /**
    * Compute a rolling median

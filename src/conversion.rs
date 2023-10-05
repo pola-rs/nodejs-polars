@@ -12,6 +12,7 @@ use polars_core::prelude::FillNullStrategy;
 use polars_core::prelude::{Field, Schema};
 use polars_core::series::ops::NullBehavior;
 use polars_io::parquet::ParallelStrategy;
+use std::any::Any;
 use std::collections::HashMap;
 
 use smartstring::alias::String as SmartString;
@@ -507,6 +508,7 @@ pub struct JsRollingOptions {
     pub weights: Option<Vec<f64>>,
     pub min_periods: i64,
     pub center: bool,
+    pub ddof: Option<u8>,
 }
 
 impl From<JsRollingOptions> for RollingOptionsImpl<'static> {
@@ -520,6 +522,7 @@ impl From<JsRollingOptions> for RollingOptionsImpl<'static> {
             tu: None,
             tz: None,
             closed_window: None,
+            fn_params: Some(Arc::new(RollingVarParams { ddof: o.ddof.unwrap_or(1) }) as Arc<dyn Any + Send + Sync>),
             ..Default::default()
         }
     }
@@ -534,6 +537,7 @@ impl From<JsRollingOptions> for RollingOptions {
             center: o.center,
             by: None,
             closed_window: None,
+            fn_params: Some(Arc::new(RollingVarParams { ddof: o.ddof.unwrap_or(1) }) as Arc<dyn Any + Send + Sync>),
             ..Default::default()
         }
     }
