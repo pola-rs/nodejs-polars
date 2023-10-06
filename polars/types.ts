@@ -194,6 +194,7 @@ export interface RollingOptions {
   weights?: Array<number>;
   minPeriods?: number;
   center?: boolean;
+  ddof?: number;
 }
 
 /**
