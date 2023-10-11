@@ -1,18 +1,18 @@
 import pli from "./internals/polars_internal";
 import { arrayToJsDataFrame } from "./internals/construction";
-import { DynamicGroupBy, _GroupBy, GroupBy, RollingGroupBy } from "./groupby";
-import { LazyDataFrame, _LazyDataFrame } from "./lazy/dataframe";
+import { _GroupBy, DynamicGroupBy, GroupBy, RollingGroupBy } from "./groupby";
+import { _LazyDataFrame, LazyDataFrame } from "./lazy/dataframe";
 import { concat } from "./functions";
 import { Expr } from "./lazy/expr";
-import { Series, _Series } from "./series";
+import { _Series, Series } from "./series";
 import { Stream, Writable } from "stream";
 import {
+  FillNullStrategy,
+  JoinOptions,
+  WriteAvroOptions,
   WriteCsvOptions,
   WriteIPCOptions,
   WriteParquetOptions,
-  WriteAvroOptions,
-  FillNullStrategy,
-  JoinOptions,
 } from "./types";
 
 import { DataType } from "./datatypes";
@@ -21,10 +21,10 @@ import {
   columnOrColumns,
   columnOrColumnsStrict,
   ColumnSelection,
-  isSeriesArray,
   ColumnsOrExpr,
-  ValueOrArray,
   ExprOrString,
+  isSeriesArray,
+  ValueOrArray,
 } from "./utils";
 
 import {
@@ -35,9 +35,12 @@ import {
   Serialize,
 } from "./shared_traits";
 
+import { escapeHTML } from "./html";
+
 import { col, element } from "./lazy/functions";
 
 const inspect = Symbol.for("nodejs.util.inspect.custom");
+const jupyterDisplay = Symbol.for("Jupyter.display");
 
 /**
  * Write methods for DataFrame
@@ -97,7 +100,6 @@ interface WriteMethods {
    * ...   foo: [1,2,3],
    * ...   bar: ['a','b','c']
    * ... })
-   *
    *
    * > df.writeJSON({format:"json"})
    * `[ {"foo":1.0,"bar":"a"}, {"foo":2.0,"bar":"b"}, {"foo":3.0,"bar":"c"}]`
@@ -984,7 +986,6 @@ export interface DataFrame
     mapFn: (df: DataFrame) => T,
   ): T[];
   /**
-   *
    *   Create a spreadsheet-style pivot table as a DataFrame.
    *
    *   @param values Column values to aggregate. Can be multiple columns if the *columns* arguments contains multiple columns as well
@@ -1363,7 +1364,6 @@ export interface DataFrame
   sum(axis: 1): Series;
   sum(axis: 1, nullStrategy?: "ignore" | "propagate"): Series;
   /**
-   *
    * @example
    * ```
    * > df = pl.DataFrame({
@@ -1436,6 +1436,16 @@ export interface DataFrame
    * @category IO
    */
   toJSON(): string;
+
+  /**
+   * Converts dataframe object into a {@link TabularDataResource}
+   */
+  toDataResource(): TabularDataResource;
+
+  /**
+   * Converts dataframe object into HTML
+   */
+  toHTML(): string;
 
   /**
    * Converts dataframe object into column oriented javascript objects
@@ -1707,6 +1717,47 @@ function map(df: DataFrame, fn: (...args: any[]) => any[]) {
   return df.rows().map(fn);
 }
 
+type DataResourceField = {
+  name: string;
+  type: string;
+};
+
+/**
+ * Tabular Data Resource from https://specs.frictionlessdata.io/schemas/tabular-data-resource.json,
+ */
+type TabularDataResource = {
+  data: any[];
+  schema: {
+    fields: DataResourceField[];
+  };
+};
+
+function mapPolarsTypeToJSONSchema(colType: DataType): string {
+  const typeMapping: { [key: string]: string } = {
+    Null: "null",
+    Bool: "boolean",
+    Int8: "integer",
+    Int16: "integer",
+    Int32: "integer",
+    Int64: "integer",
+    UInt8: "integer",
+    UInt16: "integer",
+    UInt32: "integer",
+    UInt64: "integer",
+    Float32: "number",
+    Float64: "number",
+    Date: "string",
+    Datetime: "string",
+    Utf8: "string",
+    Categorical: "string",
+    List: "array",
+    Struct: "object",
+  };
+
+  const dataType = colType.variant;
+  return typeMapping[dataType] || "string";
+}
+
 /**
  * @ignore
  */
@@ -1754,6 +1805,25 @@ export const _DataFrame = (_df: any): DataFrame => {
     },
     set columns(names) {
       _df.columns = names;
+    },
+    /**
+     * Return back text/html and application/vnd.dataresource+json representations
+     * of the DataFrame. This is intended to be a simple view of the DataFrame
+     * inside of notebooks.
+     *
+     * @returns Media bundle / mimetype keys for Jupyter frontends
+     */
+    [jupyterDisplay]() {
+      let rows = 50;
+      if (process.env.POLARS_FMT_MAX_ROWS) {
+        rows = parseInt(process.env.POLARS_FMT_MAX_ROWS);
+      }
+
+      const limited = this.limit(rows);
+      return {
+        "application/vnd.dataresource+json": limited.toDataResource(),
+        "text/html": limited.toHTML(),
+      };
     },
     get schema() {
       return this.getColumns().reduce((acc, curr) => {
@@ -2180,6 +2250,39 @@ export const _DataFrame = (_df: any): DataFrame => {
 
       return _df.serialize("json").toString();
     },
+    toHTML(): string {
+      let htmlTable = "<table>";
+
+      // Add table headers
+      htmlTable += "<thead><tr>";
+      this.getColumns().forEach((field) => {
+        htmlTable += `<th>${escapeHTML(field.name)}</th>`;
+      });
+      htmlTable += "</tr></thead>";
+
+      // Add table data
+      htmlTable += "<tbody>";
+      this.toRecords().forEach((row) => {
+        htmlTable += "<tr>";
+        this.getColumns().forEach((field) => {
+          htmlTable += `<td>${escapeHTML(String(row[field.name]))}</td>`;
+        });
+        htmlTable += "</tr>";
+      });
+      htmlTable += "</tbody></table>";
+
+      return htmlTable;
+    },
+    toDataResource(): TabularDataResource {
+      const data = this.toRecords();
+
+      const fields = this.getColumns().map((column) => ({
+        name: column.name,
+        type: mapPolarsTypeToJSONSchema(column.dtype),
+      }));
+
+      return { data, schema: { fields } };
+    },
     toObject() {
       return this.getColumns().reduce((acc, curr) => {
         acc[curr.name] = curr.toArray();
@@ -2379,6 +2482,9 @@ export const _DataFrame = (_df: any): DataFrame => {
       return true;
     },
     has(target, p) {
+      if (p === jupyterDisplay) {
+        return true;
+      }
       return target.columns.includes(p as any);
     },
     ownKeys(target) {
