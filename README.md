@@ -115,6 +115,43 @@ Releases happen quite often (weekly / every few days) at the moment, so updating
 - Node version `>=18`
 - Rust version `>=1.59` - *Only needed for development*
 
+
+## Deno
+
+In Deno modules you can import polars straight from `npm`:
+
+```typescript
+import pl from "npm:nodejs-polars";
+```
+
+With Deno 1.37, you can use the `display` function to display a `DataFrame` in the notebook:
+
+```typescript
+import pl from "npm:nodejs-polars";
+import { display } from "https://deno.land/x/display@v1.1.1/mod.ts";
+
+let response = await fetch(
+  "https://cdn.jsdelivr.net/npm/world-atlas@1/world/110m.tsv",
+);
+let data = await response.text();
+let df = pl.readCSV(data, { sep: "\t" });
+await display(df)
+```
+
+With Deno 1.38, you only have to make the dataframe be the last expression in the cell:
+
+```typescript
+import pl from "npm:nodejs-polars";
+let response = await fetch(
+  "https://cdn.jsdelivr.net/npm/world-atlas@1/world/110m.tsv",
+);
+let data = await response.text();
+let df = pl.readCSV(data, { sep: "\t" });
+df
+```
+
+<img width="510" alt="image" src="https://github.com/pola-rs/nodejs-polars/assets/836375/90cf7bf4-7478-4919-b297-f8eb6a16196f">
+
 ___
 
 ## Documentation

@@ -1772,9 +1772,33 @@ describe("rolling", () => {
     const actual = df.select(col("rolling").rollingSum(2));
     expect(actual).toFrameEqual(expected);
   });
+  test("rollingStd", () => {
+    const df = pl.Series("rolling", [1, 2, 3, 2, 1]).toFrame();
+    const expected = pl
+      .Series(
+        "rolling",
+        [null, 0.707107, 0.707107, 0.707107, 0.707107],
+        pl.Float64,
+      )
+      .toFrame();
+    expect(df.select(col("rolling").rollingStd(2).round(6))).toFrameEqual(
+      expected,
+    );
+    expect(
+      df.select(
+        col("rolling")
+          .rollingStd({ windowSize: 2, center: true, ddof: 4 })
+          .round(6),
+      ),
+    ).toFrameEqual(expected);
+  });
   test("rollingVar", () => {
     const df = pl.Series("rolling", [1, 2, 3, 2, 1]).toFrame();
-    const actual = df.select(col("rolling").rollingVar(2)).row(1);
+    const actual = df
+      .select(
+        col("rolling").rollingVar({ windowSize: 2, center: true, ddof: 4 }),
+      )
+      .row(1);
     expect(actual).toEqual([0.5]);
   });
   test("rollingMedian", () => {

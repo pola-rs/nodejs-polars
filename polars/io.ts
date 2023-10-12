@@ -584,7 +584,7 @@ export function scanIPC(path, options = {}) {
  * @param options.dtype -Overwrite the dtypes during inference.
  * @param options.lowMemory - Reduce memory usage in expense of performance.
  * @param options.commentChar - character that indicates the start of a comment line, for instance '#'.
- * @param options.quotChar -character that is used for csv quoting, default = ''. Set to null to turn special handling and escaping of quotes off.
+ * @param options.quoteChar -character that is used for csv quoting, default = ''. Set to null to turn special handling and escaping of quotes off.
  * @param options.nullValues - Values to interpret as null values. You can provide a
  *     - `string` -> all values encountered equal to this string will be null
  *     - `Array<string>` -> A null value per column.

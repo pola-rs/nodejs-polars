@@ -2250,6 +2250,33 @@ describe("meta", () => {
   });
 });
 
+test("Jupyter.display", () => {
+  const df = pl.DataFrame({
+    os: ["apple", "linux"],
+    version: [10.12, 18.04],
+  });
+  expect(Symbol.for("Jupyter.display") in df).toBe(true);
+
+  const actual = df[Symbol.for("Jupyter.display")]();
+
+  expect(actual).toBeInstanceOf(Object);
+
+  const dataResource = actual["application/vnd.dataresource+json"];
+  expect(dataResource).toBeInstanceOf(Object);
+  expect(dataResource).toHaveProperty("schema");
+  expect(dataResource).toHaveProperty("data");
+  expect(dataResource).toHaveProperty("data", [
+    { os: "apple", version: 10.12 },
+    { os: "linux", version: 18.04 },
+  ]);
+
+  const html = actual["text/html"];
+  expect(html).toContain("apple");
+  expect(html).toContain("linux");
+  expect(html).toContain("10.12");
+  expect(html).toContain("18.04");
+});
+
 describe("additional", () => {
   test("partitionBy", () => {
     const df = pl.DataFrame({
