@@ -1189,3 +1189,142 @@ export interface GroupByOps<T> {
     check_sorted?: boolean;
   }): T;
 }
+
+/***
+ * Exponentially-weighted operations that can be applied to a Series and Expr
+ */
+export interface EwmOps<T> {
+  /**
+   * Exponentially-weighted moving average.
+   *
+   * @param alpha Specify smoothing factor alpha directly, :math:`0 < \alpha \leq 1`.
+   * @param adjust Divide by decaying adjustment factor in beginning periods to account for imbalance in relative weightings
+   *       - When ``adjust: true`` the EW function is calculated using weights :math:`w_i = (1 - \alpha)^i`
+   *       - When ``adjust=false`` the EW function is calculated recursively
+   * @param bias When ``bias: false``, apply a correction to make the estimate statistically unbiased.
+   * @param minPeriods Minimum number of observations in window required to have a value (otherwise result is null).
+   * @param ignoreNulls Ignore missing values when calculating weights.
+   *       - When ``ignoreNulls: false`` (default), weights are based on absolute positions.
+   *       - When ``ignoreNulls: true``, weights are based on relative positions.
+   * @returns Expr that evaluates to a float 64 Series.
+   * @examples
+   * ```
+   * > const df = pl.DataFrame({a: [1, 2, 3]});
+   * > df.select(pl.col("a").ewmMean())
+   * shape: (3, 1)
+   * ┌──────────┐
+   * │ a        │
+   * | ---      │
+   * │ f64      │
+   * ╞══════════╡
+   * │ 1.0      │
+   * │ 1.666667 │
+   * │ 2.428571 │
+   * └──────────┘
+   * ```
+   */
+  ewmMean(): T;
+  ewmMean(
+    alpha?: number,
+    adjust?: boolean,
+    bias?: boolean,
+    minPeriods?: number,
+    ignoreNulls?: boolean,
+  ): T;
+  ewmMean(opts: {
+    alpha?: number;
+    adjust?: boolean;
+    bias?: boolean;
+    minPeriods?: number;
+    ignoreNulls?: boolean;
+  }): T;
+  /**
+   * Exponentially-weighted standard deviation.
+   *
+   * @param alpha Specify smoothing factor alpha directly, :math:`0 < \alpha \leq 1`.
+   * @param adjust Divide by decaying adjustment factor in beginning periods to account for imbalance in relative weightings
+   *       - When ``adjust: true`` the EW function is calculated using weights :math:`w_i = (1 - \alpha)^i`
+   *       - When ``adjust: false`` the EW function is calculated recursively
+   * @param bias When ``bias: false``, apply a correction to make the estimate statistically unbiased.
+   * @param minPeriods Minimum number of observations in window required to have a value (otherwise result is null).
+   * @param ignoreNulls Ignore missing values when calculating weights.
+   *       - When ``ignoreNulls: false`` (default), weights are based on absolute positions.
+   *         For example, the weights of :math:`x_0` and :math:`x_2` used in calculating the final weighted average of
+   *       - When ``ignoreNulls: true``, weights are based on relative positions.
+   * @returns Expr that evaluates to a float 64 Series.
+   * @examples
+   * ```
+   * > const df = pl.DataFrame({a: [1, 2, 3]});
+   * > df.select(pl.col("a").ewmStd())
+   * shape: (3, 1)
+   * ┌──────────┐
+   * │ a        │
+   * | ---      │
+   * │ f64      │
+   * ╞══════════╡
+   * │ 0.0      │
+   * │ 0.707107 │
+   * │ 0.963624 │
+   * └──────────┘
+   * ```
+   */
+  ewmStd(): T;
+  ewmStd(
+    alpha?: number,
+    adjust?: boolean,
+    bias?: boolean,
+    minPeriods?: number,
+    ignoreNulls?: boolean,
+  ): T;
+  ewmStd(opts: {
+    alpha?: number;
+    adjust?: boolean;
+    bias?: boolean;
+    minPeriods?: number;
+    ignoreNulls?: boolean;
+  }): T;
+  /**
+   * Exponentially-weighted variance.
+   *
+   * @param alpha Specify smoothing factor alpha directly, :math:`0 < \alpha \leq 1`.
+   * @param adjust Divide by decaying adjustment factor in beginning periods to account for imbalance in relative weightings
+   *       - When ``adjust: true`` the EW function is calculated using weights :math:`w_i = (1 - \alpha)^i`
+   *       - When ``adjust: false`` the EW function is calculated recursively
+   * @param bias When ``bias: false``, apply a correction to make the estimate statistically unbiased.
+   * @param minPeriods Minimum number of observations in window required to have a value (otherwise result is null).
+   * @param ignoreNulls Ignore missing values when calculating weights.
+   *       - When ``ignoreNulls: false`` (default), weights are based on absolute positions.
+   *       - When ``ignoreNulls=true``, weights are based on relative positions.
+   * @returns Expr that evaluates to a float 64 Series.
+   * @examples
+   * ```
+   * > const df = pl.DataFrame({a: [1, 2, 3]});
+   * > df.select(pl.col("a").ewmVar())
+   * shape: (3, 1)
+   * ┌──────────┐
+   * │ a        │
+   * | ---      │
+   * │ f64      │
+   * ╞══════════╡
+   * │ 0.0      │
+   * │ 0.5      │
+   * │ 0.928571 │
+   * └──────────┘
+   * ```
+   */
+  ewmVar(): T;
+  ewmVar(
+    alpha?: number,
+    adjust?: boolean,
+    bias?: boolean,
+    minPeriods?: number,
+    ignoreNulls?: boolean,
+  ): T;
+  ewmVar(opts: {
+    alpha?: number;
+    adjust?: boolean;
+    bias?: boolean;
+    minPeriods?: number;
+    ignoreNulls?: boolean;
+  }): T;
+}

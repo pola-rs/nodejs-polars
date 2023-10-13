@@ -20,6 +20,7 @@ import {
   Round,
   Sample,
   Serialize,
+  EwmOps,
 } from "../../shared_traits";
 import { InterpolationMethod, FillNullStrategy, RankMethod } from "../../types";
 /**
@@ -32,6 +33,7 @@ export interface Expr
     Cumulative<Expr>,
     Sample<Expr>,
     Round<Expr>,
+    EwmOps<Expr>,
     Serialize {
   /** @ignore */
   _expr: any;
@@ -153,21 +155,6 @@ export interface Expr
    *       - When ``ignoreNulls: false`` (default), weights are based on absolute positions.
    *       - When ``ignoreNulls: true``, weights are based on relative positions.
    * @returns Expr that evaluates to a float 64 Series.
-   * @examples
-   * ```
-   * > const df = pl.DataFrame({a: [1, 2, 3]});
-   * > df.select(pl.col("a").ewmMean())
-   * shape: (3, 1)
-   * ┌──────────┐
-   * │ a        │
-   * | ---      │
-   * │ f64      │
-   * ╞══════════╡
-   * │ 1.0      │
-   * │ 1.666667 │
-   * │ 2.428571 │
-   * └──────────┘
-   * ```
    */
   ewmMean(): Expr;
   ewmMean(
@@ -198,21 +185,6 @@ export interface Expr
    *         For example, the weights of :math:`x_0` and :math:`x_2` used in calculating the final weighted average of
    *       - When ``ignoreNulls: true``, weights are based on relative positions.
    * @returns Expr that evaluates to a float 64 Series.
-   * @examples
-   * ```
-   * > const df = pl.DataFrame({a: [1, 2, 3]});
-   * > df.select(pl.col("a").ewmStd())
-   * shape: (3, 1)
-   * ┌──────────┐
-   * │ a        │
-   * | ---      │
-   * │ f64      │
-   * ╞══════════╡
-   * │ 0.0      │
-   * │ 0.707107 │
-   * │ 0.963624 │
-   * └──────────┘
-   * ```
    */
   ewmStd(): Expr;
   ewmStd(
@@ -242,21 +214,6 @@ export interface Expr
    *       - When ``ignoreNulls: false`` (default), weights are based on absolute positions.
    *       - When ``ignoreNulls=true``, weights are based on relative positions.
    * @returns Expr that evaluates to a float 64 Series.
-   * @examples
-   * ```
-   * > const df = pl.DataFrame({a: [1, 2, 3]});
-   * > df.select(pl.col("a").ewmVar())
-   * shape: (3, 1)
-   * ┌──────────┐
-   * │ a        │
-   * | ---      │
-   * │ f64      │
-   * ╞══════════╡
-   * │ 0.0      │
-   * │ 0.5      │
-   * │ 0.928571 │
-   * └──────────┘
-   * ```
    */
   ewmVar(): Expr;
   ewmVar(
