@@ -1227,15 +1227,15 @@ export interface EwmOps<T> {
   ewmMean(
     alpha?: number,
     adjust?: boolean,
-    bias?: boolean,
     minPeriods?: number,
+    bias?: boolean,
     ignoreNulls?: boolean,
   ): T;
   ewmMean(opts: {
     alpha?: number;
     adjust?: boolean;
-    bias?: boolean;
     minPeriods?: number;
+    bias?: boolean;
     ignoreNulls?: boolean;
   }): T;
   /**
@@ -1245,8 +1245,8 @@ export interface EwmOps<T> {
    * @param adjust Divide by decaying adjustment factor in beginning periods to account for imbalance in relative weightings
    *       - When ``adjust: true`` the EW function is calculated using weights :math:`w_i = (1 - \alpha)^i`
    *       - When ``adjust: false`` the EW function is calculated recursively
-   * @param bias When ``bias: false``, apply a correction to make the estimate statistically unbiased.
    * @param minPeriods Minimum number of observations in window required to have a value (otherwise result is null).
+   * @param bias When ``bias: false``, apply a correction to make the estimate statistically unbiased.
    * @param ignoreNulls Ignore missing values when calculating weights.
    *       - When ``ignoreNulls: false`` (default), weights are based on absolute positions.
    *         For example, the weights of :math:`x_0` and :math:`x_2` used in calculating the final weighted average of
@@ -1272,15 +1272,15 @@ export interface EwmOps<T> {
   ewmStd(
     alpha?: number,
     adjust?: boolean,
-    bias?: boolean,
     minPeriods?: number,
+    bias?: boolean,
     ignoreNulls?: boolean,
   ): T;
   ewmStd(opts: {
     alpha?: number;
     adjust?: boolean;
-    bias?: boolean;
     minPeriods?: number;
+    bias?: boolean;
     ignoreNulls?: boolean;
   }): T;
   /**
@@ -1290,8 +1290,8 @@ export interface EwmOps<T> {
    * @param adjust Divide by decaying adjustment factor in beginning periods to account for imbalance in relative weightings
    *       - When ``adjust: true`` the EW function is calculated using weights :math:`w_i = (1 - \alpha)^i`
    *       - When ``adjust: false`` the EW function is calculated recursively
-   * @param bias When ``bias: false``, apply a correction to make the estimate statistically unbiased.
    * @param minPeriods Minimum number of observations in window required to have a value (otherwise result is null).
+   * @param bias When ``bias: false``, apply a correction to make the estimate statistically unbiased.
    * @param ignoreNulls Ignore missing values when calculating weights.
    *       - When ``ignoreNulls: false`` (default), weights are based on absolute positions.
    *       - When ``ignoreNulls=true``, weights are based on relative positions.
@@ -1316,15 +1316,15 @@ export interface EwmOps<T> {
   ewmVar(
     alpha?: number,
     adjust?: boolean,
-    bias?: boolean,
     minPeriods?: number,
+    bias?: boolean,
     ignoreNulls?: boolean,
   ): T;
   ewmVar(opts: {
     alpha?: number;
     adjust?: boolean;
-    bias?: boolean;
     minPeriods?: number;
+    bias?: boolean;
     ignoreNulls?: boolean;
   }): T;
 }
