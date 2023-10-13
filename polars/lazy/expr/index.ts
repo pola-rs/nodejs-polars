@@ -142,11 +142,11 @@ export interface Expr
   dot(other: any): Expr;
   /**
    * Exponentially-weighted moving average.
-   * 
+   *
    * @param alpha Specify smoothing factor alpha directly, :math:`0 < \alpha \leq 1`.
    * @param adjust Divide by decaying adjustment factor in beginning periods to account for imbalance in relative weightings
    *       - When ``adjust: true`` the EW function is calculated using weights :math:`w_i = (1 - \alpha)^i`
-   *       - When ``adjust=false`` the EW function is calculated recursively 
+   *       - When ``adjust=false`` the EW function is calculated recursively
    * @param bias When ``bias: false``, apply a correction to make the estimate statistically unbiased.
    * @param minPeriods Minimum number of observations in window required to have a value (otherwise result is null).
    * @param ignoreNulls Ignore missing values when calculating weights.
