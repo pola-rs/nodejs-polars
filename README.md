@@ -1,5 +1,7 @@
 # Polars
 
+Polars: Blazingly fast DataFrames in Rust, Python, Node.js, R and SQL
+
 [![rust docs](https://docs.rs/polars/badge.svg)](https://docs.rs/polars/latest/polars/)
 [![Build and test](https://github.com/pola-rs/polars/workflows/Build%20and%20test/badge.svg)](https://github.com/pola-rs/polars/actions)
 [![](https://img.shields.io/crates/v/polars.svg)](https://crates.io/crates/polars)
