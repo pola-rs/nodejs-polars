@@ -235,11 +235,26 @@ export function all(): Expr {
   return col("*");
 }
 /**
- * __Find the indexes that would sort the columns.__
- * ___
- * Argsort by multiple columns. The first column will be used for the ordering.
- * If there are duplicates in the first column, the second column will be used to determine the ordering
- * and so on.
+ * Return the row indices that would sort the columns.
+ * @param exprs Column(s) to arg sort by. Accepts expression input.
+ * @param *more_exprs Additional columns to arg sort by, specified as positional arguments.
+ * @param descending Sort in descending order. When sorting by multiple columns, can be specified per column by passing a sequence of booleans.
+ * @example
+ * ```
+ * const df = pl.DataFrame({"a": [0, 1, 1, 0], "b": [3, 2, 3, 2],});
+ * df.select(pl.argSortBy(pl.col("a")));
+ * shape: (4, 1)
+ * ┌─────┐
+ * │ a   │
+ * │ --- │
+ * │ u32 │
+ * ╞═════╡
+ * │ 0   │
+ * │ 3   │
+ * │ 1   │
+ * │ 2   │
+ * └─────┘
+ * ```
  */
 export function argSortBy(
   exprs: Expr[] | string[],
