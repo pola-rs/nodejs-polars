@@ -1988,3 +1988,149 @@ describe("Round<T>", () => {
     expect(exprFn).toThrow();
   });
 });
+
+describe("EWM", () => {
+  test("ewmMean", () => {
+    let s = pl.Series("s", [2, 5, 3]);
+    let df = pl.DataFrame([s]);
+    let expected = pl.DataFrame({ s, ewmMean: [2.0, 4.0, 3.4285714285714284] });
+
+    let seriesActual = df.getColumn("s").ewmMean().rename("ewmMean");
+    let actual = df.withColumn(col("s").ewmMean().as("ewmMean"));
+
+    expect(actual).toFrameEqual(expected);
+    expect(seriesActual).toSeriesEqual(expected.getColumn("ewmMean"));
+
+    seriesActual = df
+      .getColumn("s")
+      .ewmMean({ alpha: 0.5, adjust: true, ignoreNulls: true })
+      .rename("ewmMean");
+    actual = df.withColumn(
+      col("s")
+        .ewmMean({ alpha: 0.5, adjust: true, ignoreNulls: true })
+        .as("ewmMean"),
+    );
+
+    expect(actual).toFrameEqual(expected);
+    expect(seriesActual).toSeriesEqual(expected.getColumn("ewmMean"));
+
+    seriesActual = df
+      .getColumn("s")
+      .ewmMean({ alpha: 0.5, adjust: false, ignoreNulls: true })
+      .rename("ewmMean");
+    actual = df.withColumn(
+      col("s")
+        .ewmMean({ alpha: 0.5, adjust: false, ignoreNulls: true })
+        .as("ewmMean"),
+    );
+
+    expected = pl.DataFrame({ s, ewmMean: [2.0, 3.5, 3.25] });
+    expect(actual).toFrameEqual(expected);
+    expect(seriesActual).toSeriesEqual(expected.getColumn("ewmMean"));
+
+    seriesActual = df
+      .getColumn("s")
+      .ewmMean(0.5, false, 1, true)
+      .rename("ewmMean");
+    actual = df.withColumn(col("s").ewmMean(0.5, false, 1, true).as("ewmMean"));
+
+    expect(actual).toFrameEqual(expected);
+    expect(seriesActual).toSeriesEqual(expected.getColumn("ewmMean"));
+
+    s = pl.Series("a", [2, 3, 5, 7, 4]);
+    df = pl.DataFrame([s]);
+
+    seriesActual = df
+      .getColumn("a")
+      .ewmMean({ adjust: true, minPeriods: 2, ignoreNulls: true })
+      .round(5)
+      .rename("ewmMean");
+    actual = df.withColumn(
+      col("a")
+        .ewmMean({ adjust: true, minPeriods: 2, ignoreNulls: true })
+        .round(5)
+        .as("ewmMean"),
+    );
+
+    expected = pl.DataFrame({ ewmMean: [null, 2.66667, 4, 5.6, 4.77419], s });
+    expect(seriesActual).toSeriesEqual(expected.getColumn("ewmMean"));
+  });
+
+  test("ewmStd", () => {
+    const s = pl.Series("s", [2, 5, 3]);
+    const df = pl.DataFrame([s]);
+    const expected = pl.DataFrame({ s, ewmStd: [0, 2.12132, 1.38873] });
+
+    let seriesActual = df.getColumn("s").ewmStd().round(5).rename("ewmStd");
+    let actual = df.withColumn(col("s").ewmStd().round(5).as("ewmStd"));
+
+    expect(actual).toFrameEqual(expected);
+    expect(seriesActual).toSeriesEqual(expected.getColumn("ewmStd"));
+
+    seriesActual = df
+      .getColumn("s")
+      .ewmStd({ alpha: 0.5, adjust: true, ignoreNulls: true })
+      .round(5)
+      .rename("ewmStd");
+    actual = df.withColumn(
+      col("s")
+        .ewmStd({ alpha: 0.5, adjust: true, ignoreNulls: true })
+        .round(5)
+        .as("ewmStd"),
+    );
+
+    expect(actual).toFrameEqual(expected);
+    expect(seriesActual).toSeriesEqual(expected.getColumn("ewmStd"));
+
+    seriesActual = df
+      .getColumn("s")
+      .ewmStd(0.5, true, 1, false)
+      .round(5)
+      .rename("ewmStd");
+    actual = df.withColumn(
+      col("s").ewmStd(0.5, true, 1, false).round(5).as("ewmStd"),
+    );
+
+    expect(actual).toFrameEqual(expected);
+    expect(seriesActual).toSeriesEqual(expected.getColumn("ewmStd"));
+  });
+
+  test("ewmVar", () => {
+    const s = pl.Series("s", [2, 5, 3]);
+    const df = pl.DataFrame([s]);
+    const expected = pl.DataFrame({ s, ewmVar: [0, 4.5, 1.92857] });
+
+    let seriesActual = df.getColumn("s").ewmVar().round(5).rename("ewmVar");
+    let actual = df.withColumn(col("s").ewmVar().round(5).as("ewmVar"));
+
+    expect(actual).toFrameEqual(expected);
+    expect(seriesActual).toSeriesEqual(expected.getColumn("ewmVar"));
+
+    seriesActual = df
+      .getColumn("s")
+      .ewmVar({ alpha: 0.5, adjust: true, ignoreNulls: true })
+      .round(5)
+      .rename("ewmVar");
+    actual = df.withColumn(
+      col("s")
+        .ewmVar({ alpha: 0.5, adjust: true, ignoreNulls: true })
+        .round(5)
+        .as("ewmVar"),
+    );
+
+    expect(actual).toFrameEqual(expected);
+    expect(seriesActual).toSeriesEqual(expected.getColumn("ewmVar"));
+
+    seriesActual = df
+      .getColumn("s")
+      .ewmVar(0.5, true, 1, false)
+      .round(5)
+      .rename("ewmVar");
+    actual = df.withColumn(
+      col("s").ewmVar(0.5, true, 1, false).round(5).as("ewmVar"),
+    );
+
+    expect(actual).toFrameEqual(expected);
+    expect(seriesActual).toSeriesEqual(expected.getColumn("ewmVar"));
+  });
+});
