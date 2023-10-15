@@ -20,6 +20,7 @@ import {
   Round,
   Sample,
   Serialize,
+  EwmOps,
 } from "../../shared_traits";
 import { InterpolationMethod, FillNullStrategy, RankMethod } from "../../types";
 /**
@@ -32,6 +33,7 @@ export interface Expr
     Cumulative<Expr>,
     Sample<Expr>,
     Round<Expr>,
+    EwmOps<Expr>,
     Serialize {
   /** @ignore */
   _expr: any;
@@ -140,6 +142,7 @@ export interface Expr
    * @param other Expression to compute dot product with
    */
   dot(other: any): Expr;
+
   /**
    * Exclude certain columns from a wildcard/regex selection.
    *
@@ -726,6 +729,117 @@ export const _Expr = (_expr: any): Expr => {
       const expr = (exprToLitOrExpr(other, false) as any).inner();
 
       return _Expr(_expr.dot(expr));
+    },
+    ewmMean(
+      opts: {
+        alpha?: number;
+        adjust?: boolean;
+        minPeriods?: number;
+        bias?: boolean;
+        ignoreNulls?: boolean;
+      },
+      adjust?: boolean,
+      minPeriods?: number,
+      bias?: boolean,
+      ignoreNulls?: boolean,
+    ) {
+      if (opts) {
+        if (typeof opts === "number") {
+          return wrap(
+            "ewmMean",
+            opts,
+            adjust ?? true,
+            minPeriods ?? 1,
+            bias ?? false,
+            ignoreNulls ?? true,
+          );
+        } else {
+          return wrap(
+            "ewmMean",
+            opts.alpha ?? 0.5,
+            opts.adjust ?? true,
+            opts.minPeriods ?? 1,
+            opts.bias ?? false,
+            opts.ignoreNulls ?? true,
+          );
+        }
+      } else {
+        return wrap("ewmMean", 0.5, true, 1, false, true);
+      }
+    },
+    ewmStd(
+      opts: {
+        alpha?: number;
+        adjust?: boolean;
+        minPeriods?: number;
+        bias?: boolean;
+        ignoreNulls?: boolean;
+      },
+      adjust?: boolean,
+      minPeriods?: number,
+      bias?: boolean,
+      ignoreNulls?: boolean,
+    ) {
+      if (opts) {
+        if (typeof opts === "number") {
+          return wrap(
+            "ewmStd",
+            opts,
+            adjust ?? true,
+            minPeriods ?? 1,
+            bias ?? false,
+            ignoreNulls ?? true,
+          );
+        } else {
+          return wrap(
+            "ewmStd",
+            opts.alpha ?? 0.5,
+            opts.adjust ?? true,
+            opts.minPeriods ?? 1,
+            opts.bias ?? false,
+            opts.ignoreNulls ?? true,
+          );
+        }
+      } else {
+        return wrap("ewmStd", 0.5, true, 1, false, true);
+      }
+    },
+    ewmVar(
+      opts: {
+        alpha?: number;
+        adjust?: boolean;
+        minPeriods?: number;
+        bias?: boolean;
+        ignoreNulls?: boolean;
+      },
+      adjust?: boolean,
+      minPeriods?: number,
+      bias?: boolean,
+      ignoreNulls?: boolean,
+    ) {
+      if (opts) {
+        if (typeof opts === "number") {
+          return wrap(
+            "ewmVar",
+            opts,
+            adjust ?? true,
+            minPeriods ?? 1,
+            bias ?? false,
+            ignoreNulls ?? true,
+          );
+        } else {
+          return wrap(
+            "ewmVar",
+            opts.alpha ?? 0.5,
+            opts.adjust ?? true,
+            opts.minPeriods ?? 1,
+            opts.bias ?? false,
+            opts.ignoreNulls ?? true,
+          );
+        }
+      } else {
+        return wrap("ewmVar", 0.5, true, 1, false, true);
+      }
     },
     exclude(...columns) {
       return _Expr(_expr.exclude(columns.flat(2)));

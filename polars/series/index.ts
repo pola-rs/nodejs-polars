@@ -16,6 +16,7 @@ import {
   Round,
   Sample,
   Serialize,
+  EwmOps,
 } from "../shared_traits";
 import { col } from "../lazy/functions";
 import { InterpolationMethod, RankMethod } from "../types";
@@ -32,6 +33,7 @@ export interface Series
     Cumulative<Series>,
     Round<Series>,
     Sample<Series>,
+    EwmOps<Series>,
     Serialize {
   inner(): any;
   name: string;
@@ -1264,6 +1266,15 @@ export function _Series(_s: any): Series {
     },
     equals(field: Series) {
       return this.eq(field);
+    },
+    ewmMean(...args) {
+      return expr_op("ewmMean", ...args);
+    },
+    ewmStd(...args) {
+      return expr_op("ewmStd", ...args);
+    },
+    ewmVar(...args) {
+      return expr_op("ewmVar", ...args);
     },
     explode() {
       return wrap("explode");
