@@ -235,11 +235,26 @@ export function all(): Expr {
   return col("*");
 }
 /**
- * __Find the indexes that would sort the columns.__
- * ___
- * Argsort by multiple columns. The first column will be used for the ordering.
- * If there are duplicates in the first column, the second column will be used to determine the ordering
- * and so on.
+ * Return the row indices that would sort the columns.
+ * @param exprs Column(s) to arg sort by. Accepts expression input.
+ * @param *more_exprs Additional columns to arg sort by, specified as positional arguments.
+ * @param descending Sort in descending order. When sorting by multiple columns, can be specified per column by passing a sequence of booleans.
+ * @example
+ * ```
+ * const df = pl.DataFrame({"a": [0, 1, 1, 0], "b": [3, 2, 3, 2],});
+ * df.select(pl.argSortBy(pl.col("a")));
+ * shape: (4, 1)
+ * ┌─────┐
+ * │ a   │
+ * │ --- │
+ * │ u32 │
+ * ╞═════╡
+ * │ 0   │
+ * │ 3   │
+ * │ 1   │
+ * │ 2   │
+ * └─────┘
+ * ```
  */
 export function argSortBy(
   exprs: Expr[] | string[],
@@ -635,35 +650,34 @@ export function element(): Expr {
   return col("");
 }
 
-/** Compute the bitwise AND horizontally across columns.
-
-    Parameters
-    ----------
-    *exprs
-        Column(s) to use in the aggregation. Accepts expression input. Strings are
-        parsed as column names, other non-expression inputs are parsed as literals.
-
-    Examples
-    --------
-    >>> const df = pl.DataFrame(
-    ...     {
-    ...         "a": [false, false, true, true],
-    ...         "b": [false, true, null, true],
-    ...         "c": ["w", "x", "y", "z"],
-    ...     }
-    ... )
-    >>> df.withColumns(pl.allHorizontal([pl.col("a"), pl.col("b")]))
-    shape: (4, 4)
-    ┌───────┬───────┬─────┬───────┐
-    │ a     ┆ b     ┆ c   ┆ all   │
-    │ ---   ┆ ---   ┆ --- ┆ ---   │
-    │ bool  ┆ bool  ┆ str ┆ bool  │
-    ╞═══════╪═══════╪═════╪═══════╡
-    │ false ┆ false ┆ w   ┆ false │
-    │ false ┆ true  ┆ x   ┆ false │
-    │ true  ┆ null  ┆ y   ┆ null  │
-    │ true  ┆ true  ┆ z   ┆ true  │
-    └───────┴───────┴─────┴───────┘
+/**
+ * Compute the bitwise AND horizontally across columns.
+ * @param *exprs
+ *         Column(s) to use in the aggregation. Accepts expression input. Strings are
+ *         parsed as column names, other non-expression inputs are parsed as literals.
+ *
+ * @example
+ * ```
+ *  >>> const df = pl.DataFrame(
+ *        {
+ *            "a": [false, false, true, true],
+ *            "b": [false, true, null, true],
+ *            "c": ["w", "x", "y", "z"],
+ *        }
+ *      )
+ *  >>> df.withColumns(pl.allHorizontal([pl.col("a"), pl.col("b")]))
+ *  shape: (4, 4)
+ *  ┌───────┬───────┬─────┬───────┐
+ *  │ a     ┆ b     ┆ c   ┆ all   │
+ *  │ ---   ┆ ---   ┆ --- ┆ ---   │
+ *  │ bool  ┆ bool  ┆ str ┆ bool  │
+ *  ╞═══════╪═══════╪═════╪═══════╡
+ *  │ false ┆ false ┆ w   ┆ false │
+ *  │ false ┆ true  ┆ x   ┆ false │
+ *  │ true  ┆ null  ┆ y   ┆ null  │
+ *  │ true  ┆ true  ┆ z   ┆ true  │
+ *  └───────┴───────┴─────┴───────┘
+ * ```
  */
 
 export function allHorizontal(exprs: ExprOrString | ExprOrString[]): Expr {
@@ -674,37 +688,34 @@ export function allHorizontal(exprs: ExprOrString | ExprOrString[]): Expr {
   return _Expr(pli.allHorizontal(exprs));
 }
 
-/*
-Compute the bitwise OR horizontally across columns.
-
-    Parameters
-    ----------
-    *exprs
-        Column(s) to use in the aggregation. Accepts expression input. Strings are
-        parsed as column names, other non-expression inputs are parsed as literals.
-
-    Examples
-    --------
-    >>> const df = pl.DataFrame(
-    ...     {
-    ...         "a": [false, false, true, null],
-    ...         "b": [false, true, null, null],
-    ...         "c": ["w", "x", "y", "z"],
-    ...     }
-    ... )
-    >>> df.withColumns(pl.anyHorizontal([pl.col("a"), pl.col("b")]))
-    shape: (4, 4)
-    ┌───────┬───────┬─────┬───────┐
-    │ a     ┆ b     ┆ c   ┆ any   │
-    │ ---   ┆ ---   ┆ --- ┆ ---   │
-    │ bool  ┆ bool  ┆ str ┆ bool  │
-    ╞═══════╪═══════╪═════╪═══════╡
-    │ false ┆ false ┆ w   ┆ false │
-    │ false ┆ true  ┆ x   ┆ true  │
-    │ true  ┆ null  ┆ y   ┆ true  │
-    │ null  ┆ null  ┆ z   ┆ null  │
-    └───────┴───────┴─────┴───────┘
-*/
+/**
+ * Compute the bitwise OR horizontally across columns.
+ * @param *exprs
+ *       Column(s) to use in the aggregation. Accepts expression input. Strings are
+ *       parsed as column names, other non-expression inputs are parsed as literals.
+ * @example
+ * ```
+ *  >>> const df = pl.DataFrame(
+ *  ...     {
+ *  ...         "a": [false, false, true, null],
+ *  ...         "b": [false, true, null, null],
+ *  ...         "c": ["w", "x", "y", "z"],
+ *  ...     }
+ *  ... )
+ *  >>> df.withColumns(pl.anyHorizontal([pl.col("a"), pl.col("b")]))
+ *  shape: (4, 4)
+ *  ┌───────┬───────┬─────┬───────┐
+ *  │ a     ┆ b     ┆ c   ┆ any   │
+ *  │ ---   ┆ ---   ┆ --- ┆ ---   │
+ *  │ bool  ┆ bool  ┆ str ┆ bool  │
+ *  ╞═══════╪═══════╪═════╪═══════╡
+ *  │ false ┆ false ┆ w   ┆ false │
+ *  │ false ┆ true  ┆ x   ┆ true  │
+ *  │ true  ┆ null  ┆ y   ┆ true  │
+ *  │ null  ┆ null  ┆ z   ┆ null  │
+ *  └───────┴───────┴─────┴───────┘
+ * ```
+ */
 
 export function anyHorizontal(exprs: ExprOrString | ExprOrString[]): Expr {
   exprs = Array.isArray(exprs) ? exprs : [exprs];
@@ -714,36 +725,33 @@ export function anyHorizontal(exprs: ExprOrString | ExprOrString[]): Expr {
   return _Expr(pli.anyHorizontal(exprs));
 }
 
-/*
-    Get the maximum value horizontally across columns.
-
-    Parameters
-    ----------
-    *exprs
-        Column(s) to use in the aggregation. Accepts expression input. Strings are
-        parsed as column names, other non-expression inputs are parsed as literals.
-
-    Examples
-    --------
-    >>> const df = pl.DataFrame(
-    ...     {
-    ...         "a": [1, 8, 3],
-    ...         "b": [4, 5, null],
-    ...         "c": ["x", "y", "z"],
-    ...     }
-    ... )
-    >>> df.withColumns(pl.maxHorizontal(pl.col("a"), pl.col("b")))
-    shape: (3, 4)
-    ┌─────┬──────┬─────┬─────┐
-    │ a   ┆ b    ┆ c   ┆ max │
-    │ --- ┆ ---  ┆ --- ┆ --- │
-    │ i64 ┆ i64  ┆ str ┆ i64 │
-    ╞═════╪══════╪═════╪═════╡
-    │ 1   ┆ 4    ┆ x   ┆ 4   │
-    │ 8   ┆ 5    ┆ y   ┆ 8   │
-    │ 3   ┆ null ┆ z   ┆ 3   │
-    └─────┴──────┴─────┴─────┘
-*/
+/**
+ * Get the maximum value horizontally across columns.
+ * @param *exprs
+ *       Column(s) to use in the aggregation. Accepts expression input. Strings are
+ *       parsed as column names, other non-expression inputs are parsed as literals.
+ * @example
+ * ```
+ *  >>> const df = pl.DataFrame(
+ *  ...     {
+ *  ...         "a": [1, 8, 3],
+ *  ...         "b": [4, 5, null],
+ *  ...         "c": ["x", "y", "z"],
+ *  ...     }
+ *  ... )
+ *  >>> df.withColumns(pl.maxHorizontal(pl.col("a"), pl.col("b")))
+ *  shape: (3, 4)
+ *  ┌─────┬──────┬─────┬─────┐
+ *  │ a   ┆ b    ┆ c   ┆ max │
+ *  │ --- ┆ ---  ┆ --- ┆ --- │
+ *  │ i64 ┆ i64  ┆ str ┆ i64 │
+ *  ╞═════╪══════╪═════╪═════╡
+ *  │ 1   ┆ 4    ┆ x   ┆ 4   │
+ *  │ 8   ┆ 5    ┆ y   ┆ 8   │
+ *  │ 3   ┆ null ┆ z   ┆ 3   │
+ *  └─────┴──────┴─────┴─────┘
+ * ```
+ */
 export function maxHorizontal(exprs: ExprOrString | ExprOrString[]): Expr {
   exprs = Array.isArray(exprs) ? exprs : [exprs];
 
@@ -751,36 +759,33 @@ export function maxHorizontal(exprs: ExprOrString | ExprOrString[]): Expr {
 
   return _Expr(pli.maxHorizontal(exprs));
 }
-/*
- Get the minimum value horizontally across columns.
-
-    Parameters
-    ----------
-    *exprs
-        Column(s) to use in the aggregation. Accepts expression input. Strings are
-        parsed as column names, other non-expression inputs are parsed as literals.
-
-    Examples
-    --------
-    >>> const df = pl.DataFrame(
-    ...     {
-    ...         "a": [1, 8, 3],
-    ...         "b": [4, 5, null],
-    ...         "c": ["x", "y", "z"],
-    ...     }
-    ... )
-    >>> df.withColumns(pl.minHorizontal(pl.col("a"), pl.col("b")))
-    shape: (3, 4)
-    ┌─────┬──────┬─────┬─────┐
-    │ a   ┆ b    ┆ c   ┆ min │
-    │ --- ┆ ---  ┆ --- ┆ --- │
-    │ i64 ┆ i64  ┆ str ┆ i64 │
-    ╞═════╪══════╪═════╪═════╡
-    │ 1   ┆ 4    ┆ x   ┆ 1   │
-    │ 8   ┆ 5    ┆ y   ┆ 5   │
-    │ 3   ┆ null ┆ z   ┆ 3   │
-    └─────┴──────┴─────┴─────┘
-*/
+/**
+ * Get the minimum value horizontally across columns.
+ * @param *exprs
+ *       Column(s) to use in the aggregation. Accepts expression input. Strings are
+ *       parsed as column names, other non-expression inputs are parsed as literals.
+ * @example
+ * ```
+ *  >>> const df = pl.DataFrame(
+ *  ...     {
+ *  ...         "a": [1, 8, 3],
+ *  ...         "b": [4, 5, null],
+ *  ...         "c": ["x", "y", "z"],
+ *  ...     }
+ *  ... )
+ *  >>> df.withColumns(pl.minHorizontal(pl.col("a"), pl.col("b")))
+ *  shape: (3, 4)
+ *  ┌─────┬──────┬─────┬─────┐
+ *  │ a   ┆ b    ┆ c   ┆ min │
+ *  │ --- ┆ ---  ┆ --- ┆ --- │
+ *  │ i64 ┆ i64  ┆ str ┆ i64 │
+ *  ╞═════╪══════╪═════╪═════╡
+ *  │ 1   ┆ 4    ┆ x   ┆ 1   │
+ *  │ 8   ┆ 5    ┆ y   ┆ 5   │
+ *  │ 3   ┆ null ┆ z   ┆ 3   │
+ *  └─────┴──────┴─────┴─────┘
+ * ```
+ */
 
 export function minHorizontal(exprs: ExprOrString | ExprOrString[]): Expr {
   exprs = Array.isArray(exprs) ? exprs : [exprs];
@@ -790,37 +795,33 @@ export function minHorizontal(exprs: ExprOrString | ExprOrString[]): Expr {
   return _Expr(pli.minHorizontal(exprs));
 }
 
-/*
- Sum all values horizontally across columns.
-
-    Parameters
-    ----------
-    *exprs
-        Column(s) to use in the aggregation. Accepts expression input. Strings are
-        parsed as column names, other non-expression inputs are parsed as literals.
-
-    Examples
-    --------
-    >>> const df = pl.DataFrame(
-    ...     {
-    ...         "a": [1, 8, 3],
-    ...         "b": [4, 5, null],
-    ...         "c": ["x", "y", "z"],
-    ...     }
-    ... )
-    >>> df.withColumns(pl.sumHorizontal(pl.col("a"), ol.col("b")))
-    shape: (3, 4)
-    ┌─────┬──────┬─────┬──────┐
-    │ a   ┆ b    ┆ c   ┆ sum  │
-    │ --- ┆ ---  ┆ --- ┆ ---  │
-    │ i64 ┆ i64  ┆ str ┆ i64  │
-    ╞═════╪══════╪═════╪══════╡
-    │ 1   ┆ 4    ┆ x   ┆ 5    │
-    │ 8   ┆ 5    ┆ y   ┆ 13   │
-    │ 3   ┆ null ┆ z   ┆ null │
-    └─────┴──────┴─────┴──────┘
-
-*/
+/**
+ * Sum all values horizontally across columns.
+ * @param *exprs
+ *       Column(s) to use in the aggregation. Accepts expression input. Strings are
+ *       parsed as column names, other non-expression inputs are parsed as literals.
+ * @example
+ * ```
+ *  >>> const df = pl.DataFrame(
+ *  ...     {
+ *  ...         "a": [1, 8, 3],
+ *  ...         "b": [4, 5, null],
+ *  ...         "c": ["x", "y", "z"],
+ *  ...     }
+ *  ... )
+ *  >>> df.withColumns(pl.sumHorizontal(pl.col("a"), ol.col("b")))
+ *  shape: (3, 4)
+ *  ┌─────┬──────┬─────┬──────┐
+ *  │ a   ┆ b    ┆ c   ┆ sum  │
+ *  │ --- ┆ ---  ┆ --- ┆ ---  │
+ *  │ i64 ┆ i64  ┆ str ┆ i64  │
+ *  ╞═════╪══════╪═════╪══════╡
+ *  │ 1   ┆ 4    ┆ x   ┆ 5    │
+ *  │ 8   ┆ 5    ┆ y   ┆ 13   │
+ *  │ 3   ┆ null ┆ z   ┆ null │
+ *  └─────┴──────┴─────┴──────┘
+ * ```
+ */
 export function sumHorizontal(exprs: ExprOrString | ExprOrString[]): Expr {
   exprs = Array.isArray(exprs) ? exprs : [exprs];
 
