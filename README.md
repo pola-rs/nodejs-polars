@@ -18,6 +18,8 @@ Documentation: [Node.js](https://pola-rs.github.io/nodejs-polars/index.html)
 | [User Guide](https://pola-rs.github.io/polars/)
 | [Discord](https://discord.gg/4UfP5cfBE7)
 
+#### Note: This library is intended to work only with server side JS/TS (Node, Bun, Deno). For browser please see [js-polars](https://github.com/pola-rs/js-polars)
+
 ## Usage
 
 ### Importing
