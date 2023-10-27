@@ -137,7 +137,7 @@ describe("dataframe", () => {
   });
   // run this test 100 times to make sure it is deterministic.
   test("unique:maintainOrder", () => {
-    Array.from({ length: 100 }).forEach(() => {
+    for (const x of Array.from({ length: 100 })) {
       const actual = pl
         .DataFrame({
           foo: [0, 1, 2, 2, 2],
@@ -152,11 +152,11 @@ describe("dataframe", () => {
         ham: ["0", "a", "b"],
       });
       expect(actual).toFrameEqual(expected);
-    });
+    }
   });
   // run this test 100 times to make sure it is deterministic.
   test("unique:maintainOrder:single subset", () => {
-    Array.from({ length: 100 }).forEach(() => {
+    for (const x of Array.from({ length: 100 })) {
       const actual = pl
         .DataFrame({
           foo: [0, 1, 2, 2, 2],
@@ -171,11 +171,11 @@ describe("dataframe", () => {
         ham: ["0", "a", "b"],
       });
       expect(actual).toFrameEqual(expected);
-    });
+    }
   });
   // run this test 100 times to make sure it is deterministic.
   test("unique:maintainOrder:multi subset", () => {
-    Array.from({ length: 100 }).forEach(() => {
+    for (const x of Array.from({ length: 100 })) {
       const actual = pl
         .DataFrame({
           foo: [0, 1, 2, 2, 2],
@@ -190,7 +190,7 @@ describe("dataframe", () => {
         ham: ["0", "a", "b", "c"],
       });
       expect(actual).toFrameEqual(expected);
-    });
+    }
   });
   test("unnest", () => {
     const expected = pl.DataFrame({
@@ -427,9 +427,9 @@ describe("dataframe", () => {
       pl.Series("foo", [1, 2, 3]),
       pl.Series("ham", ["a", "b", "c"]),
     ];
-    actual.forEach((a, idx) => {
+    for (const [idx, a] of actual.entries()) {
       expect(a).toSeriesEqual(expected[idx]);
-    });
+    }
   });
   test("groupBy", () => {
     const actual = pl

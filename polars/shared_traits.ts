@@ -505,7 +505,7 @@ export interface Sample<T> {
 
 export interface Bincode<T> {
   (bincode: Uint8Array): T;
-  getState(T): Uint8Array;
+  getState(T2): Uint8Array;
 }
 
 /**

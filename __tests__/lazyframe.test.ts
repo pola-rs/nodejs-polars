@@ -119,7 +119,7 @@ describe("lazyframe", () => {
   });
   // run this test 100 times to make sure it is deterministic.
   test("unique:maintainOrder", () => {
-    Array.from({ length: 100 }).forEach(() => {
+    for (const x of Array.from({ length: 100 })) {
       const actual = pl
         .DataFrame({
           foo: [0, 1, 2, 2, 2],
@@ -135,11 +135,11 @@ describe("lazyframe", () => {
         ham: ["0", "a", "b"],
       });
       expect(actual).toFrameEqual(expected);
-    });
+    }
   });
   // run this test 100 times to make sure it is deterministic.
   test("unique:maintainOrder:single subset", () => {
-    Array.from({ length: 100 }).forEach(() => {
+    for (const x of Array.from({ length: 100 })) {
       const actual = pl
         .DataFrame({
           foo: [0, 1, 2, 2, 2],
@@ -155,11 +155,11 @@ describe("lazyframe", () => {
         ham: ["0", "a", "b"],
       });
       expect(actual).toFrameEqual(expected);
-    });
+    }
   });
   // run this test 100 times to make sure it is deterministic.
   test("unique:maintainOrder:multi subset", () => {
-    Array.from({ length: 100 }).forEach(() => {
+    for (const x of Array.from({ length: 100 })) {
       const actual = pl
         .DataFrame({
           foo: [0, 1, 2, 2, 2],
@@ -175,7 +175,7 @@ describe("lazyframe", () => {
         ham: ["0", "a", "b", "c"],
       });
       expect(actual).toFrameEqual(expected);
-    });
+    }
   });
   test("dropNulls", () => {
     const actual = pl

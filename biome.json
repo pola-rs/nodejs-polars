@@ -26,7 +26,7 @@
     ]
   },
   "formatter": {
-    "indentSize": 2,
+    "indentWidth": 2,
     "indentStyle": "space",
     "ignore": [
       "polars/native-polars.js",
