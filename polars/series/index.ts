@@ -774,7 +774,11 @@ export interface Series
    * false
    * ```
    */
-  seriesEqual<U>(other: Series, nullEqual?: boolean, strict?: boolean): boolean;
+  seriesEqual<U1>(
+    other: Series,
+    nullEqual?: boolean,
+    strict?: boolean,
+  ): boolean;
   /**
    * __Set masked values__
    * @param filter Boolean mask
@@ -1788,13 +1792,13 @@ export interface SeriesConstructor extends Deserialize<Series> {
    * Creates an array from an array-like object.
    * @param arrayLike — An array-like object to convert to an array.
    */
-  from<T>(arrayLike: ArrayLike<T>): Series;
-  from<T>(name: string, arrayLike: ArrayLike<T>): Series;
+  from<T1>(arrayLike: ArrayLike<T1>): Series;
+  from<T2>(name: string, arrayLike: ArrayLike<T2>): Series;
   /**
    * Returns a new Series from a set of elements.
    * @param items — A set of elements to include in the new Series object.
    */
-  of<T>(...items: T[]): Series;
+  of<T3>(...items: T3[]): Series;
   isSeries(arg: any): arg is Series;
   /**
    * @param binary used to serialize/deserialize series. This will only work with the output from series.toBinary().

@@ -998,7 +998,9 @@ describe("expr.str", () => {
       .toFrame();
 
     const actual = df.select(
-      col("a").str.extract(/candidate=(\w+)/, 1).as("candidate"),
+      col("a")
+        .str.extract(/candidate=(\w+)/, 1)
+        .as("candidate"),
     );
     expect(actual).toFrameEqual(expected);
     expect(seriesActual).toFrameEqual(expected);

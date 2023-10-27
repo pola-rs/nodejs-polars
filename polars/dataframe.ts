@@ -1868,13 +1868,10 @@ export const _DataFrame = (_df: any): DataFrame => {
       if (!Array.isArray(names[0]) && names.length === 1) {
         return wrap("drop", names[0]);
       }
-
       const df: any = this.clone();
-
-      names.flat(2).forEach((name) => {
+      for (const name of names.flat(2)) {
         df.inner().dropInPlace(name);
-      });
-
+      }
       return df;
     },
     dropNulls(...subset) {
@@ -2125,10 +2122,9 @@ export const _DataFrame = (_df: any): DataFrame => {
     },
     rename(mapping) {
       const df = this.clone();
-      Object.entries(mapping).forEach(([column, new_col]) => {
+      for (const [column, new_col] of Object.entries(mapping)) {
         (df as any).inner().rename(column, new_col);
-      });
-
+      }
       return df;
     },
     replaceAtIdx(index, newColumn) {
@@ -2255,20 +2251,19 @@ export const _DataFrame = (_df: any): DataFrame => {
 
       // Add table headers
       htmlTable += "<thead><tr>";
-      this.getColumns().forEach((field) => {
+      for (const field of this.getColumns()) {
         htmlTable += `<th>${escapeHTML(field.name)}</th>`;
-      });
+      }
       htmlTable += "</tr></thead>";
-
       // Add table data
       htmlTable += "<tbody>";
-      this.toRecords().forEach((row) => {
+      for (const row of this.toRecords()) {
         htmlTable += "<tr>";
-        this.getColumns().forEach((field) => {
+        for (const field of this.getColumns()) {
           htmlTable += `<td>${escapeHTML(String(row[field.name]))}</td>`;
-        });
+        }
         htmlTable += "</tr>";
-      });
+      }
       htmlTable += "</tbody></table>";
 
       return htmlTable;
