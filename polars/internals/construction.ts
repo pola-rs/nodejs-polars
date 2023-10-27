@@ -190,13 +190,12 @@ export function arrayToJsDataFrame(data: any[], options?): any {
     dataSeries = [];
   } else if (data[0]?._s) {
     dataSeries = [];
-
-    data.forEach((series: any, idx) => {
+    for (const [idx, series] of data.entries()) {
       if (!series.name) {
         series.rename(`column_${idx}`, true);
       }
       dataSeries.push(series._s);
-    });
+    }
   } else if (data[0].constructor.name === "Object") {
     const df = pli.fromRows(data, schema, inferSchemaLength);
 
@@ -233,10 +232,9 @@ function handleColumnsArg(data: any[], columns?: string[]) {
     if (!data) {
       return columns.map((c) => (Series.from(c, []) as any)._s);
     } else if (data.length === columns.length) {
-      columns.forEach((name, i) => {
-        data[i].rename(name);
-      });
-
+      for (const [idx, name] of columns.entries()) {
+        data[idx].rename(name);
+      }
       return data;
     }
   }

@@ -465,12 +465,12 @@ export interface LazyDataFrame extends Serialize, GroupByOps<LazyGroupBy> {
 const prepareGroupbyInputs = (by) => {
   if (Array.isArray(by)) {
     const newBy: any = [];
-    by.forEach((e) => {
+    for (let e of by) {
       if (typeof e === "string") {
         e = pli.col(e);
       }
       newBy.push(e);
-    });
+    }
 
     return newBy;
   } else if (typeof by === "string") {
