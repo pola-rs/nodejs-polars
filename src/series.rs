@@ -336,24 +336,24 @@ impl JsSeries {
         Ok(out.into())
     }
     #[napi(catch_unwind)]
-    pub fn cumsum(&self, reverse: Option<bool>) -> JsSeries {
+    pub fn cumsum(&self, reverse: Option<bool>) -> napi::Result<JsSeries> {
         let reverse = reverse.unwrap_or(false);
-        self.series.cumsum(reverse).into()
+        Ok(cumsum(&self.series, reverse).map_err(JsPolarsErr::from)?.into())
     }
     #[napi(catch_unwind)]
-    pub fn cummax(&self, reverse: Option<bool>) -> JsSeries {
+    pub fn cummax(&self, reverse: Option<bool>) -> napi::Result<JsSeries> {
         let reverse = reverse.unwrap_or(false);
-        self.series.cummax(reverse).into()
+        Ok(cummax(&self.series, reverse).map_err(JsPolarsErr::from)?.into())
     }
     #[napi(catch_unwind)]
-    pub fn cummin(&self, reverse: Option<bool>) -> JsSeries {
+    pub fn cummin(&self, reverse: Option<bool>) -> napi::Result<JsSeries> {
         let reverse = reverse.unwrap_or(false);
-        self.series.cummin(reverse).into()
+        Ok(cummin(&self.series, reverse).map_err(JsPolarsErr::from)?.into())
     }
     #[napi(catch_unwind)]
-    pub fn cumprod(&self, reverse: Option<bool>) -> JsSeries {
+    pub fn cumprod(&self, reverse: Option<bool>) -> napi::Result<JsSeries> {
         let reverse = reverse.unwrap_or(false);
-        self.series.cumprod(reverse).into()
+        Ok(cumprod(&self.series, reverse).map_err(JsPolarsErr::from)?.into())
     }
     #[napi(catch_unwind)]
     pub fn chunk_lengths(&self) -> Vec<u32> {
@@ -523,7 +523,6 @@ impl JsSeries {
     #[napi(catch_unwind)]
     pub fn take(&self, indices: Vec<u32>) -> napi::Result<JsSeries> {
         let indices = UInt32Chunked::from_vec("", indices);
-
         let take = self.series.take(&indices).map_err(JsPolarsErr::from)?;
         Ok(JsSeries::new(take))
     }
@@ -580,7 +579,7 @@ impl JsSeries {
 
     #[napi(catch_unwind)]
     pub fn is_unique(&self) -> napi::Result<JsSeries> {
-        let ca = polars_ops::prelude::is_unique(&self.series).map_err(JsPolarsErr::from)?;
+        let ca = is_unique(&self.series).map_err(JsPolarsErr::from)?;
         Ok(ca.into_series().into())
     }
 
@@ -621,7 +620,7 @@ impl JsSeries {
     }
     #[napi(catch_unwind)]
     pub fn is_duplicated(&self) -> napi::Result<JsSeries> {
-        let ca = polars_ops::prelude::is_duplicated(&self.series).map_err(JsPolarsErr::from)?;
+        let ca = is_duplicated(&self.series).map_err(JsPolarsErr::from)?;
         Ok(ca.into_series().into())
     }
     #[napi(catch_unwind)]
@@ -779,11 +778,11 @@ impl JsSeries {
 
     #[napi(catch_unwind)]
     pub fn is_in(&self, other: &JsSeries) -> napi::Result<JsSeries> {
-        let out = self
-            .series
-            .is_in(&other.series)
-            .map_err(JsPolarsErr::from)?;
-        Ok(out.into_series().into())
+        let series = is_in(&self.series, &other.series)
+                        .map(|ca| ca.into_series())
+                        .map_err(JsPolarsErr::from)?;
+
+        Ok(JsSeries::new(series))
     }
 
     #[napi(catch_unwind)]
@@ -824,7 +823,7 @@ impl JsSeries {
     #[napi(catch_unwind)]
     pub fn str_lengths(&self) -> napi::Result<JsSeries> {
         let ca = self.series.utf8().map_err(JsPolarsErr::from)?;
-        let s = ca.str_lengths().into_series();
+        let s = ca.str_len_chars().into_series();
         Ok(JsSeries::new(s))
     }
 
@@ -913,7 +912,6 @@ impl JsSeries {
         let ca = self.series.utf8().map_err(JsPolarsErr::from)?;
         let s = ca
             .str_slice(start, length.map(|l| l as u64))
-            .map_err(JsPolarsErr::from)?
             .into_series();
         Ok(s.into())
     }
@@ -952,7 +950,7 @@ impl JsSeries {
     pub fn str_pad_start(&self, length: i64, fill_char: String) -> napi::Result<JsSeries> {
         let ca = self.series.utf8().map_err(JsPolarsErr::from)?;
         let s = ca
-            .rjust(length as usize, fill_char.chars().nth(0).unwrap())
+            .pad_start(length as usize, fill_char.chars().nth(0).unwrap())
             .into_series();
         Ok(s.into())
     }
@@ -960,7 +958,7 @@ impl JsSeries {
     pub fn str_pad_end(&self, length: i64, fill_char: String) -> napi::Result<JsSeries> {
         let ca = self.series.utf8().map_err(JsPolarsErr::from)?;
         let s = ca
-            .ljust(length as usize, fill_char.chars().nth(0).unwrap())
+            .pad_end(length as usize, fill_char.chars().nth(0).unwrap())
             .into_series();
         Ok(s.into())
     }
@@ -992,12 +990,10 @@ impl JsSeries {
         // let df = self.series.to_dummies().map_err(JsPolarsErr::from)?;
         // Ok(df.into())
     }
-
     #[napi(catch_unwind)]
     pub fn get_list(&self, index: i64) -> Option<JsSeries> {
         if let Ok(ca) = &self.series.list() {
-            let s = ca.get(index as usize);
-            s.map(|s| s.into())
+            Some(ca.get_as_series(index as usize)?.into())
         } else {
             None
         }
@@ -1060,14 +1056,36 @@ impl JsSeries {
             .map_err(JsPolarsErr::from)?;
         Ok((ms / 1000).into_series().into())
     }
-    #[napi(catch_unwind)]
-    pub fn peak_max(&self) -> JsSeries {
-        self.series.peak_max().into_series().into()
-    }
-    #[napi(catch_unwind)]
-    pub fn peak_min(&self) -> JsSeries {
-        self.series.peak_min().into_series().into()
-    }
+    // #[napi(catch_unwind)]
+    // pub fn peak_max(&self) -> JsSeries {
+    //     self.series.peak_max().into_series().into()
+    // }
+    // #[napi(catch_unwind)]
+    // pub fn peak_min(&self) -> napi::Result<JsSeries> {
+    //     let ca: &polars::prelude::ChunkedArray<_> = self.series.as_ref().as_ref().as_ref();
+
+    //     // : &ChunkedArray<_>
+    //     // &ChunkedArray<T>
+    //     // ChunkedArray<BooleanType>
+    //     let s = peak_min::<T>(ca);
+    //             // .map(|ca| ca.into_series())
+    //             // .map_err(JsPolarsErr::from)?;
+
+    //     // .map_err(JsPolarsErr::from)?;
+    //     // Ok(s.into_series().into())
+
+    //     // let series = is_in(&self.series, &other.series)
+
+    //     // Ok(cumsum(&self.series, reverse).map_err(JsPolarsErr::from)?.into())
+
+    //     // Ok(s)
+
+    //     Ok(JsSeries::new(s.into_series()))
+
+    //     // .into_series();
+    //     // Ok(out.into())
+    //     // self.series.peak_min().into_series().into()
+    // }
 
     #[napi(catch_unwind)]
     pub fn n_unique(&self) -> napi::Result<i64> {
@@ -1076,8 +1094,8 @@ impl JsSeries {
     }
 
     #[napi(catch_unwind)]
-    pub fn is_first(&self) -> napi::Result<JsSeries> {
-        let out = is_first(&self.series)
+    pub fn is_first_distinct(&self) -> napi::Result<JsSeries> {
+        let out = is_first_distinct(&self.series)
             .map_err(JsPolarsErr::from)?
             .into_series();
         Ok(out.into())
@@ -1123,7 +1141,7 @@ impl JsSeries {
 
     #[napi(catch_unwind)]
     pub fn mode(&self) -> napi::Result<JsSeries> {
-        let s = self.series.mode().map_err(JsPolarsErr::from)?;
+        let s = mode::mode(&self.series).map_err(JsPolarsErr::from)?;
         Ok(s.into())
     }
 
@@ -1146,10 +1164,7 @@ impl JsSeries {
     }
     #[napi(catch_unwind)]
     pub fn diff(&self, n: i64, null_behavior: Wrap<NullBehavior>) -> napi::Result<JsSeries> {
-        let s = self
-            .series
-            .diff(n, null_behavior.0)
-            .map_err(JsPolarsErr::from)?;
+        let s = diff(&self.series , n, null_behavior.0).map_err(JsPolarsErr::from)?;
         Ok(s.into())
     }
 
@@ -1183,7 +1198,7 @@ impl JsSeries {
 
     #[napi(catch_unwind)]
     pub fn abs(&self) -> napi::Result<JsSeries> {
-        let out = self.series.abs().map_err(JsPolarsErr::from)?;
+        let out = abs(&self.series).map_err(JsPolarsErr::from)?;
         Ok(out.into())
     }
 

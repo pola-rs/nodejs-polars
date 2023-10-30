@@ -118,7 +118,7 @@ pub fn read_csv(
             .infer_schema(infer_schema_length)
             .has_header(options.has_header)
             .with_n_rows(n_rows)
-            .with_delimiter(options.sep.as_bytes()[0])
+            .with_separator(options.sep.as_bytes()[0])
             .with_skip_rows(skip_rows)
             .with_ignore_errors(options.ignore_errors)
             .with_rechunk(options.rechunk)
@@ -141,7 +141,7 @@ pub fn read_csv(
                 .infer_schema(infer_schema_length)
                 .has_header(options.has_header)
                 .with_n_rows(n_rows)
-                .with_delimiter(options.sep.as_bytes()[0])
+                .with_separator(options.sep.as_bytes()[0])
                 .with_skip_rows(skip_rows)
                 .with_ignore_errors(options.ignore_errors)
                 .with_rechunk(options.rechunk)
@@ -589,7 +589,7 @@ impl JsDataFrame {
 
     #[napi(catch_unwind)]
     pub fn get_columns(&self) -> Vec<JsSeries> {
-        let cols = self.df.get_columns().clone();
+        let cols = self.df.get_columns();
         to_jsseries_collection(cols.to_vec())
     }
 
@@ -855,7 +855,7 @@ impl JsDataFrame {
         select: Option<Vec<String>>,
         agg: String,
     ) -> napi::Result<JsDataFrame> {
-        let gb = self.df.groupby(&by).map_err(JsPolarsErr::from)?;
+        let gb = self.df.group_by(&by).map_err(JsPolarsErr::from)?;
         let selection = match select.as_ref() {
             Some(s) => gb.select(s),
             None => gb,
@@ -1083,7 +1083,7 @@ impl JsDataFrame {
     #[napi(catch_unwind)]
     pub fn sample_n(
         &self,
-        n: i64,
+        n: &JsSeries,
         with_replacement: bool,
         shuffle: bool,
         seed: Option<i64>,
@@ -1091,7 +1091,7 @@ impl JsDataFrame {
         let df = self
             .df
             .sample_n(
-                n as usize,
+                &n.series,
                 with_replacement,
                 shuffle,
                 seed.map(|s| s as u64),
@@ -1103,14 +1103,14 @@ impl JsDataFrame {
     #[napi(catch_unwind)]
     pub fn sample_frac(
         &self,
-        frac: f64,
+        frac: &JsSeries,
         with_replacement: bool,
         shuffle: bool,
         seed: Option<i64>,
     ) -> napi::Result<JsDataFrame> {
         let df = self
             .df
-            .sample_frac(frac, with_replacement, shuffle, seed.map(|s| s as u64))
+            .sample_frac(&frac.series, with_replacement, shuffle, seed.map(|s| s as u64))
             .map_err(JsPolarsErr::from)?;
         Ok(df.into())
     }
@@ -1333,8 +1333,8 @@ impl JsDataFrame {
                 let f = BufWriter::new(f);
                 CsvWriter::new(f)
                     .has_header(has_header)
-                    .with_delimiter(sep)
-                    .with_quoting_char(quote)
+                    .with_separator(sep)
+                    .with_quote_char(quote)
                     .finish(&mut self.df)
                     .map_err(JsPolarsErr::from)?;
             }
@@ -1344,8 +1344,8 @@ impl JsDataFrame {
 
                 CsvWriter::new(writeable)
                     .has_header(has_header)
-                    .with_delimiter(sep)
-                    .with_quoting_char(quote)
+                    .with_separator(sep)
+                    .with_quote_char(quote)
                     .finish(&mut self.df)
                     .map_err(JsPolarsErr::from)?;
             }

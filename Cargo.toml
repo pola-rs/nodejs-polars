@@ -17,21 +17,23 @@ ahash = "0.8.3"
 bincode = "1.3.3"
 napi = {version = "2.13.3", default-features = false, features = ["napi8", "serde-json", "experimental"]}
 napi-derive = {version = "2.13.0", default-features = false}
-polars-core = {git = "https://github.com/pola-rs/polars.git", rev = "ec0c91f93fcd1ac355c667d6c3c3f30b257ea0a6", default-features = false}
-polars-io = {git = "https://github.com/pola-rs/polars.git", rev = "ec0c91f93fcd1ac355c667d6c3c3f30b257ea0a6", default-features = false}
-polars-lazy = {git = "https://github.com/pola-rs/polars.git", rev = "ec0c91f93fcd1ac355c667d6c3c3f30b257ea0a6", default-features = false}
-polars-ops = {git = "https://github.com/pola-rs/polars.git", rev = "ec0c91f93fcd1ac355c667d6c3c3f30b257ea0a6", default-features = false}
-thiserror = "1.0.47"
+polars-core = {git = "https://github.com/pola-rs/polars.git", version = "0.34.2", default-features = false}
+polars-io = {git = "https://github.com/pola-rs/polars.git", version = "0.34.2", default-features = false}
+polars-lazy = {git = "https://github.com/pola-rs/polars.git", version = "0.34.2", default-features = false}
+polars-ops = {git = "https://github.com/pola-rs/polars.git", version = "0.34.2", default-features = false}
+thiserror = "1"
 smartstring = { version = "1" }
 serde_json = {version = "1"}
 either = "1.9"
+rayon = "1.8"
+hashbrown = { version = "0.14", features = ["rayon", "ahash"] }
 
 [dependencies.polars]
 features = [
   "binary_encoding",
   "rolling_window",
   "json",
-  "dynamic_groupby",
+  "dynamic_group_by",
   "zip_with",
   "simd",
   "lazy",
@@ -46,7 +48,7 @@ features = [
   "round_series",
   "is_unique",
   "is_in",
-  "is_first",
+  "is_first_distinct",
   "asof_join",
   "cross_join",
   "dot_product",
@@ -69,7 +71,6 @@ features = [
   "moment",
   "true_div",
   "dtype-categorical",
-  "string_justify",
   "diagonal_concat",
   "horizontal_concat",
   "abs",
@@ -92,9 +93,10 @@ features = [
   "list_eval",
   "arg_where",
   "timezones",
+  "string_pad",
 ]
 git = "https://github.com/pola-rs/polars.git"
-rev = "ec0c91f93fcd1ac355c667d6c3c3f30b257ea0a6"
+version = "0.34.2"
 
 [build-dependencies]
 napi-build = "2.0.1"

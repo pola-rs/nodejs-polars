@@ -4,8 +4,8 @@ use crate::prelude::*;
 use napi::{Env, Task};
 use polars::io::RowCount;
 use polars::lazy::frame::{LazyCsvReader, LazyFrame, LazyGroupBy};
-use polars::prelude::{ClosedWindow, CsvEncoding, DataFrame, Field, JoinType, Schema};
-use polars_core::cloud::CloudOptions;
+use polars::prelude::{ClosedWindow, CsvEncoding, DataFrame, Field, JoinType, Schema, col, lit};
+use polars_io::cloud::CloudOptions;
 use polars_io::parquet::ParallelStrategy;
 use std::collections::HashMap;
 
@@ -210,9 +210,9 @@ impl JsLazyFrame {
         let ldf = self.ldf.clone();
         let by = by.to_exprs();
         let lazy_gb = if maintain_order {
-            ldf.groupby_stable(by)
+            ldf.group_by_stable(by)
         } else {
-            ldf.groupby(by)
+            ldf.group_by(by)
         };
 
         JsLazyGroupBy { lgb: Some(lazy_gb) }
@@ -230,7 +230,7 @@ impl JsLazyFrame {
         let closed_window = closed.0;
         let ldf = self.ldf.clone();
         let by = by.to_exprs();
-        let lazy_gb = ldf.groupby_rolling(
+        let lazy_gb = ldf.group_by_rolling(
             index_column.inner.clone(),
             by,
             RollingGroupOptions {
@@ -253,7 +253,6 @@ impl JsLazyFrame {
         every: String,
         period: String,
         offset: String,
-        truncate: bool,
         include_boundaries: bool,
         closed: Wrap<ClosedWindow>,
         by: Vec<&JsExpr>,
@@ -263,14 +262,14 @@ impl JsLazyFrame {
         let closed_window = closed.0;
         let by = by.to_exprs();
         let ldf = self.ldf.clone();
-        let lazy_gb = ldf.groupby_dynamic(
+        let lazy_gb = ldf.group_by_dynamic(
             index_column.inner.clone(),
             by,
             DynamicGroupOptions {
                 every: Duration::parse(&every),
                 period: Duration::parse(&period),
                 offset: Duration::parse(&offset),
-                truncate,
+                label: Label::DataPoint,
                 include_boundaries,
                 closed_window,
                 start_by: start_by.0,
@@ -377,9 +376,9 @@ impl JsLazyFrame {
         ldf.shift(periods).into()
     }
     #[napi(catch_unwind)]
-    pub fn shift_and_fill(&self, periods: i64, fill_value: &JsExpr) -> JsLazyFrame {
+    pub fn shift_and_fill(&self, periods: i64, fill_value: i64) -> JsLazyFrame {
         let ldf = self.ldf.clone();
-        ldf.shift_and_fill(periods, fill_value.inner.clone()).into()
+        ldf.shift_and_fill(periods, fill_value).into()
     }
 
     #[napi(catch_unwind)]
@@ -510,9 +509,9 @@ impl JsLazyFrame {
     }
 
     #[napi(catch_unwind)]
-    pub fn drop_columns(&self, cols: Vec<String>) -> JsLazyFrame {
+    pub fn drop_columns(&self, colss: Vec<String>) -> JsLazyFrame {
         let ldf = self.ldf.clone();
-        ldf.drop_columns(cols).into()
+        ldf.drop_columns(colss).into()
     }
     #[napi(js_name = "clone", catch_unwind)]
     pub fn clone(&self) -> JsLazyFrame {
@@ -531,8 +530,8 @@ impl JsLazyFrame {
     }
 
     #[napi(catch_unwind)]
-    pub fn unnest(&self, cols: Vec<String>) -> JsLazyFrame {
-        self.ldf.clone().unnest(cols).into()
+    pub fn unnest(&self, colss: Vec<String>) -> JsLazyFrame {
+        self.ldf.clone().unnest(colss).into()
     }
 }
 
@@ -597,7 +596,7 @@ pub fn scan_csv(path: String, options: ScanCsvOptions) -> napi::Result<JsLazyFra
     };
     let r = LazyCsvReader::new(path)
         .with_infer_schema_length(Some(infer_schema_length))
-        .with_delimiter(options.sep.as_bytes()[0])
+        .with_separator(options.sep.as_bytes()[0])
         .has_header(has_header)
         .with_ignore_errors(parse_dates)
         .with_skip_rows(skip_rows)
@@ -628,6 +627,7 @@ pub struct ScanParquetOptions {
     pub row_count_offset: Option<u32>,
     pub low_memory: Option<bool>,
     pub use_statistics: Option<bool>,
+    pub hive_partitioning: Option<bool>,
 }
 
 #[napi(catch_unwind)]
@@ -640,6 +640,7 @@ pub fn scan_parquet(path: String, options: ScanParquetOptions) -> napi::Result<J
     let low_memory = options.low_memory.unwrap_or(false);
     let use_statistics = options.use_statistics.unwrap_or(false);
     let cloud_options = Some(CloudOptions::default());
+    let hive_partitioning: bool = options.hive_partitioning.unwrap_or(false);
     let args = ScanArgsParquet {
         n_rows,
         cache,
@@ -649,6 +650,7 @@ pub fn scan_parquet(path: String, options: ScanParquetOptions) -> napi::Result<J
         low_memory,
         cloud_options,
         use_statistics,
+        hive_partitioning,
     };
     let lf = LazyFrame::scan_parquet(path, args).map_err(JsPolarsErr::from)?;
     Ok(lf.into())

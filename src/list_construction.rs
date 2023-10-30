@@ -2,6 +2,7 @@ use crate::prelude::*;
 
 use napi::{Either, JsTypedArrayValue};
 use polars::chunked_array::ChunkedArray;
+use napi::bindgen_prelude::Null;
 
 macro_rules! typed_to_chunked {
     ($arr:expr, $type:ty, $pl_type:ty) => {{

@@ -475,6 +475,7 @@ interface ScanParquetOptions {
   rowCount?: RowCount;
   cache?: boolean;
   rechunk?: boolean;
+  hive_partitioning?: boolean;
 }
 
 /**

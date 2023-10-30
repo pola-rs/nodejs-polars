@@ -51,7 +51,6 @@ impl JsExpr {
     pub fn to_js(&self, env: Env) -> napi::Result<napi::JsUnknown> {
         env.to_js_value(&self.inner)
     }
-
     #[napi(catch_unwind)]
     pub fn serialize(&self, format: String) -> napi::Result<Buffer> {
         let buf = match format.as_ref() {
@@ -362,15 +361,15 @@ impl JsExpr {
     }
 
     #[napi(catch_unwind)]
-    pub fn shift(&self, periods: i64) -> JsExpr {
-        self.clone().inner.shift(periods).into()
+    pub fn shift(&self, periods: Wrap<Expr>) -> JsExpr {
+        self.clone().inner.shift(periods.0).into()
     }
 
     #[napi(catch_unwind)]
-    pub fn shift_and_fill(&self, periods: i64, fill_value: &JsExpr) -> JsExpr {
+    pub fn shift_and_fill(&self, periods: i64, fill_value: i64) -> JsExpr {
         self.clone()
             .inner
-            .shift_and_fill(periods, fill_value.inner.clone())
+            .shift_and_fill(periods, fill_value)
             .into()
     }
 
@@ -438,8 +437,8 @@ impl JsExpr {
     }
 
     #[napi(catch_unwind)]
-    pub fn is_first(&self) -> JsExpr {
-        self.clone().inner.is_first().into()
+    pub fn is_first_distinct(&self) -> JsExpr {
+        self.clone().inner.is_first_distinct().into()
     }
 
     #[napi(catch_unwind)]
@@ -490,7 +489,7 @@ impl JsExpr {
         self.clone().inner.ceil().into()
     }
     #[napi(catch_unwind)]
-    pub fn clip(&self, min: Wrap<AnyValue>, max: Wrap<AnyValue>) -> JsExpr {
+    pub fn clip(&self, min: Wrap<Expr>, max: Wrap<Expr>) -> JsExpr {
         self.clone().inner.clip(min.0, max.0).into()
     }
 
@@ -565,14 +564,12 @@ impl JsExpr {
         strict: bool,
         exact: bool,
         cache: bool,
-        use_earliest: Option<bool>,
     ) -> JsExpr {
         let options = StrptimeOptions {
             format,
             strict,
             exact,
             cache,
-            use_earliest: use_earliest,
         };
         self.inner.clone().str().to_date(options).into()
     }
@@ -587,19 +584,18 @@ impl JsExpr {
         strict: bool,
         exact: bool,
         cache: bool,
-        use_earliest: Option<bool>,
+        ambiguous: Wrap<Expr>,
     ) -> JsExpr {
         let options = StrptimeOptions {
             format,
             strict,
             exact,
             cache,
-            use_earliest: use_earliest,
         };
         self.inner
             .clone()
             .str()
-            .to_datetime(time_unit.map(|tu| tu.0), time_zone, options)
+            .to_datetime(time_unit.map(|tu| tu.0), time_zone, options, ambiguous.0)
             .into()
     }
 
@@ -607,7 +603,7 @@ impl JsExpr {
     pub fn str_strip(&self) -> JsExpr {
         let function = |s: Series| {
             let ca = s.utf8()?;
-            Ok(Some(ca.apply(|s| Cow::Borrowed(s.trim())).into_series()))
+            Ok(Some(ca.apply(|s| Some(Cow::Borrowed(s?.trim()))).into_series()))
         };
         self.clone()
             .inner
@@ -621,7 +617,7 @@ impl JsExpr {
         let function = |s: Series| {
             let ca = s.utf8()?;
             Ok(Some(
-                ca.apply(|s| Cow::Borrowed(s.trim_end())).into_series(),
+                ca.apply(|s| Some(Cow::Borrowed(s?.trim_end()))).into_series(),
             ))
         };
         self.clone()
@@ -636,7 +632,7 @@ impl JsExpr {
         let function = |s: Series| {
             let ca = s.utf8()?;
             Ok(Some(
-                ca.apply(|s| Cow::Borrowed(s.trim_start())).into_series(),
+                ca.apply(|s| Some(Cow::Borrowed(s?.trim_start()))).into_series(),
             ))
         };
         self.clone()
@@ -651,7 +647,7 @@ impl JsExpr {
         let function = move |s: Series| {
             let ca = s.utf8()?;
             Ok(Some(
-                ca.rjust(length as usize, fill_char.chars().nth(0).unwrap())
+                ca.pad_start(length as usize, fill_char.chars().nth(0).unwrap())
                     .into_series(),
             ))
         };
@@ -663,12 +659,13 @@ impl JsExpr {
             .into()
     }
 
+    
     #[napi(catch_unwind)]
     pub fn str_pad_end(&self, length: i64, fill_char: String) -> JsExpr {
         let function = move |s: Series| {
             let ca = s.utf8()?;
             Ok(Some(
-                ca.ljust(length as usize, fill_char.chars().nth(0).unwrap())
+                ca.pad_end(length as usize, fill_char.chars().nth(0).unwrap())
                     .into_series(),
             ))
         };
@@ -679,6 +676,7 @@ impl JsExpr {
             .with_fmt("str.pad_end")
             .into()
     }
+    
     #[napi(catch_unwind)]
     pub fn str_z_fill(&self, width: i64) -> JsExpr {
         let function = move |s: Series| {
@@ -709,7 +707,7 @@ impl JsExpr {
         let function = move |s: Series| {
             let length = length.map(|l| l as u64);
             let ca = s.utf8()?;
-            Ok(Some(ca.str_slice(start, length)?.into_series()))
+            Ok(Some(ca.str_slice(start, length).into_series()))
         };
         self.clone()
             .inner
@@ -735,7 +733,7 @@ impl JsExpr {
     pub fn str_lengths(&self) -> JsExpr {
         let function = |s: Series| {
             let ca = s.utf8()?;
-            Ok(Some(ca.str_lengths().into_series()))
+            Ok(Some(ca.str_len_chars().into_series()))
         };
         self.clone()
             .inner
@@ -882,23 +880,23 @@ impl JsExpr {
         self.inner.clone().dt().strftime(&fmt).into()
     }
     #[napi(catch_unwind)]
-    pub fn str_split(&self, by: String) -> JsExpr {
-        self.inner.clone().str().split(&by).into()
+    pub fn str_split(&self, by: Wrap<Expr>) -> JsExpr {
+        self.inner.clone().str().split(by.0).into()
     }
     #[napi(catch_unwind)]
-    pub fn str_split_inclusive(&self, by: String) -> JsExpr {
-        self.inner.clone().str().split_inclusive(&by).into()
+    pub fn str_split_inclusive(&self, by: Wrap<Expr>) -> JsExpr {
+        self.inner.clone().str().split_inclusive(by.0).into()
     }
     #[napi(catch_unwind)]
-    pub fn str_split_exact(&self, by: String, n: i64) -> JsExpr {
-        self.inner.clone().str().split_exact(&by, n as usize).into()
+    pub fn str_split_exact(&self, by: Wrap<Expr>, n: i64) -> JsExpr {
+        self.inner.clone().str().split_exact(by.0, n as usize).into()
     }
     #[napi(catch_unwind)]
-    pub fn str_split_exact_inclusive(&self, by: String, n: i64) -> JsExpr {
+    pub fn str_split_exact_inclusive(&self, by: Wrap<Expr>, n: i64) -> JsExpr {
         self.inner
             .clone()
             .str()
-            .split_exact_inclusive(&by, n as usize)
+            .split_exact_inclusive(by.0, n as usize)
             .into()
     }
 
@@ -1048,15 +1046,15 @@ impl JsExpr {
     }
     #[napi(catch_unwind)]
     pub fn keep_name(&self) -> JsExpr {
-        self.inner.clone().keep_name().into()
+        self.inner.clone().name().keep().into()
     }
     #[napi(catch_unwind)]
     pub fn prefix(&self, prefix: String) -> JsExpr {
-        self.inner.clone().prefix(&prefix).into()
+        self.inner.clone().name().prefix(&prefix).into()
     }
     #[napi(catch_unwind)]
     pub fn suffix(&self, suffix: String) -> JsExpr {
-        self.inner.clone().suffix(&suffix).into()
+        self.inner.clone().name().suffix(&suffix).into()
     }
 
     #[napi(catch_unwind)]
@@ -1133,7 +1131,7 @@ impl JsExpr {
     pub fn rolling_skew(&self, window_size: i64, bias: bool) -> JsExpr {
         self.inner
             .clone()
-            .rolling_apply_float(window_size as usize, move |ca| {
+            .rolling_map_float(window_size as usize, move |ca| {
                 ca.clone().into_series().skew(bias).unwrap()
             })
             .into()
@@ -1191,15 +1189,15 @@ impl JsExpr {
     }
     #[napi(catch_unwind)]
     pub fn list_lengths(&self) -> JsExpr {
-        self.inner.clone().list().lengths().into()
+        self.inner.clone().list().len().into()
     }
     #[napi(catch_unwind)]
     pub fn list_get(&self, index: &JsExpr) -> JsExpr {
         self.inner.clone().list().get(index.inner.clone()).into()
     }
     #[napi(catch_unwind)]
-    pub fn list_join(&self, separator: String) -> JsExpr {
-        self.inner.clone().list().join(&separator).into()
+    pub fn list_join(&self, separator: Wrap<Expr>) -> JsExpr {
+        self.inner.clone().list().join(separator.0).into()
     }
     #[napi(catch_unwind)]
     pub fn list_arg_min(&self) -> JsExpr {
@@ -1216,8 +1214,8 @@ impl JsExpr {
     }
 
     #[napi(catch_unwind)]
-    pub fn list_shift(&self, periods: i64) -> JsExpr {
-        self.inner.clone().list().shift(periods).into()
+    pub fn list_shift(&self, periods: Wrap<Expr>) -> JsExpr {
+        self.inner.clone().list().shift(periods.0).into()
     }
     #[napi(catch_unwind)]
     pub fn list_slice(&self, offset: &JsExpr, length: Option<&JsExpr>) -> JsExpr {
@@ -1255,8 +1253,8 @@ impl JsExpr {
         self.inner.clone().diff(n, null_behavior.0).into()
     }
     #[napi(catch_unwind)]
-    pub fn pct_change(&self, n: i64) -> JsExpr {
-        self.inner.clone().pct_change(n).into()
+    pub fn pct_change(&self, n: Wrap<Expr>) -> JsExpr {
+        self.inner.clone().pct_change(n.0).into()
     }
 
     #[napi(catch_unwind)]
@@ -1302,23 +1300,22 @@ impl JsExpr {
     }
 
     #[napi(catch_unwind)]
-    pub fn shuffle(&self, seed: Wrap<u64>, fixed_seed: bool) -> JsExpr {
-        self.inner.clone().shuffle(Some(seed.0), fixed_seed).into()
+    pub fn shuffle(&self, seed: Wrap<u64>) -> JsExpr {
+        self.inner.clone().shuffle(Some(seed.0)).into()
     }
 
     #[napi(catch_unwind)]
     pub fn sample_frac(
         &self,
-        frac: f64,
+        frac: Wrap<Expr>,
         with_replacement: bool,
         shuffle: bool,
         seed: Option<i64>,
-        fixed_seed: bool,
     ) -> JsExpr {
         let seed = seed.map(|s| s as u64);
         self.inner
             .clone()
-            .sample_frac(frac, with_replacement, shuffle, seed, fixed_seed)
+            .sample_frac(frac.0, with_replacement, shuffle, seed)
             .into()
     }
     #[napi(catch_unwind)]
@@ -1541,13 +1538,13 @@ pub fn cols(names: Vec<String>) -> JsExpr {
     dsl::cols(names).into()
 }
 
-#[napi(catch_unwind)]
-pub fn dtype_cols(dtypes: Vec<Wrap<DataType>>) -> crate::lazy::dsl::JsExpr {
-    // Safety
-    // Wrap is transparent
-    let dtypes: Vec<DataType> = unsafe { std::mem::transmute(dtypes) };
-    dsl::dtype_cols(dtypes).into()
-}
+// #[napi(catch_unwind)]
+// pub fn dtype_cols(dtypes: Vec<Wrap<DataType>>) -> crate::lazy::dsl::JsExpr {
+//     // Safety
+//     // Wrap is transparent
+//     let dtypes: Vec<DataType> = unsafe { std::mem::transmute(dtypes) };
+//     dsl::dtype_cols(dtypes).into()
+// }
 
 #[napi(catch_unwind)]
 pub fn int_range(
@@ -1621,12 +1618,8 @@ pub fn lit(value: Wrap<AnyValue>) -> JsResult<JsExpr> {
 }
 
 #[napi(catch_unwind)]
-pub fn range(low: i64, high: i64, dtype: Wrap<DataType>) -> JsExpr {
-    match dtype.0 {
-        DataType::Int32 => dsl::range(low as i32, high as i32).into(),
-        DataType::UInt32 => dsl::range(low as u32, high as u32).into(),
-        _ => dsl::range(low, high).into(),
-    }
+pub fn range(low: Wrap<Expr>, high: Wrap<Expr>, dtype: Wrap<DataType>) -> JsExpr {
+    int_range(low, high, 1, Some(dtype)).into()
 }
 
 #[napi(catch_unwind)]
@@ -1645,7 +1638,7 @@ pub fn concat_str(s: Vec<&JsExpr>, sep: String) -> JsExpr {
 #[napi(catch_unwind)]
 pub fn as_struct(exprs: Vec<&JsExpr>) -> JsExpr {
     let exprs = exprs.to_exprs();
-    polars::lazy::dsl::as_struct(&exprs).into()
+    polars::lazy::dsl::as_struct(exprs).into()
 }
 
 #[napi(catch_unwind)]
