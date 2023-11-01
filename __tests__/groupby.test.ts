@@ -194,9 +194,9 @@ describe("groupby ops", () => {
       })
       .agg(pl.col("adm1_code").unique(), pl.col("fatalities").gt(0).sum());
     const expected = [
-      new Date("2021-04-05"),
-      new Date("2021-05-05"),
-      new Date("2021-04-26"),
+      new Date("2021-04-11"),
+      new Date("2021-05-29"),
+      new Date("2021-04-29"),
     ];
     const actual = out.getColumn("event_date");
     expect(actual.toArray()).toEqual(expected);
@@ -223,9 +223,9 @@ describe("groupby ops", () => {
       })
       .agg(pl.col("adm1_code").unique(), pl.col("fatalities").gt(0).sum());
     const expected = [
-      new Date("2021-04-05"),
-      new Date("2021-05-05"),
-      new Date("2021-04-26"),
+      new Date("2021-04-11"),
+      new Date("2021-05-29"),
+      new Date("2021-04-29"),
     ];
     const actual = out.getColumn("event_date").toArray();
     expect(actual).toEqual(expected);
@@ -254,9 +254,9 @@ describe("groupby ops", () => {
       .agg(pl.col("idx"));
     const expected = pl.DataFrame({
       dt: [
-        new Date("2022-12-26"),
-        new Date("2023-01-26"),
-        new Date("2023-02-26"),
+        new Date("2023-01-01"),
+        new Date("2023-02-01"),
+        new Date("2023-03-01"),
       ],
       idx: [[0, 1], [2], [3]],
     });

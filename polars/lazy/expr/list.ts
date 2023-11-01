@@ -1,4 +1,4 @@
-import { Expr, _Expr } from "../expr";
+import { Expr, _Expr, exprToLitOrExpr } from "../expr";
 import { ListFunctions } from "../../shared_traits";
 import { Series } from "../../series";
 import pli from "../../internals/polars_internal";
@@ -71,7 +71,7 @@ export const ExprListFunctions = (_expr: any): ExprList => {
       return this.get(0);
     },
     join(separator = ",") {
-      return wrap("listJoin", separator);
+      return wrap("listJoin", exprToLitOrExpr(separator)._expr);
     },
     last() {
       return this.get(-1);

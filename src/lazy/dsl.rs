@@ -361,8 +361,8 @@ impl JsExpr {
     }
 
     #[napi(catch_unwind)]
-    pub fn shift(&self, periods: Wrap<Expr>) -> JsExpr {
-        self.clone().inner.shift(periods.0).into()
+    pub fn shift(&self, periods: &JsExpr) -> JsExpr {
+        self.clone().inner.shift(periods.inner.clone()).into()
     }
 
     #[napi(catch_unwind)]
@@ -489,10 +489,9 @@ impl JsExpr {
         self.clone().inner.ceil().into()
     }
     #[napi(catch_unwind)]
-    pub fn clip(&self, min: Wrap<Expr>, max: Wrap<Expr>) -> JsExpr {
-        self.clone().inner.clip(min.0, max.0).into()
+    pub fn clip(&self, min: &JsExpr, max: &JsExpr) -> JsExpr {
+        self.clone().inner.clip(min.inner.clone(), max.inner.clone()).into()
     }
-
     #[napi(catch_unwind)]
     pub fn abs(&self) -> JsExpr {
         self.clone().inner.abs().into()
@@ -883,8 +882,8 @@ impl JsExpr {
         self.inner.clone().dt().strftime(&fmt).into()
     }
     #[napi(catch_unwind)]
-    pub fn str_split(&self, by: Wrap<Expr>) -> JsExpr {
-        self.inner.clone().str().split(by.0).into()
+    pub fn str_split(&self, by: &JsExpr) -> JsExpr {
+        self.inner.clone().str().split(by.inner.clone()).into()
     }
     #[napi(catch_unwind)]
     pub fn str_split_inclusive(&self, by: Wrap<Expr>) -> JsExpr {
@@ -1207,8 +1206,8 @@ impl JsExpr {
         self.inner.clone().list().get(index.inner.clone()).into()
     }
     #[napi(catch_unwind)]
-    pub fn list_join(&self, separator: Wrap<Expr>) -> JsExpr {
-        self.inner.clone().list().join(separator.0).into()
+    pub fn list_join(&self, separator: &JsExpr) -> JsExpr {
+        self.inner.clone().list().join(separator.inner.clone()).into()
     }
     #[napi(catch_unwind)]
     pub fn list_arg_min(&self) -> JsExpr {

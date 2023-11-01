@@ -687,9 +687,16 @@ export const _Expr = (_expr: any): Expr => {
     },
     clip(arg, max?) {
       if (typeof arg === "number") {
-        return _Expr(_expr.clip(arg, max));
+        return _Expr(
+          _expr.clip(exprToLitOrExpr(arg)._expr, exprToLitOrExpr(max)._expr),
+        );
       } else {
-        return _Expr(_expr.clip(arg.min, arg.max));
+        return _Expr(
+          _expr.clip(
+            exprToLitOrExpr(arg.min)._expr,
+            exprToLitOrExpr(arg.max)._expr,
+          ),
+        );
       }
     },
     count() {
@@ -1117,13 +1124,17 @@ export const _Expr = (_expr: any): Expr => {
       }
     },
     shift(periods) {
-      return _Expr(_expr.shift(periods));
+      return _Expr(_expr.shift(exprToLitOrExpr(periods).inner()));
     },
     shiftAndFill(optOrPeriods, fillValue?) {
       if (typeof optOrPeriods === "number") {
         return wrap("shiftAndFill", optOrPeriods, fillValue);
       } else {
-        return wrap("shiftAndFill", optOrPeriods.periods, optOrPeriods.fillValue);
+        return wrap(
+          "shiftAndFill",
+          optOrPeriods.periods,
+          optOrPeriods.fillValue,
+        );
       }
     },
     skew(bias) {

@@ -248,173 +248,173 @@ describe("series", () => {
     }
   });
   it.each`
-    series          | method            | args
-    ${numSeries()}  | ${"abs"}          | ${[]}
-    ${numSeries()}  | ${"as"}           | ${[chance.string()]}
-    ${numSeries()}  | ${"alias"}        | ${[chance.string()]}
-    ${numSeries()}  | ${"append"}       | ${[other()]}
-    ${numSeries()}  | ${"argMax"}       | ${[]}
-    ${numSeries()}  | ${"argMin"}       | ${[]}
-    ${numSeries()}  | ${"argSort"}      | ${[]}
-    ${boolSeries()} | ${"argTrue"}      | ${[]}
-    ${numSeries()}  | ${"argUnique"}    | ${[]}
-    ${numSeries()}  | ${"cast"}         | ${[pl.UInt32]}
-    ${numSeries()}  | ${"chunkLengths"} | ${[]}
-    ${numSeries()}  | ${"clone"}        | ${[]}
-    ${numSeries()}  | ${"cumMax"}       | ${[]}
-    ${numSeries()}  | ${"cumMin"}       | ${[]}
-    ${numSeries()}  | ${"cumProd"}      | ${[]}
-    ${numSeries()}  | ${"cumSum"}       | ${[]}
-    ${numSeries()}  | ${"describe"}     | ${[]}
-    ${numSeries()}  | ${"diff"}         | ${[]}
-    ${numSeries()}  | ${"diff"}         | ${[{ n: 1, nullBehavior: "drop" }]}
-    ${numSeries()}  | ${"diff"}         | ${[{ nullBehavior: "drop" }]}
-    ${numSeries()}  | ${"diff"}         | ${[1, "drop"]}
-    ${numSeries()}  | ${"dot"}          | ${[other()]}
-    ${numSeries()}  | ${"dropNulls"}    | ${[]}
-    ${numSeries()}  | ${"fillNull"}     | ${["zero"]}
-    ${numSeries()}  | ${"fillNull"}     | ${[{ strategy: "zero" }]}
-    ${numSeries()}  | ${"filter"}       | ${[boolSeries()]}
-    ${fltSeries()}  | ${"floor"}        | ${[]}
-    ${numSeries()}  | ${"hasValidity"}  | ${[]}
-    ${numSeries()}  | ${"hash"}         | ${[]}
-    ${numSeries()}  | ${"hash"}         | ${[{ k0: 10 }]}
-    ${numSeries()}  | ${"hash"}         | ${[{ k0: 10, k1: 29 }]}
-    ${numSeries()}  | ${"hash"}         | ${[{ k0: 10, k1: 29, k2: 3 }]}
-    ${numSeries()}  | ${"hash"}         | ${[{ k0: 10, k1: 29, k3: 1, k2: 3 }]}
-    ${numSeries()}  | ${"hash"}         | ${[1]}
-    ${numSeries()}  | ${"hash"}         | ${[1, 2]}
-    ${numSeries()}  | ${"hash"}         | ${[1, 2, 3]}
-    ${numSeries()}  | ${"hash"}         | ${[1, 2, 3, 4]}
-    ${numSeries()}  | ${"head"}         | ${[]}
-    ${numSeries()}  | ${"head"}         | ${[1]}
-    ${numSeries()}  | ${"inner"}        | ${[]}
-    ${numSeries()}  | ${"interpolate"}  | ${[]}
-    ${numSeries()}  | ${"isBoolean"}    | ${[]}
-    ${numSeries()}  | ${"isDateTime"}   | ${[]}
-    ${numSeries()}  | ${"isDuplicated"} | ${[]}
-    ${fltSeries()}  | ${"isFinite"}     | ${[]}
-    ${numSeries()}  | ${"isFirstDistinct"}      | ${[]}
-    ${numSeries()}  | ${"isFloat"}      | ${[]}
-    ${numSeries()}  | ${"isIn"}         | ${[other()]}
-    ${numSeries()}  | ${"isIn"}         | ${[[1, 2, 3]]}
-    ${fltSeries()}  | ${"isInfinite"}   | ${[]}
-    ${numSeries()}  | ${"isNotNull"}    | ${[]}
-    ${numSeries()}  | ${"isNull"}       | ${[]}
-    ${numSeries()}  | ${"isNaN"}        | ${[]}
-    ${numSeries()}  | ${"isNotNaN"}     | ${[]}
-    ${numSeries()}  | ${"isNumeric"}    | ${[]}
-    ${numSeries()}  | ${"isUnique"}     | ${[]}
-    ${numSeries()}  | ${"isUtf8"}       | ${[]}
-    ${numSeries()}  | ${"kurtosis"}     | ${[]}
-    ${numSeries()}  | ${"kurtosis"}     | ${[{ fisher: true, bias: true }]}
-    ${numSeries()}  | ${"kurtosis"}     | ${[{ bias: false }]}
-    ${numSeries()}  | ${"kurtosis"}     | ${[{ fisher: false }]}
-    ${numSeries()}  | ${"kurtosis"}     | ${[false, false]}
-    ${numSeries()}  | ${"kurtosis"}     | ${[false]}
-    ${numSeries()}  | ${"len"}          | ${[]}
-    ${numSeries()}  | ${"limit"}        | ${[]}
-    ${numSeries()}  | ${"limit"}        | ${[2]}
-    ${numSeries()}  | ${"max"}          | ${[]}
-    ${numSeries()}  | ${"mean"}         | ${[]}
-    ${numSeries()}  | ${"median"}       | ${[]}
-    ${numSeries()}  | ${"min"}          | ${[]}
-    ${numSeries()}  | ${"mode"}         | ${[]}
-    ${numSeries()}  | ${"nChunks"}      | ${[]}
-    ${numSeries()}  | ${"nUnique"}      | ${[]}
-    ${numSeries()}  | ${"nullCount"}    | ${[]}
-    ${numSeries()}  | ${"peakMax"}      | ${[]}
-    ${numSeries()}  | ${"peakMin"}      | ${[]}
-    ${numSeries()}  | ${"quantile"}     | ${[0.4]}
-    ${numSeries()}  | ${"rank"}         | ${[]}
-    ${numSeries()}  | ${"rank"}         | ${["average"]}
-    ${numSeries()}  | ${"rechunk"}      | ${[]}
-    ${numSeries()}  | ${"rechunk"}      | ${[true]}
-    ${numSeries()}  | ${"rename"}       | ${["new name"]}
-    ${numSeries()}  | ${"rename"}       | ${["new name", true]}
-    ${numSeries()}  | ${"rename"}       | ${[{ name: "new name" }]}
-    ${numSeries()}  | ${"rename"}       | ${[{ name: "new name", inPlace: true }]}
-    ${numSeries()}  | ${"rename"}       | ${[{ name: "new name" }]}
-    ${numSeries()}  | ${"rollingMax"}   | ${[{ windowSize: 1 }]}
-    ${numSeries()}  | ${"rollingMax"}   | ${[{ windowSize: 1, weights: [0.33] }]}
-    ${numSeries()}  | ${"rollingMax"}   | ${[{ windowSize: 1, weights: [0.11], minPeriods: 1 }]}
-    ${numSeries()}  | ${"rollingMax"}   | ${[{ windowSize: 1, weights: [0.44], minPeriods: 1, center: false }]}
-    ${numSeries()}  | ${"rollingMax"}   | ${[1]}
-    ${numSeries()}  | ${"rollingMax"}   | ${[1, [0.11]]}
-    ${numSeries()}  | ${"rollingMax"}   | ${[1, [0.11], 1]}
-    ${numSeries()}  | ${"rollingMax"}   | ${[1, [0.23], 1, true]}
-    ${numSeries()}  | ${"rollingMean"}  | ${[{ windowSize: 1 }]}
-    ${numSeries()}  | ${"rollingMean"}  | ${[{ windowSize: 1, weights: [0.33] }]}
-    ${numSeries()}  | ${"rollingMean"}  | ${[{ windowSize: 1, weights: [0.11], minPeriods: 1 }]}
-    ${numSeries()}  | ${"rollingMean"}  | ${[{ windowSize: 1, weights: [0.44], minPeriods: 1, center: false }]}
-    ${numSeries()}  | ${"rollingMean"}  | ${[1]}
-    ${numSeries()}  | ${"rollingMean"}  | ${[1, [0.11]]}
-    ${numSeries()}  | ${"rollingMean"}  | ${[1, [0.11], 1]}
-    ${numSeries()}  | ${"rollingMean"}  | ${[1, [0.23], 1, true]}
-    ${numSeries()}  | ${"rollingMin"}   | ${[{ windowSize: 1 }]}
-    ${numSeries()}  | ${"rollingMin"}   | ${[{ windowSize: 1, weights: [0.33] }]}
-    ${numSeries()}  | ${"rollingMin"}   | ${[{ windowSize: 1, weights: [0.11], minPeriods: 1 }]}
-    ${numSeries()}  | ${"rollingMin"}   | ${[{ windowSize: 1, weights: [0.44], minPeriods: 1, center: false }]}
-    ${numSeries()}  | ${"rollingMin"}   | ${[1]}
-    ${numSeries()}  | ${"rollingMin"}   | ${[1, [0.11]]}
-    ${numSeries()}  | ${"rollingMin"}   | ${[1, [0.11], 1]}
-    ${numSeries()}  | ${"rollingMin"}   | ${[1, [0.23], 1, true]}
-    ${numSeries()}  | ${"rollingSum"}   | ${[{ windowSize: 1 }]}
-    ${numSeries()}  | ${"rollingSum"}   | ${[{ windowSize: 1, weights: [0.33] }]}
-    ${numSeries()}  | ${"rollingSum"}   | ${[{ windowSize: 1, weights: [0.11], minPeriods: 1 }]}
-    ${numSeries()}  | ${"rollingSum"}   | ${[{ windowSize: 1, weights: [0.44], minPeriods: 1, center: false }]}
-    ${numSeries()}  | ${"rollingSum"}   | ${[1]}
-    ${numSeries()}  | ${"rollingSum"}   | ${[1, [0.11]]}
-    ${numSeries()}  | ${"rollingSum"}   | ${[1, [0.11], 1]}
-    ${numSeries()}  | ${"rollingSum"}   | ${[1, [0.23], 1, true]}
-    ${numSeries()}  | ${"rollingVar"}   | ${[{ windowSize: 1 }]}
-    ${numSeries()}  | ${"rollingVar"}   | ${[{ windowSize: 1, weights: [0.33] }]}
-    ${numSeries()}  | ${"rollingVar"}   | ${[{ windowSize: 1, weights: [0.11], minPeriods: 1 }]}
-    ${numSeries()}  | ${"rollingVar"}   | ${[{ windowSize: 1, weights: [0.44], minPeriods: 1, center: false }]}
-    ${numSeries()}  | ${"rollingVar"}   | ${[1]}
-    ${numSeries()}  | ${"rollingVar"}   | ${[1, [0.11]]}
-    ${numSeries()}  | ${"rollingVar"}   | ${[1, [0.11], 1]}
-    ${numSeries()}  | ${"rollingVar"}   | ${[1, [0.23], 1, true]}
-    ${fltSeries()}  | ${"round"}        | ${[1]}
-    ${numSeries()}  | ${"sample"}       | ${[]}
-    ${numSeries()}  | ${"sample"}       | ${[1, null, true]}
-    ${numSeries()}  | ${"sample"}       | ${[null, 1]}
-    ${numSeries()}  | ${"sample"}       | ${[{ n: 1 }]}
-    ${numSeries()}  | ${"sample"}       | ${[{ frac: 0.5 }]}
-    ${numSeries()}  | ${"sample"}       | ${[{ n: 1, withReplacement: true }]}
-    ${numSeries()}  | ${"sample"}       | ${[{ frac: 0.1, withReplacement: true }]}
-    ${numSeries()}  | ${"sample"}       | ${[{ frac: 0.1, withReplacement: true, seed: 1n }]}
-    ${numSeries()}  | ${"sample"}       | ${[{ frac: 0.1, withReplacement: true, seed: 1 }]}
-    ${numSeries()}  | ${"sample"}       | ${[{ n: 1, withReplacement: true, seed: 1 }]}
-    ${numSeries()}  | ${"seriesEqual"}  | ${[other()]}
-    ${numSeries()}  | ${"seriesEqual"}  | ${[other(), true]}
-    ${numSeries()}  | ${"seriesEqual"}  | ${[other(), false]}
-    ${numSeries()}  | ${"set"}          | ${[boolSeries(), 2]}
-    ${fltSeries()}  | ${"setAtIdx"}     | ${[[0, 1], 1]}
-    ${numSeries()}  | ${"shift"}        | ${[]}
-    ${numSeries()}  | ${"shift"}        | ${[1]}
-    ${numSeries()}  | ${"shiftAndFill"} | ${[1, 2]}
-    ${numSeries()}  | ${"shiftAndFill"} | ${[{ periods: 1, fillValue: 2 }]}
-    ${numSeries()}  | ${"skew"}         | ${[]}
-    ${numSeries()}  | ${"skew"}         | ${[true]}
-    ${numSeries()}  | ${"skew"}         | ${[false]}
-    ${numSeries()}  | ${"skew"}         | ${[{ bias: true }]}
-    ${numSeries()}  | ${"skew"}         | ${[{ bias: false }]}
-    ${numSeries()}  | ${"slice"}        | ${[1, 2]}
-    ${numSeries()}  | ${"slice"}        | ${[{ offset: 1, length: 2 }]}
-    ${numSeries()}  | ${"sort"}         | ${[]}
-    ${numSeries()}  | ${"sort"}         | ${[false]}
-    ${numSeries()}  | ${"sort"}         | ${[true]}
-    ${numSeries()}  | ${"sort"}         | ${[{ reverse: true }]}
-    ${numSeries()}  | ${"sort"}         | ${[{ reverse: false }]}
-    ${numSeries()}  | ${"sum"}          | ${[]}
-    ${numSeries()}  | ${"tail"}         | ${[]}
-    ${numSeries()}  | ${"take"}         | ${[[1, 2]]}
-    ${numSeries()}  | ${"takeEvery"}    | ${[1]}
-    ${numSeries()}  | ${"toArray"}      | ${[]}
-    ${numSeries()}  | ${"unique"}       | ${[]}
-    ${numSeries()}  | ${"valueCounts"}  | ${[]}
-    ${numSeries()}  | ${"zipWith"}      | ${[boolSeries(), other()]}
+    series          | method               | args
+    ${numSeries()}  | ${"abs"}             | ${[]}
+    ${numSeries()}  | ${"as"}              | ${[chance.string()]}
+    ${numSeries()}  | ${"alias"}           | ${[chance.string()]}
+    ${numSeries()}  | ${"append"}          | ${[other()]}
+    ${numSeries()}  | ${"argMax"}          | ${[]}
+    ${numSeries()}  | ${"argMin"}          | ${[]}
+    ${numSeries()}  | ${"argSort"}         | ${[]}
+    ${boolSeries()} | ${"argTrue"}         | ${[]}
+    ${numSeries()}  | ${"argUnique"}       | ${[]}
+    ${numSeries()}  | ${"cast"}            | ${[pl.UInt32]}
+    ${numSeries()}  | ${"chunkLengths"}    | ${[]}
+    ${numSeries()}  | ${"clone"}           | ${[]}
+    ${numSeries()}  | ${"cumMax"}          | ${[]}
+    ${numSeries()}  | ${"cumMin"}          | ${[]}
+    ${numSeries()}  | ${"cumProd"}         | ${[]}
+    ${numSeries()}  | ${"cumSum"}          | ${[]}
+    ${numSeries()}  | ${"describe"}        | ${[]}
+    ${numSeries()}  | ${"diff"}            | ${[]}
+    ${numSeries()}  | ${"diff"}            | ${[{ n: 1, nullBehavior: "drop" }]}
+    ${numSeries()}  | ${"diff"}            | ${[{ nullBehavior: "drop" }]}
+    ${numSeries()}  | ${"diff"}            | ${[1, "drop"]}
+    ${numSeries()}  | ${"dot"}             | ${[other()]}
+    ${numSeries()}  | ${"dropNulls"}       | ${[]}
+    ${numSeries()}  | ${"fillNull"}        | ${["zero"]}
+    ${numSeries()}  | ${"fillNull"}        | ${[{ strategy: "zero" }]}
+    ${numSeries()}  | ${"filter"}          | ${[boolSeries()]}
+    ${fltSeries()}  | ${"floor"}           | ${[]}
+    ${numSeries()}  | ${"hasValidity"}     | ${[]}
+    ${numSeries()}  | ${"hash"}            | ${[]}
+    ${numSeries()}  | ${"hash"}            | ${[{ k0: 10 }]}
+    ${numSeries()}  | ${"hash"}            | ${[{ k0: 10, k1: 29 }]}
+    ${numSeries()}  | ${"hash"}            | ${[{ k0: 10, k1: 29, k2: 3 }]}
+    ${numSeries()}  | ${"hash"}            | ${[{ k0: 10, k1: 29, k3: 1, k2: 3 }]}
+    ${numSeries()}  | ${"hash"}            | ${[1]}
+    ${numSeries()}  | ${"hash"}            | ${[1, 2]}
+    ${numSeries()}  | ${"hash"}            | ${[1, 2, 3]}
+    ${numSeries()}  | ${"hash"}            | ${[1, 2, 3, 4]}
+    ${numSeries()}  | ${"head"}            | ${[]}
+    ${numSeries()}  | ${"head"}            | ${[1]}
+    ${numSeries()}  | ${"inner"}           | ${[]}
+    ${numSeries()}  | ${"interpolate"}     | ${[]}
+    ${numSeries()}  | ${"isBoolean"}       | ${[]}
+    ${numSeries()}  | ${"isDateTime"}      | ${[]}
+    ${numSeries()}  | ${"isDuplicated"}    | ${[]}
+    ${fltSeries()}  | ${"isFinite"}        | ${[]}
+    ${numSeries()}  | ${"isFirstDistinct"} | ${[]}
+    ${numSeries()}  | ${"isFloat"}         | ${[]}
+    ${numSeries()}  | ${"isIn"}            | ${[other()]}
+    ${numSeries()}  | ${"isIn"}            | ${[[1, 2, 3]]}
+    ${fltSeries()}  | ${"isInfinite"}      | ${[]}
+    ${numSeries()}  | ${"isNotNull"}       | ${[]}
+    ${numSeries()}  | ${"isNull"}          | ${[]}
+    ${numSeries()}  | ${"isNaN"}           | ${[]}
+    ${numSeries()}  | ${"isNotNaN"}        | ${[]}
+    ${numSeries()}  | ${"isNumeric"}       | ${[]}
+    ${numSeries()}  | ${"isUnique"}        | ${[]}
+    ${numSeries()}  | ${"isUtf8"}          | ${[]}
+    ${numSeries()}  | ${"kurtosis"}        | ${[]}
+    ${numSeries()}  | ${"kurtosis"}        | ${[{ fisher: true, bias: true }]}
+    ${numSeries()}  | ${"kurtosis"}        | ${[{ bias: false }]}
+    ${numSeries()}  | ${"kurtosis"}        | ${[{ fisher: false }]}
+    ${numSeries()}  | ${"kurtosis"}        | ${[false, false]}
+    ${numSeries()}  | ${"kurtosis"}        | ${[false]}
+    ${numSeries()}  | ${"len"}             | ${[]}
+    ${numSeries()}  | ${"limit"}           | ${[]}
+    ${numSeries()}  | ${"limit"}           | ${[2]}
+    ${numSeries()}  | ${"max"}             | ${[]}
+    ${numSeries()}  | ${"mean"}            | ${[]}
+    ${numSeries()}  | ${"median"}          | ${[]}
+    ${numSeries()}  | ${"min"}             | ${[]}
+    ${numSeries()}  | ${"mode"}            | ${[]}
+    ${numSeries()}  | ${"nChunks"}         | ${[]}
+    ${numSeries()}  | ${"nUnique"}         | ${[]}
+    ${numSeries()}  | ${"nullCount"}       | ${[]}
+    ${numSeries()}  | ${"peakMax"}         | ${[]}
+    ${numSeries()}  | ${"peakMin"}         | ${[]}
+    ${numSeries()}  | ${"quantile"}        | ${[0.4]}
+    ${numSeries()}  | ${"rank"}            | ${[]}
+    ${numSeries()}  | ${"rank"}            | ${["average"]}
+    ${numSeries()}  | ${"rechunk"}         | ${[]}
+    ${numSeries()}  | ${"rechunk"}         | ${[true]}
+    ${numSeries()}  | ${"rename"}          | ${["new name"]}
+    ${numSeries()}  | ${"rename"}          | ${["new name", true]}
+    ${numSeries()}  | ${"rename"}          | ${[{ name: "new name" }]}
+    ${numSeries()}  | ${"rename"}          | ${[{ name: "new name", inPlace: true }]}
+    ${numSeries()}  | ${"rename"}          | ${[{ name: "new name" }]}
+    ${numSeries()}  | ${"rollingMax"}      | ${[{ windowSize: 1 }]}
+    ${numSeries()}  | ${"rollingMax"}      | ${[{ windowSize: 1, weights: [0.33] }]}
+    ${numSeries()}  | ${"rollingMax"}      | ${[{ windowSize: 1, weights: [0.11], minPeriods: 1 }]}
+    ${numSeries()}  | ${"rollingMax"}      | ${[{ windowSize: 1, weights: [0.44], minPeriods: 1, center: false }]}
+    ${numSeries()}  | ${"rollingMax"}      | ${[1]}
+    ${numSeries()}  | ${"rollingMax"}      | ${[1, [0.11]]}
+    ${numSeries()}  | ${"rollingMax"}      | ${[1, [0.11], 1]}
+    ${numSeries()}  | ${"rollingMax"}      | ${[1, [0.23], 1, true]}
+    ${numSeries()}  | ${"rollingMean"}     | ${[{ windowSize: 1 }]}
+    ${numSeries()}  | ${"rollingMean"}     | ${[{ windowSize: 1, weights: [0.33] }]}
+    ${numSeries()}  | ${"rollingMean"}     | ${[{ windowSize: 1, weights: [0.11], minPeriods: 1 }]}
+    ${numSeries()}  | ${"rollingMean"}     | ${[{ windowSize: 1, weights: [0.44], minPeriods: 1, center: false }]}
+    ${numSeries()}  | ${"rollingMean"}     | ${[1]}
+    ${numSeries()}  | ${"rollingMean"}     | ${[1, [0.11]]}
+    ${numSeries()}  | ${"rollingMean"}     | ${[1, [0.11], 1]}
+    ${numSeries()}  | ${"rollingMean"}     | ${[1, [0.23], 1, true]}
+    ${numSeries()}  | ${"rollingMin"}      | ${[{ windowSize: 1 }]}
+    ${numSeries()}  | ${"rollingMin"}      | ${[{ windowSize: 1, weights: [0.33] }]}
+    ${numSeries()}  | ${"rollingMin"}      | ${[{ windowSize: 1, weights: [0.11], minPeriods: 1 }]}
+    ${numSeries()}  | ${"rollingMin"}      | ${[{ windowSize: 1, weights: [0.44], minPeriods: 1, center: false }]}
+    ${numSeries()}  | ${"rollingMin"}      | ${[1]}
+    ${numSeries()}  | ${"rollingMin"}      | ${[1, [0.11]]}
+    ${numSeries()}  | ${"rollingMin"}      | ${[1, [0.11], 1]}
+    ${numSeries()}  | ${"rollingMin"}      | ${[1, [0.23], 1, true]}
+    ${numSeries()}  | ${"rollingSum"}      | ${[{ windowSize: 1 }]}
+    ${numSeries()}  | ${"rollingSum"}      | ${[{ windowSize: 1, weights: [0.33] }]}
+    ${numSeries()}  | ${"rollingSum"}      | ${[{ windowSize: 1, weights: [0.11], minPeriods: 1 }]}
+    ${numSeries()}  | ${"rollingSum"}      | ${[{ windowSize: 1, weights: [0.44], minPeriods: 1, center: false }]}
+    ${numSeries()}  | ${"rollingSum"}      | ${[1]}
+    ${numSeries()}  | ${"rollingSum"}      | ${[1, [0.11]]}
+    ${numSeries()}  | ${"rollingSum"}      | ${[1, [0.11], 1]}
+    ${numSeries()}  | ${"rollingSum"}      | ${[1, [0.23], 1, true]}
+    ${numSeries()}  | ${"rollingVar"}      | ${[{ windowSize: 1 }]}
+    ${numSeries()}  | ${"rollingVar"}      | ${[{ windowSize: 1, weights: [0.33] }]}
+    ${numSeries()}  | ${"rollingVar"}      | ${[{ windowSize: 1, weights: [0.11], minPeriods: 1 }]}
+    ${numSeries()}  | ${"rollingVar"}      | ${[{ windowSize: 1, weights: [0.44], minPeriods: 1, center: false }]}
+    ${numSeries()}  | ${"rollingVar"}      | ${[1]}
+    ${numSeries()}  | ${"rollingVar"}      | ${[1, [0.11]]}
+    ${numSeries()}  | ${"rollingVar"}      | ${[1, [0.11], 1]}
+    ${numSeries()}  | ${"rollingVar"}      | ${[1, [0.23], 1, true]}
+    ${fltSeries()}  | ${"round"}           | ${[1]}
+    ${numSeries()}  | ${"sample"}          | ${[]}
+    ${numSeries()}  | ${"sample"}          | ${[1, null, true]}
+    ${numSeries()}  | ${"sample"}          | ${[null, 1]}
+    ${numSeries()}  | ${"sample"}          | ${[{ n: 1 }]}
+    ${numSeries()}  | ${"sample"}          | ${[{ frac: 0.5 }]}
+    ${numSeries()}  | ${"sample"}          | ${[{ n: 1, withReplacement: true }]}
+    ${numSeries()}  | ${"sample"}          | ${[{ frac: 0.1, withReplacement: true }]}
+    ${numSeries()}  | ${"sample"}          | ${[{ frac: 0.1, withReplacement: true, seed: 1n }]}
+    ${numSeries()}  | ${"sample"}          | ${[{ frac: 0.1, withReplacement: true, seed: 1 }]}
+    ${numSeries()}  | ${"sample"}          | ${[{ n: 1, withReplacement: true, seed: 1 }]}
+    ${numSeries()}  | ${"seriesEqual"}     | ${[other()]}
+    ${numSeries()}  | ${"seriesEqual"}     | ${[other(), true]}
+    ${numSeries()}  | ${"seriesEqual"}     | ${[other(), false]}
+    ${numSeries()}  | ${"set"}             | ${[boolSeries(), 2]}
+    ${fltSeries()}  | ${"setAtIdx"}        | ${[[0, 1], 1]}
+    ${numSeries()}  | ${"shift"}           | ${[]}
+    ${numSeries()}  | ${"shift"}           | ${[1]}
+    ${numSeries()}  | ${"shiftAndFill"}    | ${[1, 2]}
+    ${numSeries()}  | ${"shiftAndFill"}    | ${[{ periods: 1, fillValue: 2 }]}
+    ${numSeries()}  | ${"skew"}            | ${[]}
+    ${numSeries()}  | ${"skew"}            | ${[true]}
+    ${numSeries()}  | ${"skew"}            | ${[false]}
+    ${numSeries()}  | ${"skew"}            | ${[{ bias: true }]}
+    ${numSeries()}  | ${"skew"}            | ${[{ bias: false }]}
+    ${numSeries()}  | ${"slice"}           | ${[1, 2]}
+    ${numSeries()}  | ${"slice"}           | ${[{ offset: 1, length: 2 }]}
+    ${numSeries()}  | ${"sort"}            | ${[]}
+    ${numSeries()}  | ${"sort"}            | ${[false]}
+    ${numSeries()}  | ${"sort"}            | ${[true]}
+    ${numSeries()}  | ${"sort"}            | ${[{ reverse: true }]}
+    ${numSeries()}  | ${"sort"}            | ${[{ reverse: false }]}
+    ${numSeries()}  | ${"sum"}             | ${[]}
+    ${numSeries()}  | ${"tail"}            | ${[]}
+    ${numSeries()}  | ${"take"}            | ${[[1, 2]]}
+    ${numSeries()}  | ${"takeEvery"}       | ${[1]}
+    ${numSeries()}  | ${"toArray"}         | ${[]}
+    ${numSeries()}  | ${"unique"}          | ${[]}
+    ${numSeries()}  | ${"valueCounts"}     | ${[]}
+    ${numSeries()}  | ${"zipWith"}         | ${[boolSeries(), other()]}
   `("$# $method is callable", ({ series, method, args }) => {
     try {
       series[method](...args);
