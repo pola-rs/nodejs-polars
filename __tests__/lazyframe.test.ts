@@ -883,7 +883,7 @@ describe("lazyframe", () => {
         bar: [6, 7, 8, 1],
       })
       .lazy()
-      .shiftAndFill({ periods: -1, fillValue: 99 })
+      .shiftAndFill({ n: -1, fillValue: 99 })
       .collectSync();
     const expected = pl.DataFrame({
       foo: [2, 3, 1, 99],
@@ -898,7 +898,7 @@ describe("lazyframe", () => {
         bar: [6, 7, 8, 1],
       })
       .lazy()
-      .shiftAndFill({ periods: -1, fillValue: pl.lit(99) })
+      .shiftAndFill({ n: -1, fillValue: 99 })
       .collectSync();
     const expected = pl.DataFrame({
       foo: [2, 3, 1, 99],

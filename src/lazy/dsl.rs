@@ -584,7 +584,7 @@ impl JsExpr {
         strict: bool,
         exact: bool,
         cache: bool,
-        ambiguous: Wrap<Expr>,
+        ambiguous: Option<Wrap<Expr>>,
     ) -> JsExpr {
         let options = StrptimeOptions {
             format,
@@ -592,10 +592,13 @@ impl JsExpr {
             exact,
             cache,
         };
+        let ambiguous = ambiguous
+            .map(|e| e.0)
+            .unwrap_or(dsl::lit(String::from("raise")));
         self.inner
             .clone()
             .str()
-            .to_datetime(time_unit.map(|tu| tu.0), time_zone, options, ambiguous.0)
+            .to_datetime(time_unit.map(|tu| tu.0), time_zone, options, ambiguous)
             .into()
     }
 
@@ -1538,13 +1541,13 @@ pub fn cols(names: Vec<String>) -> JsExpr {
     dsl::cols(names).into()
 }
 
-// #[napi(catch_unwind)]
-// pub fn dtype_cols(dtypes: Vec<Wrap<DataType>>) -> crate::lazy::dsl::JsExpr {
-//     // Safety
-//     // Wrap is transparent
-//     let dtypes: Vec<DataType> = unsafe { std::mem::transmute(dtypes) };
-//     dsl::dtype_cols(dtypes).into()
-// }
+#[napi(catch_unwind)]
+pub fn dtype_cols(dtypes: Vec<Wrap<DataType>>) -> crate::lazy::dsl::JsExpr {
+    // Safety
+    // Wrap is transparent
+    let dtypes: Vec<DataType> = unsafe { std::mem::transmute(dtypes) };
+    dsl::dtype_cols(dtypes).into()
+}
 
 #[napi(catch_unwind)]
 pub fn int_range(

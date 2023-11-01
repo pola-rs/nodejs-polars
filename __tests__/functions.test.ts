@@ -134,8 +134,8 @@ describe("horizontal", () => {
     const df = pl.DataFrame({ a: [1, 2, 3], b: [1.0, 2.0, 3.0] });
     const out = df.select(
       pl.sumHorizontal([pl.col("a"), pl.col("b")]),
-      pl.maxHorizontal([pl.col("a"), pl.col("b").pow(2)]),
-      pl.minHorizontal([pl.col("a"), pl.col("b").pow(2)]),
+      pl.maxHorizontal([pl.col("a"), pl.col("b").pow(2)]).alias("max"),
+      pl.minHorizontal([pl.col("a"), pl.col("b").pow(2)]).alias("min"),
     );
     expect(out["sum"]).toSeriesEqual(pl.Series("sum", [2.0, 4.0, 6.0]));
     expect(out["max"]).toSeriesEqual(pl.Series("max", [1.0, 4.0, 9.0]));

@@ -2142,16 +2142,34 @@ export const _DataFrame = (_df: any): DataFrame => {
     sample(opts?, frac?, withReplacement = false, seed?) {
       // biome-ignore lint/style/noArguments: <explanation>
       if (arguments.length === 0) {
-        return wrap("sampleN", 1, withReplacement, false, seed);
+        return wrap(
+          "sampleN",
+          Series("", [1]).inner(),
+          withReplacement,
+          false,
+          seed,
+        );
       }
       if (opts?.n !== undefined || opts?.frac !== undefined) {
         return this.sample(opts.n, opts.frac, opts.withReplacement, seed);
       }
       if (typeof opts === "number") {
-        return wrap("sampleN", opts, withReplacement, false, seed);
+        return wrap(
+          "sampleN",
+          Series("", [opts]).inner(),
+          withReplacement,
+          false,
+          seed,
+        );
       }
       if (typeof frac === "number") {
-        return wrap("sampleFrac", frac, withReplacement, false, seed);
+        return wrap(
+          "sampleFrac",
+          Series("", [frac]).inner(),
+          withReplacement,
+          false,
+          seed,
+        );
       } else {
         throw new TypeError("must specify either 'frac' or 'n'");
       }
@@ -2165,12 +2183,9 @@ export const _DataFrame = (_df: any): DataFrame => {
       }
     },
     shift: (opt) => wrap("shift", opt?.periods ?? opt),
-    shiftAndFill(n: any, fillValue?: number|undefined) {
+    shiftAndFill(n: any, fillValue?: number | undefined) {
       if (typeof n === "number" && fillValue) {
-        return _DataFrame(_df)
-          .lazy()
-          .shiftAndFill(n, fillValue)
-          .collectSync();
+        return _DataFrame(_df).lazy().shiftAndFill(n, fillValue).collectSync();
       } else {
         return _DataFrame(_df)
           .lazy()

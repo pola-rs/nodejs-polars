@@ -378,10 +378,7 @@ export interface LazyDataFrame extends Serialize, GroupByOps<LazyGroupBy> {
   /**
    * @see {@link DataFrame.shiftAndFill}
    */
-  shiftAndFill(
-    n: number,
-    fillValue: number,
-  ): LazyDataFrame;
+  shiftAndFill(n: number, fillValue: number): LazyDataFrame;
   shiftAndFill(opts: {
     n: number;
     fillValue: number;
@@ -848,7 +845,7 @@ export const _LazyDataFrame = (_ldf: any): LazyDataFrame => {
       if (typeof opts === "number") {
         return _LazyDataFrame(_ldf.shiftAndFill(opts, fillValue));
       } else {
-        return _LazyDataFrame(_ldf.shiftAndFill(opts?.n, fillValue));
+        return _LazyDataFrame(_ldf.shiftAndFill(opts?.n, opts?.fillValue));
       }
     },
     slice(opt, len?) {
