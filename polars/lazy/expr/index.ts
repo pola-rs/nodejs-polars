@@ -35,7 +35,6 @@ export interface Expr
     Round<Expr>,
     EwmOps<Expr>,
     Serialize {
-  /** @ignore */
   _expr: any;
   /**
    * Datetime namespace
@@ -577,7 +576,6 @@ export interface Expr
   where(predicate: Expr): Expr;
 }
 
-/** @ignore */
 export const _Expr = (_expr: any): Expr => {
   const unwrap = (method: string, ...args: any[]) => {
     return _expr[method as any](...args);
@@ -592,7 +590,8 @@ export const _Expr = (_expr: any): Expr => {
   };
 
   const rolling =
-    (method: string) => (opts, weights?, minPeriods?, center?): Expr => {
+    (method: string) =>
+    (opts, weights?, minPeriods?, center?): Expr => {
       const windowSize =
         opts?.["windowSize"] ?? (typeof opts === "number" ? opts : null);
       if (windowSize === null) {
@@ -1259,7 +1258,6 @@ export const Expr: ExprConstructor = Object.assign(_Expr, {
   deserialize,
 });
 
-/** @ignore */
 export const exprToLitOrExpr = (expr: any, stringToLit = true): Expr => {
   if (typeof expr === "string" && !stringToLit) {
     return _Expr(pli.col(expr));
