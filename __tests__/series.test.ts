@@ -294,7 +294,7 @@ describe("series", () => {
     ${numSeries()}  | ${"isDateTime"}   | ${[]}
     ${numSeries()}  | ${"isDuplicated"} | ${[]}
     ${fltSeries()}  | ${"isFinite"}     | ${[]}
-    ${numSeries()}  | ${"isFirst"}      | ${[]}
+    ${numSeries()}  | ${"isFirstDistinct"}      | ${[]}
     ${numSeries()}  | ${"isFloat"}      | ${[]}
     ${numSeries()}  | ${"isIn"}         | ${[other()]}
     ${numSeries()}  | ${"isIn"}         | ${[[1, 2, 3]]}

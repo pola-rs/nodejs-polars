@@ -94,6 +94,7 @@ features = [
   "arg_where",
   "timezones",
   "string_pad",
+  "peaks",
 ]
 git = "https://github.com/pola-rs/polars.git"
 version = "0.34.2"

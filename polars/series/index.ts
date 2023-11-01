@@ -419,7 +419,7 @@ export interface Series
   /**
    * Get a mask of the first unique value.
    */
-  isFirst(): Series;
+  isFirstDistinct(): Series;
   /**
    * Check if this Series is a Float.
    */
@@ -822,8 +822,8 @@ export interface Series
    * @param periods - Number of places to shift (may be negative).
    * @param fillValue - Fill null & undefined values with the result of this expression.
    */
-  shiftAndFill(periods: number, fillValue: any): Series;
-  shiftAndFill(args: { periods: number; fillValue: any }): Series;
+  shiftAndFill(periods: number, fillValue: number): Series;
+  shiftAndFill(args: { periods: number; fillValue: number }): Series;
 
   /**
    * __Shrink memory usage of this Series to fit the exact capacity needed to hold the data.__
@@ -1369,8 +1369,8 @@ export function _Series(_s: any): Series {
         return wrap("isFinite");
       }
     },
-    isFirst() {
-      return wrap("isFirst");
+    isFirstDistinct() {
+      return wrap("isFirstDistinct");
     },
     isFloat() {
       const dtype = this.dtype;
@@ -1500,10 +1500,10 @@ export function _Series(_s: any): Series {
       return _s.nUnique();
     },
     peakMax() {
-      return wrap("peakMax");
+      return expr_op("peakMax");
     },
     peakMin() {
-      return wrap("peakMin");
+      return expr_op("peakMin");
     },
     plus(other) {
       return dtypeWrap("Add", other);

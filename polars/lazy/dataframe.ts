@@ -639,7 +639,6 @@ export const _LazyDataFrame = (_ldf: any): LazyDataFrame => {
       every,
       period,
       offset,
-      truncate,
       includeBoundaries,
       closed,
       by,
@@ -650,7 +649,6 @@ export const _LazyDataFrame = (_ldf: any): LazyDataFrame => {
       offset = offset ?? `-${period}`;
       closed = closed ?? "right";
       by = prepareGroupbyInputs(by);
-      truncate = truncate ?? true;
       includeBoundaries = includeBoundaries ?? false;
       start_by = start_by ?? "monday";
       check_sorted = check_sorted ?? false;
@@ -660,7 +658,6 @@ export const _LazyDataFrame = (_ldf: any): LazyDataFrame => {
         every,
         period,
         offset,
-        truncate,
         includeBoundaries,
         closed,
         by,

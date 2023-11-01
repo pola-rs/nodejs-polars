@@ -3,7 +3,7 @@ import * as utils from "./utils";
 import util from "util";
 import { Expr } from "./lazy/expr";
 import { col, exclude } from "./lazy/functions";
-import { ColumnsOrExpr } from "./utils";
+import { ColumnsOrExpr, StartBy } from "./utils";
 
 const inspect = Symbol.for("nodejs.util.inspect.custom");
 const inspectOpts = { colors: true, depth: null };
@@ -301,10 +301,11 @@ export function DynamicGroupBy(
   every: string,
   period?: string,
   offset?: string,
-  truncate?: boolean,
   includeBoundaries?: boolean,
   closed?: string,
   by?: ColumnsOrExpr,
+  start_by?: StartBy,
+  check_sorted?: boolean,
 ): DynamicGroupBy {
   return {
     agg(column: ColumnsOrExpr, ...columns: ColumnsOrExpr[]) {
@@ -315,10 +316,11 @@ export function DynamicGroupBy(
           every,
           period,
           offset,
-          truncate,
           includeBoundaries,
           closed,
           by,
+          start_by,
+          check_sorted,
         } as any)
         .agg(column as any, ...columns)
         .collectSync({ noOptimizations: true });

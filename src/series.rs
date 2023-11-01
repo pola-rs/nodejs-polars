@@ -1056,37 +1056,6 @@ impl JsSeries {
             .map_err(JsPolarsErr::from)?;
         Ok((ms / 1000).into_series().into())
     }
-    // #[napi(catch_unwind)]
-    // pub fn peak_max(&self) -> JsSeries {
-    //     self.series.peak_max().into_series().into()
-    // }
-    // #[napi(catch_unwind)]
-    // pub fn peak_min(&self) -> napi::Result<JsSeries> {
-    //     let ca: &polars::prelude::ChunkedArray<_> = self.series.as_ref().as_ref().as_ref();
-
-    //     // : &ChunkedArray<_>
-    //     // &ChunkedArray<T>
-    //     // ChunkedArray<BooleanType>
-    //     let s = peak_min::<T>(ca);
-    //             // .map(|ca| ca.into_series())
-    //             // .map_err(JsPolarsErr::from)?;
-
-    //     // .map_err(JsPolarsErr::from)?;
-    //     // Ok(s.into_series().into())
-
-    //     // let series = is_in(&self.series, &other.series)
-
-    //     // Ok(cumsum(&self.series, reverse).map_err(JsPolarsErr::from)?.into())
-
-    //     // Ok(s)
-
-    //     Ok(JsSeries::new(s.into_series()))
-
-    //     // .into_series();
-    //     // Ok(out.into())
-    //     // self.series.peak_min().into_series().into()
-    // }
-
     #[napi(catch_unwind)]
     pub fn n_unique(&self) -> napi::Result<i64> {
         let n = self.series.n_unique().map_err(JsPolarsErr::from)?;

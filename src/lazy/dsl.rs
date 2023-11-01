@@ -1077,6 +1077,14 @@ impl JsExpr {
         self.inner.clone().interpolate(method.0).into()
     }
     #[napi(catch_unwind)]
+    pub fn peak_min(&self) -> JsExpr {
+        self.inner.clone().peak_min().into()
+    }
+    #[napi(catch_unwind)]
+    pub fn peak_max(&self) -> JsExpr {
+        self.inner.clone().peak_max().into()
+    }
+    #[napi(catch_unwind)]
     pub fn rolling_sum(&self, options: JsRollingOptions) -> JsExpr {
         self.inner.clone().rolling_sum(options.into()).into()
     }
@@ -1143,7 +1151,7 @@ impl JsExpr {
     pub fn lower_bound(&self) -> JsExpr {
         self.inner.clone().lower_bound().into()
     }
-
+    
     #[napi(catch_unwind)]
     pub fn upper_bound(&self) -> JsExpr {
         self.inner.clone().upper_bound().into()
