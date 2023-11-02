@@ -20,13 +20,10 @@ napi-derive = {version = "2.13.0", default-features = false}
 polars-core = {version = "0.34.2", default-features = false}
 polars-io = {version = "0.34.2", default-features = false}
 polars-lazy = {version = "0.34.2", default-features = false}
-polars-ops = {version = "0.34.2", default-features = false}
 thiserror = "1"
 smartstring = { version = "1" }
 serde_json = {version = "1"}
 either = "1.9"
-rayon = "1.8"
-hashbrown = { version = "0.14", features = ["rayon", "ahash"] }
 
 [dependencies.polars]
 features = [
@@ -96,7 +93,6 @@ features = [
   "string_pad",
   "peaks",
 ]
-git = "https://github.com/pola-rs/polars.git"
 version = "0.34.2"
 
 [build-dependencies]
@@ -105,9 +101,3 @@ napi-build = "2.0.1"
 [profile.release]
 codegen-units = 1
 lto = "fat"
-
-[features]
-default = ["range"]
-range = ["polars-lazy/range"]
-
-[workspace]
