@@ -361,8 +361,8 @@ impl JsExpr {
     }
 
     #[napi(catch_unwind)]
-    pub fn shift(&self, periods: &JsExpr) -> JsExpr {
-        self.clone().inner.shift(periods.inner.clone()).into()
+    pub fn shift(&self, periods: i64) -> JsExpr {
+        self.clone().inner.shift(periods).into()
     }
 
     #[napi(catch_unwind)]
@@ -649,7 +649,7 @@ impl JsExpr {
         let function = move |s: Series| {
             let ca = s.utf8()?;
             Ok(Some(
-                ca.pad_start(length as usize, fill_char.chars().nth(0).unwrap())
+                ca.rjust(length as usize, fill_char.chars().nth(0).unwrap())
                     .into_series(),
             ))
         };
@@ -667,7 +667,7 @@ impl JsExpr {
         let function = move |s: Series| {
             let ca = s.utf8()?;
             Ok(Some(
-                ca.pad_end(length as usize, fill_char.chars().nth(0).unwrap())
+                ca.ljust(length as usize, fill_char.chars().nth(0).unwrap())
                     .into_series(),
             ))
         };
@@ -1048,15 +1048,15 @@ impl JsExpr {
     }
     #[napi(catch_unwind)]
     pub fn keep_name(&self) -> JsExpr {
-        self.inner.clone().name().keep().into()
+        self.inner.clone().keep_name().into()
     }
     #[napi(catch_unwind)]
     pub fn prefix(&self, prefix: String) -> JsExpr {
-        self.inner.clone().name().prefix(&prefix).into()
+        self.inner.clone().prefix(&prefix).into()
     }
     #[napi(catch_unwind)]
     pub fn suffix(&self, suffix: String) -> JsExpr {
-        self.inner.clone().name().suffix(&suffix).into()
+        self.inner.clone().suffix(&suffix).into()
     }
 
     #[napi(catch_unwind)]

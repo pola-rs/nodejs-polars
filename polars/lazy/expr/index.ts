@@ -1123,7 +1123,7 @@ export const _Expr = (_expr: any): Expr => {
       }
     },
     shift(periods) {
-      return _Expr(_expr.shift(exprToLitOrExpr(periods).inner()));
+      return _Expr(_expr.shift(periods));
     },
     shiftAndFill(optOrPeriods, fillValue?) {
       if (typeof optOrPeriods === "number") {

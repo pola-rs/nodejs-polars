@@ -950,7 +950,7 @@ impl JsSeries {
     pub fn str_pad_start(&self, length: i64, fill_char: String) -> napi::Result<JsSeries> {
         let ca = self.series.utf8().map_err(JsPolarsErr::from)?;
         let s = ca
-            .pad_start(length as usize, fill_char.chars().nth(0).unwrap())
+            .rjust(length as usize, fill_char.chars().nth(0).unwrap())
             .into_series();
         Ok(s.into())
     }
@@ -958,7 +958,7 @@ impl JsSeries {
     pub fn str_pad_end(&self, length: i64, fill_char: String) -> napi::Result<JsSeries> {
         let ca = self.series.utf8().map_err(JsPolarsErr::from)?;
         let s = ca
-            .pad_end(length as usize, fill_char.chars().nth(0).unwrap())
+            .ljust(length as usize, fill_char.chars().nth(0).unwrap())
             .into_series();
         Ok(s.into())
     }
@@ -1167,7 +1167,7 @@ impl JsSeries {
 
     #[napi(catch_unwind)]
     pub fn abs(&self) -> napi::Result<JsSeries> {
-        let out = abs(&self.series).map_err(JsPolarsErr::from)?;
+        let out = self.series.abs().map_err(JsPolarsErr::from)?;
         Ok(out.into())
     }
 
