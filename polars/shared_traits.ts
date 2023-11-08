@@ -1181,7 +1181,6 @@ export interface GroupByOps<T> {
     every: string;
     period?: string;
     offset?: string;
-    truncate?: boolean;
     includeBoundaries?: boolean;
     closed?: "left" | "right" | "both" | "none";
     by?: ColumnsOrExpr;

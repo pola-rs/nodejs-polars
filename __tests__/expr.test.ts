@@ -365,10 +365,10 @@ describe("expr", () => {
     const actual = df.select(col("a").isFinite());
     expect(actual).toFrameEqual(expected);
   });
-  test("isFirst", () => {
+  test("isFirstDistinct", () => {
     const df = pl.DataFrame({ a: [0, 1, 2, 2] });
     const expected = pl.DataFrame({ a: [true, true, true, false] });
-    const actual = df.select(col("a").isFirst());
+    const actual = df.select(col("a").isFirstDistinct());
     expect(actual).toFrameEqual(expected);
   });
   test("isIn:list", () => {

@@ -1,7 +1,7 @@
 import { StringFunctions } from "../../shared_traits";
 import { DataType } from "../../datatypes";
 import { regexToString } from "../../utils";
-import { Expr, _Expr } from "../expr";
+import { Expr, _Expr, exprToLitOrExpr } from "../expr";
 
 /**
  * namespace containing expr string functions
@@ -379,8 +379,7 @@ export const ExprStringFunctions = (_expr: any): StringNamespace => {
     split(by: string, options?) {
       const inclusive =
         typeof options === "boolean" ? options : options?.inclusive;
-
-      return wrap("strSplit", by, inclusive);
+      return wrap("strSplit", exprToLitOrExpr(by)._expr, inclusive);
     },
     strip() {
       return wrap("strStrip");

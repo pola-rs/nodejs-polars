@@ -35,7 +35,6 @@ export interface Expr
     Round<Expr>,
     EwmOps<Expr>,
     Serialize {
-  /** @ignore */
   _expr: any;
   /**
    * Datetime namespace
@@ -246,7 +245,7 @@ export interface Expr
   /** Create a boolean expression returning `true` where the expression values are finite. */
   isFinite(): Expr;
   /** Get a mask of the first unique value. */
-  isFirst(): Expr;
+  isFirstDistinct(): Expr;
   /**
    * Check if elements of this Series are in the right Series, or List values of the right Series.
    *
@@ -349,6 +348,8 @@ export interface Expr
   list(): Expr;
   /** Returns a unit Series with the lowest value possible for the dtype of this expression. */
   lowerBound(): Expr;
+  peakMax(): Expr;
+  peakMin(): Expr;
   /** Compute the max value of the arrays in the list */
   max(): Expr;
   /** Compute the mean value of the arrays in the list */
@@ -487,11 +488,11 @@ export interface Expr
    * @param periods Number of places to shift (may be negative).
    * @param fillValue Fill null values with the result of this expression.
    */
-  shiftAndFill(periods: number, fillValue: Expr): Expr;
+  shiftAndFill(periods: number, fillValue: number): Expr;
   shiftAndFill({
     periods,
     fillValue,
-  }: { periods: number; fillValue: Expr }): Expr;
+  }: { periods: number; fillValue: number }): Expr;
   /**
    * Compute the sample skewness of a data set.
    * For normally distributed data, the skewness should be about zero. For
@@ -575,7 +576,6 @@ export interface Expr
   where(predicate: Expr): Expr;
 }
 
-/** @ignore */
 export const _Expr = (_expr: any): Expr => {
   const unwrap = (method: string, ...args: any[]) => {
     return _expr[method as any](...args);
@@ -590,7 +590,8 @@ export const _Expr = (_expr: any): Expr => {
   };
 
   const rolling =
-    (method: string) => (opts, weights?, minPeriods?, center?): Expr => {
+    (method: string) =>
+    (opts, weights?, minPeriods?, center?): Expr => {
       const windowSize =
         opts?.["windowSize"] ?? (typeof opts === "number" ? opts : null);
       if (windowSize === null) {
@@ -685,9 +686,16 @@ export const _Expr = (_expr: any): Expr => {
     },
     clip(arg, max?) {
       if (typeof arg === "number") {
-        return _Expr(_expr.clip(arg, max));
+        return _Expr(
+          _expr.clip(exprToLitOrExpr(arg)._expr, exprToLitOrExpr(max)._expr),
+        );
       } else {
-        return _Expr(_expr.clip(arg.min, arg.max));
+        return _Expr(
+          _expr.clip(
+            exprToLitOrExpr(arg.min)._expr,
+            exprToLitOrExpr(arg.max)._expr,
+          ),
+        );
       }
     },
     count() {
@@ -929,8 +937,8 @@ export const _Expr = (_expr: any): Expr => {
     isInfinite() {
       return _Expr(_expr.isInfinite());
     },
-    isFirst() {
-      return _Expr(_expr.isFirst());
+    isFirstDistinct() {
+      return _Expr(_expr.isFirstDistinct());
     },
     isNan() {
       return _Expr(_expr.isNan());
@@ -973,6 +981,12 @@ export const _Expr = (_expr: any): Expr => {
     },
     lowerBound() {
       return _Expr(_expr.lowerBound());
+    },
+    peakMax() {
+      return _Expr(_expr.peakMax());
+    },
+    peakMin() {
+      return _Expr(_expr.peakMin());
     },
     max() {
       return _Expr(_expr.max());
@@ -1113,14 +1127,13 @@ export const _Expr = (_expr: any): Expr => {
     },
     shiftAndFill(optOrPeriods, fillValue?) {
       if (typeof optOrPeriods === "number") {
-        fillValue = exprToLitOrExpr(fillValue).inner();
-
         return wrap("shiftAndFill", optOrPeriods, fillValue);
       } else {
-        fillValue = exprToLitOrExpr(optOrPeriods.fillValue).inner();
-        const periods = optOrPeriods.periods;
-
-        return wrap("shiftAndFill", periods, fillValue);
+        return wrap(
+          "shiftAndFill",
+          optOrPeriods.periods,
+          optOrPeriods.fillValue,
+        );
       }
     },
     skew(bias) {
@@ -1245,7 +1258,6 @@ export const Expr: ExprConstructor = Object.assign(_Expr, {
   deserialize,
 });
 
-/** @ignore */
 export const exprToLitOrExpr = (expr: any, stringToLit = true): Expr => {
   if (typeof expr === "string" && !stringToLit) {
     return _Expr(pli.col(expr));

@@ -916,7 +916,7 @@ describe("dataframe", () => {
         foo: [1, 2, 3, 1],
         bar: [6, 7, 8, 1],
       })
-      .shiftAndFill({ periods: -1, fillValue: 99 });
+      .shiftAndFill({ n: -1, fillValue: 99 });
     const expected = pl.DataFrame({
       foo: [2, 3, 1, 99],
       bar: [7, 8, 1, 99],

@@ -6,14 +6,14 @@ use polars_core::prelude::DataFrame;
 #[napi(catch_unwind)]
 pub fn horizontal_concat(dfs: Vec<&JsDataFrame>) -> napi::Result<JsDataFrame> {
     let dfs: Vec<DataFrame> = dfs.iter().map(|df| df.df.clone()).collect();
-    let df = pl_functions::hor_concat_df(&dfs).map_err(crate::error::JsPolarsErr::from)?;
+    let df = pl_functions::concat_df_horizontal(&dfs).map_err(crate::error::JsPolarsErr::from)?;
     Ok(df.into())
 }
 
 #[napi(catch_unwind)]
 pub fn diagonal_concat(dfs: Vec<&JsDataFrame>) -> napi::Result<JsDataFrame> {
     let dfs: Vec<DataFrame> = dfs.iter().map(|df| df.df.clone()).collect();
-    let df = pl_functions::diag_concat_df(&dfs).map_err(crate::error::JsPolarsErr::from)?;
+    let df = pl_functions::concat_df_diagonal(&dfs).map_err(crate::error::JsPolarsErr::from)?;
     Ok(df.into())
 }
 

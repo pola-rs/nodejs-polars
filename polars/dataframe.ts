@@ -1244,7 +1244,7 @@ export interface DataFrame
    * with the result of the `fill_value` expression.
    * ___
    * @param opts
-   * @param opts.periods - Number of places to shift (may be negative).
+   * @param opts.n - Number of places to shift (may be negative).
    * @param opts.fillValue - fill null values with this value.
    * @example
    * ```
@@ -1253,7 +1253,7 @@ export interface DataFrame
    * ...   "bar": [6, 7, 8],
    * ...   "ham": ['a', 'b', 'c']
    * ... })
-   * > df.shiftAndFill({periods:1, fill_value:0})
+   * > df.shiftAndFill({n:1, fill_value:0})
    * shape: (3, 3)
    * ┌─────┬─────┬─────┐
    * │ foo ┆ bar ┆ ham │
@@ -1268,13 +1268,13 @@ export interface DataFrame
    * └─────┴─────┴─────┘
    * ```
    */
-  shiftAndFill(periods: number, fillValue: number | string): DataFrame;
+  shiftAndFill(n: number, fillValue: number): DataFrame;
   shiftAndFill({
-    periods,
+    n,
     fillValue,
   }: {
-    periods: number;
-    fillValue: number | string;
+    n: number;
+    fillValue: number;
   }): DataFrame;
   /**
    * Shrink memory usage of this DataFrame to fit the exact capacity needed to hold the data.
@@ -1954,7 +1954,6 @@ export const _DataFrame = (_df: any): DataFrame => {
       every,
       period,
       offset,
-      truncate,
       includeBoundaries,
       closed,
       by,
@@ -1965,7 +1964,6 @@ export const _DataFrame = (_df: any): DataFrame => {
         every,
         period,
         offset,
-        truncate,
         includeBoundaries,
         closed,
         by,
@@ -2142,21 +2140,38 @@ export const _DataFrame = (_df: any): DataFrame => {
     sample(opts?, frac?, withReplacement = false, seed?) {
       // biome-ignore lint/style/noArguments: <explanation>
       if (arguments.length === 0) {
-        return wrap("sampleN", 1, withReplacement, false, seed);
+        return wrap(
+          "sampleN",
+          Series("", [1]).inner(),
+          withReplacement,
+          false,
+          seed,
+        );
       }
       if (opts?.n !== undefined || opts?.frac !== undefined) {
         return this.sample(opts.n, opts.frac, opts.withReplacement, seed);
       }
       if (typeof opts === "number") {
-        return wrap("sampleN", opts, withReplacement, false, seed);
+        return wrap(
+          "sampleN",
+          Series("", [opts]).inner(),
+          withReplacement,
+          false,
+          seed,
+        );
       }
       if (typeof frac === "number") {
-        return wrap("sampleFrac", frac, withReplacement, false, seed);
+        return wrap(
+          "sampleFrac",
+          Series("", [frac]).inner(),
+          withReplacement,
+          false,
+          seed,
+        );
       } else {
         throw new TypeError("must specify either 'frac' or 'n'");
       }
     },
-
     select(...selection) {
       const hasExpr = selection.flat().some((s) => Expr.isExpr(s));
       if (hasExpr) {
@@ -2166,11 +2181,15 @@ export const _DataFrame = (_df: any): DataFrame => {
       }
     },
     shift: (opt) => wrap("shift", opt?.periods ?? opt),
-    shiftAndFill(periods: any, fillValue?) {
-      return _DataFrame(_df)
-        .lazy()
-        .shiftAndFill(periods, fillValue)
-        .collectSync();
+    shiftAndFill(n: any, fillValue?: number | undefined) {
+      if (typeof n === "number" && fillValue) {
+        return _DataFrame(_df).lazy().shiftAndFill(n, fillValue).collectSync();
+      } else {
+        return _DataFrame(_df)
+          .lazy()
+          .shiftAndFill(n.n, n.fillValue)
+          .collectSync();
+      }
     },
     shrinkToFit(inPlace: any = false): any {
       if (inPlace) {

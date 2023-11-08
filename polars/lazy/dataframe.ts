@@ -378,13 +378,10 @@ export interface LazyDataFrame extends Serialize, GroupByOps<LazyGroupBy> {
   /**
    * @see {@link DataFrame.shiftAndFill}
    */
-  shiftAndFill(
-    periods: number,
-    fillValue: number | string | Expr,
-  ): LazyDataFrame;
+  shiftAndFill(n: number, fillValue: number): LazyDataFrame;
   shiftAndFill(opts: {
-    periods: number;
-    fillValue: number | string | Expr;
+    n: number;
+    fillValue: number;
   }): LazyDataFrame;
   /**
    * @see {@link DataFrame.slice}
@@ -642,7 +639,6 @@ export const _LazyDataFrame = (_ldf: any): LazyDataFrame => {
       every,
       period,
       offset,
-      truncate,
       includeBoundaries,
       closed,
       by,
@@ -653,7 +649,6 @@ export const _LazyDataFrame = (_ldf: any): LazyDataFrame => {
       offset = offset ?? `-${period}`;
       closed = closed ?? "right";
       by = prepareGroupbyInputs(by);
-      truncate = truncate ?? true;
       includeBoundaries = includeBoundaries ?? false;
       start_by = start_by ?? "monday";
       check_sorted = check_sorted ?? false;
@@ -663,7 +658,6 @@ export const _LazyDataFrame = (_ldf: any): LazyDataFrame => {
         every,
         period,
         offset,
-        truncate,
         includeBoundaries,
         closed,
         by,
@@ -844,23 +838,17 @@ export const _LazyDataFrame = (_ldf: any): LazyDataFrame => {
     shift(periods) {
       return _LazyDataFrame(_ldf.shift(periods));
     },
-    shiftAndFill(optOrPeriods, fillValue?) {
-      if (typeof optOrPeriods === "number") {
-        fillValue = exprToLitOrExpr(fillValue)._expr;
-
-        return _LazyDataFrame(_ldf.shiftAndFill(optOrPeriods, fillValue));
+    shiftAndFill(opts: any, fillValue?: number | undefined) {
+      if (typeof opts === "number") {
+        return _LazyDataFrame(_ldf.shiftAndFill(opts, fillValue));
       } else {
-        fillValue = exprToLitOrExpr(optOrPeriods.fillValue)._expr;
-        const periods = optOrPeriods.periods;
-
-        return _LazyDataFrame(_ldf.shiftAndFill(periods, fillValue));
+        return _LazyDataFrame(_ldf.shiftAndFill(opts?.n, opts?.fillValue));
       }
     },
     slice(opt, len?) {
       if (opt?.offset !== undefined) {
         return _LazyDataFrame(_ldf.slice(opt.offset, opt.length));
       }
-
       return _LazyDataFrame(_ldf.slice(opt, len));
     },
     sort(arg, descending = false, maintain_order = false) {
