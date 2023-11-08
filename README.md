@@ -2,11 +2,23 @@
 
 Polars: Blazingly fast DataFrames in Rust, Python, Node.js, R and SQL
 
-[![rust docs](https://docs.rs/polars/badge.svg)](https://docs.rs/polars/latest/polars/)
-[![Build and test](https://github.com/pola-rs/polars/workflows/Build%20and%20test/badge.svg)](https://github.com/pola-rs/polars/actions)
+[![rust docs](https://github.com/pola-rs/nodejs-polars/actions/workflows/docs.yaml/badge.svg)](https://github.com/pola-rs/nodejs-polars/actions/workflows/docs.yaml/)
+[![Build and test](https://github.com/pola-rs/nodejs-polars/actions/workflows/test-js.yaml/badge.svg)](https://github.com/pola-rs/nodejs-polars/actions/workflows/test-js.yaml)
 [![](https://img.shields.io/crates/v/polars.svg)](https://crates.io/crates/polars)
 [![PyPI Latest Release](https://img.shields.io/pypi/v/polars.svg)](https://pypi.org/project/polars/)
 [![NPM Latest Release](https://img.shields.io/npm/v/nodejs-polars.svg)](https://www.npmjs.com/package/nodejs-polars)
+
+Documentation: [Node.js](https://pola-rs.github.io/nodejs-polars/index.html)
+-[ Rust](https://docs.rs/polars/latest/polars/)
+-[ Python](https://pola-rs.github.io/polars/py-polars/html/reference/index.html)
+-[ R](https://rpolars.github.io/index.html)
+|StackOverflow: [ Node.js](https://stackoverflow.com/questions/tagged/nodejs-polars)
+-[ Rust](https://stackoverflow.com/questions/tagged/rust-polars)
+-[ Python](https://stackoverflow.com/questions/tagged/python-polars)
+| [User Guide](https://pola-rs.github.io/polars/)
+| [Discord](https://discord.gg/4UfP5cfBE7)
+
+#### Note: This library is intended to work only with server side JS/TS (Node, Bun, Deno). For browser please see [js-polars](https://github.com/pola-rs/js-polars)
 
 ## Usage
 
