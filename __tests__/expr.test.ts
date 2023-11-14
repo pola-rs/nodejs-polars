@@ -879,13 +879,16 @@ describe("expr", () => {
     expect(actual).toFrameEqual(expected);
   });
   test("unique", () => {
-    const df = pl.DataFrame({ a: [1, 1, 2, 2, 3, 3, 8, null, 1] });
-    const expected = pl.DataFrame({
-      uniques: [1, 2, 3, 8, null],
-    });
-    const actual = df.select(
+    const df = pl.DataFrame({ a: [2, 3, 1, 2, 1, 3, 8, null, 1] });
+    let expected = pl.DataFrame({ uniques: [1, 2, 3, 8, null] });
+    let actual = df.select(
       col("a").unique().sort({ nullsLast: true }).as("uniques"),
     );
+    expect(actual).toFrameEqual(expected);
+    expected = pl.DataFrame({ uniques: [2, 3, 1, 8, null] });
+    actual = df.select(col("a").unique(true).as("uniques"));
+    expect(actual).toFrameEqual(expected);
+    actual = df.select(col("a").unique({ maintainOrder: true }).as("uniques"));
     expect(actual).toFrameEqual(expected);
   });
   test("upperBound", () => {

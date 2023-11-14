@@ -567,7 +567,8 @@ export interface Expr
    * Get the unique values of this expression;
    * @param maintainOrder Maintain order of data. This requires more work.
    */
-  unique(maintainOrder?: boolean | { maintainOrder: boolean }): Expr;
+  unique(opt: { maintainOrder: boolean }): Expr;
+  unique(maintainOrder?: boolean): Expr;
   /** Returns a unit Series with the highest value possible for the dtype of this expression. */
   upperBound(): Expr;
   /** Get variance. */
@@ -1195,8 +1196,8 @@ export const _Expr = (_expr: any): Expr => {
       return _Expr(_expr.takeEvery(n));
     },
     unique(opt?) {
-      if (opt) {
-        return wrap("unique_stable");
+      if (opt || opt?.maintainOrder) {
+        return wrap("uniqueStable");
       }
 
       return wrap("unique");
