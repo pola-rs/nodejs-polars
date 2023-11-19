@@ -331,8 +331,8 @@ describe("expr", () => {
   });
   test.each`
     args                   | hashValue
-    ${[0]}                 | ${6574965099265562227n}
-    ${[{ k0: 1n, k1: 1 }]} | ${6574965099265562227n}
+    ${[0]}                 | ${6340063056640878722n}
+    ${[{ k0: 1n, k1: 1 }]} | ${9788354747012366704n}
   `("$# hash", ({ args, hashValue }) => {
     const df = pl.DataFrame({ a: [1] });
     const expected = pl.DataFrame({ hash: [hashValue] });
@@ -863,19 +863,19 @@ describe("expr", () => {
       "take:list": [1, 2, 2, 3],
     });
     const actual = df.select(
-      col("a").take([0, 2, 3, 5]).as("take:array"),
+      col("a").gather([0, 2, 3, 5]).as("take:array"),
       col("a")
-        .take(lit([0, 1, 2, 3]))
+        .gather(lit([0, 1, 2, 3]))
         .as("take:list"),
     );
     expect(actual).toFrameEqual(expected);
   });
-  test("takeEvery", () => {
+  test("gatherEvery", () => {
     const df = pl.DataFrame({ a: [1, 1, 2, 2, 3, 3, 8, null, 1] });
     const expected = pl.DataFrame({
       everyother: [1, 2, 3, 8, 1],
     });
-    const actual = df.select(col("a").takeEvery(2).as("everyother"));
+    const actual = df.select(col("a").gatherEvery(2).as("everyother"));
     expect(actual).toFrameEqual(expected);
   });
   test("unique", () => {

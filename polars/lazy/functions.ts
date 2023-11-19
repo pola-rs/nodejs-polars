@@ -318,11 +318,11 @@ export function count(column) {
 }
 
 /** Compute the covariance between two columns/ expressions. */
-export function cov(a: ExprOrString, b: ExprOrString): Expr {
+export function cov(a: ExprOrString, b: ExprOrString, ddof = 1): Expr {
   a = exprToLitOrExpr(a, false);
   b = exprToLitOrExpr(b, false);
 
-  return _Expr(pli.cov(a, b));
+  return _Expr(pli.cov(a, b, ddof));
 }
 /**
  * Exclude certain columns from a wildcard expression.

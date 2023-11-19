@@ -996,24 +996,24 @@ impl JsDataFrame {
 
     #[napi(catch_unwind)]
     pub fn hmean(&self, null_strategy: Wrap<NullStrategy>) -> napi::Result<Option<JsSeries>> {
-        let s = self.df.hmean(null_strategy.0).map_err(JsPolarsErr::from)?;
+        let s = self.df.mean_horizontal(null_strategy.0).map_err(JsPolarsErr::from)?;
         Ok(s.map(|s| s.into()))
     }
     #[napi(catch_unwind)]
     pub fn hmax(&self) -> napi::Result<Option<JsSeries>> {
-        let s = self.df.hmax().map_err(JsPolarsErr::from)?;
+        let s = self.df.max_horizontal().map_err(JsPolarsErr::from)?;
         Ok(s.map(|s| s.into()))
     }
 
     #[napi(catch_unwind)]
     pub fn hmin(&self) -> napi::Result<Option<JsSeries>> {
-        let s = self.df.hmin().map_err(JsPolarsErr::from)?;
+        let s = self.df.min_horizontal().map_err(JsPolarsErr::from)?;
         Ok(s.map(|s| s.into()))
     }
 
     #[napi(catch_unwind)]
     pub fn hsum(&self, null_strategy: Wrap<NullStrategy>) -> napi::Result<Option<JsSeries>> {
-        let s = self.df.hsum(null_strategy.0).map_err(JsPolarsErr::from)?;
+        let s = self.df.sum_horizontal(null_strategy.0).map_err(JsPolarsErr::from)?;
         Ok(s.map(|s| s.into()))
     }
     #[napi(catch_unwind)]
@@ -1318,7 +1318,7 @@ impl JsDataFrame {
         options: WriteCsvOptions,
         env: Env,
     ) -> napi::Result<()> {
-        let has_header = options.has_header.unwrap_or(true);
+        let include_header = options.include_header.unwrap_or(true);
         let sep = options.sep.unwrap_or(",".to_owned());
         let sep = sep.as_bytes()[0];
         let quote = options.quote.unwrap_or(",".to_owned());
@@ -1332,7 +1332,7 @@ impl JsDataFrame {
                 let f = std::fs::File::create(path).unwrap();
                 let f = BufWriter::new(f);
                 CsvWriter::new(f)
-                    .has_header(has_header)
+                    .include_header(include_header)
                     .with_separator(sep)
                     .with_quote_char(quote)
                     .finish(&mut self.df)
@@ -1343,7 +1343,7 @@ impl JsDataFrame {
                 let writeable = JsWriteStream { inner, env: &env };
 
                 CsvWriter::new(writeable)
-                    .has_header(has_header)
+                    .include_header(include_header)
                     .with_separator(sep)
                     .with_quote_char(quote)
                     .finish(&mut self.df)

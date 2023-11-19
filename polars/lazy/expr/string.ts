@@ -24,7 +24,7 @@ export interface StringNamespace extends StringFunctions<Expr> {
    * └──────────┘
    * ```
    */
-  concat(delimiter: string): Expr;
+  concat(delimiter: string, ignoreNulls?: boolean): Expr;
   /** Check if strings in Series contain regex pattern. */
   contains(pat: string | RegExp): Expr;
   /**
@@ -317,8 +317,8 @@ export const ExprStringFunctions = (_expr: any): StringNamespace => {
   };
 
   return {
-    concat(delimiter: string) {
-      return wrap("strConcat", delimiter);
+    concat(delimiter: string, ignoreNulls = true) {
+      return wrap("strConcat", delimiter, ignoreNulls);
     },
     contains(pat: string | RegExp) {
       return wrap("strContains", regexToString(pat), false);

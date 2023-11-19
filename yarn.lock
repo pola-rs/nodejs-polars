@@ -804,12 +804,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@napi-rs/cli@npm:^2.16.4":
-  version: 2.16.4
-  resolution: "@napi-rs/cli@npm:2.16.4"
+"@napi-rs/cli@npm:^2.16.5":
+  version: 2.16.5
+  resolution: "@napi-rs/cli@npm:2.16.5"
   bin:
     napi: scripts/index.js
-  checksum: cc4eea0719c649ee9f9704a20bcd6a55dd48f5622edecc1ff47611f09c7ad0e45c865c4c5ebc11fa1c5166dea996bee39c0c2dac9edd9c2be7b1cc74940bb296
+  checksum: 8d6583572638c8b9c7b6df440d4627958cc877e6b7bb5ebda58ae74b70aa3ce72b2054c8d6ecc7ba15a2710bb6f14a90f5ee75852fa234e1392760ecf36d4ae7
   languageName: node
   linkType: hard
 
@@ -930,10 +930,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/chance@npm:^1.1.5":
-  version: 1.1.5
-  resolution: "@types/chance@npm:1.1.5"
-  checksum: fd27552c7c38ebf60a721f7b5af77de9808df6b5f5bf6ee784c6c2ec62edb730ac76c502d736fbc5c59c77baaef8e70e83279e80d7adee4263d420f6e847a185
+"@types/chance@npm:^1.1.6":
+  version: 1.1.6
+  resolution: "@types/chance@npm:1.1.6"
+  checksum: a1845ff0a70989d581b8f7628aaef1807276c0ae22d0c038013ebcac4f4bd57e6a765319377994cc3cae2122838638fdb2afe5232ee6b987b3f7ea2cddecbead
   languageName: node
   linkType: hard
 
@@ -971,13 +971,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/jest@npm:^29.5.7":
-  version: 29.5.7
-  resolution: "@types/jest@npm:29.5.7"
+"@types/jest@npm:^29.5.8":
+  version: 29.5.8
+  resolution: "@types/jest@npm:29.5.8"
   dependencies:
     expect: ^29.0.0
     pretty-format: ^29.0.0
-  checksum: e28624ccb0ef1255a03fbbb4b5bc3e5cbcdc450d39e0739985ff679b124198f808c38c8c3e67859c6efc0e848196deeb8cfed028e12a821c511dfc1112a2d6e9
+  checksum: ca8438a5b4c098c8c023e9d5b279ea306494a1d0b5291cfb498100fa780377145f068b2a021d545b0398bbe0328dcc37044dd3aaf3c6c0fe9b0bef7b46a63453
   languageName: node
   linkType: hard
 
@@ -988,12 +988,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/node@npm:^20.8.10":
-  version: 20.8.10
-  resolution: "@types/node@npm:20.8.10"
+"@types/node@npm:^20.9.2":
+  version: 20.9.2
+  resolution: "@types/node@npm:20.9.2"
   dependencies:
     undici-types: ~5.26.4
-  checksum: 7c61190e43e8074a1b571e52ff14c880bc67a0447f2fe5ed0e1a023eb8a23d5f815658edb98890f7578afe0f090433c4a635c7c87311762544e20dd78723e515
+  checksum: 5bbb8fb2248fc5c5c4071d9809fb9af85997677c07124d65665202b53283a3b7bdff26fb844e9ee407e3847dfce6399c2b01e3329ea44a4b720647b1b987c678
   languageName: node
   linkType: hard
 
@@ -3068,10 +3068,10 @@ __metadata:
   resolution: "nodejs-polars@workspace:."
   dependencies:
     "@biomejs/biome": ^1.3.3
-    "@napi-rs/cli": ^2.16.4
-    "@types/chance": ^1.1.5
-    "@types/jest": ^29.5.7
-    "@types/node": ^20.8.10
+    "@napi-rs/cli": ^2.16.5
+    "@types/chance": ^1.1.6
+    "@types/jest": ^29.5.8
+    "@types/node": ^20.9.2
     chance: ^1.1.11
     jest: ^29.7.0
     source-map-support: ^0.5.21

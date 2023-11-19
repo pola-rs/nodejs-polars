@@ -843,7 +843,7 @@ export interface StringFunctions<T> {
    * └──────────┘
    * ```
    */
-  concat(delimiter: string): T;
+  concat(delimiter: string, ignoreNulls?: boolean): T;
   /** Check if strings in Series contain regex pattern. */
   contains(pat: string | RegExp): T;
   /**

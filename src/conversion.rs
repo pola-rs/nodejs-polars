@@ -560,7 +560,7 @@ impl From<JsRowCount> for RowCount {
 
 #[napi(object)]
 pub struct WriteCsvOptions {
-    pub has_header: Option<bool>,
+    pub include_header: Option<bool>,
     pub sep: Option<String>,
     pub quote: Option<String>,
 }

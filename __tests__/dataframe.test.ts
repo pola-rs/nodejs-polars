@@ -1539,7 +1539,7 @@ describe("io", () => {
   test("writeCSV:string:header", () => {
     const actual = df
       .clone()
-      .writeCSV({ sep: "X", hasHeader: false })
+      .writeCSV({ sep: "X", includeHeader: false })
       .toString();
     const expected = "1X6\n2X2\n9X8\n";
     expect(actual).toEqual(expected);

@@ -341,8 +341,8 @@ impl JsExpr {
         self.clone().inner.arg_min().into()
     }
     #[napi(catch_unwind)]
-    pub fn take(&self, idx: &JsExpr) -> JsExpr {
-        self.clone().inner.take(idx.inner.clone()).into()
+    pub fn gather(&self, idx: &JsExpr) -> JsExpr {
+        self.clone().inner.gather(idx.inner.clone()).into()
     }
 
     #[napi(catch_unwind)]
@@ -361,8 +361,8 @@ impl JsExpr {
     }
 
     #[napi(catch_unwind)]
-    pub fn shift(&self, periods: i64) -> JsExpr {
-        self.clone().inner.shift(periods).into()
+    pub fn shift(&self, periods: &JsExpr) -> JsExpr {
+        self.clone().inner.shift(periods.inner.clone()).into()
     }
 
     #[napi(catch_unwind)]
@@ -446,14 +446,14 @@ impl JsExpr {
         self.clone().inner.explode().into()
     }
     #[napi(catch_unwind)]
-    pub fn take_every(&self, n: i64) -> JsExpr {
+    pub fn gather_every(&self, n: i64) -> JsExpr {
         self.clone()
             .inner
             .map(
-                move |s: Series| Ok(Some(s.take_every(n as usize))),
+                move |s: Series| Ok(Some(s.gather_every(n as usize))),
                 GetOutput::same_type(),
             )
-            .with_fmt("take_every")
+            .with_fmt("gather_every")
             .into()
     }
     #[napi(catch_unwind)]
@@ -535,20 +535,20 @@ impl JsExpr {
         self.clone().inner.pow(exponent).into()
     }
     #[napi(catch_unwind)]
-    pub fn cumsum(&self, reverse: bool) -> JsExpr {
-        self.clone().inner.cumsum(reverse).into()
+    pub fn cum_sum(&self, reverse: bool) -> JsExpr {
+        self.clone().inner.cum_sum(reverse).into()
     }
     #[napi(catch_unwind)]
-    pub fn cummax(&self, reverse: bool) -> JsExpr {
-        self.clone().inner.cummax(reverse).into()
+    pub fn cum_max(&self, reverse: bool) -> JsExpr {
+        self.clone().inner.cum_max(reverse).into()
     }
     #[napi(catch_unwind)]
-    pub fn cummin(&self, reverse: bool) -> JsExpr {
-        self.clone().inner.cummin(reverse).into()
+    pub fn cum_min(&self, reverse: bool) -> JsExpr {
+        self.clone().inner.cum_min(reverse).into()
     }
     #[napi(catch_unwind)]
-    pub fn cumprod(&self, reverse: bool) -> JsExpr {
-        self.clone().inner.cumprod(reverse).into()
+    pub fn cum_prod(&self, reverse: bool) -> JsExpr {
+        self.clone().inner.cum_prod(reverse).into()
     }
 
     #[napi(catch_unwind)]
@@ -649,7 +649,7 @@ impl JsExpr {
         let function = move |s: Series| {
             let ca = s.utf8()?;
             Ok(Some(
-                ca.rjust(length as usize, fill_char.chars().nth(0).unwrap())
+                ca.pad_start(length as usize, fill_char.chars().nth(0).unwrap())
                     .into_series(),
             ))
         };
@@ -667,7 +667,7 @@ impl JsExpr {
         let function = move |s: Series| {
             let ca = s.utf8()?;
             Ok(Some(
-                ca.ljust(length as usize, fill_char.chars().nth(0).unwrap())
+                ca.pad_end(length as usize, fill_char.chars().nth(0).unwrap())
                     .into_series(),
             ))
         };
@@ -1048,15 +1048,15 @@ impl JsExpr {
     }
     #[napi(catch_unwind)]
     pub fn keep_name(&self) -> JsExpr {
-        self.inner.clone().keep_name().into()
+        self.inner.clone().name().keep().into()
     }
     #[napi(catch_unwind)]
     pub fn prefix(&self, prefix: String) -> JsExpr {
-        self.inner.clone().prefix(&prefix).into()
+        self.inner.clone().name().prefix(&prefix).into()
     }
     #[napi(catch_unwind)]
     pub fn suffix(&self, suffix: String) -> JsExpr {
-        self.inner.clone().suffix(&suffix).into()
+        self.inner.clone().name().suffix(&suffix).into()
     }
 
     #[napi(catch_unwind)]
@@ -1276,8 +1276,8 @@ impl JsExpr {
         self.inner.clone().kurtosis(fisher, bias).into()
     }
     #[napi(catch_unwind)]
-    pub fn str_concat(&self, delimiter: String) -> JsExpr {
-        self.inner.clone().str().concat(&delimiter).into()
+    pub fn str_concat(&self, delimiter: String, ignore_nulls: bool) -> JsExpr {
+        self.inner.clone().str().concat(&delimiter, ignore_nulls).into()
     }
     #[napi(catch_unwind)]
     pub fn cat_set_ordering(&self, ordering: String) -> JsExpr {
@@ -1294,8 +1294,8 @@ impl JsExpr {
         self.inner.clone().reshape(&dims).into()
     }
     #[napi(catch_unwind)]
-    pub fn cumcount(&self, reverse: bool) -> JsExpr {
-        self.inner.clone().cumcount(reverse).into()
+    pub fn cum_count(&self, reverse: bool) -> JsExpr {
+        self.inner.clone().cum_count(reverse).into()
     }
     #[napi(catch_unwind)]
     pub fn to_physical(&self) -> JsExpr {
@@ -1610,8 +1610,8 @@ pub fn spearman_rank_corr(
 }
 
 #[napi(catch_unwind)]
-pub fn cov(a: Wrap<Expr>, b: Wrap<Expr>) -> JsExpr {
-    polars::lazy::dsl::cov(a.0, b.0).into()
+pub fn cov(a: Wrap<Expr>, b: Wrap<Expr>, ddof: u8) -> JsExpr {
+    polars::lazy::dsl::cov(a.0, b.0, ddof).into()
 }
 
 #[napi(catch_unwind)]
@@ -1654,27 +1654,42 @@ pub fn as_struct(exprs: Vec<&JsExpr>) -> JsExpr {
 #[napi(catch_unwind)]
 pub fn all_horizontal(exprs: Vec<&JsExpr>) -> JsExpr {
     let exprs = exprs.to_exprs();
-    dsl::all_horizontal(exprs).into()
+    dsl::all_horizontal(exprs)
+        .map_err(JsPolarsErr::from)
+        .unwrap()
+        .into()
 }
 
 #[napi(catch_unwind)]
 pub fn any_horizontal(exprs: Vec<&JsExpr>) -> JsExpr {
     let exprs = exprs.to_exprs();
-    dsl::any_horizontal(exprs).into()
+    dsl::any_horizontal(exprs)
+    .map_err(JsPolarsErr::from)
+    .unwrap()
+    .into()
 }
 #[napi(catch_unwind)]
 pub fn min_horizontal(exprs: Vec<&JsExpr>) -> JsExpr {
     let exprs = exprs.to_exprs();
-    dsl::min_horizontal(exprs).into()
+    dsl::min_horizontal(exprs)
+    .map_err(JsPolarsErr::from)
+    .unwrap()
+    .into()
 }
 
 #[napi(catch_unwind)]
 pub fn max_horizontal(exprs: Vec<&JsExpr>) -> JsExpr {
     let exprs = exprs.to_exprs();
-    dsl::max_horizontal(exprs).into()
+    dsl::max_horizontal(exprs)
+    .map_err(JsPolarsErr::from)
+    .unwrap()
+    .into()
 }
 #[napi(catch_unwind)]
 pub fn sum_horizontal(exprs: Vec<&JsExpr>) -> JsExpr {
     let exprs = exprs.to_exprs();
-    dsl::sum_horizontal(exprs).into()
+    dsl::sum_horizontal(exprs)
+    .map_err(JsPolarsErr::from)
+    .unwrap()
+    .into()
 }

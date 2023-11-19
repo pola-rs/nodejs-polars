@@ -16,7 +16,7 @@ export interface StringNamespace extends StringFunctions<Series> {
    * '1-null-2'
    * ```
    */
-  concat(delimiter: string): Series;
+  concat(delimiter: string, ignoreNulls?: boolean): Series;
   /**
    * Check if strings in Series contain regex pattern.
    * @param pattern A valid regex pattern
@@ -271,10 +271,10 @@ export const SeriesStringFunctions = (_s: any): StringNamespace => {
   };
 
   return {
-    concat(delimiter: string) {
+    concat(delimiter: string, ignoreNulls = true) {
       return _Series(_s)
         .toFrame()
-        .select(col(_s.name).str.concat(delimiter).as(_s.name))
+        .select(col(_s.name).str.concat(delimiter, ignoreNulls).as(_s.name))
         .getColumn(_s.name);
     },
     contains(pat: string | RegExp) {

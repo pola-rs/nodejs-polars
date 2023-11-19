@@ -559,10 +559,10 @@ export interface Expr
    * Take values by index.
    * @param index An expression that leads to a UInt32 dtyped Series.
    */
-  take(index: Expr | number[] | Series): Expr;
-  take({ index }: { index: Expr | number[] | Series }): Expr;
+  gather(index: Expr | number[] | Series): Expr;
+  gather({ index }: { index: Expr | number[] | Series }): Expr;
   /** Take every nth value in the Series and return as a new Series. */
-  takeEvery(n: number): Expr;
+  gatherEvery(n: number): Expr;
   /**
    * Get the unique values of this expression;
    * @param maintainOrder Maintain order of data. This requires more work.
@@ -704,27 +704,27 @@ export const _Expr = (_expr: any): Expr => {
     cumCount(reverse: any = false) {
       reverse = reverse?.reverse ?? reverse;
 
-      return _Expr(_expr.cumcount(reverse?.reverse ?? reverse));
+      return _Expr(_expr.cumCount(reverse?.reverse ?? reverse));
     },
     cumMax(reverse: any = false) {
       reverse = reverse?.reverse ?? reverse;
 
-      return _Expr(_expr.cummax(reverse));
+      return _Expr(_expr.cumMax(reverse));
     },
     cumMin(reverse: any = false) {
       reverse = reverse?.reverse ?? reverse;
 
-      return _Expr(_expr.cummin(reverse));
+      return _Expr(_expr.cumMin(reverse));
     },
     cumProd(reverse: any = false) {
       reverse = reverse?.reverse ?? reverse;
 
-      return _Expr(_expr.cumprod(reverse));
+      return _Expr(_expr.cumProd(reverse));
     },
     cumSum(reverse: any = false) {
       reverse = reverse?.reverse ?? reverse;
 
-      return _Expr(_expr.cumsum(reverse));
+      return _Expr(_expr.cumSum(reverse));
     },
     diff(n, nullBehavior = "ignore") {
       if (typeof n === "number") {
@@ -1123,7 +1123,7 @@ export const _Expr = (_expr: any): Expr => {
       }
     },
     shift(periods) {
-      return _Expr(_expr.shift(periods));
+      return _Expr(_expr.shift(exprToLitOrExpr(periods)._expr));
     },
     shiftAndFill(optOrPeriods, fillValue?) {
       if (typeof optOrPeriods === "number") {
@@ -1181,24 +1181,21 @@ export const _Expr = (_expr: any): Expr => {
     tail(length) {
       return _Expr(_expr.tail(length));
     },
-
-    take(indices) {
+    gather(indices) {
       if (Array.isArray(indices)) {
         indices = pli.lit(Series(indices).inner());
       } else {
         indices = indices.inner();
       }
-
-      return wrap("take", indices);
+      return wrap("gather", indices);
     },
-    takeEvery(n) {
-      return _Expr(_expr.takeEvery(n));
+    gatherEvery(n) {
+      return _Expr(_expr.gatherEvery(n));
     },
     unique(opt?) {
       if (opt) {
         return wrap("unique_stable");
       }
-
       return wrap("unique");
     },
     upperBound() {
