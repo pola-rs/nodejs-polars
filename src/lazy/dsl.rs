@@ -1224,8 +1224,8 @@ impl JsExpr {
     }
 
     #[napi(catch_unwind)]
-    pub fn list_shift(&self, periods: Wrap<Expr>) -> JsExpr {
-        self.inner.clone().list().shift(periods.0).into()
+    pub fn list_shift(&self, periods: &JsExpr) -> JsExpr {
+        self.inner.clone().list().shift(periods.inner.clone()).into()
     }
     #[napi(catch_unwind)]
     pub fn list_slice(&self, offset: &JsExpr, length: Option<&JsExpr>) -> JsExpr {
@@ -1245,6 +1245,14 @@ impl JsExpr {
             .clone()
             .list()
             .eval(expr.inner.clone(), parallel)
+            .into()
+    }
+    #[napi(catch_unwind)]
+    pub fn list_contains(&self, expr: &JsExpr) -> JsExpr {
+        self.inner
+            .clone()
+            .list()
+            .contains(expr.inner.clone())
             .into()
     }
     #[napi(catch_unwind)]

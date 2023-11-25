@@ -640,7 +640,7 @@ export interface ListFunctions<T> {
    * ```
    * @category List
    */
-  head(n: number): T;
+  head(n?: number): T;
   /**
    * Slice the tail of every sublist
    * @param n - How many values to take in the slice.
@@ -657,7 +657,7 @@ export interface ListFunctions<T> {
    * ```
    * @category List
    */
-  tail(n: number): T;
+  tail(n?: number): T;
   /**
    * Join all string items in a sublist and place a separator between them.
    * This errors if inner type of list `!= Utf8`.

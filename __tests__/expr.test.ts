@@ -1388,6 +1388,21 @@ describe("expr.str", () => {
   });
 });
 describe("expr.lst", () => {
+  test("argMax", () => {
+    const s0 = pl.Series("a", [[1, 2, 3]]);
+    let actual = s0.lst.argMax();
+    let expected = pl.Series("a", [2]);
+    expect(actual.seriesEqual(expected));
+    actual = s0.lst.argMin();
+    expected = pl.Series("a", [0]);
+    expect(actual.seriesEqual(expected));
+  });
+  test("contains", () => {
+    const s0 = pl.Series("a", [[1, 2]]);
+    const actual = s0.lst.contains(1);
+    const expected = pl.Series("a", [true]);
+    expect(actual.seriesEqual(expected));
+  });
   test("concat", () => {
     const s0 = pl.Series("a", [[1, 2]]);
     const s1 = pl.Series("b", [[3, 4, 5]]);
@@ -1419,6 +1434,12 @@ describe("expr.lst", () => {
         .seriesEqual(expected),
     );
   });
+  test("diff", () => {
+    const s0 = pl.Series("a", [[1, 2, 3]]);
+    const actual = s0.lst.diff();
+    const expected = pl.Series("a", [null, 1, 1]);
+    expect(actual.seriesEqual(expected));
+  });
   test("get", () => {
     const df = pl.DataFrame({ a: [[1, 10, 11], [2, 10, 12], [1]] });
     const expected = pl.DataFrame({ get: [11, 12, null] });
@@ -1445,6 +1466,12 @@ describe("expr.lst", () => {
     expect(actual).toFrameEqual(expected);
     expect(actualFromSeries).toFrameEqual(expected);
   });
+  test("eval", () => {
+    const s0 = pl.Series("a", [[3, 5, 6]]);
+    const actual = s0.lst.eval(pl.element().rank());
+    const expected = pl.Series("a", [1, 2, 3]);
+    expect(actual.seriesEqual(expected));
+  });
   test("first", () => {
     const df = pl.DataFrame({
       a: [
@@ -1462,6 +1489,30 @@ describe("expr.lst", () => {
 
     expect(actual).toFrameEqual(expected);
     expect(actualFromSeries).toFrameEqual(expected);
+  });
+  test("head", () => {
+    const s0 = pl.Series("a", [[3, 5, 6, 7, 8]]);
+    let actual = s0.lst.head(1);
+    let expected = pl.Series("a", [3]);
+    expect(actual.seriesEqual(expected));
+    actual = s0.lst.head();
+    expected = pl.Series("a", [3, 5, 6, 7, 8]);
+    expect(actual.seriesEqual(expected));
+  });
+  test("tail", () => {
+    const s0 = pl.Series("a", [[3, 5, 6, 7, 8]]);
+    let actual = s0.lst.tail(1);
+    let expected = pl.Series("a", [8]);
+    expect(actual.seriesEqual(expected));
+    actual = s0.lst.tail();
+    expected = pl.Series("a", [3, 5, 6, 7, 8]);
+    expect(actual.seriesEqual(expected));
+  });
+  test("shift", () => {
+    const s0 = pl.Series("a", [[3, 5, 6]]);
+    const actual = s0.lst.shift(-1);
+    const expected = pl.Series("a", [5, 6, null]);
+    expect(actual.seriesEqual(expected));
   });
   test("join", () => {
     const df = pl.DataFrame({ a: [["ab", "cd"], ["e", "fg"], ["h"]] });
@@ -1627,16 +1678,13 @@ describe("expr.lst", () => {
       col("a").lst.sort().as("sort"),
       col("a").lst.sort({ reverse: true }).as("sort:reverse"),
     );
-
     const sortSeries = df.getColumn("a").lst.sort().rename("sort");
-
     const sortReverseSeries = df
       .getColumn("a")
-      .lst.sort(true)
+      .lst.sort({ reverse: true })
       .rename("sort:reverse");
 
     const actualFromSeries = pl.DataFrame([sortSeries, sortReverseSeries]);
-
     expect(actual).toFrameEqual(expected);
     expect(actualFromSeries).toFrameEqual(expected);
     expect(actualFromSeries).toFrameEqual(actual);
