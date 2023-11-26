@@ -35,7 +35,7 @@ describe("lazyframe", () => {
       })
       .lazy();
     let actual = df.describeOptimizedPlan().replace(/\s+/g, " ");
-    const expected = `DF ["foo", "bar"]; PROJECT */2 COLUMNS; SELECTION: "None"`
+    const expected = `DF ["foo", "bar"]; PROJECT */2 COLUMNS; SELECTION: "None"`;
     expect(actual).toEqual(expected);
     actual = df.describePlan().replace(/\s+/g, " ");
     expect(actual).toEqual(expected);
