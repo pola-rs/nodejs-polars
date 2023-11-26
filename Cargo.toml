@@ -15,13 +15,13 @@ crate-type = ["cdylib", "lib"]
 [dependencies]
 ahash = "0.8.3"
 bincode = "1.3.3"
-napi = {version = "2.14.0", default-features = false, features = ["napi8", "serde-json", "experimental"]}
-napi-derive = {version = "2.14.1", default-features = false}
+napi = {version = "2.14.1", default-features = false, features = ["napi8", "serde-json"]}
+napi-derive = {version = "2.14.2", default-features = false}
 polars-core = {git = "https://github.com/pola-rs/polars.git", rev = "b13afbecac039205dacbaca766ecca4bf441b347", default-features = false}
 polars-io = {git = "https://github.com/pola-rs/polars.git", rev = "b13afbecac039205dacbaca766ecca4bf441b347", default-features = false}
 polars-lazy = {git = "https://github.com/pola-rs/polars.git", rev = "b13afbecac039205dacbaca766ecca4bf441b347", default-features = false}
 thiserror = "1"
-smartstring = { version = "1" }
+smartstring = {version = "1"}
 serde_json = {version = "1"}
 either = "1.9"
 
@@ -52,7 +52,6 @@ features = [
   "concat_str",
   "row_hash",
   "reinterpret",
-  "decompress-fast",
   "mode",
   "extract_jsonpath",
   "lazy_regex",
@@ -66,8 +65,6 @@ features = [
   "diff",
   "pct_change",
   "moment",
-  "true_div",
-  "dtype-categorical",
   "diagonal_concat",
   "horizontal_concat",
   "abs",

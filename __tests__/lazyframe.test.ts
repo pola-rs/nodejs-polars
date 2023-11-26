@@ -27,7 +27,6 @@ describe("lazyframe", () => {
     const actual = await expected.lazy().collect();
     expect(actual).toFrameEqual(expected);
   });
-
   test("describeOptimizedPlan", () => {
     const df = pl
       .DataFrame({
@@ -35,10 +34,23 @@ describe("lazyframe", () => {
         bar: ["a", "b"],
       })
       .lazy();
-    const actual = df.describeOptimizedPlan().replace(/\s+/g, " ");
-    expect(actual).toEqual(
-      `DF ["foo", "bar"]; PROJECT */2 COLUMNS; SELECTION: "None"`,
-    );
+    let actual = df.describeOptimizedPlan().replace(/\s+/g, " ");
+    const expected = `DF ["foo", "bar"]; PROJECT */2 COLUMNS; SELECTION: "None"`
+    expect(actual).toEqual(expected);
+    actual = df.describePlan().replace(/\s+/g, " ");
+    expect(actual).toEqual(expected);
+  });
+  test("cache", () => {
+    const df = pl.DataFrame({
+      foo: [1, 2, 3],
+    });
+    const expected = pl.DataFrame({
+      foo: [1, 2, 3],
+    });
+    let actual = df.lazy().cache().collectSync();
+    expect(actual).toFrameEqual(expected);
+    actual = df.lazy().clone().collectSync();
+    expect(actual).toFrameEqual(expected);
   });
   test("drop", () => {
     const df = pl.DataFrame({
@@ -240,12 +252,10 @@ describe("lazyframe", () => {
       .lazy()
       .explode("list_1")
       .collectSync();
-
     const expected = pl.DataFrame({
       letters: ["c", "c", "a", "a"],
       list_1: [1, 2, 1, 3],
     });
-
     expect(actual).toFrameEqualIgnoringOrder(expected);
   });
   test("fetch", async () => {
