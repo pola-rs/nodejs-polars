@@ -15,10 +15,10 @@ export const ExprListFunctions = (_expr: any): ExprList => {
 
   return {
     argMax() {
-      return wrap("lstArgMax");
+      return wrap("listArgMax");
     },
     argMin() {
-      return wrap("lstArgMin");
+      return wrap("listArgMin");
     },
     concat(other) {
       if (
@@ -42,7 +42,7 @@ export const ExprListFunctions = (_expr: any): ExprList => {
       return concatList(otherList);
     },
     contains(item) {
-      throw new Error("not yet implemented");
+      return wrap("listContains", exprToLitOrExpr(item)._expr);
     },
     diff(n = 1, nullBehavior = "ignore") {
       return wrap("listDiff", n, nullBehavior);
@@ -92,10 +92,14 @@ export const ExprListFunctions = (_expr: any): ExprList => {
       return wrap("listReverse");
     },
     shift(n) {
-      return wrap("listShift", n);
+      return wrap("listShift", exprToLitOrExpr(n)._expr);
     },
     slice(offset, length) {
-      return wrap("listSlice", offset, length);
+      return wrap(
+        "listSlice",
+        exprToLitOrExpr(offset)._expr,
+        exprToLitOrExpr(length)._expr,
+      );
     },
     sort(reverse: any = false) {
       return typeof reverse === "boolean"

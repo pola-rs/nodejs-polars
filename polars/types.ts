@@ -43,7 +43,7 @@ export interface ConcatOptions {
  * @category Options
  */
 export interface WriteCsvOptions {
-  hasHeader?: boolean;
+  includeHeader?: boolean;
   sep?: string;
 }
 

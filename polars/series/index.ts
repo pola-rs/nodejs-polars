@@ -914,7 +914,7 @@ export interface Series
    * @example
    * ```
    * s = pl.Series("a", [1, 2, 3, 4])
-   * s.takeEvery(2))
+   * s.gatherEvery(2))
    * shape: (2,)
    * Series: '' [i64]
    * [
@@ -923,7 +923,7 @@ export interface Series
    * ]
    * ```
    */
-  takeEvery(n: number): Series;
+  gatherEvery(n: number): Series;
   /**
    * Take values by index.
    * ___
@@ -931,7 +931,7 @@ export interface Series
    * @example
    * ```
    * s = pl.Series("a", [1, 2, 3, 4])
-   * s.take([1, 3])
+   * s.gather([1, 3])
    * shape: (2,)
    * Series: 'a' [i64]
    * [
@@ -940,7 +940,7 @@ export interface Series
    * ]
    * ```
    */
-  take(indices: Array<number>): Series;
+  gather(indices: Array<number>): Series;
 
   /**
    * __Get unique elements in series.__
@@ -1201,16 +1201,16 @@ export function _Series(_s: any): Series {
       return expr_op("cumCount", reverse);
     },
     cumSum(reverse?) {
-      return _Series(_s.cumsum(reverse));
+      return _Series(_s.cumSum(reverse));
     },
     cumMax(reverse?) {
-      return _Series(_s.cummax(reverse));
+      return _Series(_s.cumMax(reverse));
     },
     cumMin(reverse?) {
-      return _Series(_s.cummin(reverse));
+      return _Series(_s.cumMin(reverse));
     },
     cumProd(reverse?) {
-      return _Series(_s.cumprod(reverse));
+      return _Series(_s.cumProd(reverse));
     },
     describe() {
       let s = this.clone();
@@ -1677,11 +1677,11 @@ export function _Series(_s: any): Series {
     tail(length = 5) {
       return wrap("tail", length);
     },
-    take(indices) {
+    gather(indices) {
       return wrap("take", indices);
     },
-    takeEvery(n) {
-      return wrap("takeEvery", n);
+    gatherEvery(n) {
+      return wrap("gatherEvery", n);
     },
     multiplyBy(field) {
       return this.mul(field);

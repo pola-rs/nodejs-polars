@@ -409,8 +409,8 @@ describe("series", () => {
     ${numSeries()}  | ${"sort"}            | ${[{ reverse: false }]}
     ${numSeries()}  | ${"sum"}             | ${[]}
     ${numSeries()}  | ${"tail"}            | ${[]}
-    ${numSeries()}  | ${"take"}            | ${[[1, 2]]}
-    ${numSeries()}  | ${"takeEvery"}       | ${[1]}
+    ${numSeries()}  | ${"gather"}          | ${[[1, 2]]}
+    ${numSeries()}  | ${"gatherEvery"}     | ${[1]}
     ${numSeries()}  | ${"toArray"}         | ${[]}
     ${numSeries()}  | ${"unique"}          | ${[]}
     ${numSeries()}  | ${"valueCounts"}     | ${[]}
@@ -472,7 +472,7 @@ describe("series", () => {
     ${"getIndex"}        | ${pl.Series(["a", "b", "c"]).getIndex(0)}                                                  | ${"a"}
     ${"hasValidity"}     | ${pl.Series([1, null, 2]).hasValidity()}                                                   | ${true}
     ${"hasValidity"}     | ${pl.Series([1, 1, 2]).hasValidity()}                                                      | ${false}
-    ${"hash"}            | ${pl.Series([1]).hash()}                                                                   | ${pl.Series([6574965099265562227n])}
+    ${"hash"}            | ${pl.Series([1]).hash()}                                                                   | ${pl.Series([6340063056640878722n])}
     ${"head"}            | ${pl.Series([1, 2, 3, 4, 5, 5, 5]).head()}                                                 | ${pl.Series([1, 2, 3, 4, 5])}
     ${"head"}            | ${pl.Series([1, 2, 3, 4, 5, 5, 5]).head(2)}                                                | ${pl.Series([1, 2])}
     ${"interpolate"}     | ${pl.Series([1, 2, null, null, 5]).interpolate()}                                          | ${pl.Series([1, 2, 3, 4, 5])}
@@ -523,8 +523,8 @@ describe("series", () => {
     ${"sort"}            | ${pl.Series([4, 2, 5, 0]).sort({ reverse: false })}                                        | ${pl.Series([0, 2, 4, 5])}
     ${"sum"}             | ${pl.Series([1, 2, 2, 1]).sum()}                                                           | ${6}
     ${"tail"}            | ${pl.Series([1, 2, 2, 1]).tail(2)}                                                         | ${pl.Series([2, 1])}
-    ${"takeEvery"}       | ${pl.Series([1, 3, 2, 9, 1]).takeEvery(2)}                                                 | ${pl.Series([1, 2, 1])}
-    ${"take"}            | ${pl.Series([1, 3, 2, 9, 1]).take([0, 1, 3])}                                              | ${pl.Series([1, 3, 9])}
+    ${"gatherEvery"}     | ${pl.Series([1, 3, 2, 9, 1]).gatherEvery(2)}                                               | ${pl.Series([1, 2, 1])}
+    ${"gather"}          | ${pl.Series([1, 3, 2, 9, 1]).gather([0, 1, 3])}                                            | ${pl.Series([1, 3, 9])}
     ${"toArray"}         | ${pl.Series([1, 2, 3]).toArray()}                                                          | ${[1, 2, 3]}
     ${"unique"}          | ${pl.Series([1, 2, 3, 3]).unique().sort()}                                                 | ${pl.Series([1, 2, 3])}
     ${"cumCount"}        | ${pl.Series([1, 2, 3, 3]).cumCount()}                                                      | ${pl.Series([0, 1, 2, 3])}
