@@ -387,7 +387,8 @@ export const ExprStringFunctions = (_expr: any): StringNamespace => {
     strptime(dtype, format?) {
       if (dtype.equals(DataType.Date)) {
         return wrap("strToDate", format, false, false, false);
-      } else if (dtype.equals(DataType.Datetime("ms"))) {
+      }
+      if (dtype.equals(DataType.Datetime("ms"))) {
         return wrap(
           "strToDatetime",
           format,
@@ -397,11 +398,10 @@ export const ExprStringFunctions = (_expr: any): StringNamespace => {
           false,
           false,
         );
-      } else {
-        throw new Error(
-          `only "DataType.Date" and "DataType.Datetime" are supported`,
-        );
       }
+      throw new Error(
+        `only "DataType.Date" and "DataType.Datetime" are supported`,
+      );
     },
     toLowerCase() {
       return wrap("strToLowercase");
