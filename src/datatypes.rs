@@ -348,11 +348,11 @@ macro_rules! impl_av_into {
         }
     };
 }
-impl <'a> TryInto<&'a str> for Wrap<AnyValue<'a>> {
+impl<'a> TryInto<&'a str> for Wrap<AnyValue<'a>> {
     type Error = napi::Error;
     fn try_into(self) -> napi::Result<&'a str> {
         match self.0 {
-            AnyValue::Utf8(v) =>  Ok(v),
+            AnyValue::Utf8(v) => Ok(v),
             _ => Err(napi::Error::from_reason(
                 "invalid primitive cast".to_owned(),
             )),

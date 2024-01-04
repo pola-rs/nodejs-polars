@@ -522,7 +522,9 @@ impl From<JsRollingOptions> for RollingOptionsImpl<'static> {
             tu: None,
             tz: None,
             closed_window: None,
-            fn_params: Some(Arc::new(RollingVarParams { ddof: o.ddof.unwrap_or(1) }) as Arc<dyn Any + Send + Sync>),
+            fn_params: Some(Arc::new(RollingVarParams {
+                ddof: o.ddof.unwrap_or(1),
+            }) as Arc<dyn Any + Send + Sync>),
             ..Default::default()
         }
     }
@@ -537,7 +539,9 @@ impl From<JsRollingOptions> for RollingOptions {
             center: o.center,
             by: None,
             closed_window: None,
-            fn_params: Some(Arc::new(RollingVarParams { ddof: o.ddof.unwrap_or(1) }) as Arc<dyn Any + Send + Sync>),
+            fn_params: Some(Arc::new(RollingVarParams {
+                ddof: o.ddof.unwrap_or(1),
+            }) as Arc<dyn Any + Send + Sync>),
             ..Default::default()
         }
     }
@@ -1024,7 +1028,6 @@ impl FromJsUnknown for DataType {
         }
     }
 }
-
 
 impl FromJsUnknown for bool {
     fn from_js(val: JsUnknown) -> Result<Self> {

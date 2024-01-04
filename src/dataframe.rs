@@ -996,7 +996,10 @@ impl JsDataFrame {
 
     #[napi(catch_unwind)]
     pub fn hmean(&self, null_strategy: Wrap<NullStrategy>) -> napi::Result<Option<JsSeries>> {
-        let s = self.df.mean_horizontal(null_strategy.0).map_err(JsPolarsErr::from)?;
+        let s = self
+            .df
+            .mean_horizontal(null_strategy.0)
+            .map_err(JsPolarsErr::from)?;
         Ok(s.map(|s| s.into()))
     }
     #[napi(catch_unwind)]
@@ -1013,7 +1016,10 @@ impl JsDataFrame {
 
     #[napi(catch_unwind)]
     pub fn hsum(&self, null_strategy: Wrap<NullStrategy>) -> napi::Result<Option<JsSeries>> {
-        let s = self.df.sum_horizontal(null_strategy.0).map_err(JsPolarsErr::from)?;
+        let s = self
+            .df
+            .sum_horizontal(null_strategy.0)
+            .map_err(JsPolarsErr::from)?;
         Ok(s.map(|s| s.into()))
     }
     #[napi(catch_unwind)]
@@ -1090,12 +1096,7 @@ impl JsDataFrame {
     ) -> napi::Result<JsDataFrame> {
         let df = self
             .df
-            .sample_n(
-                &n.series,
-                with_replacement,
-                shuffle,
-                seed.map(|s| s as u64),
-            )
+            .sample_n(&n.series, with_replacement, shuffle, seed.map(|s| s as u64))
             .map_err(JsPolarsErr::from)?;
         Ok(df.into())
     }
@@ -1110,7 +1111,12 @@ impl JsDataFrame {
     ) -> napi::Result<JsDataFrame> {
         let df = self
             .df
-            .sample_frac(&frac.series, with_replacement, shuffle, seed.map(|s| s as u64))
+            .sample_frac(
+                &frac.series,
+                with_replacement,
+                shuffle,
+                seed.map(|s| s as u64),
+            )
             .map_err(JsPolarsErr::from)?;
         Ok(df.into())
     }

@@ -208,6 +208,11 @@ export interface ScanCsvOptions {
   lowMemory: boolean;
   parseDates: boolean;
   skipRowsAfterHeader: number;
+  eolChar: string;
+  missingUtf8IsEmptyString: boolean;
+  raiseIfEmpty: boolean;
+  truncateRaggedLines: boolean;
+  schema: Record<string, DataType>;
 }
 
 const scanCsvDefaultOptions: Partial<ScanCsvOptions> = {

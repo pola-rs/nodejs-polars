@@ -490,7 +490,10 @@ impl JsExpr {
     }
     #[napi(catch_unwind)]
     pub fn clip(&self, min: &JsExpr, max: &JsExpr) -> JsExpr {
-        self.clone().inner.clip(min.inner.clone(), max.inner.clone()).into()
+        self.clone()
+            .inner
+            .clip(min.inner.clone(), max.inner.clone())
+            .into()
     }
     #[napi(catch_unwind)]
     pub fn abs(&self) -> JsExpr {
@@ -605,7 +608,9 @@ impl JsExpr {
     pub fn str_strip(&self) -> JsExpr {
         let function = |s: Series| {
             let ca = s.utf8()?;
-            Ok(Some(ca.apply(|s| Some(Cow::Borrowed(s?.trim()))).into_series()))
+            Ok(Some(
+                ca.apply(|s| Some(Cow::Borrowed(s?.trim()))).into_series(),
+            ))
         };
         self.clone()
             .inner
@@ -619,7 +624,8 @@ impl JsExpr {
         let function = |s: Series| {
             let ca = s.utf8()?;
             Ok(Some(
-                ca.apply(|s| Some(Cow::Borrowed(s?.trim_end()))).into_series(),
+                ca.apply(|s| Some(Cow::Borrowed(s?.trim_end())))
+                    .into_series(),
             ))
         };
         self.clone()
@@ -634,7 +640,8 @@ impl JsExpr {
         let function = |s: Series| {
             let ca = s.utf8()?;
             Ok(Some(
-                ca.apply(|s| Some(Cow::Borrowed(s?.trim_start()))).into_series(),
+                ca.apply(|s| Some(Cow::Borrowed(s?.trim_start())))
+                    .into_series(),
             ))
         };
         self.clone()
@@ -661,7 +668,6 @@ impl JsExpr {
             .into()
     }
 
-    
     #[napi(catch_unwind)]
     pub fn str_pad_end(&self, length: i64, fill_char: String) -> JsExpr {
         let function = move |s: Series| {
@@ -678,7 +684,7 @@ impl JsExpr {
             .with_fmt("str.pad_end")
             .into()
     }
-    
+
     #[napi(catch_unwind)]
     pub fn str_z_fill(&self, width: i64) -> JsExpr {
         let function = move |s: Series| {
@@ -891,7 +897,11 @@ impl JsExpr {
     }
     #[napi(catch_unwind)]
     pub fn str_split_exact(&self, by: Wrap<Expr>, n: i64) -> JsExpr {
-        self.inner.clone().str().split_exact(by.0, n as usize).into()
+        self.inner
+            .clone()
+            .str()
+            .split_exact(by.0, n as usize)
+            .into()
     }
     #[napi(catch_unwind)]
     pub fn str_split_exact_inclusive(&self, by: Wrap<Expr>, n: i64) -> JsExpr {
@@ -1150,7 +1160,7 @@ impl JsExpr {
     pub fn lower_bound(&self) -> JsExpr {
         self.inner.clone().lower_bound().into()
     }
-    
+
     #[napi(catch_unwind)]
     pub fn upper_bound(&self) -> JsExpr {
         self.inner.clone().upper_bound().into()
@@ -1207,7 +1217,11 @@ impl JsExpr {
     }
     #[napi(catch_unwind)]
     pub fn list_join(&self, separator: &JsExpr) -> JsExpr {
-        self.inner.clone().list().join(separator.inner.clone()).into()
+        self.inner
+            .clone()
+            .list()
+            .join(separator.inner.clone())
+            .into()
     }
     #[napi(catch_unwind)]
     pub fn list_arg_min(&self) -> JsExpr {
@@ -1225,7 +1239,11 @@ impl JsExpr {
 
     #[napi(catch_unwind)]
     pub fn list_shift(&self, periods: &JsExpr) -> JsExpr {
-        self.inner.clone().list().shift(periods.inner.clone()).into()
+        self.inner
+            .clone()
+            .list()
+            .shift(periods.inner.clone())
+            .into()
     }
     #[napi(catch_unwind)]
     pub fn list_slice(&self, offset: &JsExpr, length: Option<&JsExpr>) -> JsExpr {
@@ -1285,7 +1303,11 @@ impl JsExpr {
     }
     #[napi(catch_unwind)]
     pub fn str_concat(&self, delimiter: String, ignore_nulls: bool) -> JsExpr {
-        self.inner.clone().str().concat(&delimiter, ignore_nulls).into()
+        self.inner
+            .clone()
+            .str()
+            .concat(&delimiter, ignore_nulls)
+            .into()
     }
     #[napi(catch_unwind)]
     pub fn cat_set_ordering(&self, ordering: String) -> JsExpr {
@@ -1672,32 +1694,32 @@ pub fn all_horizontal(exprs: Vec<&JsExpr>) -> JsExpr {
 pub fn any_horizontal(exprs: Vec<&JsExpr>) -> JsExpr {
     let exprs = exprs.to_exprs();
     dsl::any_horizontal(exprs)
-    .map_err(JsPolarsErr::from)
-    .unwrap()
-    .into()
+        .map_err(JsPolarsErr::from)
+        .unwrap()
+        .into()
 }
 #[napi(catch_unwind)]
 pub fn min_horizontal(exprs: Vec<&JsExpr>) -> JsExpr {
     let exprs = exprs.to_exprs();
     dsl::min_horizontal(exprs)
-    .map_err(JsPolarsErr::from)
-    .unwrap()
-    .into()
+        .map_err(JsPolarsErr::from)
+        .unwrap()
+        .into()
 }
 
 #[napi(catch_unwind)]
 pub fn max_horizontal(exprs: Vec<&JsExpr>) -> JsExpr {
     let exprs = exprs.to_exprs();
     dsl::max_horizontal(exprs)
-    .map_err(JsPolarsErr::from)
-    .unwrap()
-    .into()
+        .map_err(JsPolarsErr::from)
+        .unwrap()
+        .into()
 }
 #[napi(catch_unwind)]
 pub fn sum_horizontal(exprs: Vec<&JsExpr>) -> JsExpr {
     let exprs = exprs.to_exprs();
     dsl::sum_horizontal(exprs)
-    .map_err(JsPolarsErr::from)
-    .unwrap()
-    .into()
+        .map_err(JsPolarsErr::from)
+        .unwrap()
+        .into()
 }

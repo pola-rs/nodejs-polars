@@ -4,7 +4,7 @@ use crate::prelude::*;
 use napi::{Env, Task};
 use polars::io::RowCount;
 use polars::lazy::frame::{LazyCsvReader, LazyFrame, LazyGroupBy};
-use polars::prelude::{ClosedWindow, CsvEncoding, DataFrame, Field, JoinType, Schema, col, lit};
+use polars::prelude::{col, lit, ClosedWindow, CsvEncoding, DataFrame, Field, JoinType, Schema};
 use polars_io::cloud::CloudOptions;
 use polars_io::parquet::ParallelStrategy;
 use std::collections::HashMap;
@@ -551,24 +551,23 @@ pub struct ScanCsvOptions {
     pub encoding: String,
     pub low_memory: Option<bool>,
     pub comment_char: Option<String>,
+    pub eol_char: Option<u8>,
     pub quote_char: Option<String>,
     pub parse_dates: Option<bool>,
     pub skip_rows_after_header: u32,
     pub row_count: Option<JsRowCount>,
+    pub null_values: Option<Wrap<NullValues>>,
+    pub missing_utf8_is_empty_string: Option<bool>,
+    pub raise_if_empty: Option<bool>,
+    pub truncate_ragged_lines: Option<bool>,
+    pub schema: Option<Wrap<Schema>>,
 }
 #[napi(catch_unwind)]
 pub fn scan_csv(path: String, options: ScanCsvOptions) -> napi::Result<JsLazyFrame> {
-    let cache = options.cache.unwrap_or(true);
-    let has_header = options.has_header.unwrap_or(true);
-    let low_memory = options.low_memory.unwrap_or(false);
-    let parse_dates = options.parse_dates.unwrap_or(false);
-    let rechunk = options.rechunk.unwrap_or(false);
-    let skip_rows = options.skip_rows.unwrap_or(0) as usize;
-
-    let infer_schema_length = options.infer_schema_length.unwrap_or(100) as usize;
     let n_rows = options.n_rows.map(|i| i as usize);
     let comment_char = options.comment_char.map(|s| s.as_bytes()[0]);
     let row_count = options.row_count.map(RowCount::from);
+    let missing_utf8_is_empty_string: bool = options.missing_utf8_is_empty_string.unwrap_or(false);
     let quote_char = if let Some(s) = options.quote_char {
         if s.is_empty() {
             None
@@ -594,23 +593,30 @@ pub fn scan_csv(path: String, options: ScanCsvOptions) -> napi::Result<JsLazyFra
         "utf8-lossy" => CsvEncoding::LossyUtf8,
         e => return Err(JsPolarsErr::Other(format!("encoding not {} not implemented.", e)).into()),
     };
+
     let r = LazyCsvReader::new(path)
-        .with_infer_schema_length(Some(infer_schema_length))
+        .with_infer_schema_length(Some(options.infer_schema_length.unwrap_or(100) as usize))
         .with_separator(options.sep.as_bytes()[0])
-        .has_header(has_header)
-        .with_ignore_errors(parse_dates)
-        .with_skip_rows(skip_rows)
+        .has_header(options.has_header.unwrap_or(true))
+        .with_ignore_errors(options.ignore_errors)
+        .with_skip_rows(options.skip_rows.unwrap_or(0) as usize)
         .with_n_rows(n_rows)
-        .with_cache(cache)
+        .with_cache(options.cache.unwrap_or(true))
         .with_dtype_overwrite(overwrite_dtype.as_ref())
-        .low_memory(low_memory)
+        .with_schema(options.schema.map(|schema| Arc::new(schema.0)))
+        .low_memory(options.low_memory.unwrap_or(false))
         .with_comment_char(comment_char)
         .with_quote_char(quote_char)
-        .with_rechunk(rechunk)
-        .with_skip_rows_after_header(skip_rows)
+        .with_end_of_line_char(options.eol_char.unwrap_or(b'\n'))
+        .with_rechunk(options.rechunk.unwrap_or(false))
+        .with_skip_rows_after_header(options.skip_rows_after_header as usize)
         .with_encoding(encoding)
         .with_row_count(row_count)
-        .with_try_parse_dates(parse_dates)
+        .with_try_parse_dates(options.parse_dates.unwrap_or(false))
+        .with_null_values(options.null_values.map(|s| s.0))
+        .with_missing_is_null(!missing_utf8_is_empty_string)
+        .truncate_ragged_lines(options.truncate_ragged_lines.unwrap_or(false))
+        .raise_if_empty(options.raise_if_empty.unwrap_or(true))
         .finish()
         .map_err(JsPolarsErr::from)?;
     Ok(r.into())

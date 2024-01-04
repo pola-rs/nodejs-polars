@@ -5,6 +5,8 @@ import fs from "fs";
 // eslint-disable-next-line no-undef
 const csvpath = path.resolve(__dirname, "./examples/datasets/foods1.csv");
 // eslint-disable-next-line no-undef
+const emptycsvpath = path.resolve(__dirname, "./examples/datasets/empty.csv");
+// eslint-disable-next-line no-undef
 const parquetpath = path.resolve(__dirname, "./examples/foods.parquet");
 // eslint-disable-next-line no-undef
 const avropath = path.resolve(__dirname, "./examples/foods.avro");
@@ -159,10 +161,20 @@ describe("scan", () => {
     expect(df.shape).toEqual({ height: 27, width: 4 });
   });
   it("can lazy load (scan) from a csv file with options", () => {
-    const df = pl
+    let df = pl
       .scanCSV(csvpath, {
         hasHeader: false,
-        skipRows: 1,
+        skipRows: 2,
+        nRows: 4,
+      })
+      .collectSync();
+
+    expect(df.shape).toEqual({ height: 4, width: 4 });
+
+    df = pl
+      .scanCSV(csvpath, {
+        hasHeader: true,
+        skipRows: 2,
         nRows: 4,
       })
       .collectSync();
@@ -170,10 +182,15 @@ describe("scan", () => {
     expect(df.shape).toEqual({ height: 4, width: 4 });
   });
 
+  it("can lazy load empty csv", () => {
+    const df = pl.scanCSV(emptycsvpath, { raiseIfEmpty: false }).collectSync();
+    expect(df.shape).toEqual({ height: 0, width: 0 });
+  });
+
   it("can lazy load (scan) from a parquet file with options", () => {
     pl.readCSV(csvpath, {
       hasHeader: false,
-      skipRows: 1,
+      skipRows: 2,
       nRows: 4,
     }).writeParquet(parquetpath);
 
