@@ -9,16 +9,15 @@ expect.extend({
         message: () => "series matches",
         pass: true,
       };
-    } else {
-      return {
-        message: () => `
+    }
+    return {
+      message: () => `
 Expected: 
 >>${expected} 
 Received:
 >>${actual}`,
-        pass: false,
-      };
-    }
+      pass: false,
+    };
   },
   toSeriesEqual(actual, expected) {
     const pass = actual.seriesEqual(expected);
@@ -27,16 +26,15 @@ Received:
         message: () => "series matches",
         pass: true,
       };
-    } else {
-      return {
-        message: () => `
+    }
+    return {
+      message: () => `
 Expected: 
 >>${expected} 
 Received:
 >>${actual}`,
-        pass: false,
-      };
-    }
+      pass: false,
+    };
   },
   toFrameEqual(actual, expected, nullEqual?) {
     const pass = actual.frameEqual(expected, nullEqual);
@@ -45,16 +43,15 @@ Received:
         message: () => "dataframes match",
         pass: true,
       };
-    } else {
-      return {
-        message: () => `
+    }
+    return {
+      message: () => `
 Expected: 
 >>${expected} 
 Received:
 >>${actual}`,
-        pass: false,
-      };
-    }
+      pass: false,
+    };
   },
   toFrameStrictEqual(actual, expected) {
     const frameEq = actual.frameEqual(expected);
@@ -64,16 +61,15 @@ Received:
         message: () => "dataframes match",
         pass: true,
       };
-    } else {
-      return {
-        message: () => `
+    }
+    return {
+      message: () => `
 Expected: 
 >>${expected} 
 Received:
 >>${actual}`,
-        pass: false,
-      };
-    }
+      pass: false,
+    };
   },
   toFrameEqualIgnoringOrder(act: pl.DataFrame, exp: pl.DataFrame) {
     const actual = act.sort(act.columns.sort());
@@ -84,16 +80,15 @@ Received:
         message: () => "dataframes match",
         pass: true,
       };
-    } else {
-      return {
-        message: () => `
+    }
+    return {
+      message: () => `
 Expected: 
 >>${expected} 
 Received:
 >>${actual}`,
-        pass: false,
-      };
-    }
+      pass: false,
+    };
   },
 });
 

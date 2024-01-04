@@ -50,9 +50,8 @@ export const ExprListFunctions = (_expr: any): ExprList => {
     get(index: number | Expr) {
       if (Expr.isExpr(index)) {
         return wrap("listGet", index._expr);
-      } else {
-        return wrap("listGet", pli.lit(index));
       }
+      return wrap("listGet", pli.lit(index));
     },
     head(n = 5) {
       return this.slice(0, n);
@@ -63,9 +62,8 @@ export const ExprListFunctions = (_expr: any): ExprList => {
     eval(expr, parallel = true) {
       if (Expr.isExpr(expr)) {
         return wrap("listEval", expr._expr, parallel);
-      } else {
-        return wrap("listEval", expr, parallel);
       }
+      return wrap("listEval", expr, parallel);
     },
     first() {
       return this.get(0);

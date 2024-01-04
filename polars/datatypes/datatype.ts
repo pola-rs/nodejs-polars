@@ -123,9 +123,8 @@ export abstract class DataType {
   toString() {
     if (this.inner) {
       return `${this.identity}(${this.variant}(${this.inner}))`;
-    } else {
-      return `${this.identity}(${this.variant})`;
     }
+    return `${this.identity}(${this.variant})`;
   }
   toJSON() {
     const inner = (this as any).inner;
@@ -136,11 +135,10 @@ export abstract class DataType {
           [this.variant]: inner[0],
         },
       };
-    } else {
-      return {
-        [this.identity]: this.variant,
-      };
     }
+    return {
+      [this.identity]: this.variant,
+    };
   }
   [Symbol.for("nodejs.util.inspect.custom")]() {
     return this.toJSON();
@@ -186,9 +184,8 @@ class _Datetime extends DataType {
         this.timeUnit === (other as _Datetime).timeUnit &&
         this.timeZone === (other as _Datetime).timeZone
       );
-    } else {
-      return false;
     }
+    return false;
   }
 }
 
@@ -202,9 +199,8 @@ class _List extends DataType {
   override equals(other: DataType): boolean {
     if (other.variant === this.variant) {
       return this.inner[0].equals((other as _List).inner[0]);
-    } else {
-      return false;
     }
+    return false;
   }
 }
 
@@ -237,9 +233,8 @@ class _Struct extends DataType {
           return otherfld.name === fld.name && otherfld.dtype.equals(fld.dtype);
         })
         .every((value) => value);
-    } else {
-      return false;
     }
+    return false;
   }
   override toJSON() {
     return {
