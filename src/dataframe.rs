@@ -50,26 +50,39 @@ pub(crate) fn to_jsseries_collection(s: Vec<Series>) -> Vec<JsSeries> {
 
 #[napi(object)]
 pub struct ReadCsvOptions {
-    pub infer_schema_length: Option<u32>,
-    pub chunk_size: u32,
-    pub has_header: bool,
-    pub ignore_errors: bool,
+    /// Stop reading from the csv after this number of rows is reached
     pub n_rows: Option<u32>,
+    // used by error ignore logic
+    pub max_records: Option<u32>,
     pub skip_rows: u32,
-    pub sep: String,
-    pub rechunk: bool,
+    /// Optional indexes of the columns to project
+    pub projection: Option<Vec<u32>>,
+    /// Optional column names to project/ select.
     pub columns: Option<Vec<String>>,
+    pub separator: Option<u8>,
+    pub schema: Option<Wrap<Schema>>,
     pub encoding: String,
     pub n_threads: Option<u32>,
-    pub dtypes: Option<HashMap<String, Wrap<DataType>>>,
-    pub null_values: Option<Wrap<NullValues>>,
     pub path: Option<String>,
-    pub low_memory: bool,
-    pub comment_char: Option<String>,
+    pub dtypes: Option<HashMap<String, Wrap<DataType>>>,
+    pub sample_size: u32,
+    pub chunk_size: u32,
+    pub comment_char: Option<u8>,
+    pub null_values: Option<Wrap<NullValues>>,
     pub quote_char: Option<String>,
-    pub parse_dates: bool,
     pub skip_rows_after_header: u32,
+    pub try_parse_dates: bool,
     pub row_count: Option<JsRowCount>,
+
+    /// Aggregates chunk afterwards to a single chunk.
+    pub rechunk: bool,
+    pub raise_if_empty: bool,
+    pub truncate_ragged_lines: bool,
+    pub missing_is_null: bool,
+    pub low_memory: bool,
+    pub has_header: bool,
+    pub ignore_errors: bool,
+    pub eol_char: String,
 }
 
 #[napi(catch_unwind)]
@@ -77,14 +90,11 @@ pub fn read_csv(
     path_or_buffer: Either<String, Buffer>,
     options: ReadCsvOptions,
 ) -> napi::Result<JsDataFrame> {
-    let infer_schema_length = options.infer_schema_length.map(|i| i as usize);
-    let n_threads = options.n_threads.map(|i| i as usize);
-    let n_rows = options.n_rows.map(|i| i as usize);
-    let skip_rows = options.skip_rows as usize;
-    let chunk_size = options.chunk_size as usize;
     let null_values = options.null_values.map(|w| w.0);
-    let comment_char = options.comment_char.map(|s| s.as_bytes()[0]);
     let row_count = options.row_count.map(RowCount::from);
+    let projection = options
+        .projection
+        .map(|p: Vec<u32>| p.into_iter().map(|p| p as usize).collect());
 
     let quote_char = if let Some(s) = options.quote_char {
         if s.is_empty() {
@@ -115,47 +125,63 @@ pub fn read_csv(
     let df = match path_or_buffer {
         Either::A(path) => CsvReader::from_path(path)
             .expect("unable to read file")
-            .infer_schema(infer_schema_length)
+            .infer_schema(Some(options.max_records.unwrap_or(100) as usize))
+            .with_projection(projection)
             .has_header(options.has_header)
-            .with_n_rows(n_rows)
-            .with_separator(options.sep.as_bytes()[0])
-            .with_skip_rows(skip_rows)
+            .with_n_rows(options.n_rows.map(|i| i as usize))
+            .with_separator(options.separator.unwrap_or(b','))
+            .with_skip_rows(options.skip_rows as usize)
             .with_ignore_errors(options.ignore_errors)
             .with_rechunk(options.rechunk)
-            .with_chunk_size(chunk_size)
+            .with_chunk_size(options.chunk_size as usize)
             .with_encoding(encoding)
             .with_columns(options.columns)
-            .with_n_threads(n_threads)
+            .with_n_threads(options.n_threads.map(|i| i as usize))
             .with_dtypes(overwrite_dtype.map(Arc::new))
+            .with_schema(options.schema.map(|schema| Arc::new(schema.0)))
             .low_memory(options.low_memory)
-            .with_comment_char(comment_char)
+            .with_comment_char(options.comment_char)
             .with_null_values(null_values)
-            .with_try_parse_dates(options.parse_dates)
+            .with_try_parse_dates(options.try_parse_dates)
             .with_quote_char(quote_char)
             .with_row_count(row_count)
+            .sample_size(options.sample_size as usize)
+            .with_skip_rows_after_header(options.skip_rows_after_header as usize)
+            .raise_if_empty(options.raise_if_empty)
+            .truncate_ragged_lines(options.truncate_ragged_lines)
+            .with_missing_is_null(options.missing_is_null)
+            .with_end_of_line_char(options.eol_char.as_bytes()[0])
             .finish()
             .map_err(JsPolarsErr::from)?,
         Either::B(buffer) => {
             let cursor = Cursor::new(buffer.as_ref());
             CsvReader::new(cursor)
-                .infer_schema(infer_schema_length)
+                .infer_schema(Some(options.max_records.unwrap_or(100) as usize))
+                .with_projection(projection)
                 .has_header(options.has_header)
-                .with_n_rows(n_rows)
-                .with_separator(options.sep.as_bytes()[0])
-                .with_skip_rows(skip_rows)
+                .with_n_rows(options.n_rows.map(|i| i as usize))
+                .with_separator(options.separator.unwrap_or(b','))
+                .with_skip_rows(options.skip_rows as usize)
                 .with_ignore_errors(options.ignore_errors)
                 .with_rechunk(options.rechunk)
-                .with_chunk_size(chunk_size)
+                .with_chunk_size(options.chunk_size as usize)
                 .with_encoding(encoding)
                 .with_columns(options.columns)
-                .with_n_threads(n_threads)
+                .with_n_threads(options.n_threads.map(|i| i as usize))
                 .with_dtypes(overwrite_dtype.map(Arc::new))
+                .with_schema(options.schema.map(|schema| Arc::new(schema.0)))
                 .low_memory(options.low_memory)
-                .with_comment_char(comment_char)
+                .with_comment_char(options.comment_char)
                 .with_null_values(null_values)
-                .with_try_parse_dates(options.parse_dates)
+                .with_try_parse_dates(options.try_parse_dates)
                 .with_quote_char(quote_char)
                 .with_row_count(row_count)
+                .sample_size(options.sample_size as usize)
+                .with_skip_rows_after_header(options.skip_rows_after_header as usize)
+                .raise_if_empty(options.raise_if_empty)
+                .truncate_ragged_lines(options.truncate_ragged_lines)
+                .with_missing_is_null(options.missing_is_null)
+                .with_end_of_line_char(options.eol_char.as_bytes()[0])
                 .finish()
                 .map_err(JsPolarsErr::from)?
         }

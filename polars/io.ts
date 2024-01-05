@@ -21,15 +21,20 @@ export interface ReadCsvOptions {
   encoding: "utf8" | "utf8-lossy";
   numThreads: number;
   dtypes: Record<string, DataType>;
+  sampleSize: number;
   lowMemory: boolean;
   commentChar: string;
   quoteChar: string;
+  eolChar: string;
   nullValues: string | Array<string> | Record<string, string>;
   chunkSize: number;
   skipRows: number;
-  parseDates: boolean;
+  tryParseDates: boolean;
   skipRowsAfterHeader: number;
   rowCount: any;
+  raiseIfEmpty: boolean;
+  truncateRaggedLines: boolean;
+  missingIsNull: boolean;
 }
 
 const readCsvDefaultOptions: Partial<ReadCsvOptions> = {
@@ -38,12 +43,17 @@ const readCsvDefaultOptions: Partial<ReadCsvOptions> = {
   ignoreErrors: true,
   chunkSize: 10000,
   skipRows: 0,
+  sampleSize: 1024,
   sep: ",",
   rechunk: false,
   encoding: "utf8",
   lowMemory: false,
-  parseDates: false,
+  tryParseDates: false,
   skipRowsAfterHeader: 0,
+  raiseIfEmpty: true,
+  truncateRaggedLines: true,
+  missingIsNull: true,
+  eolChar: "\n",
 };
 
 export interface ReadJsonOptions {

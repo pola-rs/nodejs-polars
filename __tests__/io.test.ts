@@ -65,13 +65,35 @@ describe("read:csv", () => {
       csvBuffer.toString("utf-8").slice(0, 22),
     );
   });
+  it("can read csv with ragged lines", () => {
+    const csvBuffer = Buffer.from("A\nB\nC,ragged\n", "utf-8");
+    let df = pl.readCSV(csvBuffer);
+    const expected = `shape: (2, 1)
+┌─────┐
+│ A   │
+│ --- │
+│ str │
+╞═════╡
+│ B   │
+│ C   │
+└─────┘`;
+    expect(df.toString()).toEqual(expected);
+    const f = () => {
+      df = pl.readCSV(csvBuffer, { truncateRaggedLines: false });
+    };
+    expect(f).toThrow();
+  });
+  it("can load empty csv", () => {
+    const df = pl.readCSV(emptycsvpath, { raiseIfEmpty: false });
+    expect(df.shape).toEqual({ height: 0, width: 0 });
+  });
   it("can parse datetimes", () => {
     const csv = `timestamp,open,high
 2021-01-01 00:00:00,0.00305500,0.00306000
 2021-01-01 00:15:00,0.00298800,0.00300400
 2021-01-01 00:30:00,0.00298300,0.00300100
 2021-01-01 00:45:00,0.00299400,0.00304000`;
-    const df = pl.readCSV(csv, { parseDates: true });
+    const df = pl.readCSV(csv, { tryParseDates: true });
     expect(df.dtypes.map((dt) => dt.toJSON())).toEqual([
       pl.Datetime("us").toJSON(),
       pl.Float64.toJSON(),
