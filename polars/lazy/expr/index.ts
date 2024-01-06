@@ -690,14 +690,13 @@ export const _Expr = (_expr: any): Expr => {
         return _Expr(
           _expr.clip(exprToLitOrExpr(arg)._expr, exprToLitOrExpr(max)._expr),
         );
-      } else {
-        return _Expr(
-          _expr.clip(
-            exprToLitOrExpr(arg.min)._expr,
-            exprToLitOrExpr(arg.max)._expr,
-          ),
-        );
       }
+      return _Expr(
+        _expr.clip(
+          exprToLitOrExpr(arg.min)._expr,
+          exprToLitOrExpr(arg.max)._expr,
+        ),
+      );
     },
     count() {
       return _Expr(_expr.count());
@@ -730,9 +729,8 @@ export const _Expr = (_expr: any): Expr => {
     diff(n, nullBehavior = "ignore") {
       if (typeof n === "number") {
         return _Expr(_expr.diff(n, nullBehavior));
-      } else {
-        return _Expr(_expr.diff(n.n, n.nullBehavior));
       }
+      return _Expr(_expr.diff(n.n, n.nullBehavior));
     },
     dot(other) {
       const expr = (exprToLitOrExpr(other, false) as any).inner();
@@ -762,19 +760,17 @@ export const _Expr = (_expr: any): Expr => {
             bias ?? false,
             ignoreNulls ?? true,
           );
-        } else {
-          return wrap(
-            "ewmMean",
-            opts.alpha ?? 0.5,
-            opts.adjust ?? true,
-            opts.minPeriods ?? 1,
-            opts.bias ?? false,
-            opts.ignoreNulls ?? true,
-          );
         }
-      } else {
-        return wrap("ewmMean", 0.5, true, 1, false, true);
+        return wrap(
+          "ewmMean",
+          opts.alpha ?? 0.5,
+          opts.adjust ?? true,
+          opts.minPeriods ?? 1,
+          opts.bias ?? false,
+          opts.ignoreNulls ?? true,
+        );
       }
+      return wrap("ewmMean", 0.5, true, 1, false, true);
     },
     ewmStd(
       opts: {
@@ -799,19 +795,17 @@ export const _Expr = (_expr: any): Expr => {
             bias ?? false,
             ignoreNulls ?? true,
           );
-        } else {
-          return wrap(
-            "ewmStd",
-            opts.alpha ?? 0.5,
-            opts.adjust ?? true,
-            opts.minPeriods ?? 1,
-            opts.bias ?? false,
-            opts.ignoreNulls ?? true,
-          );
         }
-      } else {
-        return wrap("ewmStd", 0.5, true, 1, false, true);
+        return wrap(
+          "ewmStd",
+          opts.alpha ?? 0.5,
+          opts.adjust ?? true,
+          opts.minPeriods ?? 1,
+          opts.bias ?? false,
+          opts.ignoreNulls ?? true,
+        );
       }
+      return wrap("ewmStd", 0.5, true, 1, false, true);
     },
     ewmVar(
       opts: {
@@ -836,19 +830,17 @@ export const _Expr = (_expr: any): Expr => {
             bias ?? false,
             ignoreNulls ?? true,
           );
-        } else {
-          return wrap(
-            "ewmVar",
-            opts.alpha ?? 0.5,
-            opts.adjust ?? true,
-            opts.minPeriods ?? 1,
-            opts.bias ?? false,
-            opts.ignoreNulls ?? true,
-          );
         }
-      } else {
-        return wrap("ewmVar", 0.5, true, 1, false, true);
+        return wrap(
+          "ewmVar",
+          opts.alpha ?? 0.5,
+          opts.adjust ?? true,
+          opts.minPeriods ?? 1,
+          opts.bias ?? false,
+          opts.ignoreNulls ?? true,
+        );
       }
+      return wrap("ewmVar", 0.5, true, 1, false, true);
     },
     exclude(...columns) {
       return _Expr(_expr.exclude(columns.flat(2)));
@@ -1119,9 +1111,8 @@ export const _Expr = (_expr: any): Expr => {
       }
       if (typeof frac === "number") {
         return wrap("sampleFrac", frac, withReplacement, false, seed);
-      } else {
-        throw new TypeError("must specify either 'frac' or 'n'");
       }
+      throw new TypeError("must specify either 'frac' or 'n'");
     },
     shift(periods) {
       return _Expr(_expr.shift(exprToLitOrExpr(periods)._expr));
@@ -1129,13 +1120,8 @@ export const _Expr = (_expr: any): Expr => {
     shiftAndFill(optOrPeriods, fillValue?) {
       if (typeof optOrPeriods === "number") {
         return wrap("shiftAndFill", optOrPeriods, fillValue);
-      } else {
-        return wrap(
-          "shiftAndFill",
-          optOrPeriods.periods,
-          optOrPeriods.fillValue,
-        );
       }
+      return wrap("shiftAndFill", optOrPeriods.periods, optOrPeriods.fillValue);
     },
     skew(bias) {
       return wrap("skew", bias?.bias ?? bias ?? true);
@@ -1259,11 +1245,12 @@ export const Expr: ExprConstructor = Object.assign(_Expr, {
 export const exprToLitOrExpr = (expr: any, stringToLit = true): Expr => {
   if (typeof expr === "string" && !stringToLit) {
     return _Expr(pli.col(expr));
-  } else if (Expr.isExpr(expr)) {
-    return expr;
-  } else if (Series.isSeries(expr)) {
-    return _Expr(pli.lit((expr as any)._s));
-  } else {
-    return _Expr(pli.lit(expr));
   }
+  if (Expr.isExpr(expr)) {
+    return expr;
+  }
+  if (Series.isSeries(expr)) {
+    return _Expr(pli.lit((expr as any)._s));
+  }
+  return _Expr(pli.lit(expr));
 };

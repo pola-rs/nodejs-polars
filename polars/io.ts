@@ -123,11 +123,10 @@ export function readRecords(
 ): DataFrame {
   if (options?.schema) {
     return _DataFrame(pli.fromRows(records, options.schema));
-  } else {
-    return _DataFrame(
-      pli.fromRows(records, undefined, options?.inferSchemaLength),
-    );
   }
+  return _DataFrame(
+    pli.fromRows(records, undefined, options?.inferSchemaLength),
+  );
 }
 
 /**
@@ -184,12 +183,10 @@ export function readCSV(pathOrBody, options?) {
       const buf = Buffer.from(pathOrBody, "utf-8");
 
       return _DataFrame(pli.readCsv(buf, options));
-    } else {
-      return _DataFrame(pli.readCsv(pathOrBody, options));
     }
-  } else {
-    throw new Error("must supply either a path or body");
+    return _DataFrame(pli.readCsv(pathOrBody, options));
   }
+  throw new Error("must supply either a path or body");
 }
 
 export interface ScanCsvOptions {
@@ -314,12 +311,10 @@ export function readJSON(
     const inline = !isPath(pathOrBody, extensions);
     if (inline) {
       return _DataFrame(method(Buffer.from(pathOrBody, "utf-8"), options));
-    } else {
-      return _DataFrame(method(pathOrBody, options));
     }
-  } else {
-    throw new Error("must supply either a path or body");
+    return _DataFrame(method(pathOrBody, options));
   }
+  throw new Error("must supply either a path or body");
 }
 interface ScanJsonOptions {
   inferSchemaLength: number | null;
@@ -419,12 +414,10 @@ export function readParquet(
       return _DataFrame(
         pli.readParquet(Buffer.from(pathOrBody), pliOptions, parallel),
       );
-    } else {
-      return _DataFrame(pli.readParquet(pathOrBody, pliOptions, parallel));
     }
-  } else {
-    throw new Error("must supply either a path or body");
+    return _DataFrame(pli.readParquet(pathOrBody, pliOptions, parallel));
   }
+  throw new Error("must supply either a path or body");
 }
 
 export interface ReadAvroOptions {
@@ -455,12 +448,10 @@ export function readAvro(pathOrBody, options = {}) {
     const inline = !isPath(pathOrBody, [".avro"]);
     if (inline) {
       return _DataFrame(pli.readAvro(Buffer.from(pathOrBody), options));
-    } else {
-      return _DataFrame(pli.readAvro(pathOrBody, options));
     }
-  } else {
-    throw new Error("must supply either a path or body");
+    return _DataFrame(pli.readAvro(pathOrBody, options));
   }
+  throw new Error("must supply either a path or body");
 }
 
 interface RowCount {
@@ -525,12 +516,10 @@ export function readIPC(pathOrBody, options = {}) {
     const inline = !isPath(pathOrBody, [".ipc"]);
     if (inline) {
       return _DataFrame(pli.readIpc(Buffer.from(pathOrBody, "utf-8"), options));
-    } else {
-      return _DataFrame(pli.readIpc(pathOrBody, options));
     }
-  } else {
-    throw new Error("must supply either a path or body");
+    return _DataFrame(pli.readIpc(pathOrBody, options));
   }
+  throw new Error("must supply either a path or body");
 }
 
 export interface ScanIPCOptions {

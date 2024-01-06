@@ -1365,9 +1365,8 @@ export function _Series(_s: any): Series {
         )
       ) {
         throw new InvalidOperationError("isFinite", dtype);
-      } else {
-        return wrap("isFinite");
       }
+      return wrap("isFinite");
     },
     isFirstDistinct() {
       return wrap("isFirstDistinct");
@@ -1393,9 +1392,8 @@ export function _Series(_s: any): Series {
         )
       ) {
         throw new InvalidOperationError("isFinite", dtype);
-      } else {
-        return wrap("isInfinite");
       }
+      return wrap("isInfinite");
     },
     isNotNull() {
       return wrap("isNotNull");
@@ -1525,9 +1523,8 @@ export function _Series(_s: any): Series {
         )
       ) {
         return wrap("reinterpret", signed);
-      } else {
-        throw new InvalidOperationError("reinterpret", dtype);
       }
+      throw new InvalidOperationError("reinterpret", dtype);
     },
     rem(field) {
       return dtypeWrap("Rem", field);
@@ -1580,12 +1577,10 @@ export function _Series(_s: any): Series {
       if (this.isNumeric()) {
         if (typeof opt === "number") {
           return wrap("round", opt);
-        } else {
-          return wrap("round", opt.decimals);
         }
-      } else {
-        throw new InvalidOperationError("round", this.dtype);
+        return wrap("round", opt.decimals);
       }
+      throw new InvalidOperationError("round", this.dtype);
     },
     clip(...args) {
       return expr_op("clip", ...args);
@@ -1624,9 +1619,8 @@ export function _Series(_s: any): Series {
       }
       if (typeof frac === "number") {
         return wrap("sampleFrac", frac, withReplacement, false, seed);
-      } else {
-        throw new TypeError("must specify either 'frac' or 'n'");
       }
+      throw new TypeError("must specify either 'frac' or 'n'");
     },
     seriesEqual(other, nullEqual: any = true, strict = false) {
       return _s.seriesEqual(other._s, nullEqual, strict);
@@ -1692,9 +1686,8 @@ export function _Series(_s: any): Series {
     toTypedArray() {
       if (!this.hasValidity()) {
         return _s.toTypedArray();
-      } else {
-        throw new Error("data contains nulls, unable to convert to TypedArray");
       }
+      throw new Error("data contains nulls, unable to convert to TypedArray");
     },
     toFrame() {
       return _DataFrame(new pli.JsDataFrame([_s]));
@@ -1716,9 +1709,8 @@ export function _Series(_s: any): Series {
     unique(maintainOrder?) {
       if (maintainOrder) {
         return wrap("uniqueStable");
-      } else {
-        return wrap("unique");
       }
+      return wrap("unique");
     },
     valueCounts() {
       return null as any;
@@ -1732,14 +1724,13 @@ export function _Series(_s: any): Series {
   };
 
   return new Proxy(series, {
-    get: function (target, prop, receiver) {
+    get: (target, prop, receiver) => {
       if (typeof prop !== "symbol" && !Number.isNaN(Number(prop))) {
         return target.get(Number(prop));
-      } else {
-        return Reflect.get(target, prop, receiver);
       }
+      return Reflect.get(target, prop, receiver);
     },
-    set: function (series, prop, input): any {
+    set: (series, prop, input): any => {
       if (typeof prop !== "symbol" && !Number.isNaN(Number(prop))) {
         series.setAtIdx([Number(prop)], input);
 
@@ -1806,12 +1797,12 @@ export interface SeriesConstructor extends Deserialize<Series> {
   // fromBinary(binary: Buffer): Series
 }
 
-const SeriesConstructor = function (
+const SeriesConstructor = (
   arg0: any,
   arg1?: any,
   dtype?: any,
   strict?: any,
-): Series {
+): Series => {
   if (typeof arg0 === "string") {
     const _s = arrayToJsSeries(arg0, arg1, dtype, strict);
 
@@ -1831,9 +1822,8 @@ const isSeries = (anyVal: any): anyVal is Series => {
 const from = (name, values?: ArrayLike<any>): Series => {
   if (Array.isArray(name)) {
     return SeriesConstructor("", values);
-  } else {
-    return SeriesConstructor(name, values);
   }
+  return SeriesConstructor(name, values);
 };
 const of = (...values: any[]): Series => {
   return Series.from(values);

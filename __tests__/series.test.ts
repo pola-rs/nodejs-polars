@@ -546,10 +546,10 @@ describe("series", () => {
     }
   });
   it("describe", () => {
-    expect(() => pl.Series([]).describe()).toThrowError(
+    expect(() => pl.Series([]).describe()).toThrow(
       "Series must contain at least one value",
     );
-    expect(() => pl.Series("dt", [null], pl.Date).describe()).toThrowError(
+    expect(() => pl.Series("dt", [null], pl.Date).describe()).toThrow(
       "Invalid operation: describe is not supported for DataType(Date)",
     );
     let actual = pl.Series([true, false, true]).describe();

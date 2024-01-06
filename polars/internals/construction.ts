@@ -214,9 +214,8 @@ export function arrayToJsDataFrame(data: any[], options?): any {
       if (columns) df.columns = columns;
 
       return df;
-    } else {
-      dataSeries = data.map((s, idx) => (Series(`column_${idx}`, s) as any)._s);
     }
+    dataSeries = data.map((s, idx) => (Series(`column_${idx}`, s) as any)._s);
   } else {
     dataSeries = [(Series("column_0", data) as any)._s];
   }
@@ -228,15 +227,15 @@ export function arrayToJsDataFrame(data: any[], options?): any {
 function handleColumnsArg(data: any[], columns?: string[]) {
   if (!columns) {
     return data;
-  } else {
-    if (!data) {
-      return columns.map((c) => (Series.from(c, []) as any)._s);
-    } else if (data.length === columns.length) {
-      for (const [idx, name] of columns.entries()) {
-        data[idx].rename(name);
-      }
-      return data;
+  }
+  if (!data) {
+    return columns.map((c) => (Series.from(c, []) as any)._s);
+  }
+  if (data.length === columns.length) {
+    for (const [idx, name] of columns.entries()) {
+      data[idx].rename(name);
     }
+    return data;
   }
   throw new TypeError("Dimensions of columns arg must match data dimensions.");
 }

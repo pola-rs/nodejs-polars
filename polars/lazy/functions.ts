@@ -104,11 +104,11 @@ export function col(col: string | string[] | Series | DataType): Expr {
   }
   if (Array.isArray(col)) {
     return _Expr(pli.cols(col));
-  } else if (typeof col === "object" && Object.values(col)[0] === "DataType") {
-    return _Expr(pli.dtypeCols([col]));
-  } else {
-    return _Expr(pli.col(col));
   }
+  if (typeof col === "object" && Object.values(col)[0] === "DataType") {
+    return _Expr(pli.dtypeCols([col]));
+  }
+  return _Expr(pli.col(col));
 }
 
 export function cols(col: string | string[]): Expr;
@@ -170,18 +170,17 @@ export function intRange(
 export function intRange(opts: any, high?, step = 1, eager?): Series | Expr {
   if (typeof opts?.low === "number") {
     return intRange(opts.low, opts.high, opts.step, opts.eager);
-  } else {
-    const low = exprToLitOrExpr(opts, false);
-    high = exprToLitOrExpr(high, false);
-    if (eager) {
-      const df = DataFrame({ a: [1] });
-
-      return df
-        .select(intRange(low, high, step).alias("intRange") as any)
-        .getColumn("intRange") as any;
-    }
-    return _Expr(pli.intRange(low, high, step, eager));
   }
+  const low = exprToLitOrExpr(opts, false);
+  high = exprToLitOrExpr(high, false);
+  if (eager) {
+    const df = DataFrame({ a: [1] });
+
+    return df
+      .select(intRange(low, high, step).alias("intRange") as any)
+      .getColumn("intRange") as any;
+  }
+  return _Expr(pli.intRange(low, high, step, eager));
 }
 
 /***
@@ -312,9 +311,8 @@ export function count(column: Series): number;
 export function count(column) {
   if (Series.isSeries(column)) {
     return column.len();
-  } else {
-    return col(column).count();
   }
+  return col(column).count();
 }
 
 /** Compute the covariance between two columns/ expressions. */
@@ -349,14 +347,12 @@ export function first<T>(column?: string | Series): Expr | T {
   if (Series.isSeries(column)) {
     if (column.length) {
       return column.get(0);
-    } else {
-      throw new RangeError(
-        "The series is empty, so no first value can be returned.",
-      );
     }
-  } else {
-    return col(column).first();
+    throw new RangeError(
+      "The series is empty, so no first value can be returned.",
+    );
   }
+  return col(column).first();
 }
 
 /**
@@ -426,9 +422,8 @@ export function head(column: Series, n?: number): Series;
 export function head(column: Series | ExprOrString, n?): Series | Expr {
   if (Series.isSeries(column)) {
     return column.head(n);
-  } else {
-    return exprToLitOrExpr(column, false).head(n);
   }
+  return exprToLitOrExpr(column, false).head(n);
 }
 
 /** Get the last value. */
@@ -436,14 +431,12 @@ export function last(column: ExprOrString | Series): any {
   if (Series.isSeries(column)) {
     if (column.length) {
       return column.get(-1);
-    } else {
-      throw new RangeError(
-        "The series is empty, so no last value can be returned.",
-      );
     }
-  } else {
-    return exprToLitOrExpr(column, false).last();
+    throw new RangeError(
+      "The series is empty, so no last value can be returned.",
+    );
   }
+  return exprToLitOrExpr(column, false).last();
 }
 
 /** Get the mean value. */
@@ -521,9 +514,8 @@ export function tail(column: Series, n?: number): Series;
 export function tail(column: Series | ExprOrString, n?: number): Series | Expr {
   if (Series.isSeries(column)) {
     return column.tail(n);
-  } else {
-    return exprToLitOrExpr(column, false).tail(n);
   }
+  return exprToLitOrExpr(column, false).tail(n);
 }
 
 /** Syntactic sugar for `pl.col(column).list()` */

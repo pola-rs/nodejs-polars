@@ -470,13 +470,14 @@ const prepareGroupbyInputs = (by) => {
     }
 
     return newBy;
-  } else if (typeof by === "string") {
-    return [pli.col(by)];
-  } else if (Expr.isExpr(by)) {
-    return [by._expr];
-  } else {
-    return [];
   }
+  if (typeof by === "string") {
+    return [pli.col(by)];
+  }
+  if (Expr.isExpr(by)) {
+    return [by._expr];
+  }
+  return [];
 };
 
 /** @ignore */
@@ -545,9 +546,8 @@ export const _LazyDataFrame = (_ldf: any): LazyDataFrame => {
     dropNulls(...subset) {
       if (subset.length) {
         return wrap("dropNulls", subset.flat(2));
-      } else {
-        return wrap("dropNulls");
       }
+      return wrap("dropNulls");
     },
     explode(...columns) {
       if (!columns.length) {
@@ -841,9 +841,8 @@ export const _LazyDataFrame = (_ldf: any): LazyDataFrame => {
     shiftAndFill(opts: any, fillValue?: number | undefined) {
       if (typeof opts === "number") {
         return _LazyDataFrame(_ldf.shiftAndFill(opts, fillValue));
-      } else {
-        return _LazyDataFrame(_ldf.shiftAndFill(opts?.n, opts?.fillValue));
       }
+      return _LazyDataFrame(_ldf.shiftAndFill(opts?.n, opts?.fillValue));
     },
     slice(opt, len?) {
       if (opt?.offset !== undefined) {
@@ -857,12 +856,11 @@ export const _LazyDataFrame = (_ldf: any): LazyDataFrame => {
       }
       if (typeof arg === "string") {
         return wrap("sort", arg, descending, maintain_order, true, false);
-      } else {
-        descending = [descending].flat(3) as any;
-        const by = selectionToExprList(arg, false);
-
-        return wrap("sortByExprs", by, descending, maintain_order, true);
       }
+      descending = [descending].flat(3) as any;
+      const by = selectionToExprList(arg, false);
+
+      return wrap("sortByExprs", by, descending, maintain_order, true);
     },
     std() {
       return _LazyDataFrame(_ldf.std());

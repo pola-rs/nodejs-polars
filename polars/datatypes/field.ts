@@ -31,10 +31,10 @@ export namespace Field {
   export function from(nameOrObj, dtype?: DataType): Field {
     if (typeof nameOrObj === "string" && dtype) {
       return new Field(nameOrObj, dtype);
-    } else if (Array.isArray(nameOrObj)) {
-      return new Field(nameOrObj[0], nameOrObj[1]);
-    } else {
-      return new Field(nameOrObj.name, nameOrObj.dtype);
     }
+    if (Array.isArray(nameOrObj)) {
+      return new Field(nameOrObj[0], nameOrObj[1]);
+    }
+    return new Field(nameOrObj.name, nameOrObj.dtype);
   }
 }
