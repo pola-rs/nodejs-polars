@@ -2,7 +2,7 @@ name: nodejs-polars
 env:
   DEBUG: napi:*
   APP_NAME: nodejs-polars
-  MACOSX_DEPLOYMENT_TARGET: "10.13"
+  MACOSX_DEPLOYMENT_TARGET: "12.0"
 "on":
   push:
     # Sequence of patterns matched against refs/tags
@@ -107,7 +107,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Setup node
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         if: ${{ !matrix.settings.docker }}
         with:
           node-version: 20
@@ -146,7 +146,7 @@ jobs:
       - name: Install dependencies
         run: yarn install
       - name: Setup node x86
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         if: matrix.settings.target == 'i686-pc-windows-msvc'
         with:
           node-version: 20
@@ -165,7 +165,7 @@ jobs:
         if: ${{ !matrix.settings.docker }}
         shell: bash
       - name: Upload artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: bindings-${{ matrix.settings.target }}
           path: polars/*.node
@@ -179,7 +179,7 @@ jobs:
       - name: Install dependencies
         run: yarn install
       - name: Download all artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: bindings-x86_64-apple-darwin
           path: polars
@@ -192,7 +192,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v3
+      - uses: actions/setup-node@v4
         with:
           node-version: "20"
           registry-url: "https://registry.npmjs.org"
@@ -203,7 +203,7 @@ jobs:
         run: yarn install
 
       - name: Download all artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           path: artifacts
 

@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "target": "es2020",
+    "target": "ES2023",
     "module": "commonjs",
     "outDir": "./bin",
     "esModuleInterop": true,
