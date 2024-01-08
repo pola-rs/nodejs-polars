@@ -1708,9 +1708,8 @@ export interface DataFrame
 function prepareOtherArg(anyValue: any): Series {
   if (Series.isSeries(anyValue)) {
     return anyValue;
-  } else {
-    return Series([anyValue]) as Series;
   }
+  return Series([anyValue]) as Series;
 }
 
 function map(df: DataFrame, fn: (...args: any[]) => any[]) {
@@ -1841,9 +1840,8 @@ export const _DataFrame = (_df: any): DataFrame => {
           df.getColumns().map((s) => {
             if (s.isNumeric() || s.isBoolean()) {
               return s.cast(DataType.Float64);
-            } else {
-              return s;
             }
+            return s;
           }),
         );
       };
@@ -1877,9 +1875,8 @@ export const _DataFrame = (_df: any): DataFrame => {
     dropNulls(...subset) {
       if (subset.length) {
         return wrap("dropNulls", subset.flat(2));
-      } else {
-        return wrap("dropNulls");
       }
+      return wrap("dropNulls");
     },
     distinct(opts: any = false, subset?, keep = "first") {
       return this.unique(opts, subset);
@@ -2037,9 +2034,8 @@ export const _DataFrame = (_df: any): DataFrame => {
     max(axis = 0) {
       if (axis === 1) {
         return _Series(_df.hmax() as any) as any;
-      } else {
-        return wrap("max");
       }
+      return wrap("max");
     },
     mean(axis = 0, nullStrategy = "ignore") {
       if (axis === 1) {
@@ -2057,9 +2053,8 @@ export const _DataFrame = (_df: any): DataFrame => {
     min(axis = 0) {
       if (axis === 1) {
         return _Series(_df.hmin() as any) as any;
-      } else {
-        return wrap("min");
       }
+      return wrap("min");
     },
     nChunks() {
       return _df.nChunks();
@@ -2168,28 +2163,25 @@ export const _DataFrame = (_df: any): DataFrame => {
           false,
           seed,
         );
-      } else {
-        throw new TypeError("must specify either 'frac' or 'n'");
       }
+      throw new TypeError("must specify either 'frac' or 'n'");
     },
     select(...selection) {
       const hasExpr = selection.flat().some((s) => Expr.isExpr(s));
       if (hasExpr) {
         return _DataFrame(_df).lazy().select(selection).collectSync();
-      } else {
-        return wrap("select", columnOrColumnsStrict(selection as any));
       }
+      return wrap("select", columnOrColumnsStrict(selection as any));
     },
     shift: (opt) => wrap("shift", opt?.periods ?? opt),
     shiftAndFill(n: any, fillValue?: number | undefined) {
       if (typeof n === "number" && fillValue) {
         return _DataFrame(_df).lazy().shiftAndFill(n, fillValue).collectSync();
-      } else {
-        return _DataFrame(_df)
-          .lazy()
-          .shiftAndFill(n.n, n.fillValue)
-          .collectSync();
       }
+      return _DataFrame(_df)
+        .lazy()
+        .shiftAndFill(n.n, n.fillValue)
+        .collectSync();
     },
     shrinkToFit(inPlace: any = false): any {
       if (inPlace) {
@@ -2408,9 +2400,8 @@ export const _DataFrame = (_df: any): DataFrame => {
       }
       if (!options?.columnNames) {
         return wrap("transpose", keep_names_as, undefined);
-      } else {
-        return wrap("transpose", keep_names_as, options.columnNames);
       }
+      return wrap("transpose", keep_names_as, options.columnNames);
     },
     unnest(names) {
       names = Array.isArray(names) ? names : [names];
@@ -2428,9 +2419,8 @@ export const _DataFrame = (_df: any): DataFrame => {
     withColumn(column: Series | Expr) {
       if (Series.isSeries(column)) {
         return wrap("withColumn", column.inner());
-      } else {
-        return this.withColumns(column);
       }
+      return this.withColumns(column);
     },
     withColumns(...columns: (Expr | Series)[]) {
       if (isSeriesArray(columns)) {
@@ -2438,18 +2428,16 @@ export const _DataFrame = (_df: any): DataFrame => {
           (acc, curr) => acc.withColumn(curr),
           _DataFrame(_df),
         );
-      } else {
-        return this.lazy()
-          .withColumns(columns)
-          .collectSync({ noOptimization: true, stringCache: false });
       }
+      return this.lazy()
+        .withColumns(columns)
+        .collectSync({ noOptimization: true, stringCache: false });
     },
     withColumnRenamed(opt, replacement?) {
       if (typeof opt === "string") {
         return this.rename({ [opt]: replacement });
-      } else {
-        return this.rename({ [opt.existing]: opt.replacement });
       }
+      return this.rename({ [opt.existing]: opt.replacement });
     },
     withRowCount(name = "row_nr") {
       return wrap("withRowCount", name);
@@ -2477,9 +2465,8 @@ export const _DataFrame = (_df: any): DataFrame => {
       }
       if (typeof prop !== "symbol" && !Number.isNaN(Number(prop))) {
         return target.row(Number(prop));
-      } else {
-        return Reflect.get(target, prop, receiver);
       }
+      return Reflect.get(target, prop, receiver);
     },
     set(target: DataFrame, prop, receiver) {
       if (Series.isSeries(receiver)) {

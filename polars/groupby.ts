@@ -174,9 +174,8 @@ export function _GroupBy(df: any, by: string[], maintainOrder = false) {
     if (typeof opts === "string") {
       if (valuesCol) {
         return pivot({ pivotCol: opts, valuesCol });
-      } else {
-        throw new Error("must specify both pivotCol and valuesCol");
       }
+      throw new Error("must specify both pivotCol and valuesCol");
     }
 
     return PivotOps(df, by, opts.pivotCol, opts.valuesCol);
@@ -191,17 +190,16 @@ export function _GroupBy(df: any, by: string[], maintainOrder = false) {
         .groupBy(by, maintainOrder)
         .agg(...aggs)
         .collectSync({ noOptimization: true });
-    } else {
-      const pairs = Object.entries(aggs[0]).flatMap(([key, values]) => {
-        return [values].flat(2).map((v) => col(key)[v as any]());
-      });
-
-      return _DataFrame(df)
-        .lazy()
-        .groupBy(by, maintainOrder)
-        .agg(...pairs)
-        .collectSync({ noOptimization: true });
     }
+    const pairs = Object.entries(aggs[0]).flatMap(([key, values]) => {
+      return [values].flat(2).map((v) => col(key)[v as any]());
+    });
+
+    return _DataFrame(df)
+      .lazy()
+      .groupBy(by, maintainOrder)
+      .agg(...pairs)
+      .collectSync({ noOptimization: true });
   };
 
   return Object.seal({

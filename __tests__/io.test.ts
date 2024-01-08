@@ -5,6 +5,8 @@ import fs from "fs";
 // eslint-disable-next-line no-undef
 const csvpath = path.resolve(__dirname, "./examples/datasets/foods1.csv");
 // eslint-disable-next-line no-undef
+const emptycsvpath = path.resolve(__dirname, "./examples/datasets/empty.csv");
+// eslint-disable-next-line no-undef
 const parquetpath = path.resolve(__dirname, "./examples/foods.parquet");
 // eslint-disable-next-line no-undef
 const avropath = path.resolve(__dirname, "./examples/foods.avro");
@@ -63,13 +65,35 @@ describe("read:csv", () => {
       csvBuffer.toString("utf-8").slice(0, 22),
     );
   });
+  it("can read csv with ragged lines", () => {
+    const csvBuffer = Buffer.from("A\nB\nC,ragged\n", "utf-8");
+    let df = pl.readCSV(csvBuffer);
+    const expected = `shape: (2, 1)
+┌─────┐
+│ A   │
+│ --- │
+│ str │
+╞═════╡
+│ B   │
+│ C   │
+└─────┘`;
+    expect(df.toString()).toEqual(expected);
+    const f = () => {
+      df = pl.readCSV(csvBuffer, { truncateRaggedLines: false });
+    };
+    expect(f).toThrow();
+  });
+  it("can load empty csv", () => {
+    const df = pl.readCSV(emptycsvpath, { raiseIfEmpty: false });
+    expect(df.shape).toEqual({ height: 0, width: 0 });
+  });
   it("can parse datetimes", () => {
     const csv = `timestamp,open,high
 2021-01-01 00:00:00,0.00305500,0.00306000
 2021-01-01 00:15:00,0.00298800,0.00300400
 2021-01-01 00:30:00,0.00298300,0.00300100
 2021-01-01 00:45:00,0.00299400,0.00304000`;
-    const df = pl.readCSV(csv, { parseDates: true });
+    const df = pl.readCSV(csv, { tryParseDates: true });
     expect(df.dtypes.map((dt) => dt.toJSON())).toEqual([
       pl.Datetime("us").toJSON(),
       pl.Float64.toJSON(),
@@ -159,10 +183,20 @@ describe("scan", () => {
     expect(df.shape).toEqual({ height: 27, width: 4 });
   });
   it("can lazy load (scan) from a csv file with options", () => {
-    const df = pl
+    let df = pl
       .scanCSV(csvpath, {
         hasHeader: false,
-        skipRows: 1,
+        skipRows: 2,
+        nRows: 4,
+      })
+      .collectSync();
+
+    expect(df.shape).toEqual({ height: 4, width: 4 });
+
+    df = pl
+      .scanCSV(csvpath, {
+        hasHeader: true,
+        skipRows: 2,
         nRows: 4,
       })
       .collectSync();
@@ -170,10 +204,15 @@ describe("scan", () => {
     expect(df.shape).toEqual({ height: 4, width: 4 });
   });
 
+  it("can lazy load empty csv", () => {
+    const df = pl.scanCSV(emptycsvpath, { raiseIfEmpty: false }).collectSync();
+    expect(df.shape).toEqual({ height: 0, width: 0 });
+  });
+
   it("can lazy load (scan) from a parquet file with options", () => {
     pl.readCSV(csvpath, {
       hasHeader: false,
-      skipRows: 1,
+      skipRows: 2,
       nRows: 4,
     }).writeParquet(parquetpath);
 

@@ -338,22 +338,30 @@ impl JsSeries {
     #[napi(catch_unwind)]
     pub fn cum_sum(&self, reverse: Option<bool>) -> napi::Result<JsSeries> {
         let reverse = reverse.unwrap_or(false);
-        Ok(cum_sum(&self.series, reverse).map_err(JsPolarsErr::from)?.into())
+        Ok(cum_sum(&self.series, reverse)
+            .map_err(JsPolarsErr::from)?
+            .into())
     }
     #[napi(catch_unwind)]
     pub fn cum_max(&self, reverse: Option<bool>) -> napi::Result<JsSeries> {
         let reverse = reverse.unwrap_or(false);
-        Ok(cum_max(&self.series, reverse).map_err(JsPolarsErr::from)?.into())
+        Ok(cum_max(&self.series, reverse)
+            .map_err(JsPolarsErr::from)?
+            .into())
     }
     #[napi(catch_unwind)]
     pub fn cum_min(&self, reverse: Option<bool>) -> napi::Result<JsSeries> {
         let reverse = reverse.unwrap_or(false);
-        Ok(cum_min(&self.series, reverse).map_err(JsPolarsErr::from)?.into())
+        Ok(cum_min(&self.series, reverse)
+            .map_err(JsPolarsErr::from)?
+            .into())
     }
     #[napi(catch_unwind)]
     pub fn cum_prod(&self, reverse: Option<bool>) -> napi::Result<JsSeries> {
         let reverse = reverse.unwrap_or(false);
-        Ok(cum_prod(&self.series, reverse).map_err(JsPolarsErr::from)?.into())
+        Ok(cum_prod(&self.series, reverse)
+            .map_err(JsPolarsErr::from)?
+            .into())
     }
     #[napi(catch_unwind)]
     pub fn chunk_lengths(&self) -> Vec<u32> {
@@ -779,8 +787,8 @@ impl JsSeries {
     #[napi(catch_unwind)]
     pub fn is_in(&self, other: &JsSeries) -> napi::Result<JsSeries> {
         let series = is_in(&self.series, &other.series)
-                        .map(|ca| ca.into_series())
-                        .map_err(JsPolarsErr::from)?;
+            .map(|ca| ca.into_series())
+            .map_err(JsPolarsErr::from)?;
 
         Ok(JsSeries::new(series))
     }
@@ -910,9 +918,7 @@ impl JsSeries {
     #[napi(catch_unwind)]
     pub fn str_slice(&self, start: i64, length: Option<i64>) -> napi::Result<JsSeries> {
         let ca = self.series.utf8().map_err(JsPolarsErr::from)?;
-        let s = ca
-            .str_slice(start, length.map(|l| l as u64))
-            .into_series();
+        let s = ca.str_slice(start, length.map(|l| l as u64)).into_series();
         Ok(s.into())
     }
 
@@ -1133,7 +1139,7 @@ impl JsSeries {
     }
     #[napi(catch_unwind)]
     pub fn diff(&self, n: i64, null_behavior: Wrap<NullBehavior>) -> napi::Result<JsSeries> {
-        let s = diff(&self.series , n, null_behavior.0).map_err(JsPolarsErr::from)?;
+        let s = diff(&self.series, n, null_behavior.0).map_err(JsPolarsErr::from)?;
         Ok(s.into())
     }
 
