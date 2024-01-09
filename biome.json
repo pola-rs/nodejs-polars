@@ -12,7 +12,8 @@
       },
       "suspicious": {
         "noExplicitAny": "off",
-        "noUnsafeDeclarationMerging": "off"
+        "noUnsafeDeclarationMerging": "off",
+        "noImplicitAnyLet": "off"
 
       },
       "complexity": {

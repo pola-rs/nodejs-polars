@@ -585,10 +585,12 @@ export const _Expr = (_expr: any): Expr => {
     return _Expr(unwrap(method, ...args));
   };
 
-  const wrapExprArg = (method: string, lit = false) => (other: any) => {
-    const expr = exprToLitOrExpr(other, lit).inner();
-    return wrap(method, expr);
-  };
+  const wrapExprArg =
+    (method: string, lit = false) =>
+    (other: any) => {
+      const expr = exprToLitOrExpr(other, lit).inner();
+      return wrap(method, expr);
+    };
 
   const rolling =
     (method: string) =>
