@@ -171,7 +171,10 @@ class _Categorical extends DataType {}
  * Datetime type
  */
 class _Datetime extends DataType {
-  constructor(private timeUnit: TimeUnit, private timeZone?: string) {
+  constructor(
+    private timeUnit: TimeUnit,
+    private timeZone?: string,
+  ) {
     super();
   }
   override get inner() {

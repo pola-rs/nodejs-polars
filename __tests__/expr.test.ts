@@ -956,7 +956,7 @@ describe("expr.str", () => {
       a: ["Foo", "foo", "FoO"],
     });
 
-    const re = new RegExp("foo", "i");
+    const re = /foo/i;
     const expected = pl.DataFrame({
       a: ["Foo", "foo", "FoO"],
       contains: [true, true, true],
