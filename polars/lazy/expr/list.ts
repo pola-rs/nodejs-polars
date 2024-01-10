@@ -31,7 +31,7 @@ export const ExprListFunctions = (_expr: any): ExprList => {
       ) {
         return this.concat(pli.Series([other]));
       }
-      let otherList;
+      let otherList: any;
       if (!Array.isArray(other)) {
         otherList = [other];
       } else {

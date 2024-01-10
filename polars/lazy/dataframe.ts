@@ -694,8 +694,8 @@ export const _LazyDataFrame = (_ldf: any): LazyDataFrame => {
           ),
         );
       }
-      let leftOn;
-      let rightOn;
+      let leftOn: any[] | undefined;
+      let rightOn: any[] | undefined;
       if (options.on) {
         const on = selectionToExprList(options.on, false);
         leftOn = on;
@@ -735,8 +735,8 @@ export const _LazyDataFrame = (_ldf: any): LazyDataFrame => {
         ...options,
       };
       const { suffix, strategy, allowParallel, forceParallel } = options;
-      let leftOn;
-      let rightOn;
+      let leftOn: string | undefined;
+      let rightOn: string | undefined;
       if (!other?._ldf) {
         throw new TypeError("Expected a 'lazyFrame' as join table");
       }
@@ -753,13 +753,13 @@ export const _LazyDataFrame = (_ldf: any): LazyDataFrame => {
         leftOn = options.leftOn;
         rightOn = options.rightOn;
       }
-      let byLeft;
+      let byLeft: string[] | number | undefined;
       if (typeof options.byLeft === "string") {
         byLeft = [options.byLeft];
       } else if (Array.isArray(options.byLeft)) {
         byLeft = options.byLeft;
       }
-      let byRight;
+      let byRight: string[] | number | undefined;
       if (typeof options.byRight === "string") {
         byRight = [options.byRight];
       } else if (Array.isArray(options.byRight)) {
@@ -771,8 +771,8 @@ export const _LazyDataFrame = (_ldf: any): LazyDataFrame => {
       } else if (Array.isArray(options.by)) {
         byLeft = byRight = options.by;
       }
-      let toleranceStr;
-      let toleranceNum;
+      let toleranceStr: string | undefined;
+      let toleranceNum: number | undefined;
       if (typeof options.tolerance === "string") {
         toleranceStr = options.tolerance;
       } else {

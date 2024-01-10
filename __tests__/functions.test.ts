@@ -84,7 +84,7 @@ describe("horizontal", () => {
       c: [true, true, false, true, false],
     });
     const actual = df.select(pl.allHorizontal([pl.col("b"), pl.col("c")]));
-    const expected = pl.DataFrame({ all: [false, false, false, null, false] });
+    const expected = pl.DataFrame({ b: [false, false, false, null, false] });
     expect(actual).toFrameEqual(expected);
   });
   it("compute the bitwise OR horizontally across columns.", () => {
@@ -94,7 +94,7 @@ describe("horizontal", () => {
       c: [true, true, false, true, false],
     });
     const actual = df.select(pl.anyHorizontal([pl.col("b"), pl.col("c")]));
-    const expected = pl.DataFrame({ any: [true, true, false, true, null] });
+    const expected = pl.DataFrame({ b: [true, true, false, true, null] });
     expect(actual).toFrameEqual(expected);
   });
   it("any and all expression", () => {
@@ -133,7 +133,7 @@ describe("horizontal", () => {
   it("sum min and max across columns", () => {
     const df = pl.DataFrame({ a: [1, 2, 3], b: [1.0, 2.0, 3.0] });
     const out = df.select(
-      pl.sumHorizontal([pl.col("a"), pl.col("b")]),
+      pl.sumHorizontal([pl.col("a"), pl.col("b")]).alias("sum"),
       pl.maxHorizontal([pl.col("a"), pl.col("b").pow(2)]).alias("max"),
       pl.minHorizontal([pl.col("a"), pl.col("b").pow(2)]).alias("min"),
     );

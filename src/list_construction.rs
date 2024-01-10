@@ -110,8 +110,8 @@ pub fn js_arr_to_list(name: &str, arr: &Array, dtype: &DataType) -> napi::Result
         DataType::Int64 => typed_option_or_null!(name, arr, i64, DataType::Int64, Int64Type),
         DataType::Float64 => typed_option_or_null!(name, arr, f64, DataType::Float64, Float64Type),
         DataType::UInt64 => build_list_with_downcast!(name, arr, u64, DataType::UInt64, UInt64Type),
-        DataType::Utf8 => {
-            let mut builder = ListUtf8ChunkedBuilder::new(name, len as usize, (len as usize) * 5);
+        DataType::String => {
+            let mut builder = ListStringChunkedBuilder::new(name, len as usize, (len as usize) * 5);
             for idx in 0..len {
                 let values: Either<Vec<Option<&str>>, Null> = arr.get(idx)?.unwrap();
 

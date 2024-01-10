@@ -446,11 +446,11 @@ impl JsExpr {
         self.clone().inner.explode().into()
     }
     #[napi(catch_unwind)]
-    pub fn gather_every(&self, n: i64) -> JsExpr {
+    pub fn gather_every(&self, n: i64, offset: i64) -> JsExpr {
         self.clone()
             .inner
             .map(
-                move |s: Series| Ok(Some(s.gather_every(n as usize))),
+                move |s: Series| Ok(Some(s.gather_every(n as usize, offset as usize))),
                 GetOutput::same_type(),
             )
             .with_fmt("gather_every")
@@ -607,7 +607,7 @@ impl JsExpr {
     #[napi(catch_unwind)]
     pub fn str_strip(&self) -> JsExpr {
         let function = |s: Series| {
-            let ca = s.utf8()?;
+            let ca = s.str()?;
             Ok(Some(
                 ca.apply(|s| Some(Cow::Borrowed(s?.trim()))).into_series(),
             ))
@@ -622,7 +622,7 @@ impl JsExpr {
     #[napi(catch_unwind)]
     pub fn str_rstrip(&self) -> JsExpr {
         let function = |s: Series| {
-            let ca = s.utf8()?;
+            let ca = s.str()?;
             Ok(Some(
                 ca.apply(|s| Some(Cow::Borrowed(s?.trim_end())))
                     .into_series(),
@@ -638,7 +638,7 @@ impl JsExpr {
     #[napi(catch_unwind)]
     pub fn str_lstrip(&self) -> JsExpr {
         let function = |s: Series| {
-            let ca = s.utf8()?;
+            let ca = s.str()?;
             Ok(Some(
                 ca.apply(|s| Some(Cow::Borrowed(s?.trim_start())))
                     .into_series(),
@@ -654,7 +654,7 @@ impl JsExpr {
     #[napi(catch_unwind)]
     pub fn str_pad_start(&self, length: i64, fill_char: String) -> JsExpr {
         let function = move |s: Series| {
-            let ca = s.utf8()?;
+            let ca = s.str()?;
             Ok(Some(
                 ca.pad_start(length as usize, fill_char.chars().nth(0).unwrap())
                     .into_series(),
@@ -663,7 +663,7 @@ impl JsExpr {
 
         self.clone()
             .inner
-            .map(function, GetOutput::from_type(DataType::Utf8))
+            .map(function, GetOutput::from_type(DataType::String))
             .with_fmt("str.pad_start")
             .into()
     }
@@ -671,7 +671,7 @@ impl JsExpr {
     #[napi(catch_unwind)]
     pub fn str_pad_end(&self, length: i64, fill_char: String) -> JsExpr {
         let function = move |s: Series| {
-            let ca = s.utf8()?;
+            let ca = s.str()?;
             Ok(Some(
                 ca.pad_end(length as usize, fill_char.chars().nth(0).unwrap())
                     .into_series(),
@@ -680,7 +680,7 @@ impl JsExpr {
 
         self.clone()
             .inner
-            .map(function, GetOutput::from_type(DataType::Utf8))
+            .map(function, GetOutput::from_type(DataType::String))
             .with_fmt("str.pad_end")
             .into()
     }
@@ -688,20 +688,20 @@ impl JsExpr {
     #[napi(catch_unwind)]
     pub fn str_z_fill(&self, width: i64) -> JsExpr {
         let function = move |s: Series| {
-            let ca = s.utf8()?;
+            let ca = s.str()?;
             Ok(Some(ca.zfill(width as usize).into_series()))
         };
 
         self.clone()
             .inner
-            .map(function, GetOutput::from_type(DataType::Utf8))
+            .map(function, GetOutput::from_type(DataType::String))
             .with_fmt("str.z_fill")
             .into()
     }
     #[napi(catch_unwind)]
     pub fn str_to_uppercase(&self) -> JsExpr {
         let function = |s: Series| {
-            let ca = s.utf8()?;
+            let ca = s.str()?;
             Ok(Some(ca.to_uppercase().into_series()))
         };
         self.clone()
@@ -714,12 +714,12 @@ impl JsExpr {
     pub fn str_slice(&self, start: i64, length: Option<i64>) -> JsExpr {
         let function = move |s: Series| {
             let length = length.map(|l| l as u64);
-            let ca = s.utf8()?;
+            let ca = s.str()?;
             Ok(Some(ca.str_slice(start, length).into_series()))
         };
         self.clone()
             .inner
-            .map(function, GetOutput::from_type(DataType::Utf8))
+            .map(function, GetOutput::from_type(DataType::String))
             .with_fmt("str.slice")
             .into()
     }
@@ -727,7 +727,7 @@ impl JsExpr {
     #[napi(catch_unwind)]
     pub fn str_to_lowercase(&self) -> JsExpr {
         let function = |s: Series| {
-            let ca = s.utf8()?;
+            let ca = s.str()?;
             Ok(Some(ca.to_lowercase().into_series()))
         };
         self.clone()
@@ -740,7 +740,7 @@ impl JsExpr {
     #[napi(catch_unwind)]
     pub fn str_lengths(&self) -> JsExpr {
         let function = |s: Series| {
-            let ca = s.utf8()?;
+            let ca = s.str()?;
             Ok(Some(ca.str_len_chars().into_series()))
         };
         self.clone()
@@ -753,7 +753,7 @@ impl JsExpr {
     #[napi(catch_unwind)]
     pub fn str_replace(&self, pat: String, val: String) -> JsExpr {
         let function = move |s: Series| {
-            let ca = s.utf8()?;
+            let ca = s.str()?;
             match ca.replace(&pat, &val) {
                 Ok(ca) => Ok(Some(ca.into_series())),
                 Err(e) => Err(PolarsError::ComputeError(format!("{:?}", e).into())),
@@ -769,7 +769,7 @@ impl JsExpr {
     #[napi(catch_unwind)]
     pub fn str_replace_all(&self, pat: String, val: String) -> JsExpr {
         let function = move |s: Series| {
-            let ca = s.utf8()?;
+            let ca = s.str()?;
             match ca.replace_all(&pat, &val) {
                 Ok(ca) => Ok(Some(ca.into_series())),
                 Err(e) => Err(PolarsError::ComputeError(format!("{:?}", e).into())),
@@ -785,7 +785,7 @@ impl JsExpr {
     #[napi(catch_unwind)]
     pub fn str_contains(&self, pat: String, strict: bool) -> JsExpr {
         let function = move |s: Series| {
-            let ca = s.utf8()?;
+            let ca = s.str()?;
             match ca.contains(&pat, strict) {
                 Ok(ca) => Ok(Some(ca.into_series())),
                 Err(e) => Err(PolarsError::ComputeError(format!("{:?}", e).into())),
@@ -802,7 +802,7 @@ impl JsExpr {
         self.clone()
             .inner
             .map(
-                move |s| s.utf8().map(|s| Some(s.hex_encode().into_series())),
+                move |s| s.str().map(|s| Some(s.hex_encode().into_series())),
                 GetOutput::same_type(),
             )
             .with_fmt("str.hex_encode")
@@ -813,7 +813,7 @@ impl JsExpr {
         self.clone()
             .inner
             .map(
-                move |s| s.utf8()?.hex_decode(strict).map(|s| Some(s.into_series())),
+                move |s| s.str()?.hex_decode(strict).map(|s| Some(s.into_series())),
                 GetOutput::same_type(),
             )
             .with_fmt("str.hex_decode")
@@ -824,7 +824,7 @@ impl JsExpr {
         self.clone()
             .inner
             .map(
-                move |s| s.utf8().map(|s| Some(s.base64_encode().into_series())),
+                move |s| s.str().map(|s| Some(s.base64_encode().into_series())),
                 GetOutput::same_type(),
             )
             .with_fmt("str.base64_encode")
@@ -837,7 +837,7 @@ impl JsExpr {
             .inner
             .map(
                 move |s| {
-                    s.utf8()?
+                    s.str()?
                         .base64_decode(strict)
                         .map(|s| Some(s.into_series()))
                 },
@@ -847,7 +847,7 @@ impl JsExpr {
             .into()
     }
     #[napi(catch_unwind)]
-    pub fn str_json_extract(
+    pub fn str_json_decode(
         &self,
         dtype: Option<Wrap<DataType>>,
         infer_schema_len: Option<i64>,
@@ -857,13 +857,13 @@ impl JsExpr {
         self.inner
             .clone()
             .str()
-            .json_extract(dt, infer_schema_len)
+            .json_decode(dt, infer_schema_len)
             .into()
     }
     #[napi(catch_unwind)]
     pub fn str_json_path_match(&self, pat: String) -> JsExpr {
         let function = move |s: Series| {
-            let ca = s.utf8()?;
+            let ca = s.str()?;
             match ca.json_path_match(&pat) {
                 Ok(ca) => Ok(Some(ca.into_series())),
                 Err(e) => Err(PolarsError::ComputeError(format!("{:?}", e).into())),
@@ -1132,6 +1132,7 @@ impl JsExpr {
         center: bool,
         by: Option<String>,
         closed: Option<Wrap<ClosedWindow>>,
+        warn_if_unsorted: bool,
     ) -> JsExpr {
         let options = RollingOptions {
             window_size: Duration::parse(&window_size),
@@ -1144,8 +1145,12 @@ impl JsExpr {
                 prob: quantile,
                 interpol: interpolation.0,
             }) as Arc<dyn Any + Send + Sync>),
+            warn_if_unsorted,
         };
-        self.inner.clone().rolling_quantile(options).into()
+        self.inner
+            .clone()
+            .rolling_quantile(interpolation.0, quantile, options)
+            .into()
     }
     #[napi(catch_unwind)]
     pub fn rolling_skew(&self, window_size: i64, bias: bool) -> JsExpr {
@@ -1317,7 +1322,10 @@ impl JsExpr {
             _ => panic!("expected one of {{'physical', 'lexical'}}"),
         };
 
-        self.inner.clone().cat().set_ordering(ordering).into()
+        self.inner
+            .clone()
+            .cast(DataType::Categorical(None, ordering))
+            .into()
     }
     #[napi(catch_unwind)]
     pub fn reshape(&self, dims: Vec<i64>) -> JsExpr {
@@ -1587,33 +1595,20 @@ pub fn dtype_cols(dtypes: Vec<Wrap<DataType>>) -> crate::lazy::dsl::JsExpr {
 }
 
 #[napi(catch_unwind)]
-pub fn int_range(
-    start: Wrap<Expr>,
-    end: Wrap<Expr>,
-    step: i64,
-    dtype: Option<Wrap<DataType>>,
-) -> JsExpr {
-    let dtype = dtype.map(|d| d.0 as DataType);
-
-    let mut result = dsl::int_range(start.0, end.0, step);
-
-    if dtype.is_some() && dtype.clone().unwrap() != DataType::Int64 {
-        result = result.cast(dtype.clone().unwrap());
-    }
-
-    result.into()
+pub fn int_range(start: Wrap<Expr>, end: Wrap<Expr>, step: i64, dtype: Wrap<DataType>) -> JsExpr {
+    dsl::int_range(start.0, end.0, step, dtype.0).into()
 }
 
 #[napi(catch_unwind)]
 pub fn int_ranges(
     start: Wrap<Expr>,
     end: Wrap<Expr>,
-    step: i64,
+    step: Wrap<Expr>,
     dtype: Option<Wrap<DataType>>,
 ) -> JsExpr {
     let dtype = dtype.map(|d| d.0 as DataType);
 
-    let mut result = dsl::int_ranges(start.0, end.0, step);
+    let mut result = dsl::int_ranges(start.0, end.0, step.0);
 
     if dtype.is_some() && dtype.clone().unwrap() != DataType::Int64 {
         result = result.cast(DataType::List(Box::new(dtype.clone().unwrap())));
@@ -1659,7 +1654,7 @@ pub fn lit(value: Wrap<AnyValue>) -> JsResult<JsExpr> {
 
 #[napi(catch_unwind)]
 pub fn range(low: Wrap<Expr>, high: Wrap<Expr>, dtype: Wrap<DataType>) -> JsExpr {
-    int_range(low, high, 1, Some(dtype)).into()
+    int_range(low, high, 1, dtype).into()
 }
 
 #[napi(catch_unwind)]

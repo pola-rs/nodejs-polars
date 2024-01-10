@@ -193,7 +193,7 @@ describe("series", () => {
   describe("create series", () => {
     it.each`
       values                    | dtype                | type
-      ${["foo", "bar", "baz"]}  | ${pl.Utf8}           | ${"string"}
+      ${["foo", "bar", "baz"]}  | ${pl.String}         | ${"string"}
       ${[1, 2, 3]}              | ${pl.Float64}        | ${"number"}
       ${[1n, 2n, 3n]}           | ${pl.UInt64}         | ${"bigint"}
       ${[true, false]}          | ${pl.Bool}           | ${"boolean"}
@@ -209,7 +209,7 @@ describe("series", () => {
 
     it.each`
       values                   | dtype
-      ${["foo", "bar", "baz"]} | ${pl.Utf8}
+      ${["foo", "bar", "baz"]} | ${pl.String}
       ${[1, 2, 3]}             | ${pl.Float64}
       ${[1n, 2n, 3n]}          | ${pl.UInt64}
     `("defaults to $dtype for $input", ({ values, dtype }) => {
@@ -390,7 +390,7 @@ describe("series", () => {
     ${numSeries()}  | ${"seriesEqual"}     | ${[other(), true]}
     ${numSeries()}  | ${"seriesEqual"}     | ${[other(), false]}
     ${numSeries()}  | ${"set"}             | ${[boolSeries(), 2]}
-    ${fltSeries()}  | ${"setAtIdx"}        | ${[[0, 1], 1]}
+    ${fltSeries()}  | ${"scatter"}         | ${[[0, 1], 1]}
     ${numSeries()}  | ${"shift"}           | ${[]}
     ${numSeries()}  | ${"shift"}           | ${[1]}
     ${numSeries()}  | ${"shiftAndFill"}    | ${[1, 2]}
@@ -486,9 +486,10 @@ describe("series", () => {
     ${"isNull"}          | ${pl.Series([1, null, undefined, 2]).isNull()}                                             | ${pl.Series([false, true, true, false])}
     ${"isNumeric"}       | ${pl.Series([1, 2, 3]).isNumeric()}                                                        | ${true}
     ${"isUnique"}        | ${pl.Series([1, 2, 3, 1]).isUnique()}                                                      | ${pl.Series([false, true, true, false])}
-    ${"isUtf8"}          | ${pl.Series([1, 2, 3, 1]).isUtf8()}                                                        | ${false}
+    ${"isUtf8"}          | ${pl.Series([1, 2, 3, 1]).dtype.equals(pl.String)}                                         | ${false}
     ${"kurtosis"}        | ${pl.Series([1, 2, 3, 3, 4]).kurtosis()?.toFixed(6)}                                       | ${"-1.044379"}
-    ${"isUtf8"}          | ${pl.Series(["foo"]).isUtf8()}                                                             | ${true}
+    ${"isUtf8"}          | ${pl.Series(["foo"]).dtype.equals(pl.String)}                                              | ${true}
+    ${"isString"}        | ${pl.Series(["foo"]).isString()}                                                           | ${true}
     ${"len"}             | ${pl.Series([1, 2, 3, 4, 5]).len()}                                                        | ${5}
     ${"limit"}           | ${pl.Series([1, 2, 3, 4, 5, 5, 5]).limit(2)}                                               | ${pl.Series([1, 2])}
     ${"max"}             | ${pl.Series([-1, 10, 3]).max()}                                                            | ${10}
@@ -546,10 +547,10 @@ describe("series", () => {
     }
   });
   it("describe", () => {
-    expect(() => pl.Series([]).describe()).toThrowError(
+    expect(() => pl.Series([]).describe()).toThrow(
       "Series must contain at least one value",
     );
-    expect(() => pl.Series("dt", [null], pl.Date).describe()).toThrowError(
+    expect(() => pl.Series("dt", [null], pl.Date).describe()).toThrow(
       "Invalid operation: describe is not supported for DataType(Date)",
     );
     let actual = pl.Series([true, false, true]).describe();
@@ -557,6 +558,7 @@ describe("series", () => {
       statistic: ["sum", "null_count", "count"],
       value: [false, null, null],
     });
+
     expect(actual).toFrameEqual(expected);
     actual = pl.Series(["a", "b", "c", null]).describe();
     expected = pl.DataFrame({
@@ -575,20 +577,20 @@ describe("series", () => {
     const mask = pl.Series([true]);
     expect(() => pl.Series([1, 2, 3]).set(mask, 99)).toThrow();
   });
-  it("setAtIdx:array expected matches actual", () => {
+  it("scatter:array expected matches actual", () => {
     const expected = pl.Series([99, 2, 99]);
     const actual = pl.Series([1, 2, 3]);
-    actual.setAtIdx([0, 2], 99);
+    actual.scatter([0, 2], 99);
     expect(actual).toSeriesEqual(expected);
   });
-  it("setAtIdx:series expected matches actual", () => {
+  it("scatter:series expected matches actual", () => {
     const expected = pl.Series([99, 2, 99]);
     const indices = pl.Series([0, 2]);
     const actual = pl.Series([1, 2, 3]);
-    actual.setAtIdx(indices, 99);
+    actual.scatter(indices, 99);
     expect(actual).toSeriesEqual(expected);
   });
-  it("setAtIdx: throws error", () => {
+  it("scatter: throws error", () => {
     const mask = pl.Series([true]);
     expect(() => pl.Series([1, 2, 3]).set(mask, 99)).toThrow();
   });

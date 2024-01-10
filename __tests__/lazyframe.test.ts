@@ -1227,7 +1227,7 @@ describe("lazyframe", () => {
         json: ['{"a": 1, "b": true}', null, '{"a": 2, "b": false}'],
       })
       .lazy()
-      .select(pl.col("json").str.jsonExtract())
+      .select(pl.col("json").str.jsonDecode())
       .collectSync();
     expect(actual).toFrameEqual(expected);
   });

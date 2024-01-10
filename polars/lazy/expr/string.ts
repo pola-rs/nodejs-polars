@@ -116,7 +116,7 @@ export interface StringNamespace extends StringFunctions<Expr> {
   * @example
 
   * >>> df = pl.DataFrame( {json: ['{"a":1, "b": true}', null, '{"a":2, "b": false}']} )
-  * >>> df.select(pl.col("json").str.jsonExtract())
+  * >>> df.select(pl.col("json").str.jsonDecode())
   * shape: (3, 1)
   * ┌─────────────┐
   * │ json        │
@@ -131,7 +131,7 @@ export interface StringNamespace extends StringFunctions<Expr> {
   * ----------
   * jsonPathMatch : Extract the first match of json string with provided JSONPath expression.
   */
-  jsonExtract(dtype?: DataType, inferSchemaLength?: number): Expr;
+  jsonDecode(dtype?: DataType, inferSchemaLength?: number): Expr;
   /**
    * Extract the first match of json string with provided JSONPath expression.
    * Throw errors if encounter invalid json strings.
@@ -343,8 +343,8 @@ export const ExprStringFunctions = (_expr: any): StringNamespace => {
     extract(pat: string | RegExp, groupIndex: number) {
       return wrap("strExtract", regexToString(pat), groupIndex);
     },
-    jsonExtract(dtype?: DataType, inferSchemaLength?: number) {
-      return wrap("strJsonExtract", dtype, inferSchemaLength);
+    jsonDecode(dtype?: DataType, inferSchemaLength?: number) {
+      return wrap("strJsonDecode", dtype, inferSchemaLength);
     },
     jsonPathMatch(pat: string) {
       return wrap("strJsonPathMatch", pat);

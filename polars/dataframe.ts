@@ -2035,17 +2035,16 @@ export const _DataFrame = (_df: any): DataFrame => {
       if (axis === 1) {
         return _Series(_df.hmax() as any) as any;
       }
-      return wrap("max");
+      return this.lazy().max().collectSync();
     },
     mean(axis = 0, nullStrategy = "ignore") {
       if (axis === 1) {
         return _Series(_df.hmean(nullStrategy) as any) as any;
       }
-
-      return wrap("mean");
+      return this.lazy().mean().collectSync();
     },
     median() {
-      return wrap("median");
+      return this.lazy().median().collectSync();
     },
     melt(ids, values) {
       return wrap("melt", columnOrColumns(ids), columnOrColumns(values));
@@ -2054,7 +2053,7 @@ export const _DataFrame = (_df: any): DataFrame => {
       if (axis === 1) {
         return _Series(_df.hmin() as any) as any;
       }
-      return wrap("min");
+      return this.lazy().min().collectSync();
     },
     nChunks() {
       return _df.nChunks();
@@ -2107,8 +2106,8 @@ export const _DataFrame = (_df: any): DataFrame => {
         _df.pivotExpr(values, index, columns, fn, maintainOrder, sortColumns),
       );
     },
-    quantile(quantile, interpolation = "nearest") {
-      return wrap("quantile", quantile, interpolation);
+    quantile(quantile) {
+      return this.lazy().quantile(quantile).collectSync();
     },
     rechunk() {
       return wrap("rechunk");
@@ -2214,14 +2213,13 @@ export const _DataFrame = (_df: any): DataFrame => {
       return wrap("sort", arg, descending, maintain_order, true, false);
     },
     std() {
-      return wrap("std");
+      return this.lazy().std().collectSync();
     },
     sum(axis = 0, nullStrategy = "ignore") {
       if (axis === 1) {
         return _Series(_df.hsum(nullStrategy) as any) as any;
       }
-
-      return wrap("sum");
+      return this.lazy().sum().collectSync();
     },
     tail: (length = 5) => wrap("tail", length),
     serialize(format) {
@@ -2405,11 +2403,10 @@ export const _DataFrame = (_df: any): DataFrame => {
     },
     unnest(names) {
       names = Array.isArray(names) ? names : [names];
-
       return _DataFrame(_df.unnest(names));
     },
     var() {
-      return wrap("var");
+      return this.lazy().var().collectSync();
     },
     map: (fn) => map(_DataFrame(_df), fn as any) as any,
     row(idx) {

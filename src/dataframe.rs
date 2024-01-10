@@ -67,7 +67,7 @@ pub struct ReadCsvOptions {
     pub dtypes: Option<HashMap<String, Wrap<DataType>>>,
     pub sample_size: u32,
     pub chunk_size: u32,
-    pub comment_char: Option<u8>,
+    pub comment_prefix: Option<String>,
     pub null_values: Option<Wrap<NullValues>>,
     pub quote_char: Option<String>,
     pub skip_rows_after_header: u32,
@@ -140,7 +140,7 @@ pub fn read_csv(
             .with_dtypes(overwrite_dtype.map(Arc::new))
             .with_schema(options.schema.map(|schema| Arc::new(schema.0)))
             .low_memory(options.low_memory)
-            .with_comment_char(options.comment_char)
+            .with_comment_prefix(options.comment_prefix.as_deref())
             .with_null_values(null_values)
             .with_try_parse_dates(options.try_parse_dates)
             .with_quote_char(quote_char)
@@ -171,7 +171,7 @@ pub fn read_csv(
                 .with_dtypes(overwrite_dtype.map(Arc::new))
                 .with_schema(options.schema.map(|schema| Arc::new(schema.0)))
                 .low_memory(options.low_memory)
-                .with_comment_char(options.comment_char)
+                .with_comment_prefix(options.comment_prefix.as_deref())
                 .with_null_values(null_values)
                 .with_try_parse_dates(options.try_parse_dates)
                 .with_quote_char(quote_char)
@@ -592,7 +592,7 @@ impl JsDataFrame {
         let how = match how.as_ref() {
             "left" => JoinType::Left,
             "inner" => JoinType::Inner,
-            "outer" => JoinType::Outer,
+            "outer" => JoinType::Outer { coalesce: true },
             "semi" => JoinType::Semi,
             "anti" => JoinType::Anti,
             "asof" => JoinType::AsOf(AsOfOptions {
@@ -723,7 +723,7 @@ impl JsDataFrame {
 
     #[napi(catch_unwind)]
     pub fn find_idx_by_name(&self, name: String) -> Option<i64> {
-        self.df.find_idx_by_name(&name).map(|i| i as i64)
+        self.df.get_column_index(&name).map(|i| i as i64)
     }
     #[napi(catch_unwind)]
     pub fn column(&self, name: String) -> napi::Result<JsSeries> {
@@ -817,7 +817,7 @@ impl JsDataFrame {
     #[napi(catch_unwind)]
     pub fn replace_at_idx(&mut self, index: f64, new_col: &JsSeries) -> napi::Result<()> {
         self.df
-            .replace_at_idx(index as usize, new_col.series.clone())
+            .replace_column(index as usize, new_col.series.clone())
             .map_err(JsPolarsErr::from)?;
         Ok(())
     }
@@ -825,7 +825,7 @@ impl JsDataFrame {
     #[napi(catch_unwind)]
     pub fn insert_at_idx(&mut self, index: f64, new_col: &JsSeries) -> napi::Result<()> {
         self.df
-            .insert_at_idx(index as usize, new_col.series.clone())
+            .insert_column(index as usize, new_col.series.clone())
             .map_err(JsPolarsErr::from)?;
         Ok(())
     }
@@ -861,9 +861,9 @@ impl JsDataFrame {
     #[napi(catch_unwind)]
     pub fn frame_equal(&self, other: &JsDataFrame, null_equal: bool) -> bool {
         if null_equal {
-            self.df.frame_equal_missing(&other.df)
+            self.df.equals_missing(&other.df)
         } else {
-            self.df.frame_equal(&other.df)
+            self.df.equals(&other.df)
         }
     }
     #[napi(catch_unwind)]
@@ -990,37 +990,6 @@ impl JsDataFrame {
     }
 
     #[napi(catch_unwind)]
-    pub fn max(&self) -> JsDataFrame {
-        self.df.max().into()
-    }
-    #[napi(catch_unwind)]
-    pub fn min(&self) -> JsDataFrame {
-        self.df.min().into()
-    }
-    #[napi(catch_unwind)]
-    pub fn sum(&self) -> JsDataFrame {
-        self.df.sum().into()
-    }
-    #[napi(catch_unwind)]
-    pub fn mean(&self) -> JsDataFrame {
-        self.df.mean().into()
-    }
-    #[napi(catch_unwind)]
-    pub fn std(&self, ddof: Option<u8>) -> JsDataFrame {
-        let ddof = ddof.unwrap_or(1);
-        self.df.std(ddof).into()
-    }
-    #[napi(catch_unwind)]
-    pub fn var(&self, ddof: Option<u8>) -> JsDataFrame {
-        let ddof = ddof.unwrap_or(1);
-        self.df.var(ddof).into()
-    }
-    #[napi(catch_unwind)]
-    pub fn median(&self) -> JsDataFrame {
-        self.df.median().into()
-    }
-
-    #[napi(catch_unwind)]
     pub fn hmean(&self, null_strategy: Wrap<NullStrategy>) -> napi::Result<Option<JsSeries>> {
         let s = self
             .df
@@ -1047,18 +1016,6 @@ impl JsDataFrame {
             .sum_horizontal(null_strategy.0)
             .map_err(JsPolarsErr::from)?;
         Ok(s.map(|s| s.into()))
-    }
-    #[napi(catch_unwind)]
-    pub fn quantile(
-        &self,
-        quantile: f64,
-        interpolation: Wrap<QuantileInterpolOptions>,
-    ) -> napi::Result<JsDataFrame> {
-        let df = self
-            .df
-            .quantile(quantile, interpolation.0)
-            .map_err(JsPolarsErr::from)?;
-        Ok(df.into())
     }
     #[napi(catch_unwind)]
     pub fn to_dummies(
@@ -1587,7 +1544,7 @@ fn coerce_data_type<A: Borrow<DataType>>(datatypes: &[A]) -> DataType {
         (UInt64, Float64) => Float64,
         (UInt64, Boolean) => UInt64,
         (Boolean, UInt64) => UInt64,
-        (_, _) => Utf8,
+        (_, _) => String,
     };
 }
 
@@ -1606,7 +1563,7 @@ fn obj_to_pairs(rows: &Array, len: usize) -> impl '_ + Iterator<Item = Vec<(Stri
                         match ty {
                             ValueType::Boolean => DataType::Boolean,
                             ValueType::Number => DataType::Float64,
-                            ValueType::String => DataType::Utf8,
+                            ValueType::String => DataType::String,
                             ValueType::Object => {
                                 if val.is_array().unwrap() {
                                     let arr: napi::JsObject = unsafe { val.cast() };
@@ -1649,8 +1606,8 @@ unsafe fn coerce_js_anyvalue<'a>(val: JsUnknown, dtype: DataType) -> JsResult<An
     let vtype = val.get_type().unwrap();
     match (vtype, dtype) {
         (ValueType::Null | ValueType::Undefined | ValueType::Unknown, _) => Ok(AnyValue::Null),
-        (ValueType::String, Utf8) => AnyValue::from_js(val),
-        (_, Utf8) => {
+        (ValueType::String, String) => AnyValue::from_js(val),
+        (_, String) => {
             let s = val.coerce_to_string()?.into_unknown();
             AnyValue::from_js(s)
         }

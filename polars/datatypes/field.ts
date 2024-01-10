@@ -9,7 +9,10 @@ export interface Field {
 }
 
 export class Field implements Field {
-  constructor(public name: string, public dtype: DataType) {}
+  constructor(
+    public name: string,
+    public dtype: DataType,
+  ) {}
   toString() {
     return `Field("${this.name}", ${this.dtype})`;
   }

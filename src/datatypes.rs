@@ -14,6 +14,7 @@ pub enum JsDataType {
     Float64,
     Bool,
     Utf8,
+    String,
     List,
     Date,
     Datetime,
@@ -37,6 +38,7 @@ impl JsDataType {
             "Float64" => JsDataType::Float64,
             "Bool" => JsDataType::Bool,
             "Utf8" => JsDataType::Utf8,
+            "String" => JsDataType::String,
             "List" => JsDataType::List,
             "Date" => JsDataType::Date,
             "Datetime" => JsDataType::Datetime,
@@ -64,13 +66,13 @@ impl From<&DataType> for JsDataType {
             DataType::Float32 => Float32,
             DataType::Float64 => Float64,
             DataType::Boolean => Bool,
-            DataType::Utf8 => Utf8,
+            DataType::String => Utf8,
             DataType::List(_) => List,
             DataType::Date => Date,
             DataType::Datetime(_, _) => Datetime,
             DataType::Time => Time,
-            DataType::Object(_) => Object,
-            DataType::Categorical(_) => Categorical,
+            DataType::Object(..) => Object,
+            DataType::Categorical(..) => Categorical,
             DataType::Struct(_) => Struct,
             _ => panic!("null or unknown not expected here"),
         }
@@ -102,6 +104,7 @@ pub enum JsAnyValue {
     Null,
     Boolean(bool),
     Utf8(String),
+    String(String),
     UInt8(u8),
     UInt16(u16),
     UInt32(u32),
@@ -162,7 +165,7 @@ impl<'a> FromNapiValue for Wrap<AnyValue<'a>> {
             ValueType::Number => AnyValue::Float64(f64::from_napi_value(env, napi_val)?),
             ValueType::String => {
                 let s = String::from_napi_value(env, napi_val)?;
-                AnyValue::Utf8Owned(s.into())
+                AnyValue::StringOwned(s.into())
             }
             ValueType::BigInt => AnyValue::UInt64(Wrap::<u64>::from_napi_value(env, napi_val)?.0),
             ValueType::Object => {
@@ -204,7 +207,7 @@ impl From<napi::ValueType> for Wrap<DataType> {
             Boolean => Wrap(DataType::Boolean),
             Number => Wrap(DataType::Float64),
             BigInt => Wrap(DataType::UInt64),
-            _ => Wrap(DataType::Utf8),
+            _ => Wrap(DataType::String),
         }
     }
 }
@@ -225,6 +228,7 @@ impl ToNapiValue for JsAnyValue {
             JsAnyValue::Float32(n) => f64::to_napi_value(env, n as f64),
             JsAnyValue::Float64(n) => f64::to_napi_value(env, n),
             JsAnyValue::Utf8(s) => String::to_napi_value(env, s),
+            JsAnyValue::String(s) => String::to_napi_value(env, s),
             JsAnyValue::Date(v) => {
                 let mut ptr = std::ptr::null_mut();
 
@@ -261,7 +265,7 @@ impl<'a> From<JsAnyValue> for AnyValue<'a> {
         match av {
             JsAnyValue::Null => AnyValue::Null,
             JsAnyValue::Boolean(v) => AnyValue::Boolean(v),
-            JsAnyValue::Utf8(v) => AnyValue::Utf8Owned(v.into()),
+            JsAnyValue::Utf8(v) => AnyValue::StringOwned(v.into()),
             JsAnyValue::UInt8(v) => AnyValue::UInt8(v),
             JsAnyValue::UInt16(v) => AnyValue::UInt16(v),
             JsAnyValue::UInt32(v) => AnyValue::UInt32(v),
@@ -287,7 +291,7 @@ impl From<AnyValue<'_>> for JsAnyValue {
         match av {
             AnyValue::Null => JsAnyValue::Null,
             AnyValue::Boolean(v) => JsAnyValue::Boolean(v),
-            AnyValue::Utf8(v) => JsAnyValue::Utf8(v.to_owned()),
+            AnyValue::String(v) => JsAnyValue::Utf8(v.to_owned()),
             AnyValue::UInt8(v) => JsAnyValue::UInt8(v),
             AnyValue::UInt16(v) => JsAnyValue::UInt16(v),
             AnyValue::UInt32(v) => JsAnyValue::UInt32(v),
@@ -313,7 +317,7 @@ impl From<&JsAnyValue> for DataType {
         match av {
             JsAnyValue::Null => DataType::Null,
             JsAnyValue::Boolean(_) => DataType::Boolean,
-            JsAnyValue::Utf8(_) => DataType::Utf8,
+            JsAnyValue::Utf8(_) => DataType::String,
             JsAnyValue::UInt8(_) => DataType::UInt8,
             JsAnyValue::UInt16(_) => DataType::UInt16,
             JsAnyValue::UInt32(_) => DataType::UInt32,
@@ -352,7 +356,7 @@ impl<'a> TryInto<&'a str> for Wrap<AnyValue<'a>> {
     type Error = napi::Error;
     fn try_into(self) -> napi::Result<&'a str> {
         match self.0 {
-            AnyValue::Utf8(v) => Ok(v),
+            AnyValue::String(v) => Ok(v),
             _ => Err(napi::Error::from_reason(
                 "invalid primitive cast".to_owned(),
             )),
@@ -360,13 +364,13 @@ impl<'a> TryInto<&'a str> for Wrap<AnyValue<'a>> {
     }
 }
 
-impl_av_into!(String,  AnyValue::Utf8(v) => Ok(v.to_string()));
-impl_av_into!(bool,  AnyValue::Boolean(v) => Ok(v));
+impl_av_into!(String, AnyValue::String(v) => Ok(v.to_string()));
+impl_av_into!(bool, AnyValue::Boolean(v) => Ok(v));
 impl_av_into!(u8,  AnyValue::UInt8(v) => Ok(v));
 impl_av_into!(u16, AnyValue::UInt16(v) => Ok(v));
 impl_av_into!(u32, AnyValue::UInt32(v) => Ok(v));
 impl_av_into!(u64, AnyValue::UInt64(v) => Ok(v));
-impl_av_into!(i8, AnyValue::Int8(v) => Ok(v));
+impl_av_into!(i8,  AnyValue::Int8(v) => Ok(v));
 impl_av_into!(i16, AnyValue::Int16(v) => Ok(v));
 impl_av_into!(i32, AnyValue::Int32(v) => Ok(v));
 impl_av_into!(i64, AnyValue::Int64(v) => Ok(v));
@@ -389,13 +393,14 @@ impl Into<DataType> for JsDataType {
             JsDataType::Float32 => Float32,
             JsDataType::Float64 => Float64,
             JsDataType::Bool => Boolean,
-            JsDataType::Utf8 => Utf8,
+            JsDataType::Utf8 => String,
+            JsDataType::String => String,
             JsDataType::List => List(DataType::Null.into()),
             JsDataType::Date => Date,
             JsDataType::Datetime => Datetime(TimeUnit::Milliseconds, None),
             JsDataType::Time => Time,
-            JsDataType::Object => Object("object"),
-            JsDataType::Categorical => Categorical(None),
+            JsDataType::Object => Object("object", None),
+            JsDataType::Categorical => Categorical(None, Default::default()),
             JsDataType::Struct => Struct(vec![]),
         }
     }

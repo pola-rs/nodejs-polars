@@ -153,23 +153,32 @@ export function intRange<T>(opts: {
   low: any;
   high: any;
   step: number;
+  dtype: DataType;
   eager?: boolean;
 });
 export function intRange(
   low: any,
   high?: any,
   step?: number,
+  dtype?: DataType,
   eager?: true,
 ): Series;
 export function intRange(
   low: any,
   high?: any,
   step?: number,
+  dtype?: DataType,
   eager?: false,
 ): Expr;
-export function intRange(opts: any, high?, step = 1, eager?): Series | Expr {
+export function intRange(
+  opts: any,
+  high?,
+  step = 1,
+  dtype = DataType.Int64,
+  eager?,
+): Series | Expr {
   if (typeof opts?.low === "number") {
-    return intRange(opts.low, opts.high, opts.step, opts.eager);
+    return intRange(opts.low, opts.high, opts.step, opts.dtype, opts.eager);
   }
   const low = exprToLitOrExpr(opts, false);
   high = exprToLitOrExpr(high, false);
@@ -180,7 +189,7 @@ export function intRange(opts: any, high?, step = 1, eager?): Series | Expr {
       .select(intRange(low, high, step).alias("intRange") as any)
       .getColumn("intRange") as any;
   }
-  return _Expr(pli.intRange(low, high, step, eager));
+  return _Expr(pli.intRange(low, high, step, dtype));
 }
 
 /***
@@ -201,32 +210,34 @@ export function intRanges(
   start: any,
   end: any,
   step?: number,
+  dtype?: DataType,
   eager?: false,
 ): Expr;
 export function intRanges(
   start: any,
   end: any,
   step?: number,
+  dtype?: DataType,
   eager?: true,
 ): Series;
 export function intRanges(
   start: any,
   end: any,
-  step = 1,
+  step: any = 1,
+  dtype: DataType = DataType.Int64,
   eager?: boolean,
 ): Series | Expr {
   start = exprToLitOrExpr(start, false);
   end = exprToLitOrExpr(end, false);
+  step = exprToLitOrExpr(end, false);
 
   if (eager) {
     const df = DataFrame({ a: [1] });
-
     return df
-      .select(intRanges(start, end, step).alias("intRanges") as any)
+      .select(intRanges(start, end, step, dtype).alias("intRanges") as any)
       .getColumn("intRanges") as any;
   }
-
-  return _Expr(pli.intRanges(start, end, step, eager));
+  return _Expr(pli.intRanges(start, end, step, dtype));
 }
 
 /**  Alias for `pl.col("*")` */

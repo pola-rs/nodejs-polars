@@ -98,7 +98,7 @@ export interface StringNamespace extends StringFunctions<Series> {
    * @returns Utf8 array. Contain null if original value is null or the `jsonPath` return nothing.
    * @example
    * s = pl.Series("json", ['{"a":1, "b": true}', null, '{"a":2, "b": false}']);
-   * s.str.json_extract().as("json");
+   * s.str.json_decode().as("json");
    * shape: (3,)
    * Series: 'json' [struct[2]]
    * [
@@ -107,7 +107,7 @@ export interface StringNamespace extends StringFunctions<Series> {
    *     {2,false}
    * ]
    */
-  jsonExtract(dtype?: DataType, inferSchemaLength?: number): Series;
+  jsonDecode(dtype?: DataType, inferSchemaLength?: number): Series;
   /**
    * Extract the first match of json string with provided JSONPath expression.
    * Throw errors if encounter invalid json strings.
@@ -300,8 +300,8 @@ export const SeriesStringFunctions = (_s: any): StringNamespace => {
     extract(pat: string | RegExp, groupIndex: number) {
       return wrap("strExtract", regexToString(pat), groupIndex);
     },
-    jsonExtract(dtype?: DataType, inferSchemaLength?: number) {
-      return wrap("strJsonExtract", dtype, inferSchemaLength);
+    jsonDecode(dtype?: DataType, inferSchemaLength?: number) {
+      return wrap("strJsonDecode", dtype, inferSchemaLength);
     },
     jsonPathMatch(pat: string) {
       return wrap("strJsonPathMatch", pat);

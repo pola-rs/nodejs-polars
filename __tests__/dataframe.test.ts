@@ -1587,7 +1587,7 @@ describe("io", () => {
         },
         {
           name: "bar",
-          datatype: "Utf8",
+          datatype: "String",
           bit_settings: "SORTED_ASC",
           values: ["a"],
         },

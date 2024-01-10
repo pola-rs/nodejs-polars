@@ -511,8 +511,14 @@ export interface Series
   isUnique(): Series;
   /**
    * Checks if this Series datatype is a Utf8.
+   * @deprecated *since 0.8.4*
+   * @see Use `Series.dtype.equals(pl.String)` instead.
    */
   isUtf8(): boolean;
+  /**
+   * Checks if this Series datatype is a String.
+   */
+  isString(): boolean;
   /**
    * __Compute the kurtosis (Fisher or Pearson) of a dataset.__
    *
@@ -785,7 +791,7 @@ export interface Series
    * @param value value to replace masked values with
    */
   set(filter: Series, value: any): Series;
-  setAtIdx(indices: number[] | Series, value: any): void;
+  scatter(indices: number[] | Series, value: any): void;
   /**
    * __Shift the values by a given period__
    *
@@ -910,20 +916,28 @@ export interface Series
   tail(length?: number): Series;
   /**
    * Take every nth value in the Series and return as new Series.
-   * @param n - nth value to take
+   * @param n - Gather every *n*-th row
+   * @param offset - Start the row count at this offset
    * @example
    * ```
    * s = pl.Series("a", [1, 2, 3, 4])
    * s.gatherEvery(2))
    * shape: (2,)
-   * Series: '' [i64]
+   * Series: 'a' [i64]
    * [
-   *         1
-   *         3
+   *     1
+   *     3
+   * ]
+   * s.gather_every(2, offset=1)
+   * shape: (2,)
+   * Series: 'a' [i64]
+   * [
+   *     2
+   *     4
    * ]
    * ```
    */
-  gatherEvery(n: number): Series;
+  gatherEvery(n: number, offset?: number): Series;
   /**
    * Take values by index.
    * ___
@@ -1233,7 +1247,7 @@ export function _Series(_s: any): Series {
           null_count: s.nullCount(),
           count: s.len(),
         };
-      } else if (s.isUtf8()) {
+      } else if (s.isString()) {
         stats = {
           unique: s.nUnique(),
           null_count: s.nullCount(),
@@ -1428,6 +1442,9 @@ export function _Series(_s: any): Series {
     isUnique() {
       return wrap("isUnique");
     },
+    isString() {
+      return this.dtype.equals(DataType.String);
+    },
     isUtf8() {
       return this.dtype.equals(DataType.Utf8);
     },
@@ -1585,7 +1602,7 @@ export function _Series(_s: any): Series {
     clip(...args) {
       return expr_op("clip", ...args);
     },
-    setAtIdx(indices, value) {
+    scatter(indices, value) {
       indices = Series.isSeries(indices)
         ? indices.cast(DataType.UInt32)
         : Series(indices);
@@ -1599,7 +1616,7 @@ export function _Series(_s: any): Series {
       if (indices.length > 0) {
         value = value.extendConstant(value[0], indices.length - 1);
       }
-      _s.setAtIdx(indices._s, value._s);
+      _s.scatter(indices._s, value._s);
     },
     set(mask, value) {
       mask = Series.isSeries(mask) ? mask : Series.from(mask);
@@ -1674,8 +1691,8 @@ export function _Series(_s: any): Series {
     gather(indices) {
       return wrap("take", indices);
     },
-    gatherEvery(n) {
-      return wrap("gatherEvery", n);
+    gatherEvery(n, offset?) {
+      return wrap("gatherEvery", n, offset ?? 0);
     },
     multiplyBy(field) {
       return this.mul(field);
@@ -1732,7 +1749,7 @@ export function _Series(_s: any): Series {
     },
     set: (series, prop, input): any => {
       if (typeof prop !== "symbol" && !Number.isNaN(Number(prop))) {
-        series.setAtIdx([Number(prop)], input);
+        series.scatter([Number(prop)], input);
 
         return true;
       }

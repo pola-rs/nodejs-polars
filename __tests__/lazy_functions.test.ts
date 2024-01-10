@@ -1,4 +1,4 @@
-import pl, { col, cols, lit } from "@polars/index";
+import pl, { DataType, col, cols, lit } from "@polars/index";
 import { df as _df } from "./setup";
 
 describe("lazy functions", () => {
@@ -153,15 +153,15 @@ describe("lazy functions", () => {
   });
   test.each`
     start  | end  | expected
-    ${"a"} | ${"b"} | ${pl.Series("int_range", [
+    ${"a"} | ${"b"} | ${pl.Series("a", [
   [1, 2],
   [2, 3],
 ])}
-    ${-1} | ${"a"} | ${pl.Series("int_range", [
+    ${-1} | ${"a"} | ${pl.Series("a", [
   [-1, 0],
   [-1, 0, 1],
 ])}
-    ${"b"} | ${4} | ${pl.Series("int_range", [[3], []])}
+    ${"b"} | ${4} | ${pl.Series("b", [[3], []])}
   `("$# cumMax", ({ start, end, expected }) => {
     const df = pl.DataFrame({ a: [1, 2], b: [3, 4] });
     const result = df.select(pl.intRanges(start, end)).toSeries();
@@ -171,13 +171,13 @@ describe("lazy functions", () => {
   test("intRanges:dtype", () => {
     const df = pl.DataFrame({ a: [1, 2], b: [3, 4] });
     const result = df.select(pl.intRanges("a", "b"));
-    const expected_schema = { int_range: pl.List(pl.Int64) };
+    const expected_schema = { a: pl.List(pl.Int64) };
     expect(result.schema).toEqual(expected_schema);
   });
 
   test("intRanges:eager", () => {
     const start = pl.Series([1, 2]);
-    const result = pl.intRanges(start, 4, 1, true);
+    const result = pl.intRanges(start, 4, 1, DataType.Int64, true);
     const expected = pl.Series("intRanges", [
       [1, 2, 3],
       [2, 3],
