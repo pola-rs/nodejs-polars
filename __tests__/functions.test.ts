@@ -28,12 +28,12 @@ describe("concat", () => {
   });
   it("cant concat empty list", () => {
     const fn = () => pl.concat([]);
-    expect(fn).toThrowError();
+    expect(fn).toThrow();
   });
 
   it("can only concat series and df", () => {
     const fn = () => pl.concat([[1] as any, [2] as any]);
-    expect(fn).toThrowError();
+    expect(fn).toThrow();
   });
   test("horizontal concat", () => {
     const a = pl.DataFrame({ a: ["a", "b"], b: [1, 2] });
@@ -74,6 +74,10 @@ describe("repeat", () => {
     );
 
     expect(actual).toSeriesEqual(expected);
+  });
+  it("fail to repeat a date value", () => {
+    const fn = () => pl.repeat(new Date(), 4, "foo");
+    expect(fn).toThrow();
   });
 });
 describe("horizontal", () => {
