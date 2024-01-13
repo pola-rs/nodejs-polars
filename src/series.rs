@@ -244,7 +244,12 @@ impl JsSeries {
                     ));
                 }
             }
-            dt => { return Err(napi::Error::from_reason(format!("data type: {:?} is not supported as range", dt))); }
+            dt => {
+                return Err(napi::Error::from_reason(format!(
+                    "data type: {:?} is not supported as range",
+                    dt
+                )));
+            }
         };
         Ok(s)
     }

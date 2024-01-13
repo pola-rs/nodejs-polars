@@ -157,7 +157,7 @@ describe("lazy functions", () => {
   [1, 2],
   [2, 3],
 ])}
-    ${-1} | ${"a"} | ${pl.Series("a", [
+    ${-1} | ${"a"} | ${pl.Series("literal", [
   [-1, 0],
   [-1, 0, 1],
 ])}
@@ -178,13 +178,17 @@ describe("lazy functions", () => {
   test("intRanges:eager", () => {
     const start = pl.Series([1, 2]);
     const result = pl.intRanges(start, 4, 1, DataType.Int64, true);
-    const expected = pl.Series("intRanges", [
+    let expected = pl.Series("intRanges", [
       [1, 2, 3],
       [2, 3],
     ]);
     expect(result).toSeriesEqual(expected);
-  });
 
+    expected = pl.Series("intRanges", [[5, 4, 3, 2, 1]]);
+    expect(pl.intRanges(5, 0, -1, DataType.Int64, true)).toSeriesEqual(
+      expected,
+    );
+  });
   test("argSortBy", () => {
     const actual = _df()
       .select(

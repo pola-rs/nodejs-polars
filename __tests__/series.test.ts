@@ -526,6 +526,13 @@ describe("series", () => {
     ${"tail"}            | ${pl.Series([1, 2, 2, 1]).tail(2)}                                                         | ${pl.Series([2, 1])}
     ${"gatherEvery"}     | ${pl.Series([1, 3, 2, 9, 1]).gatherEvery(2)}                                               | ${pl.Series([1, 2, 1])}
     ${"gather"}          | ${pl.Series([1, 3, 2, 9, 1]).gather([0, 1, 3])}                                            | ${pl.Series([1, 3, 9])}
+    ${"gather:array"} | ${pl
+  .Series([
+    [1, 2, 3],
+    [4, 5],
+    [6, 7, 8],
+  ])
+  .gather([2])} | ${pl.Series([[6, 7, 8]])}
     ${"toArray"}         | ${pl.Series([1, 2, 3]).toArray()}                                                          | ${[1, 2, 3]}
     ${"unique"}          | ${pl.Series([1, 2, 3, 3]).unique().sort()}                                                 | ${pl.Series([1, 2, 3])}
     ${"cumCount"}        | ${pl.Series([1, 2, 3, 3]).cumCount()}                                                      | ${pl.Series([0, 1, 2, 3])}

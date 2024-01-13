@@ -229,7 +229,7 @@ export function intRanges(
 ): Series | Expr {
   start = exprToLitOrExpr(start, false);
   end = exprToLitOrExpr(end, false);
-  step = exprToLitOrExpr(end, false);
+  step = exprToLitOrExpr(step, false);
 
   if (eager) {
     const df = DataFrame({ a: [1] });
