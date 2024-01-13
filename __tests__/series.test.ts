@@ -1,5 +1,5 @@
 /* eslint-disable newline-per-chained-call */
-import pl from "@polars";
+import pl, { DataType } from "@polars";
 import { InvalidOperationError } from "../polars/error";
 import Chance from "chance";
 
@@ -812,5 +812,25 @@ describe("series struct", () => {
       .struct.renameFields(["foo", "bar", "ham"])
       .toArray();
     expect(actual).toEqual(expected);
+  });
+});
+describe("generics", () => {
+  const series = pl.Series([1, 2, 3]);
+
+  test("dtype", () => {
+    expect(series.dtype).toStrictEqual(DataType.Float64);
+  });
+  test("to array", () => {
+    const arr = series.toArray();
+    expect<number[]>(arr).toStrictEqual([1, 2, 3]);
+
+    const arr2 = [...series];
+    expect<number[]>(arr2).toStrictEqual([1, 2, 3]);
+  });
+  test("to object", () => {
+    const obj = series.toObject();
+    expect<{ name: string; datatype: "Float64"; values: number[] }>(
+      obj,
+    ).toMatchObject({ name: "", datatype: "Float64", values: [1, 2, 3] });
   });
 });
