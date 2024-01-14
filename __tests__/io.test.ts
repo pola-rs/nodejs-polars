@@ -5,6 +5,8 @@ import fs from "fs";
 // eslint-disable-next-line no-undef
 const csvpath = path.resolve(__dirname, "./examples/datasets/foods1.csv");
 // eslint-disable-next-line no-undef
+const tsvpath = path.resolve(__dirname, "./examples/datasets/data.tsv");
+// eslint-disable-next-line no-undef
 const emptycsvpath = path.resolve(__dirname, "./examples/datasets/empty.csv");
 // eslint-disable-next-line no-undef
 const parquetpath = path.resolve(__dirname, "./examples/foods.parquet");
@@ -21,7 +23,10 @@ describe("read:csv", () => {
     const df = pl.readCSV(csvpath);
     expect(df.shape).toEqual({ height: 27, width: 4 });
   });
-
+  it("can read from a tsv file", () => {
+    const df = pl.readCSV(tsvpath, { sep: "\t" });
+    expect(df.shape).toEqual({ height: 2, width: 3 });
+  });
   it("can read from a relative file", () => {
     const df = pl.readCSV(csvpath);
     expect(df.shape).toEqual({ height: 27, width: 4 });
