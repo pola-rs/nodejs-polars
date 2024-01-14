@@ -62,7 +62,7 @@ pub struct ReadCsvOptions {
     pub sep: String,
     pub schema: Option<Wrap<Schema>>,
     pub encoding: String,
-    pub n_threads: Option<u32>,
+    pub num_threads: Option<u32>,
     pub path: Option<String>,
     pub dtypes: Option<HashMap<String, Wrap<DataType>>>,
     pub sample_size: u32,
@@ -136,7 +136,7 @@ pub fn read_csv(
             .with_chunk_size(options.chunk_size as usize)
             .with_encoding(encoding)
             .with_columns(options.columns)
-            .with_n_threads(options.n_threads.map(|i| i as usize))
+            .with_n_threads(options.num_threads.map(|i| i as usize))
             .with_dtypes(overwrite_dtype.map(Arc::new))
             .with_schema(options.schema.map(|schema| Arc::new(schema.0)))
             .low_memory(options.low_memory)
@@ -167,7 +167,7 @@ pub fn read_csv(
                 .with_chunk_size(options.chunk_size as usize)
                 .with_encoding(encoding)
                 .with_columns(options.columns)
-                .with_n_threads(options.n_threads.map(|i| i as usize))
+                .with_n_threads(options.num_threads.map(|i| i as usize))
                 .with_dtypes(overwrite_dtype.map(Arc::new))
                 .with_schema(options.schema.map(|schema| Arc::new(schema.0)))
                 .low_memory(options.low_memory)
