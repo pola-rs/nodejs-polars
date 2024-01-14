@@ -32,7 +32,7 @@ describe("read:csv", () => {
 │ str        ┆ str      ┆ str    ┆ str      │
 ╞════════════╪══════════╪════════╪══════════╡
 │ vegetables ┆ 45       ┆ 0.5    ┆ 2        │
-└────────────┴──────────┴────────┴──────────┘`
+└────────────┴──────────┴────────┴──────────┘`;
     expect(df.head(1).toString()).toEqual(expected);
   });
   it("can read from a csv file with options", () => {
