@@ -5,6 +5,8 @@ import fs from "fs";
 // eslint-disable-next-line no-undef
 const csvpath = path.resolve(__dirname, "./examples/datasets/foods1.csv");
 // eslint-disable-next-line no-undef
+const tsvpath = path.resolve(__dirname, "./examples/datasets/data.tsv");
+// eslint-disable-next-line no-undef
 const emptycsvpath = path.resolve(__dirname, "./examples/datasets/empty.csv");
 // eslint-disable-next-line no-undef
 const parquetpath = path.resolve(__dirname, "./examples/foods.parquet");
@@ -21,14 +23,25 @@ describe("read:csv", () => {
     const df = pl.readCSV(csvpath);
     expect(df.shape).toEqual({ height: 27, width: 4 });
   });
-
-  it("can read from a relative file", () => {
-    const df = pl.readCSV(csvpath);
-    expect(df.shape).toEqual({ height: 27, width: 4 });
+  it("can read from a csv file with inferSchemaLength = 0 option", () => {
+    const df = pl.readCSV(csvpath, { inferSchemaLength: 0 });
+    const expected = `shape: (1, 4)
+┌────────────┬──────────┬────────┬──────────┐
+│ category   ┆ calories ┆ fats_g ┆ sugars_g │
+│ ---        ┆ ---      ┆ ---    ┆ ---      │
+│ str        ┆ str      ┆ str    ┆ str      │
+╞════════════╪══════════╪════════╪══════════╡
+│ vegetables ┆ 45       ┆ 0.5    ┆ 2        │
+└────────────┴──────────┴────────┴──────────┘`
+    expect(df.head(1).toString()).toEqual(expected);
   });
   it("can read from a csv file with options", () => {
     const df = pl.readCSV(csvpath, { hasHeader: false, skipRows: 1, nRows: 4 });
     expect(df.shape).toEqual({ height: 4, width: 4 });
+  });
+  it("can read from a tsv file", () => {
+    const df = pl.readCSV(tsvpath, { sep: "\t" });
+    expect(df.shape).toEqual({ height: 2, width: 3 });
   });
   it("can read from a csv string", () => {
     const csvString = "foo,bar,baz\n1,2,3\n4,5,6\n";

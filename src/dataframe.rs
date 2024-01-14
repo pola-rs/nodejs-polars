@@ -53,13 +53,13 @@ pub struct ReadCsvOptions {
     /// Stop reading from the csv after this number of rows is reached
     pub n_rows: Option<u32>,
     // used by error ignore logic
-    pub max_records: Option<u32>,
+    pub infer_schema_length: Option<u32>,
     pub skip_rows: u32,
     /// Optional indexes of the columns to project
     pub projection: Option<Vec<u32>>,
     /// Optional column names to project/ select.
     pub columns: Option<Vec<String>>,
-    pub separator: Option<u8>,
+    pub sep: String,
     pub schema: Option<Wrap<Schema>>,
     pub encoding: String,
     pub n_threads: Option<u32>,
@@ -67,7 +67,7 @@ pub struct ReadCsvOptions {
     pub dtypes: Option<HashMap<String, Wrap<DataType>>>,
     pub sample_size: u32,
     pub chunk_size: u32,
-    pub comment_prefix: Option<String>,
+    pub comment_char: Option<String>,
     pub null_values: Option<Wrap<NullValues>>,
     pub quote_char: Option<String>,
     pub skip_rows_after_header: u32,
@@ -125,11 +125,11 @@ pub fn read_csv(
     let df = match path_or_buffer {
         Either::A(path) => CsvReader::from_path(path)
             .expect("unable to read file")
-            .infer_schema(Some(options.max_records.unwrap_or(100) as usize))
+            .infer_schema(Some(options.infer_schema_length.unwrap_or(100) as usize))
             .with_projection(projection)
             .has_header(options.has_header)
             .with_n_rows(options.n_rows.map(|i| i as usize))
-            .with_separator(options.separator.unwrap_or(b','))
+            .with_separator(options.sep.as_bytes()[0])
             .with_skip_rows(options.skip_rows as usize)
             .with_ignore_errors(options.ignore_errors)
             .with_rechunk(options.rechunk)
@@ -140,7 +140,7 @@ pub fn read_csv(
             .with_dtypes(overwrite_dtype.map(Arc::new))
             .with_schema(options.schema.map(|schema| Arc::new(schema.0)))
             .low_memory(options.low_memory)
-            .with_comment_prefix(options.comment_prefix.as_deref())
+            .with_comment_prefix(options.comment_char.as_deref())
             .with_null_values(null_values)
             .with_try_parse_dates(options.try_parse_dates)
             .with_quote_char(quote_char)
@@ -156,11 +156,11 @@ pub fn read_csv(
         Either::B(buffer) => {
             let cursor = Cursor::new(buffer.as_ref());
             CsvReader::new(cursor)
-                .infer_schema(Some(options.max_records.unwrap_or(100) as usize))
+                .infer_schema(Some(options.infer_schema_length.unwrap_or(100) as usize))
                 .with_projection(projection)
                 .has_header(options.has_header)
                 .with_n_rows(options.n_rows.map(|i| i as usize))
-                .with_separator(options.separator.unwrap_or(b','))
+                .with_separator(options.sep.as_bytes()[0])
                 .with_skip_rows(options.skip_rows as usize)
                 .with_ignore_errors(options.ignore_errors)
                 .with_rechunk(options.rechunk)
@@ -171,7 +171,7 @@ pub fn read_csv(
                 .with_dtypes(overwrite_dtype.map(Arc::new))
                 .with_schema(options.schema.map(|schema| Arc::new(schema.0)))
                 .low_memory(options.low_memory)
-                .with_comment_prefix(options.comment_prefix.as_deref())
+                .with_comment_prefix(options.comment_char.as_deref())
                 .with_null_values(null_values)
                 .with_try_parse_dates(options.try_parse_dates)
                 .with_quote_char(quote_char)
