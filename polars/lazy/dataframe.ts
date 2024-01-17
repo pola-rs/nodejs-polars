@@ -694,8 +694,8 @@ export const _LazyDataFrame = (_ldf: any): LazyDataFrame => {
           ),
         );
       }
-      let leftOn: any[] | undefined;
-      let rightOn: any[] | undefined;
+      let leftOn;
+      let rightOn;
       if (options.on) {
         const on = selectionToExprList(options.on, false);
         leftOn = on;

@@ -59,7 +59,7 @@ pub struct ReadCsvOptions {
     pub projection: Option<Vec<u32>>,
     /// Optional column names to project/ select.
     pub columns: Option<Vec<String>>,
-    pub sep: String,
+    pub sep: Option<String>,
     pub schema: Option<Wrap<Schema>>,
     pub encoding: String,
     pub num_threads: Option<u32>,
@@ -129,7 +129,7 @@ pub fn read_csv(
             .with_projection(projection)
             .has_header(options.has_header)
             .with_n_rows(options.n_rows.map(|i| i as usize))
-            .with_separator(options.sep.as_bytes()[0])
+            .with_separator(options.sep.unwrap_or(",".to_owned()).as_bytes()[0])
             .with_skip_rows(options.skip_rows as usize)
             .with_ignore_errors(options.ignore_errors)
             .with_rechunk(options.rechunk)
@@ -160,7 +160,7 @@ pub fn read_csv(
                 .with_projection(projection)
                 .has_header(options.has_header)
                 .with_n_rows(options.n_rows.map(|i| i as usize))
-                .with_separator(options.sep.as_bytes()[0])
+                .with_separator(options.sep.unwrap_or(",".to_owned()).as_bytes()[0])
                 .with_skip_rows(options.skip_rows as usize)
                 .with_ignore_errors(options.ignore_errors)
                 .with_rechunk(options.rechunk)

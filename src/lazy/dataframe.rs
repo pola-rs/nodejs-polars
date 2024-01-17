@@ -556,7 +556,7 @@ pub struct ScanCsvOptions {
     pub ignore_errors: bool,
     pub n_rows: Option<u32>,
     pub skip_rows: Option<u32>,
-    pub sep: String,
+    pub sep: Option<String>,
     pub rechunk: Option<bool>,
     pub columns: Option<Vec<String>>,
     pub encoding: String,
@@ -606,7 +606,7 @@ pub fn scan_csv(path: String, options: ScanCsvOptions) -> napi::Result<JsLazyFra
 
     let r = LazyCsvReader::new(path)
         .with_infer_schema_length(Some(options.infer_schema_length.unwrap_or(100) as usize))
-        .with_separator(options.sep.as_bytes()[0])
+        .with_separator(options.sep.unwrap_or(",".to_owned()).as_bytes()[0])
         .has_header(options.has_header.unwrap_or(true))
         .with_ignore_errors(options.ignore_errors)
         .with_skip_rows(options.skip_rows.unwrap_or(0) as usize)
