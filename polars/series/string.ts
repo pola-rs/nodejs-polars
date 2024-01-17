@@ -96,9 +96,25 @@ export interface StringNamespace extends StringFunctions<Series> {
   /***
    * Parse string values as JSON.
    * @returns Utf8 array. Contain null if original value is null or the `jsonPath` return nothing.
+   * @deprecated @since 0.8.4 @use {@link jsonDecode}
    * @example
    * s = pl.Series("json", ['{"a":1, "b": true}', null, '{"a":2, "b": false}']);
-   * s.str.json_decode().as("json");
+   * s.str.jsonExtract().as("json");
+   * shape: (3,)
+   * Series: 'json' [struct[2]]
+   * [
+   *     {1,true}
+   *     {null,null}
+   *     {2,false}
+   * ]
+   */
+  jsonExtract(dtype?: DataType, inferSchemaLength?: number): Series;
+  /***
+   * Parse string values as JSON.
+   * @returns Utf8 array. Contain null if original value is null or the `jsonPath` return nothing.
+   * @example
+   * s = pl.Series("json", ['{"a":1, "b": true}', null, '{"a":2, "b": false}']);
+   * s.str.jsonDecode().as("json");
    * shape: (3,)
    * Series: 'json' [struct[2]]
    * [
@@ -299,6 +315,9 @@ export const SeriesStringFunctions = (_s: any): StringNamespace => {
     },
     extract(pat: string | RegExp, groupIndex: number) {
       return wrap("strExtract", regexToString(pat), groupIndex);
+    },
+    jsonExtract(dtype?: DataType, inferSchemaLength?: number) {
+      return wrap("strJsonDecode", dtype, inferSchemaLength);
     },
     jsonDecode(dtype?: DataType, inferSchemaLength?: number) {
       return wrap("strJsonDecode", dtype, inferSchemaLength);

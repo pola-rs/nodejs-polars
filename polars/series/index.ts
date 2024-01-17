@@ -789,6 +789,13 @@ export interface Series
    * __Set masked values__
    * @param filter Boolean mask
    * @param value value to replace masked values with
+   * @deprecated @since 0.8.4 @use {@link scatter}
+   */
+  setAtIdx(indices: number[] | Series, value: any): void;
+  /**
+   * __Set masked values__
+   * @param filter Boolean mask
+   * @param value value to replace masked values with
    */
   set(filter: Series, value: any): Series;
   scatter(indices: number[] | Series, value: any): void;
@@ -1601,6 +1608,9 @@ export function _Series(_s: any): Series {
     },
     clip(...args) {
       return expr_op("clip", ...args);
+    },
+    setAtIdx(indices, value) {
+      _s.scatter(indices, value);
     },
     scatter(indices, value) {
       indices = Series.isSeries(indices)
