@@ -44,6 +44,7 @@ export const DTYPE_TO_FFINAME = {
   Float64: "F64",
   Bool: "Bool",
   Utf8: "Str",
+  String: "Str",
   List: "List",
   Date: "Date",
   Datetime: "Datetime",
@@ -94,6 +95,9 @@ const POLARS_TYPE_TO_CONSTRUCTOR: Record<string, any> = {
     return pli.JsSeries.newOptBool(name, values, strict);
   },
   Utf8(name, values, strict?) {
+    return (pli.JsSeries.newOptStr as any)(name, values, strict);
+  },
+  String(name, values, strict?) {
     return (pli.JsSeries.newOptStr as any)(name, values, strict);
   },
   Categorical(name, values, strict?) {

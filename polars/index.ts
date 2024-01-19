@@ -41,6 +41,8 @@ export namespace pl {
   export import Float64 = DataType.Float64;
   export import Bool = DataType.Bool;
   export import Utf8 = DataType.Utf8;
+  // biome-ignore lint/suspicious/noShadowRestrictedNames: pl.String
+  export import String = DataType.String;
   export import List = DataType.List;
   // biome-ignore lint/suspicious/noShadowRestrictedNames: pl.Date
   export import Date = DataType.Date;

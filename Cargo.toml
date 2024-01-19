@@ -13,13 +13,13 @@ repository = "https://github.com/pola-rs/nodejs-polars"
 crate-type = ["cdylib", "lib"]
 
 [dependencies]
-ahash = "0.8.3"
+ahash = "0.8.7"
 bincode = "1.3.3"
-napi = {version = "2.14.1", default-features = false, features = ["napi8", "serde-json"]}
-napi-derive = {version = "2.14.2", default-features = false}
-polars-core = {git = "https://github.com/pola-rs/polars.git", rev = "b13afbecac039205dacbaca766ecca4bf441b347", default-features = false}
-polars-io = {git = "https://github.com/pola-rs/polars.git", rev = "b13afbecac039205dacbaca766ecca4bf441b347", default-features = false}
-polars-lazy = {git = "https://github.com/pola-rs/polars.git", rev = "b13afbecac039205dacbaca766ecca4bf441b347", default-features = false}
+napi = {version = "2.14.2", default-features = false, features = ["napi8", "serde-json"]}
+napi-derive = {version = "2.14.6", default-features = false}
+polars-core = {git = "https://github.com/pola-rs/polars.git", rev = "fa59ffc1685043b44476dcb2a3f3804460ead5c5", default-features = false}
+polars-io = {git = "https://github.com/pola-rs/polars.git", rev = "fa59ffc1685043b44476dcb2a3f3804460ead5c5", default-features = false}
+polars-lazy = {git = "https://github.com/pola-rs/polars.git", rev = "fa59ffc1685043b44476dcb2a3f3804460ead5c5", default-features = false}
 thiserror = "1"
 smartstring = {version = "1"}
 serde_json = {version = "1"}
@@ -92,7 +92,7 @@ features = [
   "cov"
 ]
 git = "https://github.com/pola-rs/polars.git"
-rev = "b13afbecac039205dacbaca766ecca4bf441b347"
+rev = "fa59ffc1685043b44476dcb2a3f3804460ead5c5"
 
 [build-dependencies]
 napi-build = "2.1.0"

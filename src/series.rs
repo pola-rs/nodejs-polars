@@ -108,7 +108,7 @@ impl JsSeries {
         Series::new(&name, arr).into()
     }
     #[napi(factory, catch_unwind)]
-    pub fn new_opt_str(name: String, val: Wrap<Utf8Chunked>) -> JsSeries {
+    pub fn new_opt_str(name: String, val: Wrap<StringChunked>) -> JsSeries {
         let mut s = val.0.into_series();
         s.rename(&name);
         JsSeries::new(s)
@@ -209,10 +209,10 @@ impl JsSeries {
         dtype: Wrap<DataType>,
     ) -> napi::Result<JsSeries> {
         let s: JsSeries = match dtype.0 {
-            DataType::Utf8 => {
-                if let AnyValue::Utf8Owned(v) = val.0 {
+            DataType::String => {
+                if let AnyValue::StringOwned(v) = val.0 {
                     let val = v.to_string();
-                    let mut ca: Utf8Chunked = (0..n).map(|_| val.clone()).collect_trusted();
+                    let mut ca: StringChunked = (0..n).map(|_| val.clone()).collect_trusted();
                     ca.rename(&name);
                     ca.into_series().into()
                 } else {
@@ -244,7 +244,12 @@ impl JsSeries {
                     ));
                 }
             }
-            dt => { return Err(napi::Error::from_reason(format!("data type: {:?} is not supported as range", dt))); }
+            dt => {
+                return Err(napi::Error::from_reason(format!(
+                    "data type: {:?} is not supported as range",
+                    dt
+                )));
+            }
         };
         Ok(s)
     }
@@ -276,7 +281,7 @@ impl JsSeries {
     #[napi(catch_unwind)]
     pub fn get_fmt(&self, index: Wrap<usize>, str_lengths: Wrap<usize>) -> String {
         let val = format!("{}", self.series.get(index.0).unwrap());
-        if let DataType::Utf8 | DataType::Categorical(_) = self.series.dtype() {
+        if let DataType::String | DataType::Categorical(..) = self.series.dtype() {
             let v_trunc = &val[..val
                 .char_indices()
                 .take(str_lengths.0)
@@ -383,30 +388,40 @@ impl JsSeries {
             _ => self.series.mean(),
         }
     }
-
     #[napi(catch_unwind)]
-    pub fn max(&self) -> Option<Either3<f64, bool, i64>> {
-        match self.series.dtype() {
+    pub fn max(&self) -> napi::Result<Either3<Option<f64>, bool, Option<i64>>> {
+        Ok(match self.series.dtype() {
             DataType::Float32 | DataType::Float64 => self.series.max::<f64>().map(Either3::A),
-            DataType::Boolean => self.series.max::<u32>().map(|v| v == 1).map(Either3::B),
+            DataType::Boolean => self
+                .series
+                .max::<u32>()
+                .map(|v| v.unwrap() == 1)
+                .map(Either3::B),
             _ => self.series.max::<i64>().map(Either3::C),
         }
+        .map_err(JsPolarsErr::from)?)
     }
     #[napi(catch_unwind)]
-    pub fn min(&self) -> Option<Either3<f64, bool, i64>> {
-        match self.series.dtype() {
+    pub fn min(&self) -> napi::Result<Either3<Option<f64>, bool, Option<i64>>> {
+        Ok(match self.series.dtype() {
             DataType::Float32 | DataType::Float64 => self.series.min::<f64>().map(Either3::A),
-            DataType::Boolean => self.series.min::<u32>().map(|v| v == 1).map(Either3::B),
+            DataType::Boolean => self
+                .series
+                .min::<u32>()
+                .map(|v| v.unwrap() == 1)
+                .map(Either3::B),
             _ => self.series.min::<i64>().map(Either3::C),
         }
+        .map_err(JsPolarsErr::from)?)
     }
     #[napi(catch_unwind)]
-    pub fn sum(&self) -> Option<Either3<f64, bool, i64>> {
-        match self.series.dtype() {
+    pub fn sum(&self) -> napi::Result<Either3<f64, bool, i64>> {
+        Ok(match self.series.dtype() {
             DataType::Float32 | DataType::Float64 => self.series.sum::<f64>().map(Either3::A),
             DataType::Boolean => self.series.sum::<u32>().map(|v| v == 1).map(Either3::B),
             _ => self.series.sum::<i64>().map(Either3::C),
         }
+        .map_err(JsPolarsErr::from)?)
     }
     #[napi(catch_unwind)]
     pub fn n_chunks(&self) -> u32 {
@@ -637,8 +652,8 @@ impl JsSeries {
         Ok(s.into())
     }
     #[napi(catch_unwind)]
-    pub fn gather_every(&self, n: i64) -> JsSeries {
-        let s = self.series.gather_every(n as usize);
+    pub fn gather_every(&self, n: i64, offset: i64) -> JsSeries {
+        let s = self.series.gather_every(n as usize, offset as usize);
         s.into()
     }
     #[napi(catch_unwind)]
@@ -646,9 +661,9 @@ impl JsSeries {
         if strict {
             self.series.eq(&other.series)
         } else if null_equal {
-            self.series.series_equal_missing(&other.series)
+            self.series.equals_missing(&other.series)
         } else {
-            self.series.series_equal(&other.series)
+            self.series.equals(&other.series)
         }
     }
     #[napi(catch_unwind)]
@@ -830,14 +845,14 @@ impl JsSeries {
 
     #[napi(catch_unwind)]
     pub fn str_lengths(&self) -> napi::Result<JsSeries> {
-        let ca = self.series.utf8().map_err(JsPolarsErr::from)?;
+        let ca = self.series.str().map_err(JsPolarsErr::from)?;
         let s = ca.str_len_chars().into_series();
         Ok(JsSeries::new(s))
     }
 
     #[napi]
     pub fn str_contains(&self, pat: String, strict: bool) -> napi::Result<JsSeries> {
-        let ca = self.series.utf8().map_err(JsPolarsErr::from)?;
+        let ca = self.series.str().map_err(JsPolarsErr::from)?;
         let s = ca
             .contains(&pat, strict)
             .map_err(JsPolarsErr::from)?
@@ -846,16 +861,16 @@ impl JsSeries {
     }
 
     #[napi(catch_unwind)]
-    pub fn str_json_extract(
+    pub fn str_json_decode(
         &self,
         dtype: Option<Wrap<DataType>>,
         infer_schema_len: Option<i64>,
     ) -> napi::Result<JsSeries> {
-        let ca = self.series.utf8().map_err(JsPolarsErr::from)?;
+        let ca = self.series.str().map_err(JsPolarsErr::from)?;
         let dt = dtype.map(|d| d.0);
         let infer_schema_len = infer_schema_len.map(|l| l as usize);
         let s = ca
-            .json_extract(dt, infer_schema_len)
+            .json_decode(dt, infer_schema_len)
             .map_err(JsPolarsErr::from)?
             .into_series();
         Ok(s.into())
@@ -863,7 +878,7 @@ impl JsSeries {
 
     #[napi(catch_unwind)]
     pub fn str_json_path_match(&self, pat: String) -> napi::Result<JsSeries> {
-        let ca = self.series.utf8().map_err(JsPolarsErr::from)?;
+        let ca = self.series.str().map_err(JsPolarsErr::from)?;
         let s = ca
             .json_path_match(&pat)
             .map_err(JsPolarsErr::from)?
@@ -873,7 +888,7 @@ impl JsSeries {
 
     #[napi(catch_unwind)]
     pub fn str_extract(&self, pat: String, group_index: i64) -> napi::Result<JsSeries> {
-        let ca = self.series.utf8().map_err(JsPolarsErr::from)?;
+        let ca = self.series.str().map_err(JsPolarsErr::from)?;
         let s = ca
             .extract(&pat, group_index as usize)
             .map_err(JsPolarsErr::from)?
@@ -883,7 +898,7 @@ impl JsSeries {
 
     #[napi(catch_unwind)]
     pub fn str_replace(&self, pat: String, val: String) -> napi::Result<JsSeries> {
-        let ca = self.series.utf8().map_err(JsPolarsErr::from)?;
+        let ca = self.series.str().map_err(JsPolarsErr::from)?;
         let s = ca
             .replace(&pat, &val)
             .map_err(JsPolarsErr::from)?
@@ -893,7 +908,7 @@ impl JsSeries {
 
     #[napi(catch_unwind)]
     pub fn str_replace_all(&self, pat: String, val: String) -> napi::Result<JsSeries> {
-        let ca = self.series.utf8().map_err(JsPolarsErr::from)?;
+        let ca = self.series.str().map_err(JsPolarsErr::from)?;
         let s = ca
             .replace_all(&pat, &val)
             .map_err(JsPolarsErr::from)?
@@ -903,34 +918,34 @@ impl JsSeries {
 
     #[napi(catch_unwind)]
     pub fn str_to_uppercase(&self) -> napi::Result<JsSeries> {
-        let ca = self.series.utf8().map_err(JsPolarsErr::from)?;
+        let ca = self.series.str().map_err(JsPolarsErr::from)?;
         let s = ca.to_uppercase().into_series();
         Ok(s.into())
     }
 
     #[napi(catch_unwind)]
     pub fn str_to_lowercase(&self) -> napi::Result<JsSeries> {
-        let ca = self.series.utf8().map_err(JsPolarsErr::from)?;
+        let ca = self.series.str().map_err(JsPolarsErr::from)?;
         let s = ca.to_lowercase().into_series();
         Ok(s.into())
     }
 
     #[napi(catch_unwind)]
     pub fn str_slice(&self, start: i64, length: Option<i64>) -> napi::Result<JsSeries> {
-        let ca = self.series.utf8().map_err(JsPolarsErr::from)?;
+        let ca = self.series.str().map_err(JsPolarsErr::from)?;
         let s = ca.str_slice(start, length.map(|l| l as u64)).into_series();
         Ok(s.into())
     }
 
     #[napi(catch_unwind)]
     pub fn str_hex_encode(&self) -> napi::Result<JsSeries> {
-        let ca = self.series.utf8().map_err(JsPolarsErr::from)?;
+        let ca = self.series.str().map_err(JsPolarsErr::from)?;
         let s = ca.hex_encode().into_series();
         Ok(s.into())
     }
     #[napi(catch_unwind)]
     pub fn str_hex_decode(&self, strict: bool) -> napi::Result<JsSeries> {
-        let ca = self.series.utf8().map_err(JsPolarsErr::from)?;
+        let ca = self.series.str().map_err(JsPolarsErr::from)?;
         let s = ca
             .hex_decode(strict)
             .map_err(JsPolarsErr::from)?
@@ -939,13 +954,13 @@ impl JsSeries {
     }
     #[napi]
     pub fn str_base64_encode(&self) -> napi::Result<JsSeries> {
-        let ca = self.series.utf8().map_err(JsPolarsErr::from)?;
+        let ca = self.series.str().map_err(JsPolarsErr::from)?;
         let s = ca.base64_encode().into_series();
         Ok(s.into())
     }
     #[napi(catch_unwind)]
     pub fn str_base64_decode(&self, strict: bool) -> napi::Result<JsSeries> {
-        let ca = self.series.utf8().map_err(JsPolarsErr::from)?;
+        let ca = self.series.str().map_err(JsPolarsErr::from)?;
         let s = ca
             .base64_decode(strict)
             .map_err(JsPolarsErr::from)?
@@ -954,7 +969,7 @@ impl JsSeries {
     }
     #[napi(catch_unwind)]
     pub fn str_pad_start(&self, length: i64, fill_char: String) -> napi::Result<JsSeries> {
-        let ca = self.series.utf8().map_err(JsPolarsErr::from)?;
+        let ca = self.series.str().map_err(JsPolarsErr::from)?;
         let s = ca
             .pad_start(length as usize, fill_char.chars().nth(0).unwrap())
             .into_series();
@@ -962,7 +977,7 @@ impl JsSeries {
     }
     #[napi(catch_unwind)]
     pub fn str_pad_end(&self, length: i64, fill_char: String) -> napi::Result<JsSeries> {
-        let ca = self.series.utf8().map_err(JsPolarsErr::from)?;
+        let ca = self.series.str().map_err(JsPolarsErr::from)?;
         let s = ca
             .pad_end(length as usize, fill_char.chars().nth(0).unwrap())
             .into_series();
@@ -970,7 +985,7 @@ impl JsSeries {
     }
     #[napi(catch_unwind)]
     pub fn str_z_fill(&self, length: i64) -> napi::Result<JsSeries> {
-        let ca = self.series.utf8().map_err(JsPolarsErr::from)?;
+        let ca = self.series.str().map_err(JsPolarsErr::from)?;
         let s = ca.zfill(length as usize).into_series();
         Ok(s.into())
     }
@@ -1099,8 +1114,9 @@ impl JsSeries {
     }
 
     #[napi(catch_unwind)]
-    pub fn dot(&self, other: &JsSeries) -> Option<f64> {
-        self.series.dot(&other.series)
+    pub fn dot(&self, other: &JsSeries) -> napi::Result<f64> {
+        let s = self.series.dot(&other.series).map_err(JsPolarsErr::from)?;
+        Ok(s)
     }
 
     #[napi(catch_unwind)]
@@ -1213,11 +1229,11 @@ impl JsSeries {
         }
     }
     #[napi(catch_unwind)]
-    pub fn set_at_idx(&mut self, idx: &JsSeries, values: &JsSeries) -> napi::Result<()> {
+    pub fn scatter(&mut self, idx: &JsSeries, values: &JsSeries) -> napi::Result<()> {
         // we take the value because we want a ref count
         // of 1 so that we can have mutable access
         let s = std::mem::take(&mut self.series);
-        match crate::set::set_at_idx(s, &idx.series, &values.series) {
+        match crate::set::scatter(s, &idx.series, &values.series) {
             Ok(out) => {
                 self.series = out;
                 Ok(())
@@ -1266,7 +1282,7 @@ macro_rules! impl_set_with_mask {
     };
 }
 
-impl_set_with_mask!(series_set_with_mask_str, &str, utf8);
+impl_set_with_mask!(series_set_with_mask_str, &str, str);
 impl_set_with_mask!(series_set_with_mask_f64, f64, f64);
 impl_set_with_mask_wrap!(series_set_with_mask_f32, f32, f32);
 impl_set_with_mask_wrap!(series_set_with_mask_u8, u8, u8);
@@ -1313,7 +1329,7 @@ impl_get!(series_get_duration, duration, i64, i64);
 
 #[napi(catch_unwind)]
 pub fn series_get_str(s: &JsSeries, index: i64) -> Option<String> {
-    if let Ok(ca) = s.series.utf8() {
+    if let Ok(ca) = s.series.str() {
         let index = if index < 0 {
             (ca.len() as i64 + index) as usize
         } else {

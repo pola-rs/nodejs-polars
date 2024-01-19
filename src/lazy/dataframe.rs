@@ -394,56 +394,67 @@ impl JsLazyFrame {
     }
 
     #[napi(catch_unwind)]
-    pub fn min(&self) -> JsLazyFrame {
+    pub fn min(&self) -> napi::Result<JsLazyFrame> {
         let ldf = self.ldf.clone();
-        ldf.min().into()
+        let out = ldf.min().map_err(JsPolarsErr::from)?;
+        Ok(out.into())
     }
 
     #[napi(catch_unwind)]
-    pub fn max(&self) -> JsLazyFrame {
+    pub fn max(&self) -> napi::Result<JsLazyFrame> {
         let ldf = self.ldf.clone();
-        ldf.max().into()
+        let out = ldf.max().map_err(JsPolarsErr::from)?;
+        Ok(out.into())
     }
 
     #[napi(catch_unwind)]
-    pub fn sum(&self) -> JsLazyFrame {
+    pub fn sum(&self) -> napi::Result<JsLazyFrame> {
         let ldf = self.ldf.clone();
-        ldf.sum().into()
+        let out = ldf.sum().map_err(JsPolarsErr::from)?;
+        Ok(out.into())
     }
 
     #[napi(catch_unwind)]
-    pub fn mean(&self) -> JsLazyFrame {
+    pub fn mean(&self) -> napi::Result<JsLazyFrame> {
         let ldf = self.ldf.clone();
-        ldf.mean().into()
+        let out = ldf.mean().map_err(JsPolarsErr::from)?;
+        Ok(out.into())
     }
 
     #[napi(catch_unwind)]
-    pub fn std(&self, ddof: Option<u8>) -> JsLazyFrame {
+    pub fn std(&self, ddof: Option<u8>) -> napi::Result<JsLazyFrame> {
         let ddof = ddof.unwrap_or(1);
         let ldf = self.ldf.clone();
-        ldf.std(ddof).into()
+        let out = ldf.std(ddof).map_err(JsPolarsErr::from)?;
+        Ok(out.into())
     }
 
     #[napi(catch_unwind)]
-    pub fn var(&self, ddof: Option<u8>) -> JsLazyFrame {
+    pub fn var(&self, ddof: Option<u8>) -> napi::Result<JsLazyFrame> {
         let ddof = ddof.unwrap_or(1);
         let ldf = self.ldf.clone();
-        ldf.var(ddof).into()
+        let out = ldf.var(ddof).map_err(JsPolarsErr::from)?;
+        Ok(out.into())
     }
 
     #[napi(catch_unwind)]
-    pub fn median(&self) -> JsLazyFrame {
+    pub fn median(&self) -> napi::Result<JsLazyFrame> {
         let ldf = self.ldf.clone();
-        ldf.median().into()
+        let out = ldf.median().map_err(JsPolarsErr::from)?;
+        Ok(out.into())
     }
+
     #[napi(catch_unwind)]
     pub fn quantile(
         &self,
         quantile: f64,
         interpolation: Wrap<QuantileInterpolOptions>,
-    ) -> JsLazyFrame {
+    ) -> napi::Result<JsLazyFrame> {
         let ldf = self.ldf.clone();
-        ldf.quantile(lit(quantile), interpolation.0).into()
+        let out = ldf
+            .quantile(lit(quantile), interpolation.0)
+            .map_err(JsPolarsErr::from)?;
+        Ok(out.into())
     }
 
     #[napi(catch_unwind)]
@@ -545,12 +556,12 @@ pub struct ScanCsvOptions {
     pub ignore_errors: bool,
     pub n_rows: Option<u32>,
     pub skip_rows: Option<u32>,
-    pub sep: String,
+    pub sep: Option<String>,
     pub rechunk: Option<bool>,
     pub columns: Option<Vec<String>>,
     pub encoding: String,
     pub low_memory: Option<bool>,
-    pub comment_char: Option<String>,
+    pub comment_prefix: Option<String>,
     pub eol_char: Option<u8>,
     pub quote_char: Option<String>,
     pub parse_dates: Option<bool>,
@@ -565,7 +576,6 @@ pub struct ScanCsvOptions {
 #[napi(catch_unwind)]
 pub fn scan_csv(path: String, options: ScanCsvOptions) -> napi::Result<JsLazyFrame> {
     let n_rows = options.n_rows.map(|i| i as usize);
-    let comment_char = options.comment_char.map(|s| s.as_bytes()[0]);
     let row_count = options.row_count.map(RowCount::from);
     let missing_utf8_is_empty_string: bool = options.missing_utf8_is_empty_string.unwrap_or(false);
     let quote_char = if let Some(s) = options.quote_char {
@@ -596,7 +606,7 @@ pub fn scan_csv(path: String, options: ScanCsvOptions) -> napi::Result<JsLazyFra
 
     let r = LazyCsvReader::new(path)
         .with_infer_schema_length(Some(options.infer_schema_length.unwrap_or(100) as usize))
-        .with_separator(options.sep.as_bytes()[0])
+        .with_separator(options.sep.unwrap_or(",".to_owned()).as_bytes()[0])
         .has_header(options.has_header.unwrap_or(true))
         .with_ignore_errors(options.ignore_errors)
         .with_skip_rows(options.skip_rows.unwrap_or(0) as usize)
@@ -605,7 +615,7 @@ pub fn scan_csv(path: String, options: ScanCsvOptions) -> napi::Result<JsLazyFra
         .with_dtype_overwrite(overwrite_dtype.as_ref())
         .with_schema(options.schema.map(|schema| Arc::new(schema.0)))
         .low_memory(options.low_memory.unwrap_or(false))
-        .with_comment_char(comment_char)
+        .with_comment_prefix(options.comment_prefix.as_deref())
         .with_quote_char(quote_char)
         .with_end_of_line_char(options.eol_char.unwrap_or(b'\n'))
         .with_rechunk(options.rechunk.unwrap_or(false))

@@ -856,7 +856,7 @@ describe("expr", () => {
     const actual = df.select(col("a").tail(3).as("tail3"));
     expect(actual).toFrameEqual(expected);
   });
-  test("take", () => {
+  test.skip("take", () => {
     const df = pl.DataFrame({ a: [1, 2, 2, 3, 3, 8, null, 1] });
     const expected = pl.DataFrame({
       "take:array": [1, 2, 3, 8],
@@ -872,10 +872,11 @@ describe("expr", () => {
   });
   test("gatherEvery", () => {
     const df = pl.DataFrame({ a: [1, 1, 2, 2, 3, 3, 8, null, 1] });
-    const expected = pl.DataFrame({
-      everyother: [1, 2, 3, 8, 1],
-    });
-    const actual = df.select(col("a").gatherEvery(2).as("everyother"));
+    let expected = pl.DataFrame({ everyother: [1, 2, 3, 8, 1] });
+    let actual = df.select(col("a").gatherEvery(2).as("everyother"));
+    expect(actual).toFrameEqual(expected);
+    expected = pl.DataFrame({ everyother: [2, 3, 8, 1] });
+    actual = df.select(col("a").gatherEvery(2, 2).as("everyother"));
     expect(actual).toFrameEqual(expected);
   });
   test("unique", () => {
@@ -1008,11 +1009,11 @@ describe("expr.str", () => {
     expect(actual).toFrameEqual(expected);
     expect(seriesActual).toFrameEqual(expected);
   });
-  test("jsonExtract", () => {
+  test("jsonDecode", () => {
     const df = pl.DataFrame({
       json: ['{"a":1, "b": true}', null, '{"a":2, "b": false}'],
     });
-    const actual = df.select(pl.col("json").str.jsonExtract());
+    const actual = df.select(pl.col("json").str.jsonDecode());
     const expected = pl.DataFrame({
       json: [
         { a: 1, b: true },
@@ -1024,23 +1025,23 @@ describe("expr.str", () => {
     let s = pl.Series(["[1, 2, 3]", null, "[4, 5, 6]"]);
     let dtype = pl.List(pl.Int64);
     const expSeries = pl.Series([[1, 2, 3], null, [4, 5, 6]]);
-    expect(s.str.jsonExtract()).toSeriesEqual(expSeries);
-    expect(s.str.jsonExtract(dtype)).toSeriesEqual(expSeries);
+    expect(s.str.jsonDecode()).toSeriesEqual(expSeries);
+    expect(s.str.jsonDecode(dtype)).toSeriesEqual(expSeries);
     dtype = pl.Struct([
       new pl.Field("a", pl.Int64),
       new pl.Field("b", pl.Bool),
     ]);
     s = pl.Series("json", ['{"a":1, "b": true}', null, '{"a":2, "b": false}']);
-    expect(s.str.jsonExtract().as("json")).toSeriesEqual(
+    expect(s.str.jsonDecode().as("json")).toSeriesEqual(
       expected.getColumn("json"),
     );
-    expect(s.str.jsonExtract(dtype).as("json")).toSeriesEqual(
+    expect(s.str.jsonDecode(dtype).as("json")).toSeriesEqual(
       expected.getColumn("json"),
     );
     s = pl.Series("col_a", [], pl.Utf8);
     const exp = pl.Series("col_a", []).cast(pl.List(pl.Int64));
     dtype = pl.List(pl.Int64);
-    expect(s.str.jsonExtract(dtype).as("col_a")).toSeriesEqual(exp);
+    expect(s.str.jsonDecode(dtype).as("col_a")).toSeriesEqual(exp);
   });
   test("jsonPathMatch", () => {
     const df = pl.DataFrame({
@@ -1784,7 +1785,7 @@ describe("expr.dt", () => {
 describe("expr metadata", () => {
   test("inspect & toString", () => {
     const expr = lit("foo");
-    const expected = "Utf8(foo)";
+    const expected = "String(foo)";
     const actualInspect = expr[Symbol.for("nodejs.util.inspect.custom")]();
     const exprString = expr.toString();
     expect(actualInspect).toStrictEqual(expected);

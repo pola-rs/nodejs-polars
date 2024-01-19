@@ -9,13 +9,13 @@ import { concat } from "./functions";
 export interface ReadCsvOptions {
   inferSchemaLength: number | null;
   nRows: number;
-  batchSize: number;
   hasHeader: boolean;
   ignoreErrors: boolean;
   endRows: number;
   startRows: number;
   projection: number;
   sep: string;
+  schema: Record<string, DataType>;
   columns: string[];
   rechunk: boolean;
   encoding: "utf8" | "utf8-lossy";
@@ -166,6 +166,7 @@ export function readRecords(
  * @param options.encoding -Allowed encodings: `utf8`, `utf8-lossy`. Lossy means that invalid utf8 values are replaced with `�` character.
  * @param options.numThreads -Number of threads to use in csv parsing. Defaults to the number of physical cpu's of your system.
  * @param options.dtype -Overwrite the dtypes during inference.
+ * @param options.schema -Set the CSV file's schema. This only accepts datatypes that are implemented in the csv parser and expects a complete Schema.
  * @param options.lowMemory - Reduce memory usage in expense of performance.
  * @param options.commentChar - character that indicates the start of a comment line, for instance '#'.
  * @param options.quoteChar -character that is used for csv quoting, default = ''. Set to null to turn special handling and escaping of quotes off.

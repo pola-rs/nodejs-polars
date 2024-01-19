@@ -68,7 +68,6 @@ export abstract class DataType {
   public static get Date(): DataType {
     return new _Date();
   }
-
   /** Time of day type */
   public static get Time(): DataType {
     return new _Time();
@@ -120,6 +119,10 @@ export abstract class DataType {
     return new _Utf8();
   }
 
+  public static get String(): DataType {
+    return new _String();
+  }
+
   toString() {
     if (this.inner) {
       return `${this.identity}(${this.variant}(${this.inner}))`;
@@ -164,6 +167,7 @@ class _Date extends DataType {}
 class _Time extends DataType {}
 class _Object extends DataType {}
 class _Utf8 extends DataType {}
+class _String extends DataType {}
 
 class _Categorical extends DataType {}
 
@@ -301,6 +305,8 @@ export namespace DataType {
   export type Datetime = _Datetime;
   /** Utf8 */
   export type Utf8 = _Utf8;
+  /** Utf8 */
+  export type String = _String;
   /** Categorical */
   export type Categorical = _Categorical;
   /** List */

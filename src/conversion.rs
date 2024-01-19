@@ -33,9 +33,9 @@ impl<T> From<T> for Wrap<T> {
         Wrap(t)
     }
 }
-impl TypeName for Wrap<Utf8Chunked> {
+impl TypeName for Wrap<StringChunked> {
     fn type_name() -> &'static str {
-        "Utf8Chunked"
+        "StringChunked"
     }
 
     fn value_type() -> ValueType {
@@ -124,8 +124,8 @@ impl<'a> ToNapiValue for Wrap<AnyValue<'a>> {
             AnyValue::UInt64(n) => u64::to_napi_value(env, n),
             AnyValue::Float32(n) => f64::to_napi_value(env, n as f64),
             AnyValue::Float64(n) => f64::to_napi_value(env, n),
-            AnyValue::Utf8(s) => String::to_napi_value(env, s.to_owned()),
-            AnyValue::Utf8Owned(s) => String::to_napi_value(env, s.to_string()),
+            AnyValue::String(s) => String::to_napi_value(env, s.to_owned()),
+            AnyValue::StringOwned(s) => String::to_napi_value(env, s.to_string()),
             AnyValue::Date(v) => {
                 let mut ptr = std::ptr::null_mut();
 
@@ -162,11 +162,11 @@ impl<'a> ToNapiValue for Wrap<AnyValue<'a>> {
         }
     }
 }
-impl FromNapiValue for Wrap<Utf8Chunked> {
+impl FromNapiValue for Wrap<StringChunked> {
     unsafe fn from_napi_value(env: sys::napi_env, napi_val: sys::napi_value) -> JsResult<Self> {
         let arr = Array::from_napi_value(env, napi_val)?;
         let len = arr.len() as usize;
-        let mut builder = Utf8ChunkedBuilder::new("", len, len * 25);
+        let mut builder = StringChunkedBuilder::new("", len, len * 25);
         for i in 0..len {
             match arr.get::<String>(i as u32) {
                 Ok(val) => match val {
@@ -622,7 +622,7 @@ impl FromNapiValue for Wrap<DataType> {
                     "Float32" => DataType::Float32,
                     "Float64" => DataType::Float64,
                     "Bool" => DataType::Boolean,
-                    "Utf8" => DataType::Utf8,
+                    "Utf8" => DataType::String,
                     "List" => {
                         let inner = obj.get::<_, Array>("inner")?.unwrap();
                         let inner_dtype: Object = inner.get::<Object>(0)?.unwrap();
@@ -637,8 +637,8 @@ impl FromNapiValue for Wrap<DataType> {
                         DataType::Datetime(tu.0, None)
                     }
                     "Time" => DataType::Time,
-                    "Object" => DataType::Object("object"),
-                    "Categorical" => DataType::Categorical(None),
+                    "Object" => DataType::Object("object", None),
+                    "Categorical" => DataType::Categorical(None, Default::default()),
                     "Struct" => {
                         let inner = obj.get::<_, Array>("fields")?.unwrap();
                         let mut fldvec: Vec<Field> = Vec::with_capacity(inner.len() as usize);
@@ -797,7 +797,7 @@ impl FromNapiValue for Wrap<JoinType> {
         let parsed = match s.as_ref() {
             "inner" => JoinType::Inner,
             "left" => JoinType::Left,
-            "outer" => JoinType::Outer,
+            "outer" => JoinType::Outer { coalesce: true },
             "semi" => JoinType::Semi,
             "anti" => JoinType::Anti,
             "cross" => JoinType::Cross,
@@ -893,7 +893,7 @@ impl ToNapiValue for Wrap<DataType> {
             DataType::Float32 => String::to_napi_value(env, "Float32".to_owned()),
             DataType::Float64 => String::to_napi_value(env, "Float64".to_owned()),
             DataType::Boolean => String::to_napi_value(env, "Bool".to_owned()),
-            DataType::Utf8 => String::to_napi_value(env, "Utf8".to_owned()),
+            DataType::String => String::to_napi_value(env, "String".to_owned()),
             DataType::List(inner) => {
                 let env_ctx = Env::from_raw(env);
                 let mut obj = env_ctx.create_object()?;
@@ -917,8 +917,8 @@ impl ToNapiValue for Wrap<DataType> {
                 Object::to_napi_value(env, obj)
             }
             DataType::Time => String::to_napi_value(env, "Time".to_owned()),
-            DataType::Object(_) => String::to_napi_value(env, "Object".to_owned()),
-            DataType::Categorical(_) => String::to_napi_value(env, "Categorical".to_owned()),
+            DataType::Object(..) => String::to_napi_value(env, "Object".to_owned()),
+            DataType::Categorical(..) => String::to_napi_value(env, "Categorical".to_owned()),
             DataType::Struct(flds) => {
                 let env_ctx = Env::from_raw(env);
 
@@ -992,7 +992,7 @@ impl FromJsUnknown for AnyValue<'_> {
             ValueType::Undefined | ValueType::Null => Ok(AnyValue::Null),
             ValueType::Boolean => bool::from_js(val).map(AnyValue::Boolean),
             ValueType::Number => f64::from_js(val).map(AnyValue::Float64),
-            ValueType::String => String::from_js(val).map(|s| AnyValue::Utf8Owned(s.into())),
+            ValueType::String => String::from_js(val).map(|s| AnyValue::StringOwned(s.into())),
             ValueType::BigInt => u64::from_js(val).map(AnyValue::UInt64),
             ValueType::Object => {
                 if val.is_date()? {
@@ -1015,13 +1015,13 @@ impl FromJsUnknown for DataType {
             ValueType::Undefined | ValueType::Null => Ok(DataType::Null),
             ValueType::Boolean => Ok(DataType::Boolean),
             ValueType::Number => Ok(DataType::Float64),
-            ValueType::String => Ok(DataType::Utf8),
+            ValueType::String => Ok(DataType::String),
             ValueType::BigInt => Ok(DataType::UInt64),
             ValueType::Object => {
                 if val.is_date()? {
                     Ok(DataType::Datetime(TimeUnit::Milliseconds, None))
                 } else {
-                    Ok(DataType::Utf8)
+                    Ok(DataType::String)
                 }
             }
             _ => panic!("not supported"),

@@ -562,7 +562,7 @@ export interface Expr
   gather(index: Expr | number[] | Series): Expr;
   gather({ index }: { index: Expr | number[] | Series }): Expr;
   /** Take every nth value in the Series and return as a new Series. */
-  gatherEvery(n: number): Expr;
+  gatherEvery(n: number, offset?: number): Expr;
   /**
    * Get the unique values of this expression;
    * @param maintainOrder Maintain order of data. This requires more work.
@@ -1063,6 +1063,7 @@ export const _Expr = (_expr: any): Expr => {
       center?,
       by?,
       closedWindow?,
+      warnIfUnsorted?,
     ) {
       if (typeof val === "number") {
         return wrap("rollingQuantile", {
@@ -1087,6 +1088,7 @@ export const _Expr = (_expr: any): Expr => {
         val?.["center"] ?? center ?? false,
         val?.["by"] ?? by,
         val?.["closedWindow"] ?? closedWindow ?? "left",
+        val?.["warnIfUnsorted"] ?? warnIfUnsorted ?? true,
       );
     },
     rollingSkew(val, bias = true) {
@@ -1178,8 +1180,8 @@ export const _Expr = (_expr: any): Expr => {
       }
       return wrap("gather", indices);
     },
-    gatherEvery(n) {
-      return _Expr(_expr.gatherEvery(n));
+    gatherEvery(n, offset = 0) {
+      return _Expr(_expr.gatherEvery(n, offset));
     },
     unique(opt?) {
       if (opt || opt?.maintainOrder) {
