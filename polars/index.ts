@@ -1,5 +1,6 @@
 import * as series from "./series";
 import * as df from "./dataframe";
+import * as db from "./database";
 import { DataType, Field as _field } from "./datatypes";
 import * as func from "./functions";
 import * as io from "./io";
@@ -109,6 +110,8 @@ export namespace pl {
   export import list = lazy.list;
   export import when = lazy.when;
   export const version = pli.version();
+
+  export import readPostgres = db.readPostgres;
 }
 // eslint-disable-next-line no-undef
 export default pl;

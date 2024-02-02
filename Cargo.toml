@@ -24,9 +24,6 @@ thiserror = "1"
 smartstring = {version = "1"}
 serde_json = {version = "1"}
 either = "1.9"
-postgres = "0.19.7"
-r2d2 = "0.8.10"
-r2d2_postgres = "0.18.1"
 
 [dependencies.polars]
 features = [
@@ -96,6 +93,13 @@ features = [
 ]
 git = "https://github.com/pola-rs/polars.git"
 rev = "fa59ffc1685043b44476dcb2a3f3804460ead5c5"
+
+[dependencies.connectorx]
+version = "0.3.2"
+features = [
+  "src_postgres",
+  "dst_arrow2"
+]
 
 [build-dependencies]
 napi-build = "2.1.0"
