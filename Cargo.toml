@@ -24,6 +24,9 @@ thiserror = "1"
 smartstring = {version = "1"}
 serde_json = {version = "1"}
 either = "1.9"
+postgres = "0.19.7"
+r2d2 = "0.8.10"
+r2d2_postgres = "0.18.1"
 
 [dependencies.polars]
 features = [
