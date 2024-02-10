@@ -1703,6 +1703,92 @@ export interface DataFrame
   withRowCount(name?: string): DataFrame;
   /** @see {@link filter} */
   where(predicate: any): DataFrame;
+  /**
+    Upsample a DataFrame at a regular frequency.
+
+    The `every` and `offset` arguments are created with the following string language:
+    - 1ns   (1 nanosecond)
+    - 1us   (1 microsecond)
+    - 1ms   (1 millisecond)
+    - 1s    (1 second)
+    - 1m    (1 minute)
+    - 1h    (1 hour)
+    - 1d    (1 calendar day)
+    - 1w    (1 calendar week)
+    - 1mo   (1 calendar month)
+    - 1q    (1 calendar quarter)
+    - 1y    (1 calendar year)
+    - 1i    (1 index count)
+
+    Or combine them:
+    - "3d12h4m25s" # 3 days, 12 hours, 4 minutes, and 25 seconds
+
+    By "calendar day", we mean the corresponding time on the next day (which may not be 24 hours, due to daylight savings). 
+    Similarly for "calendar week", "calendar month", "calendar quarter", and "calendar year".
+
+    Parameters
+    ----------
+    @param timeColumn  Time column will be used to determine a date_range.
+                        Note that this column has to be sorted for the output to make sense.
+    @param every Interval will start 'every' duration.
+    @param offset Change the start of the date_range by this offset.
+    @param by First group by these columns and then upsample for every group.
+    @param maintainOrder Keep the ordering predictable. This is slower.
+
+    Returns
+    -------
+    DataFrame
+        Result will be sorted by `timeColumn` (but note that if `by` columns are
+        passed, it will only be sorted within each `by` group).
+
+    Examples
+    --------
+    Upsample a DataFrame by a certain interval.
+
+    >>> const df = pl.DataFrame({
+            "date": [
+                new Date(2024, 1, 1),
+                new Date(2024, 3, 1),
+                new Date(2024, 4, 1),
+                new Date(2024, 5, 1),
+            ],
+            "groups": ["A", "B", "A", "B"],
+            "values": [0, 1, 2, 3],
+         })
+          .withColumn(pl.col("date").cast(pl.Date).alias("date"))
+          .sort("date");
+
+    >>> df.upsample({timeColumn: "date", every: "1mo", offset: "0ns", by: "groups", maintainOrder: true})
+          .withColumns(pl.col("groups").forwardFill(),pl.col("values").forwardFill());
+shape: (7, 3)
+┌────────────┬────────┬────────┐
+│ date       ┆ groups ┆ values │
+│ ---        ┆ ---    ┆ ---    │
+│ date       ┆ str    ┆ f64    │
+╞════════════╪════════╪════════╡
+│ 2024-02-01 ┆ A      ┆ 0.0    │
+│ 2024-03-01 ┆ A      ┆ 0.0    │
+│ 2024-04-01 ┆ A      ┆ 0.0    │
+│ 2024-05-01 ┆ A      ┆ 2.0    │
+│ 2024-04-01 ┆ B      ┆ 1.0    │
+│ 2024-05-01 ┆ B      ┆ 1.0    │
+│ 2024-06-01 ┆ B      ┆ 3.0    │
+└────────────┴────────┴────────┘
+  */
+  upsample(
+    timeColumn: string,
+    every: string,
+    offset?: string,
+    by?: string | string[],
+    maintainOrder?: boolean,
+  ): DataFrame;
+  upsample(opts: {
+    timeColumn: string;
+    every: string;
+    offset?: string;
+    by?: string | string[];
+    maintainOrder?: boolean;
+  }): DataFrame;
 }
 
 function prepareOtherArg(anyValue: any): Series {
@@ -1964,6 +2050,27 @@ export const _DataFrame = (_df: any): DataFrame => {
         includeBoundaries,
         closed,
         by,
+      );
+    },
+    upsample(opts, every?, offset?, by?, maintainOrder?) {
+      let timeColumn;
+      if (typeof opts === "string") {
+        timeColumn = opts;
+      } else {
+        timeColumn = opts.timeColumn;
+        by = opts.by;
+        offset = opts.offset;
+        every = opts.every;
+        maintainOrder = opts.maintainOrder ?? false;
+      }
+
+      by = by ?? new Array();
+      if (typeof by === "string") by = [by];
+
+      offset = offset ?? "0ns";
+
+      return _DataFrame(
+        _df.upsample(by, timeColumn, every, offset, maintainOrder),
       );
     },
     hashRows(obj: any = 0n, k1 = 1n, k2 = 2n, k3 = 3n) {
