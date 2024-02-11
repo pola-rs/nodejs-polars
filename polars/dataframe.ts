@@ -2067,7 +2067,7 @@ export const _DataFrame = (_df: any): DataFrame => {
       if (typeof by === "string") {
         by = [by];
       } else {
-        by = by ?? []
+        by = by ?? [];
       }
 
       offset = offset ?? "0ns";
