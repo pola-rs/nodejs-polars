@@ -2064,8 +2064,11 @@ export const _DataFrame = (_df: any): DataFrame => {
         maintainOrder = opts.maintainOrder ?? false;
       }
 
-      by = by ?? new Array();
-      if (typeof by === "string") by = [by];
+      if (typeof by === "string") {
+        by = [by];
+      } else {
+        by = by ?? []
+      }
 
       offset = offset ?? "0ns";
 
