@@ -2249,7 +2249,6 @@ describe("meta", () => {
     expect(dfString).toStrictEqual(expected);
   });
 });
-
 test("Jupyter.display", () => {
   const df = pl.DataFrame({
     os: ["apple", "linux"],
@@ -2346,10 +2345,7 @@ describe("additional", () => {
 
     let actual = df
       .upsample("date", "1mo", "0ns", "groups", true)
-      .withColumns(
-        pl.col("groups").forwardFill(),
-        pl.col("values").forwardFill(),
-      );
+      .select(pl.col("*").forwardFill());
 
     let expected = `shape: (7, 3)
 ┌────────────┬────────┬────────┐
@@ -2366,7 +2362,7 @@ describe("additional", () => {
 │ 2024-06-01 ┆ B      ┆ 3.0    │
 └────────────┴────────┴────────┘`;
 
-    expect(actual.toString()).toEqual(expected);
+    expect(actual.toString()).toStrictEqual(expected);
 
     actual = df
       .upsample({
@@ -2376,19 +2372,13 @@ describe("additional", () => {
         by: "groups",
         maintainOrder: true,
       })
-      .withColumns(
-        pl.col("groups").forwardFill(),
-        pl.col("values").forwardFill(),
-      );
+      .select(pl.col("*").forwardFill());
 
-    expect(actual.toString()).toEqual(expected);
+    expect(actual.toString()).toStrictEqual(expected);
 
     actual = df
       .upsample({ timeColumn: "date", every: "1mo" })
-      .withColumns(
-        pl.col("groups").forwardFill(),
-        pl.col("values").forwardFill(),
-      );
+      .select(pl.col("*").forwardFill());
 
     expected = `shape: (5, 3)
 ┌────────────┬────────┬────────┐
@@ -2403,14 +2393,11 @@ describe("additional", () => {
 │ 2024-06-01 ┆ B      ┆ 3.0    │
 └────────────┴────────┴────────┘`;
 
-    expect(actual.toString()).toEqual(expected);
+    expect(actual.toString()).toStrictEqual(expected);
 
     actual = df
       .upsample({ timeColumn: "date", every: "1m" })
-      .withColumns(
-        pl.col("groups").forwardFill(),
-        pl.col("values").forwardFill(),
-      );
+      .select(pl.col("*").forwardFill());
 
     expect(actual.shape).toEqual({ height: 174_241, width: 3 });
   });
