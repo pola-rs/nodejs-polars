@@ -1,4 +1,5 @@
 import pl from "@polars";
+import fs from "fs";
 
 describe("lazyframe", () => {
   test("columns", () => {
@@ -1230,5 +1231,59 @@ describe("lazyframe", () => {
       .select(pl.col("json").str.jsonDecode())
       .collectSync();
     expect(actual).toFrameEqual(expected);
+  });
+  test("sinkCSV:path", async () => {
+    const ldf = pl
+      .DataFrame([
+        pl.Series("foo", [1, 2, 3], pl.Int64),
+        pl.Series("bar", ["a", "b", "c"]),
+      ])
+      .lazy();
+    ldf.sinkCSV("./test.csv");
+    const newDF: pl.DataFrame = pl.readCSV("./test.csv");
+    const actualDf: pl.DataFrame = await ldf.collect();
+    expect(newDF.sort("foo").toString()).toEqual(actualDf.toString());
+    fs.rmSync("./test.csv");
+  });
+  test("sinkCSV:noHeader", async () => {
+    const ldf = pl
+      .DataFrame([
+        pl.Series("column_1", [1, 2, 3], pl.Int64),
+        pl.Series("column_2", ["a", "b", "c"]),
+      ])
+      .lazy();
+    ldf.sinkCSV("./test.csv", { includeHeader: false });
+    const newDF: pl.DataFrame = pl.readCSV("./test.csv", { hasHeader: false });
+    const actualDf: pl.DataFrame = await ldf.collect();
+    expect(newDF.sort("column_1").toString()).toEqual(actualDf.toString());
+    fs.rmSync("./test.csv");
+  });
+  test("sinkCSV:separator", async () => {
+    const ldf = pl
+      .DataFrame([
+        pl.Series("foo", [1, 2, 3], pl.Int64),
+        pl.Series("bar", ["a", "b", "c"]),
+      ])
+      .lazy();
+    ldf.sinkCSV("./test.csv", { separator: "|" });
+    const newDF: pl.DataFrame = pl.readCSV("./test.csv", { sep: "|" });
+    const actualDf: pl.DataFrame = await ldf.collect();
+    expect(newDF.sort("foo").toString()).toEqual(actualDf.toString());
+    fs.rmSync("./test.csv");
+  });
+  test("sinkCSV:nullValue", async () => {
+    const ldf = pl
+      .DataFrame([
+        pl.Series("foo", [1, 2, 3], pl.Int64),
+        pl.Series("bar", ["a", "b", null]),
+      ])
+      .lazy();
+    ldf.sinkCSV("./test.csv", { nullValue: "BOOM" });
+    const newDF: pl.DataFrame = pl.readCSV("./test.csv", { sep: "," });
+    const actualDf: pl.DataFrame = await (await ldf.collect()).withColumn(
+      pl.col("bar").fillNull("BOOM"),
+    );
+    expect(newDF.sort("foo").toString()).toEqual(actualDf.toString());
+    fs.rmSync("./test.csv");
   });
 });

@@ -11,7 +11,7 @@ import {
 } from "../utils";
 import { _LazyGroupBy, LazyGroupBy } from "./groupby";
 import { Deserialize, GroupByOps, Serialize } from "../shared_traits";
-import { LazyOptions, LazyJoinOptions } from "../types";
+import { LazyOptions, LazyJoinOptions, SinkCsvOptions } from "../types";
 import { Series } from "../series";
 
 const inspect = Symbol.for("nodejs.util.inspect.custom");
@@ -457,6 +457,63 @@ export interface LazyDataFrame extends Serialize, GroupByOps<LazyGroupBy> {
    * @see {@link DataFrame.withRowCount}
    */
   withRowCount();
+  /***
+  *
+  * Evaluate the query in streaming mode and write to a CSV file.
+
+    .. warning::
+        Streaming mode is considered **unstable**. It may be changed
+        at any point without it being considered a breaking change.
+
+    This allows streaming results that are larger than RAM to be written to disk.
+
+    Parameters
+    ----------
+    @param path - File path to which the file should be written.
+    @param includeBom - Whether to include UTF-8 BOM in the CSV output.
+    @param includeHeader - Whether to include header in the CSV output.
+    @param separator - Separate CSV fields with this symbol.
+    @param lineTerminator - String used to end each row.
+    @param quoteChar - Byte to use as quoting character.
+    @param batchSize - Number of rows that will be processed per thread. Default - 1024
+    @param datetimeFormat - A format string, with the specifiers defined by the
+        `chrono <https://docs.rs/chrono/latest/chrono/format/strftime/index.html>`_
+        Rust crate. If no format specified, the default fractional-second
+        precision is inferred from the maximum timeunit found in the frame's
+        Datetime cols (if any).
+    @param dateFormat - A format string, with the specifiers defined by the
+        `chrono <https://docs.rs/chrono/latest/chrono/format/strftime/index.html>`_
+        Rust crate.
+    @param timeFormat A format string, with the specifiers defined by the
+        `chrono <https://docs.rs/chrono/latest/chrono/format/strftime/index.html>`_
+        Rust crate.
+    @param floatPrecision - Number of decimal places to write, applied to both `Float32` and `Float64` datatypes.
+    @param nullValue - A string representing null values (defaulting to the empty string).
+    @param quoteStyle - Determines the quoting strategy used. : {'necessary', 'always', 'non_numeric', 'never'}
+        - necessary (default): This puts quotes around fields only when necessary.
+          They are necessary when fields contain a quote,
+          delimiter or record terminator.
+          Quotes are also necessary when writing an empty record
+          (which is indistinguishable from a record with one empty field).
+          This is the default.
+        - always: This puts quotes around every field. Always.
+        - never: This never puts quotes around fields, even if that results in
+          invalid CSV data (e.g.: by not quoting strings containing the
+          separator).
+        - non_numeric: This puts quotes around all fields that are non-numeric.
+          Namely, when writing a field that does not parse as a valid float
+          or integer, then quotes will be used even if they aren`t strictly
+          necessary.
+    @param maintainOrder - Maintain the order in which data is processed.
+        Setting this to `False` will  be slightly faster.
+
+    Examples
+    --------
+    >>> const lf = pl.scanCsv("/path/to/my_larger_than_ram_file.csv")
+    >>> lf.sinkCsv("out.csv")
+  */
+
+  sinkCSV(dest: string, options?: SinkCsvOptions): void;
 }
 
 const prepareGroupbyInputs = (by) => {
@@ -898,6 +955,14 @@ export const _LazyDataFrame = (_ldf: any): LazyDataFrame => {
     },
     withRowCount(name = "row_nr") {
       return _LazyDataFrame(_ldf.withRowCount(name));
+    },
+    sinkCSV(dest?, options = {}) {
+      options.maintainOrder = options.maintainOrder ?? false;
+      if (typeof dest === "string") {
+        _ldf.sinkCsv(dest, options);
+      } else {
+        throw new TypeError("Expected a string destination");
+      }
     },
   };
 };

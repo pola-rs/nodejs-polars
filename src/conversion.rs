@@ -570,6 +570,23 @@ pub struct WriteCsvOptions {
 }
 
 #[napi(object)]
+pub struct SinkCsvOptions {
+    pub include_header: Option<bool>,
+    pub quote: Option<String>,
+    pub include_bom: Option<bool>,
+    pub separator: Option<String>,
+    pub line_terminator: Option<String>,
+    pub quote_char: Option<String>,
+    pub batch_size: Option<i64>,
+    pub datetime_format: Option<String>,
+    pub date_format: Option<String>,
+    pub time_format: Option<String>,
+    pub float_precision: Option<i64>,
+    pub null_value: Option<String>,
+    pub maintain_order: bool,
+}
+
+#[napi(object)]
 pub struct Shape {
     pub height: i64,
     pub width: i64,

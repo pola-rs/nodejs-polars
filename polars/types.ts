@@ -46,7 +46,25 @@ export interface WriteCsvOptions {
   includeHeader?: boolean;
   sep?: string;
 }
-
+/**
+ * Options for {@link LazyDataFrame.sinkCSV}
+ * @category Options
+ */
+export interface SinkCsvOptions {
+  includeHeader?: boolean;
+  quote?: string;
+  includeBom?: boolean;
+  separator?: string;
+  lineTerminator?: string;
+  quoteChar?: string;
+  batchSize?: number;
+  datetimeFormat?: string;
+  dateFormat?: string;
+  timeFormat?: string;
+  floatPrecision?: number;
+  nullValue?: string;
+  maintainOrder?: boolean;
+}
 /**
  * Options for {@link DataFrame.writeJSON}
  * @category Options
