@@ -8,6 +8,7 @@ use polars::prelude::{col, lit, ClosedWindow, CsvEncoding, DataFrame, Field, Joi
 use polars_io::cloud::CloudOptions;
 use polars_io::parquet::ParallelStrategy;
 use std::collections::HashMap;
+use std::path::PathBuf;
 
 #[napi]
 #[repr(transparent)]
@@ -543,6 +544,51 @@ impl JsLazyFrame {
     #[napi(catch_unwind)]
     pub fn unnest(&self, colss: Vec<String>) -> JsLazyFrame {
         self.ldf.clone().unnest(colss).into()
+    }
+
+    #[napi(catch_unwind)]
+    pub fn sink_csv(&self, path: String, options: SinkCsvOptions) -> napi::Result<()> {
+        let quote_style = QuoteStyle::default();
+        let null_value = options
+            .null_value
+            .unwrap_or(SerializeOptions::default().null);
+        let float_precision: Option<usize> = options.float_precision.map(|fp| fp as usize);
+        let separator = options.separator.unwrap_or(",".to_owned()).as_bytes()[0];
+        let line_terminator = options.line_terminator.unwrap_or("\n".to_string());
+        let quote_char = options.quote_char.unwrap_or("\"".to_owned()).as_bytes()[0];
+        let date_format = options.date_format;
+        let time_format = options.time_format;
+        let datetime_format = options.datetime_format;
+
+        let serialize_options = SerializeOptions {
+            date_format,
+            time_format,
+            datetime_format,
+            float_precision,
+            separator,
+            quote_char,
+            null: null_value,
+            line_terminator,
+            quote_style,
+        };
+
+        let batch_size = options.batch_size.map(|bs| bs).unwrap_or(1024) as usize;
+        let include_bom = options.include_bom.unwrap_or(false);
+        let include_header = options.include_header.unwrap_or(true);
+        let maintain_order = options.maintain_order;
+
+        let options = CsvWriterOptions {
+            include_bom,
+            include_header,
+            maintain_order,
+            batch_size,
+            serialize_options,
+        };
+
+        let path_buf: PathBuf = PathBuf::from(path);
+        let ldf = self.ldf.clone().with_comm_subplan_elim(false);
+        let _ = ldf.sink_csv(path_buf, options).map_err(JsPolarsErr::from);
+        Ok(())
     }
 }
 
