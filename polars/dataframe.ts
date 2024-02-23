@@ -2061,7 +2061,7 @@ export const _DataFrame = (_df: any): DataFrame => {
     nullCount() {
       return wrap("nullCount");
     },
-    partitionBy(by, strict = false, includeKey?: boolean, mapFn = (df) => df) {
+    partitionBy(by, strict = false, includeKey = true, mapFn = (df) => df) {
       by = Array.isArray(by) ? by : [by];
       return _df
         .partitionBy(by, strict, includeKey)
