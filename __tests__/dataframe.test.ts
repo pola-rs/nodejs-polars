@@ -2347,22 +2347,23 @@ describe("additional", () => {
       .upsample("date", "1mo", "0ns", "groups", true)
       .select(pl.col("*").forwardFill());
 
-    let expected = `shape: (7, 3)
-┌────────────┬────────┬────────┐
-│ date       ┆ groups ┆ values │
-│ ---        ┆ ---    ┆ ---    │
-│ date       ┆ str    ┆ f64    │
-╞════════════╪════════╪════════╡
-│ 2024-02-01 ┆ A      ┆ 0.0    │
-│ 2024-03-01 ┆ A      ┆ 0.0    │
-│ 2024-04-01 ┆ A      ┆ 0.0    │
-│ 2024-05-01 ┆ A      ┆ 2.0    │
-│ 2024-04-01 ┆ B      ┆ 1.0    │
-│ 2024-05-01 ┆ B      ┆ 1.0    │
-│ 2024-06-01 ┆ B      ┆ 3.0    │
-└────────────┴────────┴────────┘`;
+    let expected = pl
+      .DataFrame({
+        date: [
+          new Date(2024, 1, 1),
+          new Date(2024, 2, 1),
+          new Date(2024, 3, 1),
+          new Date(2024, 4, 1),
+          new Date(2024, 3, 1),
+          new Date(2024, 4, 1),
+          new Date(2024, 5, 1),
+        ],
+        groups: ["A", "A", "A", "A", "B", "B", "B"],
+        values: [0.0, 0.0, 0.0, 2.0, 1.0, 1.0, 3.0],
+      })
+      .withColumn(pl.col("date").cast(pl.Date).alias("date"));
 
-    expect(actual.toString()).toStrictEqual(expected);
+    expect(actual).toFrameEqual(expected);
 
     actual = df
       .upsample({
@@ -2374,26 +2375,27 @@ describe("additional", () => {
       })
       .select(pl.col("*").forwardFill());
 
-    expect(actual.toString()).toStrictEqual(expected);
+    expect(actual).toFrameEqual(expected);
 
     actual = df
       .upsample({ timeColumn: "date", every: "1mo" })
       .select(pl.col("*").forwardFill());
 
-    expected = `shape: (5, 3)
-┌────────────┬────────┬────────┐
-│ date       ┆ groups ┆ values │
-│ ---        ┆ ---    ┆ ---    │
-│ date       ┆ str    ┆ f64    │
-╞════════════╪════════╪════════╡
-│ 2024-02-01 ┆ A      ┆ 0.0    │
-│ 2024-03-01 ┆ A      ┆ 0.0    │
-│ 2024-04-01 ┆ B      ┆ 1.0    │
-│ 2024-05-01 ┆ A      ┆ 2.0    │
-│ 2024-06-01 ┆ B      ┆ 3.0    │
-└────────────┴────────┴────────┘`;
+    expected = pl
+      .DataFrame({
+        date: [
+          new Date(2024, 1, 1),
+          new Date(2024, 2, 1),
+          new Date(2024, 3, 1),
+          new Date(2024, 4, 1),
+          new Date(2024, 5, 1),
+        ],
+        groups: ["A", "A", "B", "A", "B"],
+        values: [0.0, 0.0, 1.0, 2.0, 3.0],
+      })
+      .withColumn(pl.col("date").cast(pl.Date).alias("date"));
 
-    expect(actual.toString()).toStrictEqual(expected);
+    expect(actual).toFrameEqual(expected);
 
     actual = df
       .upsample({ timeColumn: "date", every: "1m" })
