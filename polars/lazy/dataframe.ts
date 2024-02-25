@@ -11,7 +11,12 @@ import {
 } from "../utils";
 import { _LazyGroupBy, LazyGroupBy } from "./groupby";
 import { Deserialize, GroupByOps, Serialize } from "../shared_traits";
-import { LazyOptions, LazyJoinOptions, SinkCsvOptions } from "../types";
+import {
+  LazyOptions,
+  LazyJoinOptions,
+  SinkCsvOptions,
+  SinkParquetOptions,
+} from "../types";
 import { Series } from "../series";
 
 const inspect = Symbol.for("nodejs.util.inspect.custom");
@@ -513,7 +518,52 @@ export interface LazyDataFrame extends Serialize, GroupByOps<LazyGroupBy> {
     >>> lf.sinkCsv("out.csv")
   */
 
-  sinkCSV(dest: string, options?: SinkCsvOptions): void;
+  sinkCSV(path: string, options?: SinkCsvOptions): void;
+
+  /***
+   * 
+   * Evaluate the query in streaming mode and write to a Parquet file.
+
+    .. warning::
+        Streaming mode is considered **unstable**. It may be changed
+        at any point without it being considered a breaking change.
+
+    This allows streaming results that are larger than RAM to be written to disk.
+
+    Parameters
+    ----------
+    @param path - File path to which the file should be written.
+    @param compression : {'lz4', 'uncompressed', 'snappy', 'gzip', 'lzo', 'brotli', 'zstd'}
+        Choose "zstd" for good compression performance. (default)
+        Choose "lz4" for fast compression/decompression.
+        Choose "snappy" for more backwards compatibility guarantees
+        when you deal with older parquet readers.
+    @param compressionLevel - The level of compression to use. Higher compression means smaller files on disk.
+        - "gzip" : min-level: 0, max-level: 10.
+        - "brotli" : min-level: 0, max-level: 11.
+        - "zstd" : min-level: 1, max-level: 22.
+    @param statistics - Write statistics to the parquet headers. This requires extra compute. Default - false
+    @param rowGroupSize - Size of the row groups in number of rows.
+        If None (default), the chunks of the `DataFrame` are
+        used. Writing in smaller chunks may reduce memory pressure and improve
+        writing speeds.
+    @param dataPagesizeLimit - Size limit of individual data pages.
+        If not set defaults to 1024 * 1024 bytes
+    @param maintainOrder - Maintain the order in which data is processed. Default -> true
+        Setting this to `False` will  be slightly faster.
+    @param typeCoercion - Do type coercion optimization. Default -> true
+    @param predicatePushdown - Do predicate pushdown optimization. Default -> true
+    @param projectionPushdown - Do projection pushdown optimization. Default -> true
+    @param simplifyExpression - Run simplify expressions optimization. Default -> true
+    @param slicePushdown - Slice pushdown optimization. Default -> true
+    @param noOptimization - Turn off (certain) optimizations. Default -> false
+
+    Examples
+    --------
+    >>> const lf = pl.scanCsv("/path/to/my_larger_than_ram_file.csv")  # doctest: +SKIP
+    >>> lf.sinkParquet("out.parquet")  # doctest: +SKIP
+   */
+  sinkParquet(path: string, options?: SinkParquetOptions): void;
 }
 
 const prepareGroupbyInputs = (by) => {
@@ -956,13 +1006,13 @@ export const _LazyDataFrame = (_ldf: any): LazyDataFrame => {
     withRowCount(name = "row_nr") {
       return _LazyDataFrame(_ldf.withRowCount(name));
     },
-    sinkCSV(dest?, options = {}) {
+    sinkCSV(path, options: SinkCsvOptions = {}) {
       options.maintainOrder = options.maintainOrder ?? false;
-      if (typeof dest === "string") {
-        _ldf.sinkCsv(dest, options);
-      } else {
-        throw new TypeError("Expected a string destination");
-      }
+      _ldf.sinkCsv(path, options);
+    },
+    sinkParquet(path: string, options: SinkParquetOptions = {}) {
+      options.compression = options.compression ?? "zstd";
+      _ldf.sinkParquet(path, options);
     },
   };
 };

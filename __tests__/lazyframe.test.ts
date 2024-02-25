@@ -1242,7 +1242,7 @@ describe("lazyframe", () => {
     ldf.sinkCSV("./test.csv");
     const newDF: pl.DataFrame = pl.readCSV("./test.csv");
     const actualDf: pl.DataFrame = await ldf.collect();
-    expect(newDF.sort("foo").toString()).toEqual(actualDf.toString());
+    expect(newDF.sort("foo")).toFrameEqual(actualDf);
     fs.rmSync("./test.csv");
   });
   test("sinkCSV:noHeader", async () => {
@@ -1255,7 +1255,7 @@ describe("lazyframe", () => {
     ldf.sinkCSV("./test.csv", { includeHeader: false });
     const newDF: pl.DataFrame = pl.readCSV("./test.csv", { hasHeader: false });
     const actualDf: pl.DataFrame = await ldf.collect();
-    expect(newDF.sort("column_1").toString()).toEqual(actualDf.toString());
+    expect(newDF.sort("column_1")).toFrameEqual(actualDf);
     fs.rmSync("./test.csv");
   });
   test("sinkCSV:separator", async () => {
@@ -1268,7 +1268,7 @@ describe("lazyframe", () => {
     ldf.sinkCSV("./test.csv", { separator: "|" });
     const newDF: pl.DataFrame = pl.readCSV("./test.csv", { sep: "|" });
     const actualDf: pl.DataFrame = await ldf.collect();
-    expect(newDF.sort("foo").toString()).toEqual(actualDf.toString());
+    expect(newDF.sort("foo")).toFrameEqual(actualDf);
     fs.rmSync("./test.csv");
   });
   test("sinkCSV:nullValue", async () => {
@@ -1283,7 +1283,33 @@ describe("lazyframe", () => {
     const actualDf: pl.DataFrame = await (await ldf.collect()).withColumn(
       pl.col("bar").fillNull("BOOM"),
     );
-    expect(newDF.sort("foo").toString()).toEqual(actualDf.toString());
+    expect(newDF.sort("foo")).toFrameEqual(actualDf);
     fs.rmSync("./test.csv");
+  });
+  test("sinkParquet:path", async () => {
+    const ldf = pl
+      .DataFrame([
+        pl.Series("foo", [1, 2, 3], pl.Int64),
+        pl.Series("bar", ["a", "b", "c"]),
+      ])
+      .lazy();
+    ldf.sinkParquet("./test.parquet");
+    const newDF: pl.DataFrame = pl.readParquet("./test.parquet");
+    const actualDf: pl.DataFrame = await ldf.collect();
+    expect(newDF.sort("foo")).toFrameEqual(actualDf);
+    fs.rmSync("./test.parquet");
+  });
+  test("sinkParquet:compression:gzip", async () => {
+    const ldf = pl
+      .DataFrame([
+        pl.Series("foo", [1, 2, 3], pl.Int64),
+        pl.Series("bar", ["a", "b", "c"]),
+      ])
+      .lazy();
+    ldf.sinkParquet("./test.parquet", { compression: "gzip" });
+    const newDF: pl.DataFrame = pl.readParquet("./test.parquet");
+    const actualDf: pl.DataFrame = await ldf.collect();
+    expect(newDF.sort("foo")).toFrameEqual(actualDf);
+    fs.rmSync("./test.parquet");
   });
 });

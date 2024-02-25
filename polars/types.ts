@@ -47,7 +47,7 @@ export interface WriteCsvOptions {
   sep?: string;
 }
 /**
- * Options for {@link LazyDataFrame.sinkCSV}
+ * Options for @see {@link LazyDataFrame.sinkCSV}
  * @category Options
  */
 export interface SinkCsvOptions {
@@ -64,6 +64,24 @@ export interface SinkCsvOptions {
   floatPrecision?: number;
   nullValue?: string;
   maintainOrder?: boolean;
+}
+/**
+ * Options for @see {@link LazyDataFrame.sinkParquet}
+ * @category Options
+ */
+export interface SinkParquetOptions {
+  compression?: string;
+  compressionLevel?: number;
+  statistics?: boolean;
+  rowGroupSize?: number;
+  dataPagesizeLimit?: number;
+  maintainOrder?: boolean;
+  typeCoercion?: boolean;
+  predicatePushdown?: boolean;
+  projectionPushdown?: boolean;
+  simplifyExpression?: boolean;
+  slicePushdown?: boolean;
+  noOptimization?: boolean;
 }
 /**
  * Options for {@link DataFrame.writeJSON}
