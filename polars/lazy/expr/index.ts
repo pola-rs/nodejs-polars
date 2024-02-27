@@ -66,10 +66,10 @@ export interface Expr
    * @see {@link Expr.as}
    * @example
    * ```
-   * > df = pl.DataFrame({
+   * > const df = pl.DataFrame({
    * ...   "a": [1, 2, 3],
    * ...   "b": ["a", "b", None],
-   * ... })
+   * ... });
    * > df
    * shape: (3, 2)
    * ╭─────┬──────╮
@@ -150,12 +150,12 @@ export interface Expr
    * @param columns Column(s) to exclude from selection
    * @example
    * ```
-   *  >df = pl.DataFrame({
+   *  > const df = pl.DataFrame({
    *  ...   "a": [1, 2, 3],
    *  ...   "b": ["a", "b", None],
    *  ...   "c": [None, 2, 1],
-   *  ...})
-   *  >df
+   *  ...});
+   *  > df
    *  shape: (3, 3)
    *  ╭─────┬──────┬──────╮
    *  │ a   ┆ b    ┆ c    │
@@ -168,9 +168,9 @@ export interface Expr
    *  ├╌╌╌╌╌┼╌╌╌╌╌╌┼╌╌╌╌╌╌┤
    *  │ 3   ┆ null ┆ 1    │
    *  ╰─────┴──────┴──────╯
-   *  >df.select(
+   *  > df.select(
    *  ...   pl.col("*").exclude("b"),
-   *  ... )
+   *  ... );
    * shape: (3, 2)
    * ╭─────┬──────╮
    * │ a   ┆ c    │
@@ -253,13 +253,13 @@ export interface Expr
    * @returns Expr that evaluates to a Boolean Series.
    * @example
    * ```
-   * > df = pl.DataFrame({
+   * > const df = pl.DataFrame({
    * ...   "sets": [[1, 2, 3], [1, 2], [9, 10]],
    * ...    "optional_members": [1, 2, 3]
-   * ... })
+   * ... });
    * > df.select(
    * ...   pl.col("optional_members").isIn("sets").alias("contains")
-   * ... )
+   * ... );
    * shape: (3, 1)
    * ┌──────────┐
    * │ contains │
@@ -294,15 +294,15 @@ export interface Expr
    * With `keepName` we can keep the original name of the column
    * @example
    * ```
-   * > df = pl.DataFrame({
+   * > const df = pl.DataFrame({
    * ...   "a": [1, 2, 3],
    * ...   "b": ["a", "b", None],
-   * ... })
+   * ... });
    *
    * > df
    * ...   .groupBy("a")
    * ...   .agg(pl.col("b").list())
-   * ...   .sort({by:"a"})
+   * ...   .sort({by:"a"});
    *
    * shape: (3, 2)
    * ╭─────┬────────────╮
@@ -374,13 +374,13 @@ export interface Expr
    *
    * @example
    * ```
-   * > df = pl.DataFrame({
+   * > const df = pl.DataFrame({
    * ...  "groups": [1, 1, 2, 2, 1, 2, 3, 3, 1],
    * ...  "values": [1, 2, 3, 4, 5, 6, 7, 8, 8],
-   * ... })
+   * ... });
    * > df.select(
    * ...     pl.col("groups").sum().over("groups")
-   * ... )
+   * ... );
    *     ╭────────┬────────╮
    *     │ groups ┆ values │
    *     │ ---    ┆ ---    │
@@ -416,12 +416,12 @@ export interface Expr
    * Add a prefix the to root column name of the expression.
    * @example
    * ```
-   * > df = pl.DataFrame({
+   * > const df = pl.DataFrame({
    * ...   "A": [1, 2, 3, 4, 5],
    * ...   "fruits": ["banana", "banana", "apple", "apple", "banana"],
    * ...   "B": [5, 4, 3, 2, 1],
    * ...   "cars": ["beetle", "audi", "beetle", "beetle", "beetle"],
-   * ... })
+   * ... });
    * shape: (5, 4)
    * ╭─────┬──────────┬─────┬──────────╮
    * │ A   ┆ fruits   ┆ B   ┆ cars     │
@@ -439,7 +439,7 @@ export interface Expr
    * │ 5   ┆ "banana" ┆ 1   ┆ "beetle" │
    * ╰─────┴──────────┴─────┴──────────╯
    * > df.select(
-   * ...   pl.all().reverse().prefix("reverse_"),
+   * ...   pl.col("*").reverse().prefix("reverse_"),
    * ... )
    * shape: (5, 8)
    * ╭───────────┬────────────────┬───────────┬──────────────╮
@@ -528,8 +528,7 @@ export interface Expr
 
       Parameters
       ----------
-      @param by
-          The column(s) used for sorting.
+      @param by The column(s) used for sorting.
       @param reverse
           false -> order from small to large.
           true -> order from large to small.

@@ -2249,7 +2249,6 @@ describe("meta", () => {
     expect(dfString).toStrictEqual(expected);
   });
 });
-
 test("Jupyter.display", () => {
   const df = pl.DataFrame({
     os: ["apple", "linux"],
@@ -2328,5 +2327,80 @@ describe("additional", () => {
     });
     const actual = df.toRecords();
     expect(actual).toEqual(rows);
+  });
+  test("upsample", () => {
+    const df = pl
+      .DataFrame({
+        date: [
+          new Date(2024, 1, 1),
+          new Date(2024, 3, 1),
+          new Date(2024, 4, 1),
+          new Date(2024, 5, 1),
+        ],
+        groups: ["A", "B", "A", "B"],
+        values: [0, 1, 2, 3],
+      })
+      .withColumn(pl.col("date").cast(pl.Date).alias("date"))
+      .sort("date");
+
+    let actual = df
+      .upsample("date", "1mo", "0ns", "groups", true)
+      .select(pl.col("*").forwardFill());
+
+    let expected = pl
+      .DataFrame({
+        date: [
+          new Date(2024, 1, 1),
+          new Date(2024, 2, 1),
+          new Date(2024, 3, 1),
+          new Date(2024, 4, 1),
+          new Date(2024, 3, 1),
+          new Date(2024, 4, 1),
+          new Date(2024, 5, 1),
+        ],
+        groups: ["A", "A", "A", "A", "B", "B", "B"],
+        values: [0.0, 0.0, 0.0, 2.0, 1.0, 1.0, 3.0],
+      })
+      .withColumn(pl.col("date").cast(pl.Date).alias("date"));
+
+    expect(actual).toFrameEqual(expected);
+
+    actual = df
+      .upsample({
+        timeColumn: "date",
+        every: "1mo",
+        offset: "0ns",
+        by: "groups",
+        maintainOrder: true,
+      })
+      .select(pl.col("*").forwardFill());
+
+    expect(actual).toFrameEqual(expected);
+
+    actual = df
+      .upsample({ timeColumn: "date", every: "1mo" })
+      .select(pl.col("*").forwardFill());
+
+    expected = pl
+      .DataFrame({
+        date: [
+          new Date(2024, 1, 1),
+          new Date(2024, 2, 1),
+          new Date(2024, 3, 1),
+          new Date(2024, 4, 1),
+          new Date(2024, 5, 1),
+        ],
+        groups: ["A", "A", "B", "A", "B"],
+        values: [0.0, 0.0, 1.0, 2.0, 3.0],
+      })
+      .withColumn(pl.col("date").cast(pl.Date).alias("date"));
+
+    expect(actual).toFrameEqual(expected);
+
+    actual = df
+      .upsample({ timeColumn: "date", every: "1m" })
+      .select(pl.col("*").forwardFill());
+
+    expect(actual.shape).toEqual({ height: 174_241, width: 3 });
   });
 });
