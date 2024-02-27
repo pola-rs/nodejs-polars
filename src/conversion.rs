@@ -587,6 +587,22 @@ pub struct SinkCsvOptions {
 }
 
 #[napi(object)]
+pub struct SinkParquetOptions {
+    pub compression: Option<String>,
+    pub compression_level: Option<i32>,
+    pub statistics: Option<bool>,
+    pub row_group_size: Option<i16>,
+    pub data_pagesize_limit: Option<i64>,
+    pub maintain_order: Option<bool>,
+    pub type_coercion: Option<bool>,
+    pub predicate_pushdown: Option<bool>,
+    pub projection_pushdown: Option<bool>,
+    pub simplify_expression: Option<bool>,
+    pub slice_pushdown: Option<bool>,
+    pub no_optimization: Option<bool>,
+}
+
+#[napi(object)]
 pub struct Shape {
     pub height: i64,
     pub width: i64,
@@ -1196,4 +1212,47 @@ where
     S: AsRef<str>,
 {
     container.into_iter().map(|s| s.as_ref().into()).collect()
+}
+
+pub(crate) fn parse_parquet_compression(
+    compression: String,
+    compression_level: Option<i32>,
+) -> JsResult<ParquetCompression> {
+    let parsed = match compression.as_ref() {
+        "uncompressed" => ParquetCompression::Uncompressed,
+        "snappy" => ParquetCompression::Snappy,
+        "gzip" => ParquetCompression::Gzip(
+            compression_level
+                .map(|lvl| {
+                    GzipLevel::try_new(lvl as u8)
+                        // .map_err(|e| JsValueErr::new_err(format!("{e:?}")))
+                        .map_err(|e| napi::Error::from_reason(format!("{:?}", e)))
+                })
+                .transpose()?,
+        ),
+        "lzo" => ParquetCompression::Lzo,
+        "brotli" => ParquetCompression::Brotli(
+            compression_level
+                .map(|lvl| {
+                    BrotliLevel::try_new(lvl as u32)
+                        .map_err(|e| napi::Error::from_reason(format!("{e:?}")))
+                })
+                .transpose()?,
+        ),
+        "lz4" => ParquetCompression::Lz4Raw,
+        "zstd" => ParquetCompression::Zstd(
+            compression_level
+                .map(|lvl| {
+                    ZstdLevel::try_new(lvl)
+                        .map_err(|e| napi::Error::from_reason(format!("{e:?}")))
+                })
+                .transpose()?,
+        ),
+        e => {
+            return Err(napi::Error::from_reason(format!(
+                "parquet `compression` must be one of {{'uncompressed', 'snappy', 'gzip', 'lzo', 'brotli', 'lz4', 'zstd'}}, got {e}",
+            )))
+        }
+    };
+    Ok(parsed)
 }

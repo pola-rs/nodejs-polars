@@ -590,6 +590,29 @@ impl JsLazyFrame {
         let _ = ldf.sink_csv(path_buf, options).map_err(JsPolarsErr::from);
         Ok(())
     }
+
+    #[napi(catch_unwind)]
+    pub fn sink_parquet(&self, path: String, options: SinkParquetOptions) -> napi::Result<()> {
+        let compression_str = options.compression.unwrap_or("zstd".to_string());
+        let compression = parse_parquet_compression(compression_str, options.compression_level)?;
+        let statistics = options.statistics.unwrap_or(false);
+        let row_group_size = options.row_group_size.map(|i| i as usize);
+        let data_pagesize_limit = options.data_pagesize_limit.map(|i| i as usize);
+        let maintain_order = options.maintain_order.unwrap_or(true);
+
+        let options = ParquetWriteOptions {
+            compression,
+            statistics,
+            row_group_size,
+            data_pagesize_limit,
+            maintain_order,
+        };
+
+        let path_buf: PathBuf = PathBuf::from(path);
+        let ldf = self.ldf.clone().with_comm_subplan_elim(false);
+        let _ = ldf.sink_parquet(path_buf, options).map_err(JsPolarsErr::from);
+        Ok(())
+    }
 }
 
 #[napi(object)]
