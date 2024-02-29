@@ -1548,9 +1548,9 @@ describe("io", () => {
   test("writeCSV:string:header", () => {
     const actual = df
       .clone()
-      .writeCSV({ sep: "X", includeHeader: false })
+      .writeCSV({ sep: "X", includeHeader: false, lineTerminator: "|" })
       .toString();
-    const expected = "1X6\n2X2\n9X8\n";
+    const expected = "1X6|2X2|9X8|";
     expect(actual).toEqual(expected);
   });
   test("writeCSV:stream", (done) => {

@@ -52,9 +52,25 @@ interface WriteMethods {
    * If no options are specified, it will return a new string containing the contents
    * ___
    * @param dest file or stream to write to
+   * @param options.includeBom - Whether to include UTF-8 BOM in the CSV output.
+   * @param options.lineTerminator - String used to end each row.
    * @param options.includeHeader - Whether or not to include header in the CSV output.
    * @param options.sep - Separate CSV fields with this symbol. _defaults to `,`
    * @param options.quote - Character to use for quoting. Default: \" Note: it will note be used when sep is used
+   * @param options.batchSize - Number of rows that will be processed per thread.
+   * @param options.datetimeFormat - A format string, with the specifiers defined by the
+   *    `chrono <https://docs.rs/chrono/latest/chrono/format/strftime/index.html>`_
+   *   Rust crate. If no format specified, the default fractional-second
+   *   precision is inferred from the maximum timeunit found in the frame's
+   *   Datetime cols (if any).
+   * @param options.dateFormat - A format string, with the specifiers defined by the
+   *    `chrono <https://docs.rs/chrono/latest/chrono/format/strftime/index.html>`_
+   *   Rust crate.
+   * @param options.timeFormat A format string, with the specifiers defined by the
+   *    `chrono <https://docs.rs/chrono/latest/chrono/format/strftime/index.html>`_
+   *   Rust crate.
+   * @param options.floatPrecision - Number of decimal places to write, applied to both `Float32` and `Float64` datatypes.
+   * @param options.nullValue - A string representing null values (defaulting to the empty string).
    * @example
    * ```
    * > const df = pl.DataFrame({
