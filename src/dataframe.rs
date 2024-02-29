@@ -1310,7 +1310,7 @@ impl JsDataFrame {
         let include_header = options.include_header.unwrap_or(true);
         let sep = options.sep.unwrap_or(",".to_owned());
         let sep = sep.as_bytes()[0];
-        let quote = options.quote.unwrap_or(",".to_owned());
+        let quote = options.quote.unwrap_or("\"".to_owned());
         let quote = quote.as_bytes()[0];
 
         match path_or_buffer.get_type()? {

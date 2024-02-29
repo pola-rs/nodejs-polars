@@ -52,9 +52,9 @@ interface WriteMethods {
    * If no options are specified, it will return a new string containing the contents
    * ___
    * @param dest file or stream to write to
-   * @param options
-   * @param options.hasHeader - Whether or not to include header in the CSV output.
-   * @param options.sep - Separate CSV fields with this symbol. _defaults to `,`_
+   * @param options.includeHeader - Whether or not to include header in the CSV output.
+   * @param options.sep - Separate CSV fields with this symbol. _defaults to `,`
+   * @param options.quote - Character to use for quoting. Default: \" Note: it will note be used when sep is used
    * @example
    * ```
    * > const df = pl.DataFrame({
@@ -81,7 +81,7 @@ interface WriteMethods {
    * ...     callback(null);
    * ...   }
    * ... });
-   * > df.head(1).writeCSV(writeStream, {hasHeader: false});
+   * > df.head(1).writeCSV(writeStream, {includeHeader: false});
    * writeStream: '1,6,a'
    * ```
    * @category IO

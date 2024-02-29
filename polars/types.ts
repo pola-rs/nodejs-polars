@@ -45,6 +45,7 @@ export interface ConcatOptions {
 export interface WriteCsvOptions {
   includeHeader?: boolean;
   sep?: string;
+  quote?: string;
 }
 /**
  * Options for @see {@link LazyDataFrame.sinkCSV}
