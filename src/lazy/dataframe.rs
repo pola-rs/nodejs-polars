@@ -713,6 +713,12 @@ pub struct ScanParquetOptions {
     pub low_memory: Option<bool>,
     pub use_statistics: Option<bool>,
     pub hive_partitioning: Option<bool>,
+    pub cloud_options: Option<HashMap::<String, String>>,
+    pub retries: Option<i64>,
+}
+
+pub(crate) fn parse_cloud_options(uri: &str, kv: Vec<(String, String)>) -> napi::Result<CloudOptions> {
+    Ok(CloudOptions::from_untyped_config(uri, kv).map_err(JsPolarsErr::from)?)
 }
 
 #[napi(catch_unwind)]
@@ -724,7 +730,27 @@ pub fn scan_parquet(path: String, options: ScanParquetOptions) -> napi::Result<J
     let rechunk = options.rechunk.unwrap_or(false);
     let low_memory = options.low_memory.unwrap_or(false);
     let use_statistics = options.use_statistics.unwrap_or(false);
-    let cloud_options = Some(CloudOptions::default());
+    
+    let mut cloud_options: Option<CloudOptions> = if let Some(o) = options.cloud_options {
+        let cloud_options: Vec<(String, String)> = o.into_iter()
+        .map(|score| score)
+        .collect();
+        Some(parse_cloud_options(&path, cloud_options).map_err(|err| napi::Error::from_reason(format!("{:?}", err)))?)
+    } else {
+        None
+    };
+    
+    let retries = options.retries.unwrap_or_else(|| 2) as usize;
+    if retries > 0 {
+        cloud_options =
+            cloud_options
+                .or_else(|| Some(CloudOptions::default()))
+                .map(|mut options| {
+                    options.max_retries = retries;
+                    options
+                });
+    }
+
     let hive_partitioning: bool = options.hive_partitioning.unwrap_or(false);
     let args = ScanArgsParquet {
         n_rows,

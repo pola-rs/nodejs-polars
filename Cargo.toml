@@ -89,7 +89,12 @@ features = [
   "timezones",
   "peaks",
   "string_pad",
-  "cov"
+  "cov",
+  "http",
+  "cloud",
+  "aws",
+  "gcp",
+  "azure"
 ]
 git = "https://github.com/pola-rs/polars.git"
 rev = "fa59ffc1685043b44476dcb2a3f3804460ead5c5"

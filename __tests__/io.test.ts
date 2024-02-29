@@ -271,7 +271,7 @@ describe("parquet", () => {
   });
 
   test("scan:options", () => {
-    const df = pl.scanParquet(parquetpath, { numRows: 4 }).collectSync();
+    const df = pl.scanParquet(parquetpath, { nRows: 4 }).collectSync();
     expect(df.shape).toEqual({ height: 4, width: 4 });
   });
 });
