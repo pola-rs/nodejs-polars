@@ -983,6 +983,8 @@ export interface Series
   unique(maintainOrder?: boolean | { maintainOrder: boolean }): Series;
   /**
    * __Count the unique values in a Series.__
+   * @param sort - Sort the output by count in descending order.
+   *               If set to `False` (default), the order of the output is random.
    * ___
    * @example
    * ```
@@ -1002,7 +1004,7 @@ export interface Series
    * ╰─────┴────────╯
    * ```
    */
-  valueCounts(): DataFrame;
+  valueCounts(sort?: boolean): DataFrame;
   /**
    * Where mask evaluates true, take values from self.
    *
@@ -1727,7 +1729,6 @@ export function _Series(_s: any): Series {
       if (args[0] === "") {
         return _s.toJs();
       }
-
       return _s.serialize("json").toString();
     },
     toObject() {
@@ -1739,8 +1740,8 @@ export function _Series(_s: any): Series {
       }
       return wrap("unique");
     },
-    valueCounts() {
-      return null as any;
+    valueCounts(sorted?) {
+      return _DataFrame(unwrap("valueCounts", sorted ?? false));
     },
     values() {
       return this[Symbol.iterator]();
