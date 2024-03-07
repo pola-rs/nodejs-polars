@@ -457,7 +457,7 @@ export interface DataFrame
    * // Filter on multiple conditions
    * > df.filter(
    * ... pl.col("foo").lt(3)
-   * ...   .and(pl.col("ham").eq("a"))
+   * ...   .and(pl.col("ham").eq(pl.lit("a")))
    * ... )
    * shape: (1, 3)
    * ┌─────┬─────┬─────┐

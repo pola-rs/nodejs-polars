@@ -574,6 +574,14 @@ describe("series", () => {
     });
     expect(actual).toFrameEqual(expected);
   });
+  it("series:valueCounts", () => {
+    const actual = pl.Series("a", [1, 2, 2, 3]).valueCounts();
+    const expected = pl.DataFrame({
+      a: [2, 1, 3],
+      count: [2, 1, 1],
+    });
+    expect(actual).toFrameEqual(expected);
+  });
   it("set: expected matches actual", () => {
     const expected = pl.Series([99, 2, 3]);
     const mask = pl.Series([true, false, false]);
