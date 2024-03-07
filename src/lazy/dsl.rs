@@ -702,7 +702,7 @@ impl JsExpr {
             .with_fmt("str.to_uppercase")
             .into()
     }
-    
+
     #[napi(catch_unwind)]
     pub fn str_slice(&self, offset: &JsExpr, length: &JsExpr) -> JsExpr {
         self.inner

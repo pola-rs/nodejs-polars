@@ -668,7 +668,7 @@ export interface ListFunctions<T> {
    */
   join(): T;
   join(separator: string | Expr): T;
-  join(options: {separator?: string | Expr, ignoreNulls?: boolean}): T;
+  join(options: { separator?: string | Expr; ignoreNulls?: boolean }): T;
   /**
    * Get the last value of the sublists.
    * @category List

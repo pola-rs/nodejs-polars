@@ -4,7 +4,6 @@ import { regexToString } from "../../utils";
 import { Expr, _Expr, exprToLitOrExpr } from "../expr";
 import { lit } from "../functions";
 
-
 /**
  * namespace containing expr string functions
  */

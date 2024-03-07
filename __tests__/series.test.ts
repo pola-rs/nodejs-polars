@@ -520,8 +520,8 @@ describe("series", () => {
     ${"slice"}           | ${pl.Series([1, 2, 3, 3, 0]).slice(-3, 3)}                                                 | ${pl.Series([3, 3, 0])}
     ${"slice"}           | ${pl.Series([1, 2, 3, 3, 0]).slice(1, 3)}                                                  | ${pl.Series([2, 3, 3])}
     ${"sort"}            | ${pl.Series([4, 2, 5, 1, 2, 3, 3, 0]).sort()}                                              | ${pl.Series([0, 1, 2, 2, 3, 3, 4, 5])}
-    ${"sort"}            | ${pl.Series([4, 2, 5, 0]).sort({ descending: true })}                                         | ${pl.Series([5, 4, 2, 0])}
-    ${"sort"}            | ${pl.Series([4, 2, 5, 0]).sort({ descending: false })}                                        | ${pl.Series([0, 2, 4, 5])}
+    ${"sort"}            | ${pl.Series([4, 2, 5, 0]).sort({ descending: true })}                                      | ${pl.Series([5, 4, 2, 0])}
+    ${"sort"}            | ${pl.Series([4, 2, 5, 0]).sort({ descending: false })}                                     | ${pl.Series([0, 2, 4, 5])}
     ${"sum"}             | ${pl.Series([1, 2, 2, 1]).sum()}                                                           | ${6}
     ${"tail"}            | ${pl.Series([1, 2, 2, 1]).tail(2)}                                                         | ${pl.Series([2, 1])}
     ${"gatherEvery"}     | ${pl.Series([1, 3, 2, 9, 1]).gatherEvery(2)}                                               | ${pl.Series([1, 2, 1])}

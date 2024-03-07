@@ -612,7 +612,9 @@ impl JsLazyFrame {
 
         let path_buf: PathBuf = PathBuf::from(path);
         let ldf = self.ldf.clone().with_comm_subplan_elim(false);
-        let _ = ldf.sink_parquet(path_buf, options).map_err(JsPolarsErr::from);
+        let _ = ldf
+            .sink_parquet(path_buf, options)
+            .map_err(JsPolarsErr::from);
         Ok(())
     }
 }
