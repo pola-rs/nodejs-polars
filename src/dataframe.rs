@@ -4,11 +4,13 @@ use crate::series::JsSeries;
 use napi::JsUnknown;
 use polars::frame::row::{infer_schema, Row};
 use polars::frame::NullStrategy;
-use polars::io::RowCount;
+use polars_io::RowIndex;
+
 use std::borrow::Borrow;
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::{BufReader, BufWriter, Cursor};
+use std::num::NonZeroUsize;
 use std::sync::Arc;
 
 #[napi]
@@ -91,7 +93,7 @@ pub fn read_csv(
     options: ReadCsvOptions,
 ) -> napi::Result<JsDataFrame> {
     let null_values = options.null_values.map(|w| w.0);
-    let row_count = options.row_count.map(RowCount::from);
+    let row_count = options.row_count.map(RowIndex::from);
     let projection = options
         .projection
         .map(|p: Vec<u32>| p.into_iter().map(|p| p as usize).collect());
@@ -144,7 +146,7 @@ pub fn read_csv(
             .with_null_values(null_values)
             .with_try_parse_dates(options.try_parse_dates)
             .with_quote_char(quote_char)
-            .with_row_count(row_count)
+            .with_row_index(row_count)
             .sample_size(options.sample_size as usize)
             .with_skip_rows_after_header(options.skip_rows_after_header as usize)
             .raise_if_empty(options.raise_if_empty)
@@ -175,7 +177,7 @@ pub fn read_csv(
                 .with_null_values(null_values)
                 .with_try_parse_dates(options.try_parse_dates)
                 .with_quote_char(quote_char)
-                .with_row_count(row_count)
+                .with_row_index(row_count)
                 .sample_size(options.sample_size as usize)
                 .with_skip_rows_after_header(options.skip_rows_after_header as usize)
                 .raise_if_empty(options.raise_if_empty)
@@ -206,7 +208,9 @@ pub fn read_json_lines(
     options: ReadJsonOptions,
 ) -> napi::Result<JsDataFrame> {
     let infer_schema_length = options.infer_schema_length.unwrap_or(100) as usize;
-    let batch_size = options.batch_size.map(|b| b as usize);
+    let batch_size = options
+        .batch_size
+        .map(|b| NonZeroUsize::try_from(b as usize).unwrap());
 
     let df = match path_or_buffer {
         Either::A(path) => JsonLineReader::from_path(path)
@@ -233,6 +237,7 @@ pub fn read_json(
 ) -> napi::Result<JsDataFrame> {
     let infer_schema_length = options.infer_schema_length.unwrap_or(100) as usize;
     let batch_size = options.batch_size.unwrap_or(10000) as usize;
+    let batch_size = NonZeroUsize::new(batch_size).unwrap();
     let format: JsonFormat = options
         .format
         .map(|s| match s.as_ref() {
@@ -298,7 +303,7 @@ pub fn read_parquet(
                 .with_columns(columns)
                 .read_parallel(parallel.0)
                 .with_n_rows(n_rows)
-                .with_row_count(row_count)
+                .with_row_index(row_count)
                 .finish()
         }
         Either::B(buf) => {
@@ -308,7 +313,7 @@ pub fn read_parquet(
                 .with_columns(columns)
                 .read_parallel(parallel.0)
                 .with_n_rows(n_rows)
-                .with_row_count(row_count)
+                .with_row_index(row_count)
                 .finish()
         }
     };
@@ -344,7 +349,7 @@ pub fn read_ipc(
                 .with_projection(projection)
                 .with_columns(columns)
                 .with_n_rows(n_rows)
-                .with_row_count(row_count)
+                .with_row_index(row_count)
                 .finish()
         }
         Either::B(buf) => {
@@ -353,7 +358,7 @@ pub fn read_ipc(
                 .with_projection(projection)
                 .with_columns(columns)
                 .with_n_rows(n_rows)
-                .with_row_count(row_count)
+                .with_row_index(row_count)
                 .finish()
         }
     };
@@ -870,7 +875,7 @@ impl JsDataFrame {
     pub fn with_row_count(&self, name: String, offset: Option<u32>) -> napi::Result<JsDataFrame> {
         let df = self
             .df
-            .with_row_count(&name, offset)
+            .with_row_index(&name, offset)
             .map_err(JsPolarsErr::from)?;
         Ok(df.into())
     }
@@ -906,9 +911,9 @@ impl JsDataFrame {
         };
         fun(
             &self.df,
-            values,
             index,
             columns,
+            Some(values),
             sort_columns,
             aggregate_expr.map(|e| e.0 as Expr),
             separator,
@@ -1053,8 +1058,8 @@ impl JsDataFrame {
     }
 
     #[napi(catch_unwind)]
-    pub fn transpose(
-        &self,
+    pub unsafe fn transpose(
+        &mut self,
         keep_names_as: Option<String>,
         names: Option<Either<String, Vec<String>>>,
     ) -> napi::Result<JsDataFrame> {

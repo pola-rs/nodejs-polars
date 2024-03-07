@@ -68,8 +68,19 @@ export const ExprListFunctions = (_expr: any): ExprList => {
     first() {
       return this.get(0);
     },
-    join(separator = ",") {
-      return wrap("listJoin", exprToLitOrExpr(separator)._expr);
+    join(options?) {
+      if (typeof options === "string") {
+        options = { separator: options };
+      }
+      options = options ?? {};
+      let separator = options?.separator ?? ",";
+      const ignoreNulls = options?.ignoreNulls ?? false;
+
+      if (!Expr.isExpr(separator)) {
+        separator = pli.lit(separator);
+      }
+
+      return wrap("listJoin", separator, ignoreNulls);
     },
     last() {
       return this.get(-1);

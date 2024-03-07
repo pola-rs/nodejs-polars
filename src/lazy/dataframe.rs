@@ -2,12 +2,13 @@ use super::dsl::*;
 use crate::dataframe::JsDataFrame;
 use crate::prelude::*;
 use napi::{Env, Task};
-use polars::io::RowCount;
 use polars::lazy::frame::{LazyCsvReader, LazyFrame, LazyGroupBy};
 use polars::prelude::{col, lit, ClosedWindow, CsvEncoding, DataFrame, Field, JoinType, Schema};
 use polars_io::cloud::CloudOptions;
 use polars_io::parquet::ParallelStrategy;
+use polars_io::RowIndex;
 use std::collections::HashMap;
+use std::num::NonZeroUsize;
 use std::path::PathBuf;
 
 #[napi]
@@ -517,13 +518,13 @@ impl JsLazyFrame {
     #[napi(catch_unwind)]
     pub fn with_row_count(&self, name: String, offset: Option<u32>) -> JsLazyFrame {
         let ldf = self.ldf.clone();
-        ldf.with_row_count(&name, offset).into()
+        ldf.with_row_index(&name, offset).into()
     }
 
     #[napi(catch_unwind)]
     pub fn drop_columns(&self, colss: Vec<String>) -> JsLazyFrame {
         let ldf = self.ldf.clone();
-        ldf.drop_columns(colss).into()
+        ldf.drop(colss).into()
     }
     #[napi(js_name = "clone", catch_unwind)]
     pub fn clone(&self) -> JsLazyFrame {
@@ -573,6 +574,7 @@ impl JsLazyFrame {
         };
 
         let batch_size = options.batch_size.map(|bs| bs).unwrap_or(1024) as usize;
+        let batch_size = NonZeroUsize::new(batch_size).unwrap();
         let include_bom = options.include_bom.unwrap_or(false);
         let include_header = options.include_header.unwrap_or(true);
         let maintain_order = options.maintain_order;
@@ -645,7 +647,7 @@ pub struct ScanCsvOptions {
 #[napi(catch_unwind)]
 pub fn scan_csv(path: String, options: ScanCsvOptions) -> napi::Result<JsLazyFrame> {
     let n_rows = options.n_rows.map(|i| i as usize);
-    let row_count = options.row_count.map(RowCount::from);
+    let row_count = options.row_count.map(RowIndex::from);
     let missing_utf8_is_empty_string: bool = options.missing_utf8_is_empty_string.unwrap_or(false);
     let quote_char = if let Some(s) = options.quote_char {
         if s.is_empty() {
@@ -690,7 +692,7 @@ pub fn scan_csv(path: String, options: ScanCsvOptions) -> napi::Result<JsLazyFra
         .with_rechunk(options.rechunk.unwrap_or(false))
         .with_skip_rows_after_header(options.skip_rows_after_header as usize)
         .with_encoding(encoding)
-        .with_row_count(row_count)
+        .with_row_index(row_count)
         .with_try_parse_dates(options.parse_dates.unwrap_or(false))
         .with_null_values(options.null_values.map(|s| s.0))
         .with_missing_is_null(!missing_utf8_is_empty_string)
@@ -720,7 +722,7 @@ pub fn scan_parquet(path: String, options: ScanParquetOptions) -> napi::Result<J
     let n_rows = options.n_rows.map(|i| i as usize);
     let cache = options.cache.unwrap_or(true);
     let parallel = options.parallel;
-    let row_count: Option<RowCount> = options.row_count.map(|rc| rc.into());
+    let row_index: Option<RowIndex> = options.row_count.map(|rc| rc.into());
     let rechunk = options.rechunk.unwrap_or(false);
     let low_memory = options.low_memory.unwrap_or(false);
     let use_statistics = options.use_statistics.unwrap_or(false);
@@ -731,7 +733,7 @@ pub fn scan_parquet(path: String, options: ScanParquetOptions) -> napi::Result<J
         cache,
         parallel: parallel.0,
         rechunk,
-        row_count,
+        row_index,
         low_memory,
         cloud_options,
         use_statistics,
@@ -756,12 +758,12 @@ pub fn scan_ipc(path: String, options: ScanIPCOptions) -> napi::Result<JsLazyFra
     let cache = options.cache.unwrap_or(true);
     let rechunk = options.rechunk.unwrap_or(false);
     let memmap = options.memmap.unwrap_or(true);
-    let row_count: Option<RowCount> = options.row_count.map(|rc| rc.into());
+    let row_index: Option<RowIndex> = options.row_count.map(|rc| rc.into());
     let args = ScanArgsIpc {
         n_rows,
         cache,
         rechunk,
-        row_count,
+        row_index,
         memmap,
     };
     let lf = LazyFrame::scan_ipc(path, args).map_err(JsPolarsErr::from)?;
@@ -781,10 +783,12 @@ pub struct JsonScanOptions {
 
 #[napi(catch_unwind)]
 pub fn scan_json(path: String, options: JsonScanOptions) -> napi::Result<JsLazyFrame> {
+    let batch_size = options.batch_size as usize;
+    let batch_size = NonZeroUsize::new(batch_size);
     LazyJsonLineReader::new(path)
-        .with_batch_size(Some(options.batch_size as usize))
+        .with_batch_size(batch_size)
         .low_memory(options.low_memory.unwrap_or(false))
-        .with_row_count(options.row_count.map(|rc| rc.into()))
+        .with_row_index(options.row_count.map(|rc| rc.into()))
         .with_n_rows(options.num_rows.map(|i| i as usize))
         .finish()
         .map_err(|err| napi::Error::from_reason(format!("{:?}", err)))
