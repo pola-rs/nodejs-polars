@@ -5,13 +5,13 @@ use napi::{
     JsBigInt, JsBoolean, JsDate, JsNumber, JsObject, JsString, JsUnknown, Result, ValueType,
 };
 use polars::frame::NullStrategy;
-use polars::io::RowCount;
 use polars::prelude::Expr;
 use polars::prelude::*;
 use polars_core::prelude::FillNullStrategy;
 use polars_core::prelude::{Field, Schema};
 use polars_core::series::ops::NullBehavior;
 use polars_io::parquet::ParallelStrategy;
+use polars_io::RowIndex;
 use std::any::Any;
 use std::collections::HashMap;
 
@@ -166,7 +166,7 @@ impl FromNapiValue for Wrap<StringChunked> {
     unsafe fn from_napi_value(env: sys::napi_env, napi_val: sys::napi_value) -> JsResult<Self> {
         let arr = Array::from_napi_value(env, napi_val)?;
         let len = arr.len() as usize;
-        let mut builder = StringChunkedBuilder::new("", len, len * 25);
+        let mut builder = StringChunkedBuilder::new("", len);
         for i in 0..len {
             match arr.get::<String>(i as u32) {
                 Ok(val) => match val {
@@ -553,9 +553,9 @@ pub struct JsRowCount {
     pub offset: u32,
 }
 
-impl From<JsRowCount> for RowCount {
+impl From<JsRowCount> for RowIndex {
     fn from(o: JsRowCount) -> Self {
-        RowCount {
+        RowIndex {
             name: o.name,
             offset: o.offset,
         }

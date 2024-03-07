@@ -1582,13 +1582,13 @@ describe("io", () => {
         {
           name: "foo",
           datatype: "Float64",
-          bit_settings: "SORTED_ASC",
+          bit_settings: "",
           values: [1.0],
         },
         {
           name: "bar",
           datatype: "String",
-          bit_settings: "SORTED_ASC",
+          bit_settings: "",
           values: ["a"],
         },
       ],

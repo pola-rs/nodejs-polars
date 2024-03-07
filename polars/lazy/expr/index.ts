@@ -9,7 +9,12 @@ export type { ExprStruct as StructNamespace } from "./struct";
 
 import { DataType } from "../../datatypes";
 import pli from "../../internals/polars_internal";
-import { ExprOrString, selectionToExprList, INSPECT_SYMBOL } from "../../utils";
+import {
+  ExprOrString,
+  selectionToExprList,
+  INSPECT_SYMBOL,
+  regexToString,
+} from "../../utils";
 import { Series } from "../../series";
 import {
   Arithmetic,
@@ -23,6 +28,7 @@ import {
   EwmOps,
 } from "../../shared_traits";
 import { InterpolationMethod, FillNullStrategy, RankMethod } from "../../types";
+import { isRegExp } from "util/types";
 /**
  * Expressions that can be used in various contexts.
  */
@@ -1246,6 +1252,9 @@ export const Expr: ExprConstructor = Object.assign(_Expr, {
 });
 
 export const exprToLitOrExpr = (expr: any, stringToLit = true): Expr => {
+  if (isRegExp(expr)) {
+    return _Expr(pli.lit(regexToString(expr)));
+  }
   if (typeof expr === "string" && !stringToLit) {
     return _Expr(pli.col(expr));
   }

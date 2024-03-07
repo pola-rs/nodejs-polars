@@ -1,3 +1,4 @@
+import { Expr } from "./../lazy/expr/index";
 import { DataType } from "../datatypes";
 import { _Series, Series } from ".";
 import { regexToString } from "../utils";
@@ -92,7 +93,7 @@ export interface StringNamespace extends StringFunctions<Series> {
    * └─────────┘
    * ```
    */
-  extract(pattern: string | RegExp, groupIndex: number): Series;
+  extract(pattern: any, groupIndex: number): Series;
   /***
    * Parse string values as JSON.
    * @returns Utf8 array. Contain null if original value is null or the `jsonPath` return nothing.
@@ -222,7 +223,7 @@ export interface StringNamespace extends StringFunctions<Series> {
    * └──────────┘
    * ```
    */
-  zFill(length: number): Series;
+  zFill(length: number | Expr): Series;
   /** Add trailing zeros */
   padEnd(length: number, fillChar: string): Series;
   /**
@@ -251,7 +252,7 @@ export interface StringNamespace extends StringFunctions<Series> {
    * @param start - Start of the slice (negative indexing may be used).
    * @param length - Optional length of the slice.
    */
-  slice(start: number, length?: number): Series;
+  slice(start: number | Expr, length?: number | Expr): Series;
   /**
    * Split a string into substrings using the specified separator.
    * The return type will by of type List<Utf8>
@@ -313,8 +314,12 @@ export const SeriesStringFunctions = (_s: any): StringNamespace => {
           throw new RangeError("supported encodings are 'hex' and 'base64'");
       }
     },
-    extract(pat: string | RegExp, groupIndex: number) {
-      return wrap("strExtract", regexToString(pat), groupIndex);
+    extract(pat: any, groupIndex: number) {
+      const s = _Series(_s);
+      return s
+        .toFrame()
+        .select(col(s.name).str.extract(pat, groupIndex).as(s.name))
+        .getColumn(s.name);
     },
     jsonExtract(dtype?: DataType, inferSchemaLength?: number) {
       return wrap("strJsonDecode", dtype, inferSchemaLength);
@@ -334,8 +339,11 @@ export const SeriesStringFunctions = (_s: any): StringNamespace => {
     padStart(length: number, fillChar: string) {
       return wrap("strPadStart", length, fillChar);
     },
-    zFill(length: number) {
-      return wrap("strZFill", length);
+    zFill(length) {
+      return _Series(_s)
+        .toFrame()
+        .select(col(_s.name).str.zFill(length).as(_s.name))
+        .getColumn(_s.name);
     },
     padEnd(length: number, fillChar: string) {
       return wrap("strPadEnd", length, fillChar);
@@ -349,8 +357,13 @@ export const SeriesStringFunctions = (_s: any): StringNamespace => {
     rstrip() {
       return wrap("strReplace", /[ \t]+$/.source, "");
     },
-    slice(start: number, length?: number) {
-      return wrap("strSlice", start, length);
+    slice(start, length?) {
+      const s = _Series(_s);
+
+      return s
+        .toFrame()
+        .select(col(s.name).str.slice(start, length).as(s.name))
+        .getColumn(s.name);
     },
     split(by: string, options?) {
       const inclusive =

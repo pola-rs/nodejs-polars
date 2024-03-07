@@ -104,9 +104,9 @@ describe("expr", () => {
   });
   test.each`
     args                 | cumCount
-    ${undefined}         | ${[0, 1, 2]}
-    ${true}              | ${[2, 1, 0]}
-    ${{ reverse: true }} | ${[2, 1, 0]}
+    ${undefined}         | ${[1, 2, 3]}
+    ${true}              | ${[3, 2, 1]}
+    ${{ reverse: true }} | ${[3, 2, 1]}
   `("$# cumCount", ({ args, cumCount }) => {
     const df = pl.DataFrame({ a: [1, 2, 3] });
     const expected = pl.DataFrame({ a: cumCount });
@@ -331,8 +331,8 @@ describe("expr", () => {
   });
   test.each`
     args                   | hashValue
-    ${[0]}                 | ${6340063056640878722n}
-    ${[{ k0: 1n, k1: 1 }]} | ${9788354747012366704n}
+    ${[0]}                 | ${7355865757046787768n}
+    ${[{ k0: 1n, k1: 1 }]} | ${2179653058507248884n}
   `("$# hash", ({ args, hashValue }) => {
     const df = pl.DataFrame({ a: [1] });
     const expected = pl.DataFrame({ hash: [hashValue] });

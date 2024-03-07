@@ -472,7 +472,7 @@ describe("series", () => {
     ${"getIndex"}        | ${pl.Series(["a", "b", "c"]).getIndex(0)}                                                  | ${"a"}
     ${"hasValidity"}     | ${pl.Series([1, null, 2]).hasValidity()}                                                   | ${true}
     ${"hasValidity"}     | ${pl.Series([1, 1, 2]).hasValidity()}                                                      | ${false}
-    ${"hash"}            | ${pl.Series([1]).hash()}                                                                   | ${pl.Series([6340063056640878722n])}
+    ${"hash"}            | ${pl.Series([1]).hash()}                                                                   | ${pl.Series([7355865757046787768n])}
     ${"head"}            | ${pl.Series([1, 2, 3, 4, 5, 5, 5]).head()}                                                 | ${pl.Series([1, 2, 3, 4, 5])}
     ${"head"}            | ${pl.Series([1, 2, 3, 4, 5, 5, 5]).head(2)}                                                | ${pl.Series([1, 2])}
     ${"interpolate"}     | ${pl.Series([1, 2, null, null, 5]).interpolate()}                                          | ${pl.Series([1, 2, 3, 4, 5])}
@@ -520,8 +520,8 @@ describe("series", () => {
     ${"slice"}           | ${pl.Series([1, 2, 3, 3, 0]).slice(-3, 3)}                                                 | ${pl.Series([3, 3, 0])}
     ${"slice"}           | ${pl.Series([1, 2, 3, 3, 0]).slice(1, 3)}                                                  | ${pl.Series([2, 3, 3])}
     ${"sort"}            | ${pl.Series([4, 2, 5, 1, 2, 3, 3, 0]).sort()}                                              | ${pl.Series([0, 1, 2, 2, 3, 3, 4, 5])}
-    ${"sort"}            | ${pl.Series([4, 2, 5, 0]).sort({ reverse: true })}                                         | ${pl.Series([5, 4, 2, 0])}
-    ${"sort"}            | ${pl.Series([4, 2, 5, 0]).sort({ reverse: false })}                                        | ${pl.Series([0, 2, 4, 5])}
+    ${"sort"}            | ${pl.Series([4, 2, 5, 0]).sort({ descending: true })}                                      | ${pl.Series([5, 4, 2, 0])}
+    ${"sort"}            | ${pl.Series([4, 2, 5, 0]).sort({ descending: false })}                                     | ${pl.Series([0, 2, 4, 5])}
     ${"sum"}             | ${pl.Series([1, 2, 2, 1]).sum()}                                                           | ${6}
     ${"tail"}            | ${pl.Series([1, 2, 2, 1]).tail(2)}                                                         | ${pl.Series([2, 1])}
     ${"gatherEvery"}     | ${pl.Series([1, 3, 2, 9, 1]).gatherEvery(2)}                                               | ${pl.Series([1, 2, 1])}
@@ -535,7 +535,7 @@ describe("series", () => {
   .gather([2])} | ${pl.Series([[6, 7, 8]])}
     ${"toArray"}         | ${pl.Series([1, 2, 3]).toArray()}                                                          | ${[1, 2, 3]}
     ${"unique"}          | ${pl.Series([1, 2, 3, 3]).unique().sort()}                                                 | ${pl.Series([1, 2, 3])}
-    ${"cumCount"}        | ${pl.Series([1, 2, 3, 3]).cumCount()}                                                      | ${pl.Series([0, 1, 2, 3])}
+    ${"cumCount"}        | ${pl.Series([1, 2, 3, 3]).cumCount()}                                                      | ${pl.Series([1, 2, 3, 4])}
     ${"shiftAndFill"}    | ${pl.Series("foo", [1, 2, 3]).shiftAndFill(1, 99)}                                         | ${pl.Series("foo", [99, 1, 2])}
     ${"bitand"}          | ${pl
   .Series("bit", [1, 2, 3], pl.Int32)
