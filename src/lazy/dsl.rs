@@ -686,18 +686,10 @@ impl JsExpr {
     }
 
     #[napi(catch_unwind)]
-    pub fn str_z_fill(&self, width: i64) -> JsExpr {
-        let function = move |s: Series| {
-            let ca = s.str()?;
-            Ok(Some(ca.zfill(width as usize).into_series()))
-        };
-
-        self.clone()
-            .inner
-            .map(function, GetOutput::from_type(DataType::String))
-            .with_fmt("str.z_fill")
-            .into()
+    pub fn zfill(&self, length: &JsExpr) -> Self {
+        self.inner.clone().str().zfill(length.inner.clone()).into()
     }
+
     #[napi(catch_unwind)]
     pub fn str_to_uppercase(&self) -> JsExpr {
         let function = |s: Series| {
@@ -710,17 +702,13 @@ impl JsExpr {
             .with_fmt("str.to_uppercase")
             .into()
     }
+
     #[napi(catch_unwind)]
-    pub fn str_slice(&self, start: i64, length: Option<i64>) -> JsExpr {
-        let function = move |s: Series| {
-            let length = length.map(|l| l as u64);
-            let ca = s.str()?;
-            Ok(Some(ca.str_slice(start, length).into_series()))
-        };
-        self.clone()
-            .inner
-            .map(function, GetOutput::from_type(DataType::String))
-            .with_fmt("str.slice")
+    pub fn str_slice(&self, offset: &JsExpr, length: &JsExpr) -> JsExpr {
+        self.inner
+            .clone()
+            .str()
+            .slice(offset.inner.clone(), length.inner.clone())
             .into()
     }
 
@@ -876,11 +864,11 @@ impl JsExpr {
             .into()
     }
     #[napi(catch_unwind)]
-    pub fn str_extract(&self, pat: String, group_index: i64) -> JsExpr {
+    pub fn str_extract(&self, pat: &JsExpr, group_index: i64) -> JsExpr {
         self.inner
             .clone()
             .str()
-            .extract(&pat, group_index as usize)
+            .extract(pat.inner.clone(), group_index as usize)
             .into()
     }
     #[napi(catch_unwind)]
@@ -1221,11 +1209,11 @@ impl JsExpr {
         self.inner.clone().list().get(index.inner.clone()).into()
     }
     #[napi(catch_unwind)]
-    pub fn list_join(&self, separator: &JsExpr) -> JsExpr {
+    pub fn list_join(&self, separator: &JsExpr, ignore_nulls: bool) -> JsExpr {
         self.inner
             .clone()
             .list()
-            .join(separator.inner.clone())
+            .join(separator.inner.clone(), ignore_nulls)
             .into()
     }
     #[napi(catch_unwind)]
@@ -1567,11 +1555,6 @@ pub fn col(name: String) -> JsExpr {
 }
 
 #[napi(catch_unwind)]
-pub fn count() -> JsExpr {
-    dsl::count().into()
-}
-
-#[napi(catch_unwind)]
 pub fn first() -> JsExpr {
     dsl::first().into()
 }
@@ -1665,9 +1648,9 @@ pub fn concat_lst(s: Vec<&JsExpr>) -> JsResult<JsExpr> {
 }
 
 #[napi(catch_unwind)]
-pub fn concat_str(s: Vec<&JsExpr>, sep: String) -> JsExpr {
-    let s = s.to_exprs();
-    dsl::concat_str(s, &sep).into()
+pub fn concat_str(s: Vec<&JsExpr>, separator: String, ignore_nulls: bool) -> JsExpr {
+    let s = s.into_iter().map(|e| e.inner.clone()).collect::<Vec<_>>();
+    dsl::concat_str(s, &separator, ignore_nulls).into()
 }
 
 #[napi(catch_unwind)]

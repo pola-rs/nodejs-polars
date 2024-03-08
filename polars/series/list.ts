@@ -1,4 +1,5 @@
 import { Series, _Series } from ".";
+import { exprToLitOrExpr } from "..";
 import { col } from "../lazy/functions";
 import { ListFunctions } from "../shared_traits";
 
@@ -49,8 +50,8 @@ export const SeriesListFunctions = (_s): ListFunctions<Series> => {
     tail(n = 5) {
       return this.slice(-n, n);
     },
-    join(separator = ",") {
-      return wrap("join", separator);
+    join(options?) {
+      return wrap("join", options);
     },
     last() {
       return wrap("get", -1);
