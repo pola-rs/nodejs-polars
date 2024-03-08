@@ -865,7 +865,8 @@ export interface Series
   slice(start: number, length?: number): Series;
   /**
    * __Sort this Series.__
-   * @param reverse - Reverse sort
+   * @param descending - Sort in descending order.
+   * @param nullsLast - Place nulls at the end.
    * @example
    * ```
    * s = pl.Series("a", [1, 3, 4, 2])
@@ -878,7 +879,7 @@ export interface Series
    *         3
    *         4
    * ]
-   * s.sort(true)
+   * s.sort({descending: true})
    * shape: (4,)
    * Series: 'a' [i64]
    * [
@@ -890,8 +891,7 @@ export interface Series
    * ```
    */
   sort(): Series;
-  sort(reverse?: boolean): Series;
-  sort(options: { reverse: boolean }): Series;
+  sort(options: { descending?: boolean; nullsLast?: boolean }): Series;
   /**
    * Reduce this Series to the sum value.
    * @example
@@ -983,6 +983,8 @@ export interface Series
   unique(maintainOrder?: boolean | { maintainOrder: boolean }): Series;
   /**
    * __Count the unique values in a Series.__
+   * @param sort - Sort the output by count in descending order.
+   *               If set to `False` (default), the order of the output is random.
    * ___
    * @example
    * ```
@@ -1002,7 +1004,7 @@ export interface Series
    * ╰─────┴────────╯
    * ```
    */
-  valueCounts(): DataFrame;
+  valueCounts(sort?: boolean): DataFrame;
   /**
    * Where mask evaluates true, take values from self.
    *
@@ -1682,12 +1684,10 @@ export function _Series(_s: any): Series {
 
       return wrap("slice", offset.offset, offset.length);
     },
-    sort(reverse?) {
-      if (typeof reverse === "boolean") {
-        return wrap("sort", reverse);
-      }
+    sort(options?) {
+      options = { descending: false, nullsLast: false, ...(options ?? {}) };
 
-      return wrap("sort", reverse?.reverse ?? false);
+      return wrap("sort", options.descending, options.nullsLast);
     },
     sub(field) {
       return dtypeWrap("Sub", field);
@@ -1727,7 +1727,6 @@ export function _Series(_s: any): Series {
       if (args[0] === "") {
         return _s.toJs();
       }
-
       return _s.serialize("json").toString();
     },
     toObject() {
@@ -1739,8 +1738,8 @@ export function _Series(_s: any): Series {
       }
       return wrap("unique");
     },
-    valueCounts() {
-      return null as any;
+    valueCounts(sorted?) {
+      return _DataFrame(unwrap("valueCounts", sorted ?? false));
     },
     values() {
       return this[Symbol.iterator]();

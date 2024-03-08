@@ -663,9 +663,12 @@ export interface ListFunctions<T> {
    * This errors if inner type of list `!= Utf8`.
    * @param separator A string used to separate one element of the list from the next in the resulting string.
    * If omitted, the list elements are separated with a comma.
+   * @param ignoreNulls - If true, null values will be ignored.
    * @category List
    */
-  join(separator?: string): T;
+  join(): T;
+  join(separator: string | Expr): T;
+  join(options: { separator?: string | Expr; ignoreNulls?: boolean }): T;
   /**
    * Get the last value of the sublists.
    * @category List

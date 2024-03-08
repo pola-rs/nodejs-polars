@@ -2,6 +2,7 @@ import { StringFunctions } from "../../shared_traits";
 import { DataType } from "../../datatypes";
 import { regexToString } from "../../utils";
 import { Expr, _Expr, exprToLitOrExpr } from "../expr";
+import { lit } from "../functions";
 
 /**
  * namespace containing expr string functions
@@ -106,7 +107,7 @@ export interface StringNamespace extends StringFunctions<Expr> {
    * └─────────┘
    * ```
    */
-  extract(pat: string | RegExp, groupIndex: number): Expr;
+  extract(pat: any, groupIndex: number): Expr;
   /**
   * Parse string values as JSON.
   * Throw errors if encounter invalid JSON strings.
@@ -267,7 +268,7 @@ export interface StringNamespace extends StringFunctions<Expr> {
    * └──────────┘
    * ```
    */
-  zFill(length: number): Expr;
+  zFill(length: number | Expr): Expr;
   /**
    *  Add a trailing fillChar to a string until string length is reached.
    * If string is longer or equal to given length no modifications will be done
@@ -306,7 +307,7 @@ export interface StringNamespace extends StringFunctions<Expr> {
    * @param start - Start of the slice (negative indexing may be used).
    * @param length - Optional length of the slice.
    */
-  slice(start: number, length?: number): Expr;
+  slice(start: number | Expr, length?: number | Expr): Expr;
   /**
    * Split a string into substrings using the specified separator and return them as a Series.
    * @param separator — A string that identifies character or characters to use in separating the string.
@@ -364,8 +365,8 @@ export const ExprStringFunctions = (_expr: any): StringNamespace => {
           throw new RangeError("supported encodings are 'hex' and 'base64'");
       }
     },
-    extract(pat: string | RegExp, groupIndex: number) {
-      return wrap("strExtract", regexToString(pat), groupIndex);
+    extract(pat: any, groupIndex: number) {
+      return wrap("strExtract", exprToLitOrExpr(pat, true)._expr, groupIndex);
     },
     jsonExtract(dtype?: DataType, inferSchemaLength?: number) {
       return wrap("strJsonDecode", dtype, inferSchemaLength);
@@ -394,13 +395,23 @@ export const ExprStringFunctions = (_expr: any): StringNamespace => {
     padStart(length: number, fillChar: string) {
       return wrap("strPadStart", length, fillChar);
     },
-    zFill(length: number) {
-      return wrap("strZFill", length);
+    zFill(length: number | Expr) {
+      if (!Expr.isExpr(length)) {
+        length = lit(length)._expr;
+      }
+      return wrap("zfill", length);
     },
     padEnd(length: number, fillChar: string) {
       return wrap("strPadEnd", length, fillChar);
     },
-    slice(start: number, length?: number) {
+    slice(start, length?) {
+      if (!Expr.isExpr(start)) {
+        start = lit(start)._expr;
+      }
+      if (!Expr.isExpr(length)) {
+        length = lit(length)._expr;
+      }
+
       return wrap("strSlice", start, length);
     },
     split(by: string, options?) {

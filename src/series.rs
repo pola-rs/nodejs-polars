@@ -488,11 +488,12 @@ impl JsSeries {
     pub fn tail(&self, length: Option<i64>) -> JsSeries {
         (self.series.tail(length.map(|l| l as usize))).into()
     }
+
     #[napi(catch_unwind)]
-    pub fn sort(&self, reverse: Option<bool>) -> JsSeries {
-        let reverse = reverse.unwrap_or(false);
-        self.series.sort(reverse).into()
+    pub unsafe fn sort(&mut self, descending: bool, nulls_last: bool) -> Self {
+        self.series.sort(descending, nulls_last).into()
     }
+
     #[napi]
     pub fn argsort(
         &self,
@@ -887,16 +888,6 @@ impl JsSeries {
     }
 
     #[napi(catch_unwind)]
-    pub fn str_extract(&self, pat: String, group_index: i64) -> napi::Result<JsSeries> {
-        let ca = self.series.str().map_err(JsPolarsErr::from)?;
-        let s = ca
-            .extract(&pat, group_index as usize)
-            .map_err(JsPolarsErr::from)?
-            .into_series();
-        Ok(s.into())
-    }
-
-    #[napi(catch_unwind)]
     pub fn str_replace(&self, pat: String, val: String) -> napi::Result<JsSeries> {
         let ca = self.series.str().map_err(JsPolarsErr::from)?;
         let s = ca
@@ -927,13 +918,6 @@ impl JsSeries {
     pub fn str_to_lowercase(&self) -> napi::Result<JsSeries> {
         let ca = self.series.str().map_err(JsPolarsErr::from)?;
         let s = ca.to_lowercase().into_series();
-        Ok(s.into())
-    }
-
-    #[napi(catch_unwind)]
-    pub fn str_slice(&self, start: i64, length: Option<i64>) -> napi::Result<JsSeries> {
-        let ca = self.series.str().map_err(JsPolarsErr::from)?;
-        let s = ca.str_slice(start, length.map(|l| l as u64)).into_series();
         Ok(s.into())
     }
 
@@ -983,12 +967,7 @@ impl JsSeries {
             .into_series();
         Ok(s.into())
     }
-    #[napi(catch_unwind)]
-    pub fn str_z_fill(&self, length: i64) -> napi::Result<JsSeries> {
-        let ca = self.series.str().map_err(JsPolarsErr::from)?;
-        let s = ca.zfill(length as usize).into_series();
-        Ok(s.into())
-    }
+
     #[napi(catch_unwind)]
     pub fn strftime(&self, fmt: String) -> napi::Result<JsSeries> {
         let s = self.series.strftime(&fmt).map_err(JsPolarsErr::from)?;
@@ -1011,6 +990,7 @@ impl JsSeries {
         // let df = self.series.to_dummies().map_err(JsPolarsErr::from)?;
         // Ok(df.into())
     }
+
     #[napi(catch_unwind)]
     pub fn get_list(&self, index: i64) -> Option<JsSeries> {
         if let Ok(ca) = &self.series.list() {

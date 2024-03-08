@@ -1,6 +1,6 @@
 [package]
 name = "nodejs-polars"
-version = "0.8.4"
+version = "0.9.0"
 authors = ["Cory Grinstead"]
 documentation = "https://pola-rs.github.io/polars-book/"
 edition = "2021"
@@ -15,14 +15,17 @@ crate-type = ["cdylib", "lib"]
 [dependencies]
 ahash = "0.8.7"
 bincode = "1.3.3"
-napi = {version = "2.14.2", default-features = false, features = ["napi8", "serde-json"]}
-napi-derive = {version = "2.14.6", default-features = false}
-polars-core = {git = "https://github.com/pola-rs/polars.git", rev = "fa59ffc1685043b44476dcb2a3f3804460ead5c5", default-features = false}
-polars-io = {git = "https://github.com/pola-rs/polars.git", rev = "fa59ffc1685043b44476dcb2a3f3804460ead5c5", default-features = false}
-polars-lazy = {git = "https://github.com/pola-rs/polars.git", rev = "fa59ffc1685043b44476dcb2a3f3804460ead5c5", default-features = false}
+napi = { version = "2.14.2", default-features = false, features = [
+  "napi8",
+  "serde-json",
+] }
+napi-derive = { version = "2.14.6", default-features = false }
+polars-core = { git = "https://github.com/pola-rs/polars.git", rev = "3cf4897e679b056d17a235d48867035265d43cdc", default-features = false }
+polars-io = { git = "https://github.com/pola-rs/polars.git", rev = "3cf4897e679b056d17a235d48867035265d43cdc", default-features = false }
+polars-lazy = { git = "https://github.com/pola-rs/polars.git", rev = "3cf4897e679b056d17a235d48867035265d43cdc", default-features = false }
 thiserror = "1"
-smartstring = {version = "1"}
-serde_json = {version = "1"}
+smartstring = { version = "1" }
+serde_json = { version = "1" }
 either = "1.9"
 
 [dependencies.polars]
@@ -54,7 +57,6 @@ features = [
   "reinterpret",
   "mode",
   "extract_jsonpath",
-  "lazy_regex",
   "cum_agg",
   "rolling_window",
   "repeat_by",
@@ -66,7 +68,6 @@ features = [
   "pct_change",
   "moment",
   "diagonal_concat",
-  "horizontal_concat",
   "abs",
   "dot_diagram",
   "dataframe_arithmetic",
@@ -90,6 +91,7 @@ features = [
   "peaks",
   "string_pad",
   "cov",
+  "group_by_list",,
   "http",
   "cloud",
   "aws",
@@ -97,7 +99,7 @@ features = [
   "azure"
 ]
 git = "https://github.com/pola-rs/polars.git"
-rev = "fa59ffc1685043b44476dcb2a3f3804460ead5c5"
+rev = "3cf4897e679b056d17a235d48867035265d43cdc"
 
 [build-dependencies]
 napi-build = "2.1.0"

@@ -305,15 +305,23 @@ export function concatList(...exprs): Expr {
 }
 
 /** Concat Utf8 Series in linear time. Non utf8 columns are cast to utf8. */
-export function concatString(opts: { exprs: ExprOrString[]; sep: string });
-export function concatString(exprs: ExprOrString[], sep?: string);
-export function concatString(opts, sep = ",") {
+export function concatString(opts: {
+  exprs: ExprOrString[];
+  sep: string;
+  ignoreNulls?: boolean;
+});
+export function concatString(
+  exprs: ExprOrString[],
+  sep?: string,
+  ignoreNulls?: boolean,
+);
+export function concatString(opts, sep = ",", ignoreNulls = true) {
   if (opts?.exprs) {
-    return concatString(opts.exprs, opts.sep);
+    return concatString(opts.exprs, opts.sep, opts.ignoreNulls);
   }
   const items = selectionToExprList(opts as any, false);
 
-  return (Expr as any)(pli.concatStr(items, sep));
+  return (Expr as any)(pli.concatStr(items, sep, ignoreNulls));
 }
 
 /** Count the number of values in this column. */
