@@ -91,7 +91,7 @@ features = [
   "peaks",
   "string_pad",
   "cov",
-  "group_by_list",,
+  "group_by_list",
   "http",
   "cloud",
   "aws",
