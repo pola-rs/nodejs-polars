@@ -1317,7 +1317,7 @@ impl JsDataFrame {
         let quote = options.quote.unwrap_or("\"".to_owned()).as_bytes()[0];
         let include_bom = options.include_bom.unwrap_or(false);
         let line_terminator = options.line_terminator.unwrap_or("\n".to_owned());
-        let batch_size = options.batch_size.unwrap_or(1024) as usize;
+        let batch_size = NonZeroUsize::new(options.batch_size.unwrap_or(1024) as usize);
         let date_format = options.date_format;
         let time_format = options.time_format;
         let datetime_format = options.datetime_format;
@@ -1336,7 +1336,7 @@ impl JsDataFrame {
                     .include_header(include_header)
                     .with_separator(sep)
                     .with_line_terminator(line_terminator)
-                    .with_batch_size(batch_size)
+                    .with_batch_size(batch_size.unwrap())
                     .with_datetime_format(datetime_format)
                     .with_date_format(date_format)
                     .with_time_format(time_format)
@@ -1355,7 +1355,7 @@ impl JsDataFrame {
                     .include_header(include_header)
                     .with_separator(sep)
                     .with_line_terminator(line_terminator)
-                    .with_batch_size(batch_size)
+                    .with_batch_size(batch_size.unwrap())
                     .with_datetime_format(datetime_format)
                     .with_date_format(date_format)
                     .with_time_format(time_format)
