@@ -1,7 +1,7 @@
 import pli from "../internals/polars_internal";
 import { arrayToJsSeries } from "../internals/construction";
 import { DataType, DTYPE_TO_FFINAME, Optional } from "../datatypes";
-import { DataFrame, _DataFrame } from "../dataframe";
+import { _DataFrame, DataFrame } from "../dataframe";
 import { SeriesStringFunctions, StringNamespace } from "./string";
 import { ListNamespace, SeriesListFunctions } from "./list";
 import { SeriesDateFunctions } from "./datetime";
@@ -12,54 +12,59 @@ import {
   Comparison,
   Cumulative,
   Deserialize,
+  EwmOps,
   Rolling,
   Round,
   Sample,
   Serialize,
-  EwmOps,
 } from "../shared_traits";
 import { col } from "../lazy/functions";
 import { InterpolationMethod, RankMethod } from "../types";
+import {
+  DTypeToJs,
+  DtypeToJsName,
+  JsToDtype,
+  JsType,
+} from "@polars/datatypes/datatype";
 
 const inspect = Symbol.for("nodejs.util.inspect.custom");
 /**
  * A Series represents a single column in a polars DataFrame.
  */
-export interface Series
-  extends ArrayLike<any>,
-    Rolling<Series>,
-    Arithmetic<Series>,
-    Comparison<Series>,
-    Cumulative<Series>,
-    Round<Series>,
-    Sample<Series>,
-    EwmOps<Series>,
+export interface Series<T extends DataType = any>
+  extends ArrayLike<T>,
+    Rolling<Series<T>>,
+    Arithmetic<Series<T>>,
+    Comparison<Series<T>>,
+    Cumulative<Series<T>>,
+    Round<Series<T>>,
+    Sample<Series<T>>,
+    EwmOps<Series<T>>,
     Serialize {
   inner(): any;
   name: string;
-  dtype: DataType;
+  dtype: T;
   str: StringNamespace;
   lst: ListNamespace;
   struct: SeriesStructFunctions;
   date: SeriesDateFunctions;
   [inspect](): string;
-  [Symbol.iterator](): IterableIterator<any>;
+  [Symbol.iterator](): IterableIterator<DTypeToJs<T>>;
   // inner(): JsSeries
-  bitand(other: Series): Series;
-  bitor(other: Series): Series;
-  bitxor(other: Series): Series;
+  bitand(other: Series<T>): Series<T>;
+  bitor(other: Series<T>): Series<T>;
+  bitxor(other: Series<T>): Series<T>;
   /**
    * Take absolute values
    */
-  abs(): Series;
+  abs(): Series<T>;
   /**
    * __Rename this Series.__
    *
    * @param name - new name
    * @see {@link rename}
-   *
    */
-  alias(name: string): Series;
+  alias(name: string): Series<T>;
   /**
    * __Append a Series to this one.__
    * ___
@@ -113,43 +118,41 @@ export interface Series
   argMin(): Optional<number>;
   /**
    * Get index values where Boolean Series evaluate True.
-   *
    */
-  argTrue(): Series;
+  argTrue(): Series<T>;
   /**
    * Get unique index as Series.
    */
-  argUnique(): Series;
+  argUnique(): Series<T>;
   /**
    * Index location of the sorted variant of this Series.
    * ___
    * @param reverse
    * @return {SeriesType} indexes - Indexes that can be used to sort this array.
    */
-  argSort(): Series;
-  argSort(reverse: boolean): Series;
-  argSort({ reverse }: { reverse: boolean }): Series;
+  argSort(): Series<T>;
+  argSort(reverse: boolean): Series<T>;
+  argSort({ reverse }: { reverse: boolean }): Series<T>;
   /**
    * __Rename this Series.__
    *
    * @param name - new name
    * @see {@link rename} {@link alias}
-   *
    */
-  as(name: string): Series;
+  as(name: string): Series<T>;
   /**
    * Cast between data types.
    */
-  cast(dtype: DataType, strict?: boolean): Series;
+  cast<U extends DataType>(dtype: U, strict?: boolean): Series<U>;
   /**
    * Get the length of each individual chunk
    */
-  chunkLengths(): Array<any>;
+  chunkLengths(): Array<T>;
   /**
    * Cheap deep clones.
    */
-  clone(): Series;
-  concat(other: Series): Series;
+  clone(): Series<T>;
+  concat(other: Series<T>): Series<T>;
 
   /**
    * __Quick summary statistics of a series. __
@@ -203,11 +206,11 @@ export interface Series
    * @param n - number of slots to shift
    * @param nullBehavior - `'ignore' | 'drop'`
    */
-  diff(n: number, nullBehavior: "ignore" | "drop"): Series;
+  diff(n: number, nullBehavior: "ignore" | "drop"): Series<T>;
   diff({
     n,
     nullBehavior,
-  }: { n: number; nullBehavior: "ignore" | "drop" }): Series;
+  }: { n: number; nullBehavior: "ignore" | "drop" }): Series<T>;
   /**
    * Compute the dot/inner product between two Series
    * ___
@@ -223,7 +226,7 @@ export interface Series
   /**
    * Create a new Series that copies data from this Series without null values.
    */
-  dropNulls(): Series;
+  dropNulls(): Series<T>;
   /**
    * __Explode a list or utf8 Series.__
    *
@@ -298,7 +301,6 @@ export interface Series
   /**
    * __Filter elements by a boolean mask.__
    * @param {SeriesType} predicate - Boolean mask
-   *
    */
   filter(predicate: Series): Series;
   filter({ predicate }: { predicate: Series }): Series;
@@ -649,7 +651,6 @@ export interface Series
   /**
    * Count the null values in this Series. --
    * _`undefined` values are treated as null_
-   *
    */
   nullCount(): number;
   /**
@@ -738,7 +739,6 @@ export interface Series
    * - True -> pl.Int64
    * - False -> pl.UInt64
    * @see {@link cast}
-   *
    */
   reinterpret(signed?: boolean): Series;
   /**
@@ -1012,7 +1012,6 @@ export interface Series
    * ___
    * @param mask - Boolean Series
    * @param other - Series of same type
-   *
    */
   zipWith(mask: Series, other: Series): Series;
 
@@ -1031,7 +1030,7 @@ export interface Series
    * true
    * ```
    */
-  toArray(): Array<any>;
+  toArray(): Array<DTypeToJs<T>>;
   /**
    * Converts series to a javascript typedArray.
    *
@@ -1055,7 +1054,11 @@ export interface Series
    * }
    * ```
    */
-  toObject(): { name: string; datatype: string; values: any[] };
+  toObject(): {
+    name: string;
+    datatype: DtypeToJsName<T>;
+    values: DTypeToJs<T>[];
+  };
   toFrame(): DataFrame;
   /** compat with `JSON.stringify */
   toJSON(): string;
@@ -1786,6 +1789,7 @@ export interface SeriesConstructor extends Deserialize<Series> {
    * ]
    * ```
    */
+  <T extends JsType>(values: ArrayLike<T>): Series<JsToDtype<T>>;
   (values: any): Series;
   /**
    * Create a new named series
@@ -1803,18 +1807,33 @@ export interface SeriesConstructor extends Deserialize<Series> {
    * ]
    * ```
    */
+  <T1 extends JsType>(
+    name: string,
+    values: ArrayLike<T1>,
+  ): Series<JsToDtype<T1>>;
+  <T2 extends DataType>(
+    name: string,
+    values: ArrayLike<DTypeToJs<T2>>,
+    dtype?: T2,
+  ): Series<T2>;
   (name: string, values: any[], dtype?): Series;
 
   /**
    * Creates an array from an array-like object.
    * @param arrayLike — An array-like object to convert to an array.
    */
+  from<T1 extends JsType>(arrayLike: ArrayLike<T1>): Series<JsToDtype<T1>>;
   from<T1>(arrayLike: ArrayLike<T1>): Series;
+  from<T2 extends JsType>(
+    name: string,
+    arrayLike: ArrayLike<T2>,
+  ): Series<JsToDtype<T2>>;
   from<T2>(name: string, arrayLike: ArrayLike<T2>): Series;
   /**
    * Returns a new Series from a set of elements.
    * @param items — A set of elements to include in the new Series object.
    */
+  of<T3 extends JsType>(...items: T3[]): Series<JsToDtype<T3>>;
   of<T3>(...items: T3[]): Series;
   isSeries(arg: any): arg is Series;
   /**

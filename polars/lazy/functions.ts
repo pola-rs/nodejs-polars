@@ -100,7 +100,7 @@ import pli from "../internals/polars_internal";
  */
 export function col(col: string | string[] | Series | DataType): Expr {
   if (Series.isSeries(col)) {
-    col = col.toArray();
+    col = col.toArray() as string[];
   }
   if (Array.isArray(col)) {
     return _Expr(pli.cols(col));

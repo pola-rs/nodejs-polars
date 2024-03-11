@@ -1,8 +1,8 @@
 import { Field } from "./field";
 
 export abstract class DataType {
-  get variant() {
-    return this.constructor.name.slice(1);
+  get variant(): DataTypeName {
+    return this.constructor.name.slice(1) as DataTypeName;
   }
   protected identity = "DataType";
   protected get inner(): null | any[] {
@@ -85,7 +85,6 @@ export abstract class DataType {
    * Calendar date and time type
    * @param timeUnit any of 'ms' | 'ns' | 'us'
    * @param timeZone timezone string as defined by Intl.DateTimeFormat `America/New_York` for example.
-   *
    */
   public static Datetime(timeUnit: TimeUnit, timeZone?): DataType;
   public static Datetime(timeUnit: "ms" | "ns" | "us", timeZone?): DataType;
@@ -99,7 +98,6 @@ export abstract class DataType {
    * Nested list/array type
    *
    * @param inner The `DataType` of values within the list
-   *
    */
   public static List(inner: DataType): DataType {
     return new _List(inner);
@@ -336,3 +334,68 @@ export namespace DataType {
     return DataType[variant](...inner);
   }
 }
+
+export type DataTypeName =
+  | "Null"
+  | "Bool"
+  | "Int8"
+  | "Int16"
+  | "Int32"
+  | "Int64"
+  | "UInt8"
+  | "UInt16"
+  | "UInt32"
+  | "UInt64"
+  | "Float32"
+  | "Float64"
+  | "Date"
+  | "Datetime"
+  | "Utf8"
+  | "Categorical"
+  | "List"
+  | "Struct";
+
+export type JsType = number | boolean | string;
+export type JsToDtype<T> = T extends number
+  ? DataType.Float64
+  : T extends boolean
+    ? DataType.Bool
+    : T extends string
+      ? DataType.Utf8
+      : never;
+export type DTypeToJs<T> = T extends DataType.Float64
+  ? number
+  : T extends DataType.Int64
+    ? bigint
+    : T extends DataType.Int32
+      ? number
+      : T extends DataType.Bool
+        ? boolean
+        : T extends DataType.Utf8
+          ? string
+          : never;
+export type DtypeToJsName<T> = T extends DataType.Float64
+  ? "Float64"
+  : T extends DataType.Float32
+    ? "Float32"
+    : T extends DataType.Int64
+      ? "Int64"
+      : T extends DataType.Int32
+        ? "Int32"
+        : T extends DataType.Int16
+          ? "Int16"
+          : T extends DataType.Int8
+            ? "Int8"
+            : T extends DataType.UInt64
+              ? "UInt64"
+              : T extends DataType.UInt32
+                ? "UInt32"
+                : T extends DataType.UInt16
+                  ? "UInt16"
+                  : T extends DataType.UInt8
+                    ? "UInt8"
+                    : T extends DataType.Bool
+                      ? "Bool"
+                      : T extends DataType.Utf8
+                        ? "Utf8"
+                        : never;
