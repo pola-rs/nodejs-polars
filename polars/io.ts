@@ -1,9 +1,9 @@
-import { DataType } from "./datatypes";
+import type { DataType } from "./datatypes";
 import pli from "./internals/polars_internal";
-import { DataFrame, _DataFrame } from "./dataframe";
+import { type DataFrame, _DataFrame } from "./dataframe";
 import { isPath } from "./utils";
-import { LazyDataFrame, _LazyDataFrame } from "./lazy/dataframe";
-import { Readable, Stream } from "stream";
+import { type LazyDataFrame, _LazyDataFrame } from "./lazy/dataframe";
+import { type Readable, Stream } from "stream";
 import { concat } from "./functions";
 
 export interface ReadCsvOptions {
