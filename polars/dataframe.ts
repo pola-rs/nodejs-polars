@@ -1003,6 +1003,7 @@ export interface DataFrame
    *     Defaults to "first"
    *   @param options.maintainOrder Sort the grouped keys so that the output order is predictable.
    *   @param options.sortColumns Sort the transposed columns by name. Default is by order of discovery.
+   *   @param options.separator Used as separator/delimiter in generated column names.
    *   @example
    * ```
    *   > const df = pl.DataFrame(
@@ -1042,6 +1043,7 @@ export interface DataFrame
         | Expr;
       maintainOrder?: boolean;
       sortColumns?: boolean;
+      separator?: string;
     },
   ): DataFrame;
   pivot(options: {
@@ -1060,6 +1062,7 @@ export interface DataFrame
       | Expr;
     maintainOrder?: boolean;
     sortColumns?: boolean;
+    separator?: string;
   }): DataFrame;
   // TODO!
   // /**
@@ -2183,6 +2186,7 @@ export const _DataFrame = (_df: any): DataFrame => {
         maintainOrder = true,
         sortColumns = false,
         aggregateFunc = "first",
+        separator,
       } = options;
       values = values_ ?? values;
       values = typeof values === "string" ? [values] : values;
@@ -2211,7 +2215,15 @@ export const _DataFrame = (_df: any): DataFrame => {
       }
 
       return _DataFrame(
-        _df.pivotExpr(values, index, columns, fn, maintainOrder, sortColumns),
+        _df.pivotExpr(
+          values,
+          index,
+          columns,
+          fn,
+          maintainOrder,
+          sortColumns,
+          separator,
+        ),
       );
     },
     quantile(quantile) {
