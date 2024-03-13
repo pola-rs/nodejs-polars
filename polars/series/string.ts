@@ -1,9 +1,9 @@
-import { Expr } from "./../lazy/expr/index";
-import { DataType } from "../datatypes";
-import { _Series, Series } from ".";
+import type { Expr } from "./../lazy/expr/index";
+import type { DataType } from "../datatypes";
+import { _Series, type Series } from ".";
 import { regexToString } from "../utils";
 import { col } from "../lazy/functions";
-import { StringFunctions } from "../shared_traits";
+import type { StringFunctions } from "../shared_traits";
 
 /**
  * namespace containing series string functions

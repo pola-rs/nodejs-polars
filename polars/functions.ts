@@ -1,10 +1,10 @@
 /* eslint-disable no-redeclare */
 import { jsTypeToPolarsType } from "./internals/construction";
-import { Series, _Series } from "./series";
-import { DataFrame, _DataFrame } from "./dataframe";
+import { type Series, _Series } from "./series";
+import { type DataFrame, _DataFrame } from "./dataframe";
 import pli from "./internals/polars_internal";
 import { isDataFrameArray, isSeriesArray } from "./utils";
-import { ConcatOptions } from "./types";
+import type { ConcatOptions } from "./types";
 
 /**
  * _Repeat a single value n times and collect into a Series._

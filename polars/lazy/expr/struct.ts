@@ -1,4 +1,4 @@
-import { _Expr, Expr } from "../expr";
+import { _Expr, type Expr } from "../expr";
 
 /**
  * Struct functions
