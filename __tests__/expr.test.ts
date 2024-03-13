@@ -256,7 +256,7 @@ describe("expr", () => {
     ${2}        | ${2}
   `("$# fillNan", ({ replacement, filled }) => {
     const df = pl.DataFrame({
-      a: [1, NaN, 2],
+      a: [1, Number.NaN, 2],
       b: [2, 1, 1],
     });
     const expected = pl.DataFrame({ fillNan: [1, filled, 2] });
@@ -412,13 +412,13 @@ describe("expr", () => {
     expect(actual).toFrameEqual(expected);
   });
   test("isNan", () => {
-    const df = pl.DataFrame({ a: [1, NaN, 2] });
+    const df = pl.DataFrame({ a: [1, Number.NaN, 2] });
     const expected = pl.DataFrame({ isNan: [false, true, false] });
     const actual = df.select(col("a").isNan().as("isNan"));
     expect(actual).toFrameEqual(expected);
   });
   test("isNotNan", () => {
-    const df = pl.DataFrame({ a: [1, NaN, 2] });
+    const df = pl.DataFrame({ a: [1, Number.NaN, 2] });
     const expected = pl.DataFrame({ isNotNan: [true, false, true] });
     const actual = df.select(col("a").isNotNan().as("isNotNan"));
     expect(actual).toFrameEqual(expected);
@@ -1831,18 +1831,19 @@ describe("rolling", () => {
     const expected = pl
       .Series(
         "rolling",
-        [null, 0.707107, 0.707107, 0.707107, 0.707107],
+        [null, Math.SQRT1_2, Math.SQRT1_2, Math.SQRT1_2, Math.SQRT1_2],
         pl.Float64,
       )
+      .round(10)
       .toFrame();
-    expect(df.select(col("rolling").rollingStd(2).round(6))).toFrameEqual(
+    expect(df.select(col("rolling").rollingStd(2).round(10))).toFrameEqual(
       expected,
     );
     expect(
       df.select(
         col("rolling")
           .rollingStd({ windowSize: 2, center: true, ddof: 4 })
-          .round(6),
+          .round(10),
       ),
     ).toFrameEqual(expected);
   });

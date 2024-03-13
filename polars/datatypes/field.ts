@@ -1,4 +1,4 @@
-import { DataType } from "./datatype";
+import type { DataType } from "./datatype";
 
 /**
  * A field is a name and a datatype.

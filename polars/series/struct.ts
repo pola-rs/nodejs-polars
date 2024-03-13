@@ -1,6 +1,6 @@
 import pli from "../internals/polars_internal";
 import { _DataFrame, DataFrame } from "../dataframe";
-import { _Series, Series } from ".";
+import { _Series, type Series } from ".";
 import { _Expr } from "../lazy/expr";
 
 export interface SeriesStructFunctions {

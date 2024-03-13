@@ -1,4 +1,4 @@
-import { StringFunctions } from "../../shared_traits";
+import type { StringFunctions } from "../../shared_traits";
 import { DataType } from "../../datatypes";
 import { regexToString } from "../../utils";
 import { Expr, _Expr, exprToLitOrExpr } from "../expr";
