@@ -1,23 +1,23 @@
-import { DataFrame, _DataFrame } from "../dataframe";
+import { type DataFrame, _DataFrame } from "../dataframe";
 import { Expr, exprToLitOrExpr } from "./expr";
 import pli from "../internals/polars_internal";
 import {
   columnOrColumnsStrict,
-  ColumnSelection,
-  ColumnsOrExpr,
-  ExprOrString,
+  type ColumnSelection,
+  type ColumnsOrExpr,
+  type ExprOrString,
   selectionToExprList,
-  ValueOrArray,
+  type ValueOrArray,
 } from "../utils";
-import { _LazyGroupBy, LazyGroupBy } from "./groupby";
-import { Deserialize, GroupByOps, Serialize } from "../shared_traits";
-import {
+import { _LazyGroupBy, type LazyGroupBy } from "./groupby";
+import type { Deserialize, GroupByOps, Serialize } from "../shared_traits";
+import type {
   LazyOptions,
   LazyJoinOptions,
   SinkCsvOptions,
   SinkParquetOptions,
 } from "../types";
-import { Series } from "../series";
+import type { Series } from "../series";
 
 const inspect = Symbol.for("nodejs.util.inspect.custom");
 

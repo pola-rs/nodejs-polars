@@ -1,9 +1,9 @@
-import { DataFrame, _DataFrame } from "./dataframe";
+import { type DataFrame, _DataFrame } from "./dataframe";
 import * as utils from "./utils";
 import util from "util";
-import { Expr } from "./lazy/expr";
+import type { Expr } from "./lazy/expr";
 import { col, exclude } from "./lazy/functions";
-import { ColumnsOrExpr, StartBy } from "./utils";
+import type { ColumnsOrExpr, StartBy } from "./utils";
 
 const inspect = Symbol.for("nodejs.util.inspect.custom");
 const inspectOpts = { colors: true, depth: null };

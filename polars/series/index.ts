@@ -1,13 +1,13 @@
 import pli from "../internals/polars_internal";
 import { arrayToJsSeries } from "../internals/construction";
-import { DataType, DTYPE_TO_FFINAME, Optional } from "../datatypes";
+import { DataType, DTYPE_TO_FFINAME, type Optional } from "../datatypes";
 import { DataFrame, _DataFrame } from "../dataframe";
-import { SeriesStringFunctions, StringNamespace } from "./string";
-import { ListNamespace, SeriesListFunctions } from "./list";
+import { SeriesStringFunctions, type StringNamespace } from "./string";
+import { type ListNamespace, SeriesListFunctions } from "./list";
 import { SeriesDateFunctions } from "./datetime";
 import { SeriesStructFunctions } from "./struct";
 import { InvalidOperationError } from "../error";
-import {
+import type {
   Arithmetic,
   Comparison,
   Cumulative,
@@ -19,7 +19,7 @@ import {
   EwmOps,
 } from "../shared_traits";
 import { col } from "../lazy/functions";
-import { InterpolationMethod, RankMethod } from "../types";
+import type { InterpolationMethod, RankMethod } from "../types";
 
 const inspect = Symbol.for("nodejs.util.inspect.custom");
 /**

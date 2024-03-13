@@ -1,12 +1,17 @@
 import pli from "./internals/polars_internal";
 import { arrayToJsDataFrame } from "./internals/construction";
-import { _GroupBy, DynamicGroupBy, GroupBy, RollingGroupBy } from "./groupby";
-import { _LazyDataFrame, LazyDataFrame } from "./lazy/dataframe";
+import {
+  _GroupBy,
+  DynamicGroupBy,
+  type GroupBy,
+  RollingGroupBy,
+} from "./groupby";
+import { _LazyDataFrame, type LazyDataFrame } from "./lazy/dataframe";
 import { concat } from "./functions";
 import { Expr } from "./lazy/expr";
 import { _Series, Series } from "./series";
 import { Stream, Writable } from "stream";
-import {
+import type {
   FillNullStrategy,
   JoinOptions,
   WriteAvroOptions,
@@ -20,14 +25,14 @@ import { DataType } from "./datatypes";
 import {
   columnOrColumns,
   columnOrColumnsStrict,
-  ColumnSelection,
-  ColumnsOrExpr,
-  ExprOrString,
+  type ColumnSelection,
+  type ColumnsOrExpr,
+  type ExprOrString,
   isSeriesArray,
-  ValueOrArray,
+  type ValueOrArray,
 } from "./utils";
 
-import {
+import type {
   Arithmetic,
   Deserialize,
   GroupByOps,
@@ -1902,7 +1907,7 @@ export const _DataFrame = (_df: any): DataFrame => {
     [jupyterDisplay]() {
       let rows = 50;
       if (process.env.POLARS_FMT_MAX_ROWS) {
-        rows = parseInt(process.env.POLARS_FMT_MAX_ROWS);
+        rows = Number.parseInt(process.env.POLARS_FMT_MAX_ROWS);
       }
 
       const limited = this.limit(rows);

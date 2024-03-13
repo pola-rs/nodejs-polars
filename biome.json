@@ -8,13 +8,14 @@
     "rules": {
       "recommended": true,
       "style": {
-        "noParameterAssign": "off"
+        "noParameterAssign": "off",
+        "useNodejsImportProtocol": "off"
       },
       "suspicious": {
         "noExplicitAny": "off",
         "noUnsafeDeclarationMerging": "off",
-        "noImplicitAnyLet": "off"
-
+        "noImplicitAnyLet": "off",
+        "noThenProperty": "off"
       },
       "complexity": {
         "useLiteralKeys": "off"
