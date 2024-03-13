@@ -1,6 +1,6 @@
-import { Expr } from "./expr";
+import type { Expr } from "./expr";
 import { selectionToExprList } from "../utils";
-import { _LazyDataFrame, LazyDataFrame } from "./dataframe";
+import { _LazyDataFrame, type LazyDataFrame } from "./dataframe";
 
 /** @ignore */
 export const _LazyGroupBy = (_lgb: any): LazyGroupBy => {

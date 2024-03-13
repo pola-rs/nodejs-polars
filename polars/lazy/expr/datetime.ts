@@ -1,5 +1,5 @@
-import { DateFunctions } from "../../shared_traits";
-import { Expr, _Expr } from "../expr";
+import type { DateFunctions } from "../../shared_traits";
+import { type Expr, _Expr } from "../expr";
 
 /**
  * DateTime functions

@@ -1,14 +1,14 @@
-import { ColumnsOrExpr, StartBy } from "./utils";
-import { Expr, _Expr } from "./lazy/expr";
+import type { ColumnsOrExpr, StartBy } from "./utils";
+import { type Expr, _Expr } from "./lazy/expr";
 
-import {
+import type {
   InterpolationMethod,
   RollingOptions,
   RollingQuantileOptions,
   RollingSkewOptions,
   ClosedWindow,
 } from "./types";
-import { DataType } from "./datatypes";
+import type { DataType } from "./datatypes";
 
 /**
  * Arithmetic operations
