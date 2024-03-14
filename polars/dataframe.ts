@@ -1018,12 +1018,12 @@ export interface DataFrame
    *   ...         "baz": [1, 2, 3, 4, 5, 6],
    *   ...     }
    *   ... );
-   *   > df.pivot({values:"baz", index:"foo", columns:"bar"});
+   *   > df.pivot(values:"baz", {index:"foo", columns:"bar"});
    *   shape: (2, 4)
    *   ┌─────┬─────┬─────┬─────┐
    *   │ foo ┆ A   ┆ B   ┆ C   │
    *   │ --- ┆ --- ┆ --- ┆ --- │
-   *   │ str ┆ i64 ┆ i64 ┆ i64 │
+   *   │ str ┆ f64 ┆ f64 ┆ f64 │
    *   ╞═════╪═════╪═════╪═════╡
    *   │ one ┆ 1   ┆ 2   ┆ 3   │
    *   ├╌╌╌╌╌┼╌╌╌╌╌┼╌╌╌╌╌┼╌╌╌╌╌┤
