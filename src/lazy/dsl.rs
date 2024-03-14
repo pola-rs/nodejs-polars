@@ -1,9 +1,8 @@
-use crate::conversion::{parse_fill_null_strategy, Wrap};
+use crate::conversion::Wrap;
 use crate::prelude::*;
 use crate::utils::reinterpret;
 use polars::lazy::dsl;
 use polars::lazy::dsl::Expr;
-use polars::lazy::dsl::Operator;
 use polars_core::series::ops::NullBehavior;
 use std::any::Any;
 use std::borrow::Cow;

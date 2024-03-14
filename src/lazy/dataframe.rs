@@ -1,11 +1,8 @@
 use super::dsl::*;
 use crate::dataframe::JsDataFrame;
 use crate::prelude::*;
-use napi::{Env, Task};
-use polars::lazy::frame::{LazyCsvReader, LazyFrame, LazyGroupBy};
-use polars::prelude::{col, lit, ClosedWindow, CsvEncoding, DataFrame, Field, JoinType, Schema};
+use polars::prelude::{col, lit, ClosedWindow, JoinType};
 use polars_io::cloud::CloudOptions;
-use polars_io::parquet::ParallelStrategy;
 use polars_io::RowIndex;
 use std::collections::HashMap;
 use std::num::NonZeroUsize;
