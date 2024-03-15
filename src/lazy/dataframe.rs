@@ -19,7 +19,7 @@ pub struct JsLazyGroupBy {
 #[repr(transparent)]
 #[derive(Clone)]
 pub struct JsLazyFrame {
-    ldf: LazyFrame,
+    pub(crate) ldf: LazyFrame,
 }
 impl From<LazyFrame> for JsLazyFrame {
     fn from(ldf: LazyFrame) -> Self {
