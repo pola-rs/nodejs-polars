@@ -17,6 +17,9 @@ export * from "./lazy/dataframe";
 export * from "./lazy";
 import * as lazy from "./lazy";
 export * from "./types";
+import * as sql from "./sql";
+export type { SQLContext } from "./sql";
+
 export type { GroupBy } from "./groupby";
 export namespace pl {
   export import Expr = lazy.Expr;
@@ -109,6 +112,19 @@ export namespace pl {
   export import list = lazy.list;
   export import when = lazy.when;
   export const version = pli.version();
+
+  /**
+   * Run SQL queries against DataFrame/LazyFrame data.
+   *
+   * @warning This functionality is considered **unstable**, although it is close to being
+   * considered stable. It may be changed at any point without it being considered
+   * a breaking change.
+   */
+  export function SQLContext(
+    frames?: Record<string, DataFrame | LazyDataFrame>,
+  ): sql.SQLContext {
+    return new sql.SQLContext(frames);
+  }
 }
 // eslint-disable-next-line no-undef
 export default pl;
