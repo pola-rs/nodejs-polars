@@ -130,8 +130,6 @@ export interface SQLContext {
    * @example
    * const lf1 = pl.DataFrame({"a": [1, 2, 3], "b": ["m", "n", "o"]});
    * const lf2 = pl.DataFrame({"a": [2, 3, 4], "c": ["p", "q", "r"]});
-   * const lf3 = pl.DataFrame({"a": [3, 4, 5], "b": ["s", "t", "u"]});
-   * const lf4 = pl.DataFrame({"a": [4, 5, 6], "c": ["v", "w", "x"]});
    *
    * // Register multiple DataFrames at once
    * const ctx = pl.SQLContext().registerMany({"tbl1": lf1, "tbl2": lf2});
