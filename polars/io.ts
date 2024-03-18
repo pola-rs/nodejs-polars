@@ -481,8 +481,6 @@ interface ScanParquetOptions {
   parallel?: "auto" | "columns" | "row_groups" | "none";
   rowCount?: RowCount;
   rechunk?: boolean;
-  rowCountName?: string;
-  rowCountOffset?: number;
   lowMemory?: boolean;
   useStatistics?: boolean;
   hivePartitioning?: boolean;

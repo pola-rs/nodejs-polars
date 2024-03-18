@@ -709,8 +709,6 @@ pub struct ScanParquetOptions {
     pub parallel: Wrap<ParallelStrategy>,
     pub row_count: Option<JsRowCount>,
     pub rechunk: Option<bool>,
-    pub row_count_name: Option<String>,
-    pub row_count_offset: Option<u32>,
     pub low_memory: Option<bool>,
     pub use_statistics: Option<bool>,
     pub hive_partitioning: Option<bool>,
