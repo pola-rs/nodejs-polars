@@ -11,7 +11,6 @@ use std::collections::HashMap;
 use std::fs::File;
 use std::io::{BufReader, BufWriter, Cursor};
 use std::num::NonZeroUsize;
-use std::sync::Arc;
 
 #[napi]
 #[repr(transparent)]
