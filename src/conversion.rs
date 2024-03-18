@@ -1,16 +1,10 @@
 use crate::lazy::dsl::JsExpr;
 use crate::prelude::*;
 use napi::bindgen_prelude::*;
-use napi::{
-    JsBigInt, JsBoolean, JsDate, JsNumber, JsObject, JsString, JsUnknown, Result, ValueType,
-};
+use napi::{JsBigInt, JsBoolean, JsDate, JsNumber, JsObject, JsString, JsUnknown};
 use polars::frame::NullStrategy;
-use polars::prelude::Expr;
 use polars::prelude::*;
-use polars_core::prelude::FillNullStrategy;
-use polars_core::prelude::{Field, Schema};
 use polars_core::series::ops::NullBehavior;
-use polars_io::parquet::ParallelStrategy;
 use polars_io::RowIndex;
 use std::any::Any;
 use std::collections::HashMap;

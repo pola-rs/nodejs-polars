@@ -1243,7 +1243,7 @@ describe("dataframe", () => {
     expect(actual).toFrameEqual(expected);
   });
   test("pivot", () => {
-    const df = pl.DataFrame({
+    let df = pl.DataFrame({
       a: pl.Series([1, 2, 3]).cast(pl.Int32),
       b: pl
         .Series([
@@ -1254,7 +1254,7 @@ describe("dataframe", () => {
         .cast(pl.List(pl.Int32)),
     });
 
-    const expected = pl
+    let expected = pl
       .DataFrame({
         a: pl.Series([1, 2, 3]).cast(pl.Int32),
         "1": pl.Series([[1, 1], null, null]).cast(pl.List(pl.Int32)),
@@ -1263,13 +1263,37 @@ describe("dataframe", () => {
       })
       .select("a", "1", "2", "3");
 
-    const actual = df.pivot("b", {
+    let actual = df.pivot("b", {
       index: "a",
       columns: "a",
       aggregateFunc: "first",
       sortColumns: true,
     });
 
+    expect(actual).toFrameEqual(expected, true);
+
+    df = pl.DataFrame({
+      a: ["beep", "bop"],
+      b: ["a", "b"],
+      c: ["s", "f"],
+      d: [7, 8],
+      e: ["x", "y"],
+    });
+    actual = df.pivot(["a", "e"], {
+      index: "b",
+      columns: ["c"],
+      aggregateFunc: "first",
+      separator: "|",
+      maintainOrder: true,
+    });
+
+    expected = pl.DataFrame({
+      b: ["a", "b"],
+      "a|c|s": ["beep", null],
+      "a|c|f": [null, "bop"],
+      "e|c|s": ["x", null],
+      "e|c|f": [null, "y"],
+    });
     expect(actual).toFrameEqual(expected, true);
   });
 });
