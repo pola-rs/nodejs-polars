@@ -2633,6 +2633,28 @@ export interface DataFrameConstructor extends Deserialize<DataFrame> {
   (): DataFrame;
   /**
    * Create a DataFrame from a JavaScript object
+   *
+   * @param data - object or array of data
+   * @param options - options
+   * @param options.columns - column names
+   * @param options.orient - orientation of the data [row, col]
+   * Whether to interpret two-dimensional data as columns or as rows. If None, the orientation is inferred by matching the columns and data dimensions. If this does not yield conclusive results, column orientation is used.
+   * @param options.schema - The schema of the resulting DataFrame. The schema may be declared in several ways:
+   *
+   *     - As a dict of {name:type} pairs; if type is None, it will be auto-inferred.
+   *
+   *     - As a list of column names; in this case types are automatically inferred.
+   *
+   *     - As a list of (name,type) pairs; this is equivalent to the dictionary form.
+   *
+   * If you supply a list of column names that does not match the names in the underlying data, the names given here will overwrite them. The number of names given in the schema should match the underlying data dimensions.
+   *
+   * If set to null (default), the schema is inferred from the data.
+   * @param options.schemaOverrides - Support type specification or override of one or more columns; note that any dtypes inferred from the schema param will be overridden.
+   *
+   * @param options.inferSchemaLength - The maximum number of rows to scan for schema inference. If set to None, the full data may be scanned (this can be slow). This parameter only applies if the input data is a sequence or generator of rows; other input is read as-is.
+   * The number of entries in the schema should match the underlying data dimensions, unless a sequence of dictionaries is being passed, in which case a partial schema can be declared to prevent specific fields from being loaded.
+   *
    * @example
    * ```
    * data = {'a': [1n, 2n], 'b': [3, 4]}
@@ -2656,6 +2678,7 @@ export interface DataFrameConstructor extends Deserialize<DataFrame> {
       columns?: any[];
       orient?: "row" | "col";
       schema?: Record<string, string | DataType>;
+      schemaOverrides?: Record<string, string | DataType>;
       inferSchemaLength?: number;
     },
   ): DataFrame;
@@ -2671,17 +2694,53 @@ function DataFrameConstructor(data?, options?): DataFrame {
     return _DataFrame(arrayToJsDataFrame(data, options));
   }
 
-  return _DataFrame(objToDF(data as any));
+  return _DataFrame(objToDF(data as any, options));
 }
 
-function objToDF(obj: Record<string, Array<any>>): any {
-  const columns = Object.entries(obj).map(([name, values]) => {
-    if (Series.isSeries(values)) {
-      return values.rename(name).inner();
+function objToDF(
+  obj: Record<string, Array<any>>,
+  options?: {
+    columns?: any[];
+    orient?: "row" | "col";
+    schema?: Record<string, string | DataType>;
+    schemaOverrides?: Record<string, string | DataType>;
+    inferSchemaLength?: number;
+  },
+): any {
+  let columns;
+  if (options?.schema && options?.schemaOverrides) {
+    throw new Error("Cannot use both 'schema' and 'schemaOverrides'");
+  }
+  // explicit schema
+  if (options?.schema) {
+    const schema = options.schema;
+    const schemaKeys = Object.keys(options.schema);
+    const values = Object.values(obj);
+    if (schemaKeys.length !== values.length) {
+      throw new Error(
+        "The number of columns in the schema does not match the number of columns in the data",
+      );
     }
-
-    return Series(name, values).inner();
-  });
+    columns = values.map((values, idx) => {
+      const name = schemaKeys[idx];
+      const dtype = schema[name];
+      return Series(name, values, dtype).inner();
+    });
+  } else {
+    columns = Object.entries(obj).map(([name, values]) => {
+      if (Series.isSeries(values)) {
+        return values.rename(name).inner();
+      }
+      // schema overrides
+      if (options?.schemaOverrides) {
+        const dtype = options.schemaOverrides[name];
+        if (dtype) {
+          return Series(name, values, dtype).inner();
+        }
+      }
+      return Series(name, values).inner();
+    });
+  }
 
   return new pli.JsDataFrame(columns);
 }
