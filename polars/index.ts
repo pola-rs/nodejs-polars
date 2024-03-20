@@ -127,12 +127,15 @@ export namespace pl {
 
 export default pl;
 
+// ------
 // CommonJS compatibility.
 // This allows the user to use any of the following
-// `import * as pl from "nodejs-polars"` 
+// `import * as pl from "nodejs-polars"`
 // `import pl from "nodejs-polars"`.
 // `const pl = require("nodejs-polars")`.
 // `const { DataFrame, Series, } = require("nodejs-polars")`.
+// ------
+
 export import Expr = lazy.Expr;
 export import DataFrame = df.DataFrame;
 export import LazyDataFrame = ldf.LazyDataFrame;
