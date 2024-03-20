@@ -2661,6 +2661,7 @@ export interface DataFrameConstructor extends Deserialize<DataFrame> {
   ): DataFrame;
   isDataFrame(arg: any): arg is DataFrame;
 }
+
 function DataFrameConstructor(data?, options?): DataFrame {
   if (!data) {
     return _DataFrame(objToDF({}));
