@@ -1916,6 +1916,87 @@ describe("create", () => {
 
     expect(df.toObject()).toEqual(expected);
   });
+  test("with schema", () => {
+    const df = pl.DataFrame(
+      {
+        a: [1, 2, 3],
+        b: ["1", "2", "3"],
+      },
+      {
+        schema: {
+          x: pl.Int32,
+          y: pl.String,
+        },
+      },
+    );
+    expect(df.schema).toEqual({ x: pl.Int32, y: pl.String });
+  });
+  test("with schema", () => {
+    const df = pl.DataFrame(
+      {
+        a: [1, 2, 3],
+        b: ["1", "2", "3"],
+      },
+      {
+        schema: {
+          x: pl.Int32,
+          y: pl.String,
+        },
+      },
+    );
+    expect(df.schema).toEqual({ x: pl.Int32, y: pl.String });
+  });
+  test("with schema overrides", () => {
+    const df = pl.DataFrame(
+      {
+        a: [1, 2, 3],
+        b: ["1", "2", "3"],
+      },
+      {
+        schemaOverrides: {
+          a: pl.Int32,
+        },
+      },
+    );
+    expect(df.schema).toEqual({ a: pl.Int32, b: pl.String });
+  });
+  test("errors if schemaOverrides and schema are both specified", () => {
+    const fn = () =>
+      pl.DataFrame(
+        {
+          a: [1, 2, 3],
+          b: ["1", "2", "3"],
+        },
+        {
+          schema: {
+            x: pl.Int32,
+            y: pl.String,
+          },
+          schemaOverrides: {
+            a: pl.Int32,
+          },
+        },
+      );
+    expect(fn).toThrow();
+  });
+  test("errors if schema mismatch", () => {
+    const fn = () => {
+      pl.DataFrame(
+        {
+          a: [1, 2, 3],
+          b: ["1", "2", "3"],
+        },
+        {
+          schema: {
+            a: pl.Int32,
+            b: pl.String,
+            c: pl.Int32,
+          },
+        },
+      );
+    };
+    expect(fn).toThrow();
+  });
 });
 describe("arithmetic", () => {
   test("add", () => {
