@@ -1,6 +1,7 @@
 import * as series from "./series";
 import * as df from "./dataframe";
 import { DataType, Field as _field } from "./datatypes";
+export { DataType } from "./datatypes";
 import * as func from "./functions";
 import * as io from "./io";
 import * as cfg from "./cfg";
