@@ -43,8 +43,17 @@ export interface ConcatOptions {
  * @category Options
  */
 export interface WriteCsvOptions {
+  includeBom?: boolean;
   includeHeader?: boolean;
   sep?: string;
+  quote?: string;
+  lineTerminator?: string;
+  batchSize?: number;
+  datetimeFormat?: string;
+  dateFormat?: string;
+  timeFormat?: string;
+  floatPrecision?: number;
+  nullValue?: string;
 }
 /**
  * Options for @see {@link LazyDataFrame.sinkCSV}

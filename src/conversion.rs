@@ -558,15 +558,22 @@ impl From<JsRowCount> for RowIndex {
 
 #[napi(object)]
 pub struct WriteCsvOptions {
+    pub include_bom: Option<bool>,
     pub include_header: Option<bool>,
     pub sep: Option<String>,
     pub quote: Option<String>,
+    pub line_terminator: Option<String>,
+    pub batch_size: Option<i64>,
+    pub datetime_format: Option<String>,
+    pub date_format: Option<String>,
+    pub time_format: Option<String>,
+    pub float_precision: Option<i64>,
+    pub null_value: Option<String>
 }
 
 #[napi(object)]
 pub struct SinkCsvOptions {
     pub include_header: Option<bool>,
-    pub quote: Option<String>,
     pub include_bom: Option<bool>,
     pub separator: Option<String>,
     pub line_terminator: Option<String>,

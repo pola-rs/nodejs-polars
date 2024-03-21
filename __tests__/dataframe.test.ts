@@ -1560,12 +1560,21 @@ describe("io", () => {
     const expected = "fooXbar\n1X6\n2X2\n9X8\n";
     expect(actual).toEqual(expected);
   });
+  test("writeCSV:string:quote", () => {
+    const df = pl.DataFrame({
+      bar: ["a,b,c", "d,e,f", "g,h,i"],
+      foo: [1, 2, 3],
+    });
+    const actual = df.writeCSV({ quote: "^" }).toString();
+    const expected = "bar,foo\n^a,b,c^,1.0\n^d,e,f^,2.0\n^g,h,i^,3.0\n";
+    expect(actual).toEqual(expected);
+  });
   test("writeCSV:string:header", () => {
     const actual = df
       .clone()
-      .writeCSV({ sep: "X", includeHeader: false })
+      .writeCSV({ sep: "X", includeHeader: false, lineTerminator: "|" })
       .toString();
-    const expected = "1X6\n2X2\n9X8\n";
+    const expected = "1X6|2X2|9X8|";
     expect(actual).toEqual(expected);
   });
   test("writeCSV:stream", (done) => {

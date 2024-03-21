@@ -1312,11 +1312,17 @@ impl JsDataFrame {
         env: Env,
     ) -> napi::Result<()> {
         let include_header = options.include_header.unwrap_or(true);
-        let sep = options.sep.unwrap_or(",".to_owned());
-        let sep = sep.as_bytes()[0];
-        let quote = options.quote.unwrap_or(",".to_owned());
-        let quote = quote.as_bytes()[0];
-
+        let sep = options.sep.unwrap_or(",".to_owned()).as_bytes()[0];
+        let quote = options.quote.unwrap_or("\"".to_owned()).as_bytes()[0];
+        let include_bom = options.include_bom.unwrap_or(false);
+        let line_terminator = options.line_terminator.unwrap_or("\n".to_owned());
+        let batch_size = NonZeroUsize::new(options.batch_size.unwrap_or(1024) as usize);
+        let date_format = options.date_format;
+        let time_format = options.time_format;
+        let datetime_format = options.datetime_format;
+        let float_precision: Option<usize> = options.float_precision.map(|fp| fp as usize);
+        let null_value = options.null_value.unwrap_or(SerializeOptions::default().null);
+        
         match path_or_buffer.get_type()? {
             ValueType::String => {
                 let path: napi::JsString = unsafe { path_or_buffer.cast() };
@@ -1325,8 +1331,16 @@ impl JsDataFrame {
                 let f = std::fs::File::create(path).unwrap();
                 let f = BufWriter::new(f);
                 CsvWriter::new(f)
+                    .include_bom(include_bom)
                     .include_header(include_header)
                     .with_separator(sep)
+                    .with_line_terminator(line_terminator)
+                    .with_batch_size(batch_size.unwrap())
+                    .with_datetime_format(datetime_format)
+                    .with_date_format(date_format)
+                    .with_time_format(time_format)
+                    .with_float_precision(float_precision)
+                    .with_null_value(null_value)
                     .with_quote_char(quote)
                     .finish(&mut self.df)
                     .map_err(JsPolarsErr::from)?;
@@ -1336,8 +1350,16 @@ impl JsDataFrame {
                 let writeable = JsWriteStream { inner, env: &env };
 
                 CsvWriter::new(writeable)
+                    .include_bom(include_bom)
                     .include_header(include_header)
                     .with_separator(sep)
+                    .with_line_terminator(line_terminator)
+                    .with_batch_size(batch_size.unwrap())
+                    .with_datetime_format(datetime_format)
+                    .with_date_format(date_format)
+                    .with_time_format(time_format)
+                    .with_float_precision(float_precision)
+                    .with_null_value(null_value)
                     .with_quote_char(quote)
                     .finish(&mut self.df)
                     .map_err(JsPolarsErr::from)?;
