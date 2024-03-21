@@ -476,33 +476,54 @@ interface RowCount {
 }
 
 interface ScanParquetOptions {
-  columns?: string[] | number[];
-  numRows?: number;
+  nRows?: number;
+  cache?: boolean;
   parallel?: "auto" | "columns" | "row_groups" | "none";
   rowCount?: RowCount;
-  cache?: boolean;
   rechunk?: boolean;
-  hive_partitioning?: boolean;
+  lowMemory?: boolean;
+  useStatistics?: boolean;
+  hivePartitioning?: boolean;
+  cloudOptions?: Map<string, string>;
+  retries?: number;
 }
 
 /**
- * __Lazily read from a parquet file or multiple files via glob patterns.__
- * ___
- * This allows the query optimizer to push down predicates and projections to the scan level,
- * thereby potentially reducing memory overhead.
- * @param path Path to a file or or glob pattern
- * @param options.numRows Stop reading from parquet file after reading ``numRows``.
- * @param options.cache Cache the result after reading.
- * @param options.parallel Read the parquet file in parallel. The single threaded reader consumes less memory.
- * @param options.rechunk In case of reading multiple files via a glob pattern rechunk the final DataFrame into contiguous memory chunks.
- */
-export function scanParquet(path: string, options: ScanParquetOptions = {}) {
-  const pliOptions: any = {};
+ * Lazily read from a local or cloud-hosted parquet file (or files).
 
-  pliOptions.nRows = options?.numRows;
-  pliOptions.rowCount = options?.rowCount;
-  pliOptions.parallel = options?.parallel ?? "auto";
-  return _LazyDataFrame(pli.scanParquet(path, pliOptions));
+  This function allows the query optimizer to push down predicates and projections to
+  the scan level, typically increasing performance and reducing memory overhead.
+ 
+ * This allows the query optimizer to push down predicates and projections to the scan level,
+ * thereby potentially reducing memory overhead. 
+ * @param source - Path(s) to a file. If a single path is given, it can be a globbing pattern.
+   @param options.nRows - Stop reading from parquet file after reading `n_rows`.
+   @param options.rowIndexName - If not None, this will insert a row index column with the given name into the DataFrame
+   @param options.rowIndexOffset - Offset to start the row index column (only used if the name is set)
+   @param options.parallel : {'auto', 'columns', 'row_groups', 'none'}
+        This determines the direction of parallelism. 'auto' will try to determine the optimal direction.
+   @param options.useStatistics - Use statistics in the parquet to determine if pages can be skipped from reading.
+   @param options.hivePartitioning - Infer statistics and schema from hive partitioned URL and use them to prune reads.
+   @param options.rechunk - In case of reading multiple files via a glob pattern rechunk the final DataFrame into contiguous memory chunks.
+   @param options.lowMemory - Reduce memory pressure at the expense of performance.
+   @param options.cache - Cache the result after reading.
+   @param options.storageOptions - Options that indicate how to connect to a cloud provider.
+        If the cloud provider is not supported by Polars, the storage options are passed to `fsspec.open()`.
+
+        The cloud providers currently supported are AWS, GCP, and Azure.
+        See supported keys here:
+
+        * `aws <https://docs.rs/object_store/latest/object_store/aws/enum.AmazonS3ConfigKey.html>`_
+        * `gcp <https://docs.rs/object_store/latest/object_store/gcp/enum.GoogleConfigKey.html>`_
+        * `azure <https://docs.rs/object_store/latest/object_store/azure/enum.AzureConfigKey.html>`_
+
+        If `storage_options` is not provided, Polars will try to infer the information from environment variables.
+    @param retries - Number of retries if accessing a cloud instance fails.
+ */
+export function scanParquet(source: string, options: ScanParquetOptions = {}) {
+  const defaultOptions = { parallel: "auto" };
+  const pliOptions = { ...defaultOptions, ...options };
+  return _LazyDataFrame(pli.scanParquet(source, pliOptions));
 }
 
 export interface ReadIPCOptions {

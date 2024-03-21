@@ -709,11 +709,11 @@ pub struct ScanParquetOptions {
     pub parallel: Wrap<ParallelStrategy>,
     pub row_count: Option<JsRowCount>,
     pub rechunk: Option<bool>,
-    pub row_count_name: Option<String>,
-    pub row_count_offset: Option<u32>,
     pub low_memory: Option<bool>,
     pub use_statistics: Option<bool>,
     pub hive_partitioning: Option<bool>,
+    pub cloud_options: Option<HashMap::<String, String>>,
+    pub retries: Option<i64>,
 }
 
 #[napi(catch_unwind)]
@@ -725,7 +725,25 @@ pub fn scan_parquet(path: String, options: ScanParquetOptions) -> napi::Result<J
     let rechunk = options.rechunk.unwrap_or(false);
     let low_memory = options.low_memory.unwrap_or(false);
     let use_statistics = options.use_statistics.unwrap_or(false);
-    let cloud_options = Some(CloudOptions::default());
+    
+    let mut cloud_options: Option<CloudOptions> = if let Some(o) = options.cloud_options {
+        let co: Vec<(String, String)> = o.into_iter().map(|kv: (String, String)| kv).collect();
+        Some(CloudOptions::from_untyped_config(&path, co).map_err(JsPolarsErr::from)?)
+    } else {
+        None
+    };
+    
+    let retries = options.retries.unwrap_or_else(|| 2) as usize;
+    if retries > 0 {
+        cloud_options =
+            cloud_options
+                .or_else(|| Some(CloudOptions::default()))
+                .map(|mut options| {
+                    options.max_retries = retries;
+                    options
+                });
+    }
+
     let hive_partitioning: bool = options.hive_partitioning.unwrap_or(false);
     let args = ScanArgsParquet {
         n_rows,
