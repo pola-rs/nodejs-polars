@@ -28,6 +28,7 @@ pub mod series;
 pub mod set;
 pub mod utils;
 pub mod sql;
+pub mod delta;
 
 pub use polars_core;
 

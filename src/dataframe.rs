@@ -1,9 +1,12 @@
+use crate::delta::read_delta_table;
+use crate::export::JsLazyFrame;
 use crate::file::*;
 use crate::prelude::*;
 use crate::series::JsSeries;
 use napi::JsUnknown;
 use polars::frame::row::{infer_schema, Row};
 use polars::frame::NullStrategy;
+use polars_io::pl_async::get_runtime;
 use polars_io::RowIndex;
 
 use std::borrow::Borrow;
@@ -269,6 +272,29 @@ pub fn read_json(
         }
     };
     Ok(df.into())
+}
+
+#[napi(object)]
+pub struct ReadDeltaOptions {
+    pub version: Option<i64>,
+    pub columns: Option<Vec<String>>,
+    pub parallel: Wrap<ParallelStrategy>,
+}
+
+#[napi(catch_unwind)]
+pub fn read_delta(path: String,
+    options: ReadDeltaOptions
+) -> napi::Result<JsLazyFrame> {
+    let table: std::prelude::v1::Result<LazyFrame, deltalake::DeltaTableError> = get_runtime().block_on(async {
+        read_delta_table(&path, options).await
+    });
+
+    let ldf:LazyFrame = match table {
+        Ok(table) => table,
+        Err(err) => return Err(napi::Error::from_reason(err.to_string()))
+    };
+
+    Ok(LazyFrame::from(ldf).into())
 }
 
 #[napi(object)]

@@ -18,6 +18,8 @@ const ipcpath = path.resolve(__dirname, "./examples/foods.ipc");
 const jsonpath = path.resolve(__dirname, "./examples/foods.json");
 // eslint-disable-next-line no-undef
 const singlejsonpath = path.resolve(__dirname, "./examples/single_foods.json");
+// eslint-disable-next-line no-undef
+const deltapath = path.resolve(__dirname, "./examples/delta/sample.table");
 describe("read:csv", () => {
   it("can read from a csv file", () => {
     const df = pl.readCSV(csvpath);
@@ -232,6 +234,13 @@ describe("scan", () => {
     const df = pl.scanParquet(parquetpath).collectSync();
 
     expect(df.shape).toEqual({ height: 4, width: 4 });
+  });
+});
+
+describe("delta", () => {
+  test("delta:scan", async () => {
+    const df = await pl.readDelta(deltapath).collect();
+    expect(df.shape).toEqual({ height: 5, width: 4 });
   });
 });
 

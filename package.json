@@ -54,7 +54,7 @@
     "precommit": "yarn lint && yarn test"
   },
   "devDependencies": {
-    "@biomejs/biome": "^1.6.1",
+    "@biomejs/biome": "^1.6.2",
     "@napi-rs/cli": "^2.18.0",
     "@types/chance": "^1.1.6",
     "@types/jest": "^29.5.12",
@@ -65,7 +65,7 @@
     "ts-jest": "^29.1.2",
     "ts-node": "^10.9.2",
     "typedoc": "^0.25.12",
-    "typescript": "5.4.2"
+    "typescript": "5.4.3"
   },
   "packageManager": "yarn@4.0.2",
   "workspaces": [

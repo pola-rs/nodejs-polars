@@ -27,6 +27,7 @@ thiserror = "1"
 smartstring = { version = "1" }
 serde_json = { version = "1" }
 either = "1.9"
+deltalake = "0.17.1"
 
 [dependencies.polars]
 features = [

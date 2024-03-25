@@ -436,6 +436,32 @@ export function readParquet(
   throw new Error("must supply either a path or body");
 }
 
+interface ReadDeltaOptions {
+  version?: number;
+  columns?: string[];
+  parallel?: "auto" | "columns" | "row_groups" | "none";
+}
+
+/**
+ * Reads into a DataFrame from a Delta lake table.
+ * @param path - Path or URI to the root of the Delta lake table.
+ * @param option.version - Version of the Delta lake table. Note: If `version` is not provided, the latest version of delta lake
+ *   table is read.
+ * @param option.columns - Columns to select. Accepts a list of column names.
+ * @param options.parallel - Any of  'auto' | 'columns' |  'row_groups' | 'none'
+ *     This determines the direction of parallelism. 'auto' will try to determine the optimal direction.
+ *     Defaults to 'auto'
+ */
+
+export function readDelta(
+  path: string,
+  options: ReadDeltaOptions = {},
+): LazyDataFrame {
+  const parallel = options?.parallel ?? "auto";
+  options = { parallel, ...options };
+  return _LazyDataFrame(pli.readDelta(path, options));
+}
+
 export interface ReadAvroOptions {
   columns: string[] | Array<string> | number[];
   projection: number;
