@@ -1096,7 +1096,7 @@ export const _Expr = (_expr: any): Expr => {
         val?.["minPeriods"] ?? minPeriods ?? windowSize,
         val?.["center"] ?? center ?? false,
         val?.["by"] ?? by,
-        val?.["closedWindow"] ?? closedWindow ?? "left",
+        closedWindow,
         val?.["warnIfUnsorted"] ?? warnIfUnsorted ?? true,
       );
     },
