@@ -46,14 +46,15 @@ describe("groupby", () => {
     });
     expect(actual).toFrameEqual(expected);
   });
-
-  test("count", () => {
-    const actual = df.groupBy("name").count().sort("name");
+  test("len", () => {
+    let actual = df.groupBy("name").len().sort("name");
     const expected = pl.DataFrame({
       name: ["a", "b", "c"],
-      foo_count: [2, 2, 1],
-      bar_count: [2, 2, 1],
+      name_count: [2, 2, 1],
     });
+    expect(actual).toFrameEqual(expected);
+    // Test for single column DF
+    actual = df.select("name").groupBy("name").len().sort("name");
     expect(actual).toFrameEqual(expected);
   });
   test("first", () => {

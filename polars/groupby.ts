@@ -46,8 +46,13 @@ export interface GroupBy {
   agg(columns: Record<string, keyof Expr | (keyof Expr)[]>): DataFrame;
   /**
    * Count the number of values in each group.
+   * @deprecated @since 0.10.0 @use {@link len}
    */
   count(): DataFrame;
+  /**
+   * Return the number of rows in each group.
+   */
+  len(): DataFrame;
   /**
    * Aggregate the first values in the group.
    */
@@ -208,7 +213,10 @@ export function _GroupBy(df: any, by: string[], maintainOrder = false) {
     pivot,
     aggList: () => agg(exclude(by as any)),
     count() {
-      return _DataFrame(df.groupby([by].flat(), null, "count"));
+      return _DataFrame(df.groupby([by].flat(), by, "count"));
+    },
+    len() {
+      return _DataFrame(df.groupby([by].flat(), by, "count"));
     },
     first: () => agg(exclude(by as any).first()),
     groups() {
