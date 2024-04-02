@@ -782,6 +782,7 @@ pub fn scan_ipc(path: String, options: ScanIPCOptions) -> napi::Result<JsLazyFra
         rechunk,
         row_index,
         memmap,
+        cloud_options: Default::default(),
     };
     let lf = LazyFrame::scan_ipc(path, args).map_err(JsPolarsErr::from)?;
     Ok(lf.into())
