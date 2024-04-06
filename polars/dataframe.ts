@@ -1594,7 +1594,7 @@ export interface DataFrame
     includeHeader?: boolean;
     headerName?: string;
     columnNames?: Iterable<string>;
-  });
+  }): DataFrame;
   /**
    * Drop duplicate rows from this DataFrame.
    * Note that this fails if there is a column of type `List` in the DataFrame.
