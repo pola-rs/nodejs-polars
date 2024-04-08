@@ -1594,7 +1594,7 @@ export interface DataFrame
     includeHeader?: boolean;
     headerName?: string;
     columnNames?: Iterable<string>;
-  });
+  }): DataFrame;
   /**
    * Drop duplicate rows from this DataFrame.
    * Note that this fails if there is a column of type `List` in the DataFrame.
@@ -2521,7 +2521,7 @@ export const _DataFrame = (_df: any): DataFrame => {
       const headeName = options?.headerName ?? "column";
       const keep_names_as = includeHeader ? headeName : undefined;
       if (options?.columnNames) {
-        function takeNItems(iterable: Iterable<string>, n) {
+        function takeNItems(iterable: Iterable<string>, n: number) {
           const result: Array<string> = [];
           let i = 0;
           for (const item of iterable) {
@@ -2534,7 +2534,7 @@ export const _DataFrame = (_df: any): DataFrame => {
           return result;
         }
         options.columnNames = Array.isArray(options.columnNames)
-          ? options.columnNames.slice(this.height)
+          ? options.columnNames.slice(0, this.height)
           : takeNItems(options.columnNames, this.height);
       }
       if (!options?.columnNames) {

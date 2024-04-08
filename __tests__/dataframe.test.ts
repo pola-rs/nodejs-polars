@@ -1104,6 +1104,22 @@ describe("dataframe", () => {
     const actual = df.transpose({ includeHeader: false, columnNames: "abc" });
     expect(actual).toFrameEqual(expected);
   });
+  test("transpose:columnNames:array", () => {
+    const expected = pl.DataFrame({
+      a: [1, 1],
+      b: [2, 2],
+      c: [3, 3],
+    });
+    const df = pl.DataFrame({
+      a: [1, 2, 3],
+      b: [1, 2, 3],
+    });
+    const actual = df.transpose({
+      includeHeader: false,
+      columnNames: ["a", "b", "c"],
+    });
+    expect(actual).toFrameEqual(expected);
+  });
   test("transpose:columnNames:generator", () => {
     const expected = pl.DataFrame({
       col_0: [1, 1],
