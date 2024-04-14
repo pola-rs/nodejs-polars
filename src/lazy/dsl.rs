@@ -301,34 +301,23 @@ impl JsExpr {
     }
 
     #[napi(catch_unwind)]
-    pub fn sort_with(
-        &self,
-        descending: bool,
-        nulls_last: bool,
-        multithreaded: bool,
-        maintain_order: bool,
-    ) -> JsExpr {
+    pub fn sort_with(&self, descending: bool, nulls_last: bool, maintain_order: bool) -> JsExpr {
         self.clone()
             .inner
-            .sort_with(SortOptions {
-                descending,
-                nulls_last,
-                multithreaded,
-                maintain_order,
-            })
+            .sort(
+                SortOptions::default()
+                    .with_order_descending(descending)
+                    .with_nulls_last(nulls_last)
+                    .with_maintain_order(maintain_order),
+            )
             .into()
     }
 
     #[napi(catch_unwind)]
-    pub fn arg_sort(&self, reverse: bool, multithreaded: bool, maintain_order: bool) -> JsExpr {
+    pub fn arg_sort(&self, descending: bool) -> JsExpr {
         self.clone()
             .inner
-            .arg_sort(SortOptions {
-                descending: reverse,
-                nulls_last: true,
-                multithreaded,
-                maintain_order,
-            })
+            .arg_sort(SortOptions::default().with_order_descending(descending))
             .into()
     }
     #[napi(catch_unwind)]
@@ -343,17 +332,20 @@ impl JsExpr {
     pub fn gather(&self, idx: &JsExpr) -> JsExpr {
         self.clone().inner.gather(idx.inner.clone()).into()
     }
-
     #[napi(catch_unwind)]
     pub fn sort_by(&self, by: Vec<&JsExpr>, reverse: Vec<bool>) -> JsExpr {
-        let by = by.to_exprs();
-        self.clone().inner.sort_by(by, reverse).into()
+        self.clone()
+            .inner
+            .sort_by(
+                by.to_exprs(),
+                SortMultipleOptions::default().with_order_descendings(reverse),
+            )
+            .into()
     }
     #[napi(catch_unwind)]
     pub fn backward_fill(&self) -> JsExpr {
         self.clone().inner.backward_fill(None).into()
     }
-
     #[napi(catch_unwind)]
     pub fn forward_fill(&self) -> JsExpr {
         self.clone().inner.forward_fill(None).into()
@@ -1204,8 +1196,12 @@ impl JsExpr {
         self.inner.clone().list().len().into()
     }
     #[napi(catch_unwind)]
-    pub fn list_get(&self, index: &JsExpr) -> JsExpr {
-        self.inner.clone().list().get(index.inner.clone()).into()
+    pub fn list_get(&self, index: &JsExpr, null_on_oob: bool) -> JsExpr {
+        self.inner
+            .clone()
+            .list()
+            .get(index.inner.clone(), null_on_oob)
+            .into()
     }
     #[napi(catch_unwind)]
     pub fn list_join(&self, separator: &JsExpr, ignore_nulls: bool) -> JsExpr {
@@ -1625,7 +1621,11 @@ pub fn cov(a: Wrap<Expr>, b: Wrap<Expr>, ddof: u8) -> JsExpr {
 #[cfg(feature = "range")]
 pub fn arg_sort_by(by: Vec<&JsExpr>, descending: Vec<bool>) -> JsExpr {
     let by = by.to_exprs();
-    polars::lazy::dsl::arg_sort_by(by, &descending).into()
+    polars::lazy::dsl::arg_sort_by(
+        by,
+        SortMultipleOptions::default().with_order_descendings(descending),
+    )
+    .into()
 }
 
 #[napi(catch_unwind)]

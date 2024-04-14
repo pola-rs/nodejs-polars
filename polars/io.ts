@@ -483,7 +483,6 @@ interface ScanParquetOptions {
   rechunk?: boolean;
   lowMemory?: boolean;
   useStatistics?: boolean;
-  hivePartitioning?: boolean;
   cloudOptions?: Map<string, string>;
   retries?: number;
 }

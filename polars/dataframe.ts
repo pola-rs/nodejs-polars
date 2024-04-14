@@ -2337,7 +2337,6 @@ export const _DataFrame = (_df: any): DataFrame => {
       if (typeof opts === "number") {
         return wrap("slice", opts, length);
       }
-
       return wrap("slice", opts.offset, opts.length);
     },
     sort(arg, descending = false, maintain_order = false) {
@@ -2350,8 +2349,7 @@ export const _DataFrame = (_df: any): DataFrame => {
           .sort(arg, descending, maintain_order)
           .collectSync({ noOptimization: true, stringCache: false });
       }
-
-      return wrap("sort", arg, descending, maintain_order, true, false);
+      return wrap("sort", arg, descending, true, maintain_order);
     },
     std() {
       return this.lazy().std().collectSync();

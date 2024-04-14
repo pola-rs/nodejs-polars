@@ -49,9 +49,9 @@ export const ExprListFunctions = (_expr: any): ExprList => {
     },
     get(index: number | Expr) {
       if (Expr.isExpr(index)) {
-        return wrap("listGet", index._expr);
+        return wrap("listGet", index._expr, true);
       }
-      return wrap("listGet", pli.lit(index));
+      return wrap("listGet", pli.lit(index), true);
     },
     head(n = 5) {
       return this.slice(0, n);

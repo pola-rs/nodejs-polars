@@ -962,12 +962,10 @@ export const _LazyDataFrame = (_ldf: any): LazyDataFrame => {
         return this.sort(arg.by, arg.descending, arg.maintain_order);
       }
       if (typeof arg === "string") {
-        return wrap("sort", arg, descending, maintain_order, true, false);
+        return wrap("sort", arg, descending, true, maintain_order);
       }
-      descending = [descending].flat(3) as any;
       const by = selectionToExprList(arg, false);
-
-      return wrap("sortByExprs", by, descending, maintain_order, true);
+      return wrap("sortByExprs", by, descending, true, maintain_order);
     },
     std() {
       return _LazyDataFrame(_ldf.std());

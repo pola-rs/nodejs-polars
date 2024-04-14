@@ -490,8 +490,16 @@ impl JsSeries {
     }
 
     #[napi(catch_unwind)]
-    pub unsafe fn sort(&mut self, descending: bool, nulls_last: bool) -> Self {
-        self.series.sort(descending, nulls_last).into()
+    pub unsafe fn sort(&mut self, descending: bool, nulls_last: bool) -> napi::Result<JsSeries> {
+        let sorted: Series = self
+            .series
+            .sort(
+                SortOptions::default()
+                    .with_order_descending(descending)
+                    .with_nulls_last(nulls_last),
+            )
+            .map_err(JsPolarsErr::from)?;
+        Ok(sorted.into())
     }
 
     #[napi]
