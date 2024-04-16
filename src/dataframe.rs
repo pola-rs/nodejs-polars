@@ -773,19 +773,16 @@ impl JsDataFrame {
         by_column: String,
         descending: bool,
         nulls_last: bool,
-        multithreaded: bool,
         maintain_order: bool,
     ) -> napi::Result<JsDataFrame> {
         let df = self
             .df
-            .sort_with_options(
-                &by_column,
-                SortOptions {
-                    descending,
-                    nulls_last,
-                    multithreaded,
-                    maintain_order,
-                },
+            .sort(
+                [&by_column],
+                SortMultipleOptions::default()
+                    .with_order_descending(descending)
+                    .with_nulls_last(nulls_last)
+                    .with_maintain_order(maintain_order),
             )
             .map_err(JsPolarsErr::from)?;
         Ok(JsDataFrame::new(df))
@@ -798,7 +795,12 @@ impl JsDataFrame {
         maintain_order: bool,
     ) -> napi::Result<()> {
         self.df
-            .sort_in_place([&by_column], descending, maintain_order)
+            .sort_in_place(
+                [&by_column],
+                SortMultipleOptions::default()
+                    .with_order_descending(descending)
+                    .with_maintain_order(maintain_order),
+            )
             .map_err(JsPolarsErr::from)?;
         Ok(())
     }
@@ -1321,8 +1323,10 @@ impl JsDataFrame {
         let time_format = options.time_format;
         let datetime_format = options.datetime_format;
         let float_precision: Option<usize> = options.float_precision.map(|fp| fp as usize);
-        let null_value = options.null_value.unwrap_or(SerializeOptions::default().null);
-        
+        let null_value = options
+            .null_value
+            .unwrap_or(SerializeOptions::default().null);
+
         match path_or_buffer.get_type()? {
             ValueType::String => {
                 let path: napi::JsString = unsafe { path_or_buffer.cast() };

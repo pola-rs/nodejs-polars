@@ -13,20 +13,20 @@ repository = "https://github.com/pola-rs/nodejs-polars"
 crate-type = ["cdylib", "lib"]
 
 [dependencies]
-ahash = "0.8.7"
+ahash = "0.8.11"
 bincode = "1.3.3"
-napi = { version = "2.16.1", default-features = false, features = [
+napi = { version = "2.16.2", default-features = false, features = [
     "napi8",
     "serde-json",
 ] }
-napi-derive = { version = "2.16.1", default-features = false }
-polars-core = { git = "https://github.com/pola-rs/polars.git", rev = "3e2cab8de39b2721ce3830c3958b3b0796b32258", default-features = false }
-polars-io = { git = "https://github.com/pola-rs/polars.git", rev = "3e2cab8de39b2721ce3830c3958b3b0796b32258", default-features = false }
-polars-lazy = { git = "https://github.com/pola-rs/polars.git", rev = "3e2cab8de39b2721ce3830c3958b3b0796b32258", default-features = false }
+napi-derive = { version = "2.16.2", default-features = false }
+polars-core = { git = "https://github.com/pola-rs/polars.git", rev = "37c630320da0d0d3270d283cdafbf6b8402de069", default-features = false }
+polars-io = { git = "https://github.com/pola-rs/polars.git", rev = "37c630320da0d0d3270d283cdafbf6b8402de069", default-features = false }
+polars-lazy = { git = "https://github.com/pola-rs/polars.git", rev = "37c630320da0d0d3270d283cdafbf6b8402de069", default-features = false }
 thiserror = "1"
 smartstring = { version = "1" }
 serde_json = { version = "1" }
-either = "1.10.0"
+either = "1.11.0"
 
 [dependencies.polars]
 features = [
@@ -91,7 +91,6 @@ features = [
   "peaks",
   "string_pad",
   "cov",
-  "group_by_list",
   "sql",
   "binary_encoding",
   "rolling_window",
@@ -154,7 +153,6 @@ features = [
   "peaks",
   "string_pad",
   "cov",
-  "group_by_list",
   "http",
   "cloud",
   "aws",
@@ -162,10 +160,10 @@ features = [
   "azure"
 ]
 git = "https://github.com/pola-rs/polars.git"
-rev = "3e2cab8de39b2721ce3830c3958b3b0796b32258"
+rev = "37c630320da0d0d3270d283cdafbf6b8402de069"
 
 [build-dependencies]
-napi-build = "2.1.2"
+napi-build = "2.1.3"
 
 [profile.release]
 codegen-units = 1

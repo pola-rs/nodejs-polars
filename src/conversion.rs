@@ -568,7 +568,7 @@ pub struct WriteCsvOptions {
     pub date_format: Option<String>,
     pub time_format: Option<String>,
     pub float_precision: Option<i64>,
-    pub null_value: Option<String>
+    pub null_value: Option<String>,
 }
 
 #[napi(object)]

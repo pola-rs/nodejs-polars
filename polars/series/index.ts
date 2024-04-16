@@ -1686,7 +1686,6 @@ export function _Series(_s: any): Series {
     },
     sort(options?) {
       options = { descending: false, nullsLast: false, ...(options ?? {}) };
-
       return wrap("sort", options.descending, options.nullsLast);
     },
     sub(field) {

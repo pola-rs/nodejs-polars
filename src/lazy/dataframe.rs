@@ -3,7 +3,7 @@ use crate::dataframe::JsDataFrame;
 use crate::prelude::*;
 use polars::prelude::{col, lit, ClosedWindow, JoinType};
 use polars_io::cloud::CloudOptions;
-use polars_io::RowIndex;
+use polars_io::{HiveOptions, RowIndex};
 use std::collections::HashMap;
 use std::num::NonZeroUsize;
 use std::path::PathBuf;
@@ -134,20 +134,17 @@ impl JsLazyFrame {
     pub fn sort(
         &self,
         by_column: String,
-        reverse: bool,
+        descending: bool,
         nulls_last: bool,
-        multithreaded: bool,
         maintain_order: bool,
     ) -> JsLazyFrame {
         let ldf = self.ldf.clone();
         ldf.sort(
-            &by_column,
-            SortOptions {
-                descending: reverse,
-                nulls_last,
-                multithreaded,
-                maintain_order,
-            },
+            [&by_column],
+            SortMultipleOptions::default()
+                .with_order_descending(descending)
+                .with_nulls_last(nulls_last)
+                .with_maintain_order(maintain_order),
         )
         .into()
     }
@@ -155,13 +152,19 @@ impl JsLazyFrame {
     pub fn sort_by_exprs(
         &self,
         by_column: Vec<&JsExpr>,
-        reverse: Vec<bool>,
+        descending: bool,
         nulls_last: bool,
         maintain_order: bool,
     ) -> JsLazyFrame {
         let ldf = self.ldf.clone();
-        ldf.sort_by_exprs(by_column.to_exprs(), reverse, nulls_last, maintain_order)
-            .into()
+        ldf.sort_by_exprs(
+            by_column.to_exprs(),
+            SortMultipleOptions::default()
+                .with_order_descending(descending)
+                .with_nulls_last(nulls_last)
+                .with_maintain_order(maintain_order),
+        )
+        .into()
     }
     #[napi(catch_unwind)]
     pub fn cache(&self) -> JsLazyFrame {
@@ -229,7 +232,7 @@ impl JsLazyFrame {
         let closed_window = closed.0;
         let ldf = self.ldf.clone();
         let by = by.to_exprs();
-        let lazy_gb = ldf.group_by_rolling(
+        let lazy_gb = ldf.rolling(
             index_column.inner.clone(),
             by,
             RollingGroupOptions {
@@ -711,8 +714,7 @@ pub struct ScanParquetOptions {
     pub rechunk: Option<bool>,
     pub low_memory: Option<bool>,
     pub use_statistics: Option<bool>,
-    pub hive_partitioning: Option<bool>,
-    pub cloud_options: Option<HashMap::<String, String>>,
+    pub cloud_options: Option<HashMap<String, String>>,
     pub retries: Option<i64>,
 }
 
@@ -725,14 +727,14 @@ pub fn scan_parquet(path: String, options: ScanParquetOptions) -> napi::Result<J
     let rechunk = options.rechunk.unwrap_or(false);
     let low_memory = options.low_memory.unwrap_or(false);
     let use_statistics = options.use_statistics.unwrap_or(false);
-    
+
     let mut cloud_options: Option<CloudOptions> = if let Some(o) = options.cloud_options {
         let co: Vec<(String, String)> = o.into_iter().map(|kv: (String, String)| kv).collect();
         Some(CloudOptions::from_untyped_config(&path, co).map_err(JsPolarsErr::from)?)
     } else {
         None
     };
-    
+
     let retries = options.retries.unwrap_or_else(|| 2) as usize;
     if retries > 0 {
         cloud_options =
@@ -744,7 +746,6 @@ pub fn scan_parquet(path: String, options: ScanParquetOptions) -> napi::Result<J
                 });
     }
 
-    let hive_partitioning: bool = options.hive_partitioning.unwrap_or(false);
     let args = ScanArgsParquet {
         n_rows,
         cache,
@@ -754,7 +755,11 @@ pub fn scan_parquet(path: String, options: ScanParquetOptions) -> napi::Result<J
         low_memory,
         cloud_options,
         use_statistics,
-        hive_partitioning,
+        // TODO: Support Hive partitioning.
+        hive_options: HiveOptions {
+            enabled: false,
+            ..Default::default()
+        },
     };
     let lf = LazyFrame::scan_parquet(path, args).map_err(JsPolarsErr::from)?;
     Ok(lf.into())
@@ -774,14 +779,14 @@ pub fn scan_ipc(path: String, options: ScanIPCOptions) -> napi::Result<JsLazyFra
     let n_rows = options.n_rows.map(|i| i as usize);
     let cache = options.cache.unwrap_or(true);
     let rechunk = options.rechunk.unwrap_or(false);
-    let memmap = options.memmap.unwrap_or(true);
+    let memory_map = options.memmap.unwrap_or(true);
     let row_index: Option<RowIndex> = options.row_count.map(|rc| rc.into());
     let args = ScanArgsIpc {
         n_rows,
         cache,
         rechunk,
         row_index,
-        memmap,
+        memory_map,
         cloud_options: Default::default(),
     };
     let lf = LazyFrame::scan_ipc(path, args).map_err(JsPolarsErr::from)?;
