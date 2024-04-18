@@ -104,7 +104,7 @@ describe("expr", () => {
   });
   test("cot", () => {
     const df = pl.DataFrame({ a: [1, 2, 3] });
-    const expected = pl.DataFrame({ cot: [0.642093,-0.457658,-7.015253] });
+    const expected = pl.DataFrame({ cot: [0.642093, -0.457658, -7.015253] });
     const actual = df.select(col("a").cot().round(6).as("cot"));
     expect(actual).toFrameEqual(expected);
   });

@@ -688,7 +688,7 @@ export interface Expr
     └──────────┘
    *```
    */
-   sinh(): Expr;
+  sinh(): Expr;
   /**
    * Compute the sample skewness of a data set.
    * For normally distributed data, the skewness should be about zero. For
@@ -785,7 +785,7 @@ export interface Expr
     └──────────┘
    *```
    */
-   tanh(): Expr;
+  tanh(): Expr;
   /**
    * Get the unique values of this expression;
    * @param maintainOrder Maintain order of data. This requires more work.
