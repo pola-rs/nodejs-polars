@@ -102,6 +102,12 @@ describe("expr", () => {
     const actual = df.select(col("a").cos().round(6).as("cos"));
     expect(actual).toFrameEqual(expected);
   });
+  test("cot", () => {
+    const df = pl.DataFrame({ a: [1, 2, 3] });
+    const expected = pl.DataFrame({ cot: [0.642093,-0.457658,-7.015253] });
+    const actual = df.select(col("a").cot().round(6).as("cot"));
+    expect(actual).toFrameEqual(expected);
+  });
   test("count", () => {
     const df = pl.DataFrame({ a: [1, 0, 3, 4, 6, 0] });
     const expected = pl.DataFrame({ a: [6] });

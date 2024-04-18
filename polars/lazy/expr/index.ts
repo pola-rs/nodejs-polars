@@ -185,6 +185,42 @@ export interface Expr
    * ```
    */
   cos(): Expr;
+  /**
+   * Compute the element-wise value for the hyperbolic cosine.
+   * @returns Expression of data type :class:`Float64`.
+   * @example
+   * ```
+      >>> const df = pl.DataFrame({"a": [1.0]})
+      >>> df.select(pl.col("a").cosh())
+      shape: (1, 1)
+      ┌──────────┐
+      │ a        │
+      │ ---      │
+      │ f64      │
+      ╞══════════╡
+      │ 1.543081 │
+      └──────────┘
+   * ```
+   */
+  cosh(): Expr;
+  /**
+   * Compute the element-wise value for the cotangent.
+   * @returns Expression of data type :class:`Float64`.
+   * @example
+   * ```
+    >>> const df = pl.DataFrame({"a": [1.0]})
+    >>> df.select(pl.col("a").cot().round(2))
+    shape: (1, 1)
+    ┌──────┐
+    │ a    │
+    │ ---  │
+    │ f64  │
+    ╞══════╡
+    │ 0.64 │
+    └──────┘
+   * ```
+   */
+  cot(): Expr;
   /** Count the number of values in this expression */
   count(): Expr;
   /** Calculate the n-th discrete difference.
@@ -636,6 +672,24 @@ export interface Expr
    */
   sin(): Expr;
   /**
+   * Compute the element-wise value for the hyperbolic sine.
+   * @returns Expression of data type :class:`Float64`.
+   * @example
+   * ```
+    >>> const df = pl.DataFrame({"a": [1.0]})
+    >>> df.select(pl.col("a").sinh())
+    shape: (1, 1)
+    ┌──────────┐
+    │ a        │
+    │ ---      │
+    │ f64      │
+    ╞══════════╡
+    │ 1.175201 │
+    └──────────┘
+   *```
+   */
+   sinh(): Expr;
+  /**
    * Compute the sample skewness of a data set.
    * For normally distributed data, the skewness should be about zero. For
    * unimodal continuous distributions, a skewness value greater than zero means
@@ -714,6 +768,24 @@ export interface Expr
    *```
    */
   tan(): Expr;
+  /**
+   * Compute the element-wise value for the hyperbolic tangent.
+   * @returns Expression of data type :class:`Float64`.
+   * @example
+   *```
+    >>> const df = pl.DataFrame({"a": [1.0]})
+    >>> df.select(pl.col("a").tanh())
+    shape: (1, 1)
+    ┌──────────┐
+    │ a        │
+    │ ---      │
+    │ f64      │
+    ╞══════════╡
+    │ 0.761594 │
+    └──────────┘
+   *```
+   */
+   tanh(): Expr;
   /**
    * Get the unique values of this expression;
    * @param maintainOrder Maintain order of data. This requires more work.
@@ -853,6 +925,12 @@ export const _Expr = (_expr: any): Expr => {
     },
     cos() {
       return _Expr(_expr.cos());
+    },
+    cosh() {
+      return _Expr(_expr.cosh());
+    },
+    cot() {
+      return _Expr(_expr.cot());
     },
     count() {
       return _Expr(_expr.count());
@@ -1307,6 +1385,9 @@ export const _Expr = (_expr: any): Expr => {
     sin() {
       return _Expr(_expr.sin());
     },
+    sinh() {
+      return _Expr(_expr.sinh());
+    },
     slice(arg, len?) {
       if (typeof arg === "number") {
         return wrap("slice", pli.lit(arg), pli.lit(len));
@@ -1351,6 +1432,9 @@ export const _Expr = (_expr: any): Expr => {
     },
     tan() {
       return _Expr(_expr.tan());
+    },
+    tanh() {
+      return _Expr(_expr.tanh());
     },
     unique(opt?) {
       if (opt || opt?.maintainOrder) {
