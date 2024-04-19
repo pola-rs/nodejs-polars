@@ -15,14 +15,14 @@ crate-type = ["cdylib", "lib"]
 [dependencies]
 ahash = "0.8.11"
 bincode = "1.3.3"
-napi = { version = "2.16.2", default-features = false, features = [
+napi = { version = "2.16.4", default-features = false, features = [
     "napi8",
     "serde-json",
 ] }
-napi-derive = { version = "2.16.2", default-features = false }
-polars-core = { git = "https://github.com/pola-rs/polars.git", rev = "37c630320da0d0d3270d283cdafbf6b8402de069", default-features = false }
-polars-io = { git = "https://github.com/pola-rs/polars.git", rev = "37c630320da0d0d3270d283cdafbf6b8402de069", default-features = false }
-polars-lazy = { git = "https://github.com/pola-rs/polars.git", rev = "37c630320da0d0d3270d283cdafbf6b8402de069", default-features = false }
+napi-derive = { version = "2.16.3", default-features = false }
+polars-core = { git = "https://github.com/pola-rs/polars.git", rev = "4c57688d204fad3d0d5e4586ecd0405ead7baeb2", default-features = false }
+polars-io = { git = "https://github.com/pola-rs/polars.git", rev = "4c57688d204fad3d0d5e4586ecd0405ead7baeb2", default-features = false }
+polars-lazy = { git = "https://github.com/pola-rs/polars.git", rev = "4c57688d204fad3d0d5e4586ecd0405ead7baeb2", default-features = false }
 thiserror = "1"
 smartstring = { version = "1" }
 serde_json = { version = "1" }
@@ -160,7 +160,7 @@ features = [
   "azure"
 ]
 git = "https://github.com/pola-rs/polars.git"
-rev = "37c630320da0d0d3270d283cdafbf6b8402de069"
+rev = "4c57688d204fad3d0d5e4586ecd0405ead7baeb2"
 
 [build-dependencies]
 napi-build = "2.1.3"

@@ -408,18 +408,18 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@biomejs/biome@npm:^1.6.4":
-  version: 1.6.4
-  resolution: "@biomejs/biome@npm:1.6.4"
+"@biomejs/biome@npm:^1.7.0":
+  version: 1.7.0
+  resolution: "@biomejs/biome@npm:1.7.0"
   dependencies:
-    "@biomejs/cli-darwin-arm64": 1.6.4
-    "@biomejs/cli-darwin-x64": 1.6.4
-    "@biomejs/cli-linux-arm64": 1.6.4
-    "@biomejs/cli-linux-arm64-musl": 1.6.4
-    "@biomejs/cli-linux-x64": 1.6.4
-    "@biomejs/cli-linux-x64-musl": 1.6.4
-    "@biomejs/cli-win32-arm64": 1.6.4
-    "@biomejs/cli-win32-x64": 1.6.4
+    "@biomejs/cli-darwin-arm64": 1.7.0
+    "@biomejs/cli-darwin-x64": 1.7.0
+    "@biomejs/cli-linux-arm64": 1.7.0
+    "@biomejs/cli-linux-arm64-musl": 1.7.0
+    "@biomejs/cli-linux-x64": 1.7.0
+    "@biomejs/cli-linux-x64-musl": 1.7.0
+    "@biomejs/cli-win32-arm64": 1.7.0
+    "@biomejs/cli-win32-x64": 1.7.0
   dependenciesMeta:
     "@biomejs/cli-darwin-arm64":
       optional: true
@@ -439,62 +439,62 @@ __metadata:
       optional: true
   bin:
     biome: bin/biome
-  checksum: c8b28b3e0dfa9fe5033ffec9ac923e3ef9f5fd20ad451f4cb04dfc19981e7b97acc7cd63709d91cb1c93dc58b742513d0b68674c040b8b9f1f25e0c5c7289fc2
+  checksum: 10db050e5b96a9bdc9720f2d53dff41761858b5ba4a542988fc8bd1824e1c1ba68e4f30ceedd30c2b2f3639b96f9d15cef9b6472fad31f429f308e9b9ec610e4
   languageName: node
   linkType: hard
 
-"@biomejs/cli-darwin-arm64@npm:1.6.4":
-  version: 1.6.4
-  resolution: "@biomejs/cli-darwin-arm64@npm:1.6.4"
+"@biomejs/cli-darwin-arm64@npm:1.7.0":
+  version: 1.7.0
+  resolution: "@biomejs/cli-darwin-arm64@npm:1.7.0"
   conditions: os=darwin & cpu=arm64
   languageName: node
   linkType: hard
 
-"@biomejs/cli-darwin-x64@npm:1.6.4":
-  version: 1.6.4
-  resolution: "@biomejs/cli-darwin-x64@npm:1.6.4"
+"@biomejs/cli-darwin-x64@npm:1.7.0":
+  version: 1.7.0
+  resolution: "@biomejs/cli-darwin-x64@npm:1.7.0"
   conditions: os=darwin & cpu=x64
   languageName: node
   linkType: hard
 
-"@biomejs/cli-linux-arm64-musl@npm:1.6.4":
-  version: 1.6.4
-  resolution: "@biomejs/cli-linux-arm64-musl@npm:1.6.4"
+"@biomejs/cli-linux-arm64-musl@npm:1.7.0":
+  version: 1.7.0
+  resolution: "@biomejs/cli-linux-arm64-musl@npm:1.7.0"
   conditions: os=linux & cpu=arm64 & libc=musl
   languageName: node
   linkType: hard
 
-"@biomejs/cli-linux-arm64@npm:1.6.4":
-  version: 1.6.4
-  resolution: "@biomejs/cli-linux-arm64@npm:1.6.4"
+"@biomejs/cli-linux-arm64@npm:1.7.0":
+  version: 1.7.0
+  resolution: "@biomejs/cli-linux-arm64@npm:1.7.0"
   conditions: os=linux & cpu=arm64 & libc=glibc
   languageName: node
   linkType: hard
 
-"@biomejs/cli-linux-x64-musl@npm:1.6.4":
-  version: 1.6.4
-  resolution: "@biomejs/cli-linux-x64-musl@npm:1.6.4"
+"@biomejs/cli-linux-x64-musl@npm:1.7.0":
+  version: 1.7.0
+  resolution: "@biomejs/cli-linux-x64-musl@npm:1.7.0"
   conditions: os=linux & cpu=x64 & libc=musl
   languageName: node
   linkType: hard
 
-"@biomejs/cli-linux-x64@npm:1.6.4":
-  version: 1.6.4
-  resolution: "@biomejs/cli-linux-x64@npm:1.6.4"
+"@biomejs/cli-linux-x64@npm:1.7.0":
+  version: 1.7.0
+  resolution: "@biomejs/cli-linux-x64@npm:1.7.0"
   conditions: os=linux & cpu=x64 & libc=glibc
   languageName: node
   linkType: hard
 
-"@biomejs/cli-win32-arm64@npm:1.6.4":
-  version: 1.6.4
-  resolution: "@biomejs/cli-win32-arm64@npm:1.6.4"
+"@biomejs/cli-win32-arm64@npm:1.7.0":
+  version: 1.7.0
+  resolution: "@biomejs/cli-win32-arm64@npm:1.7.0"
   conditions: os=win32 & cpu=arm64
   languageName: node
   linkType: hard
 
-"@biomejs/cli-win32-x64@npm:1.6.4":
-  version: 1.6.4
-  resolution: "@biomejs/cli-win32-x64@npm:1.6.4"
+"@biomejs/cli-win32-x64@npm:1.7.0":
+  version: 1.7.0
+  resolution: "@biomejs/cli-win32-x64@npm:1.7.0"
   conditions: os=win32 & cpu=x64
   languageName: node
   linkType: hard
@@ -824,12 +824,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@napi-rs/cli@npm:^2.18.1":
-  version: 2.18.1
-  resolution: "@napi-rs/cli@npm:2.18.1"
+"@napi-rs/cli@npm:^2.18.2":
+  version: 2.18.2
+  resolution: "@napi-rs/cli@npm:2.18.2"
   bin:
     napi: scripts/index.js
-  checksum: a52b83dc105c782875a963b5c244dd02e336f31b6b0b5ac3a12d7488fb710890ff248f876130881264b2b403f8e26726a8e32b017bd8803f9bc9bd7ea0a1c4d2
+  checksum: 2020de215aeb9174a71f1bdac4ba7bac18a8483e35e44a0f78361fceb1a9aaa8fd8153dd5c0aa9a9c37ffadb50bfaa3d6794988c45da7f752c82af9bbc43be69
   languageName: node
   linkType: hard
 
@@ -3004,8 +3004,8 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "nodejs-polars@workspace:."
   dependencies:
-    "@biomejs/biome": ^1.6.4
-    "@napi-rs/cli": ^2.18.1
+    "@biomejs/biome": ^1.7.0
+    "@napi-rs/cli": ^2.18.2
     "@types/chance": ^1.1.6
     "@types/jest": ^29.5.12
     "@types/node": ^20.12.7

@@ -54,8 +54,8 @@
     "precommit": "yarn lint && yarn test"
   },
   "devDependencies": {
-    "@biomejs/biome": "^1.6.4",
-    "@napi-rs/cli": "^2.18.1",
+    "@biomejs/biome": "^1.7.0",
+    "@napi-rs/cli": "^2.18.2",
     "@types/chance": "^1.1.6",
     "@types/jest": "^29.5.12",
     "@types/node": "^20.12.7",

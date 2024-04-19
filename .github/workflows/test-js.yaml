@@ -18,7 +18,7 @@ jobs:
       - name: Install latest Rust nightly
         uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: nightly-2024-03-28
+          toolchain: nightly-2024-04-15
           components: rustfmt, clippy
       - run: yarn --version
       - name: Install Node Dependencies
@@ -43,7 +43,7 @@ jobs:
       - name: Install latest Rust nightly
         uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: nightly-2024-03-28
+          toolchain: nightly-2024-04-15
           components: rustfmt, clippy
       - name: Bun version
         uses: oven-sh/setup-bun@v1
