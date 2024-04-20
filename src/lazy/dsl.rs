@@ -491,6 +491,70 @@ impl JsExpr {
         self.clone().inner.abs().into()
     }
     #[napi(catch_unwind)]
+    pub fn sin(&self) -> Self {
+        self.inner.clone().sin().into()
+    }
+    #[napi(catch_unwind)]
+    pub fn cos(&self) -> Self {
+        self.inner.clone().cos().into()
+    }
+    #[napi(catch_unwind)]
+    pub fn tan(&self) -> Self {
+        self.inner.clone().tan().into()
+    }
+    #[napi(catch_unwind)]
+    pub fn cot(&self) -> Self {
+        self.inner.clone().cot().into()
+    }
+    #[napi(catch_unwind)]
+    pub fn arcsin(&self) -> Self {
+        self.inner.clone().arcsin().into()
+    }
+    #[napi(catch_unwind)]
+    pub fn arccos(&self) -> Self {
+        self.inner.clone().arccos().into()
+    }
+    #[napi(catch_unwind)]
+    pub fn arctan(&self) -> Self {
+        self.inner.clone().arctan().into()
+    }
+    #[napi(catch_unwind)]
+    pub fn arctan2(&self, y: &JsExpr) -> Self {
+        self.inner.clone().arctan2(y.inner.clone()).into()
+    }
+    #[napi(catch_unwind)]
+    pub fn sinh(&self) -> Self {
+        self.inner.clone().sinh().into()
+    }
+    #[napi(catch_unwind)]
+    pub fn cosh(&self) -> Self {
+        self.inner.clone().cosh().into()
+    }
+    #[napi(catch_unwind)]
+    pub fn tanh(&self) -> Self {
+        self.inner.clone().tanh().into()
+    }
+    #[napi(catch_unwind)]
+    pub fn arcsinh(&self) -> Self {
+        self.inner.clone().arcsinh().into()
+    }
+    #[napi(catch_unwind)]
+    pub fn arccosh(&self) -> Self {
+        self.inner.clone().arccosh().into()
+    }
+    #[napi(catch_unwind)]
+    pub fn arctanh(&self) -> Self {
+        self.inner.clone().arctanh().into()
+    }
+    #[napi(catch_unwind)]
+    pub fn degrees(&self) -> Self {
+        self.inner.clone().degrees().into()
+    }
+    #[napi(catch_unwind)]
+    pub fn radians(&self) -> Self {
+        self.inner.clone().radians().into()
+    }
+    #[napi(catch_unwind)]
     pub fn is_duplicated(&self) -> JsExpr {
         self.clone().inner.is_duplicated().into()
     }
@@ -1434,6 +1498,14 @@ impl JsExpr {
     #[napi(catch_unwind)]
     pub fn log(&self, base: f64) -> JsExpr {
         self.inner.clone().log(base).into()
+    }
+    #[napi(catch_unwind)]
+    pub fn log1p(&self) -> JsExpr {
+        self.inner.clone().log1p().into()
+    }
+    #[napi(catch_unwind)]
+    pub fn exp(&self) -> JsExpr {
+        self.inner.clone().exp().into()
     }
     #[napi(catch_unwind)]
     pub fn entropy(&self, base: f64, normalize: bool) -> JsExpr {

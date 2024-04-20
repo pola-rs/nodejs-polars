@@ -96,6 +96,18 @@ describe("expr", () => {
     const fn = () => df.select(col("a").cast(pl.Int16, true));
     expect(fn).toThrow();
   });
+  test("cos", () => {
+    const df = pl.DataFrame({ a: [1, 2, 3] });
+    const expected = pl.DataFrame({ cos: [0.540302, -0.416147, -0.989992] });
+    const actual = df.select(col("a").cos().round(6).as("cos"));
+    expect(actual).toFrameEqual(expected);
+  });
+  test("cot", () => {
+    const df = pl.DataFrame({ a: [1, 2, 3] });
+    const expected = pl.DataFrame({ cot: [0.642093, -0.457658, -7.015253] });
+    const actual = df.select(col("a").cot().round(6).as("cot"));
+    expect(actual).toFrameEqual(expected);
+  });
   test("count", () => {
     const df = pl.DataFrame({ a: [1, 0, 3, 4, 6, 0] });
     const expected = pl.DataFrame({ a: [6] });
@@ -206,6 +218,12 @@ describe("expr", () => {
     });
     const expected = pl.DataFrame({ a: [1, 2, 3] });
     const actual = df.select(col("*").exclude("b", "c"));
+    expect(actual).toFrameEqual(expected);
+  });
+  test("exp", () => {
+    const df = pl.DataFrame({ a: [1.0] });
+    const actual = df.select(pl.col("a").exp());
+    const expected = pl.DataFrame({ a: [Math.E] });
     expect(actual).toFrameEqual(expected);
   });
   test("explode", () => {
@@ -327,6 +345,15 @@ describe("expr", () => {
     const df = pl.DataFrame({ a: [0, 1, 2, -1] });
     const expected = pl.DataFrame({ a: [true, true, true, false] });
     const actual = df.select(col("a").gtEq(0));
+    expect(actual).toFrameEqual(expected);
+  });
+  test("gatherEvery", () => {
+    const df = pl.DataFrame({ a: [1, 1, 2, 2, 3, 3, 8, null, 1] });
+    let expected = pl.DataFrame({ everyother: [1, 2, 3, 8, 1] });
+    let actual = df.select(col("a").gatherEvery(2).as("everyother"));
+    expect(actual).toFrameEqual(expected);
+    expected = pl.DataFrame({ everyother: [2, 3, 8, 1] });
+    actual = df.select(col("a").gatherEvery(2, 2).as("everyother"));
     expect(actual).toFrameEqual(expected);
   });
   test.each`
@@ -512,6 +539,16 @@ describe("expr", () => {
     const df = pl.DataFrame({ a: [1, 2, 3] });
     const expected = pl.DataFrame({ lt: [true, true, false] });
     const actual = df.select(col("a").ltEq(2).as("lt"));
+    expect(actual).toFrameEqual(expected);
+  });
+  test("log", () => {
+    let df = pl.DataFrame({ a: [1, 2, 3] });
+    let actual = df.select(col("a").log(2).round(6).as("log"));
+    let expected = pl.DataFrame({ log: [0.0, 1.0, 1.584963] });
+    expect(actual).toFrameEqual(expected);
+    df = pl.DataFrame({ a: [2] });
+    actual = df.select(col("a").log().as("log"));
+    expected = pl.DataFrame({ log: [Math.LN2] });
     expect(actual).toFrameEqual(expected);
   });
   test("max", () => {
@@ -709,6 +746,12 @@ describe("expr", () => {
     const actual = df.select(col("a"), ...shifts);
     expect(actual).toFrameStrictEqual(expected);
   });
+  test("sin", () => {
+    const df = pl.DataFrame({ a: [1, 2, 3] });
+    const expected = pl.DataFrame({ sin: [0.841471, 0.909297, 0.14112] });
+    const actual = df.select(col("a").sin().round(6).as("sin"));
+    expect(actual).toFrameEqual(expected);
+  });
   test("skew", () => {
     const df = pl.DataFrame({ a: [1, 2, 3, 3] });
     const expected = pl.DataFrame({
@@ -870,13 +913,10 @@ describe("expr", () => {
     );
     expect(actual).toFrameEqual(expected);
   });
-  test("gatherEvery", () => {
-    const df = pl.DataFrame({ a: [1, 1, 2, 2, 3, 3, 8, null, 1] });
-    let expected = pl.DataFrame({ everyother: [1, 2, 3, 8, 1] });
-    let actual = df.select(col("a").gatherEvery(2).as("everyother"));
-    expect(actual).toFrameEqual(expected);
-    expected = pl.DataFrame({ everyother: [2, 3, 8, 1] });
-    actual = df.select(col("a").gatherEvery(2, 2).as("everyother"));
+  test("tan", () => {
+    const df = pl.DataFrame({ a: [1, 2, 3] });
+    const expected = pl.DataFrame({ tan: [1.557408, -2.18504, -0.142547] });
+    const actual = df.select(col("a").tan().round(6).as("tan"));
     expect(actual).toFrameEqual(expected);
   });
   test("unique", () => {

@@ -69,6 +69,36 @@ export interface Expr
   toJSON(): string;
   /** Take absolute values */
   abs(): Expr;
+  /**
+   * Get the group indexes of the group by operation.
+   * Should be used in aggregation context only.
+   * @example
+   * ```
+    >>> const df = pl.DataFrame(
+    ...     {
+    ...         "group": [
+    ...             "one",
+    ...             "one",
+    ...             "one",
+    ...             "two",
+    ...             "two",
+    ...             "two",
+    ...         ],
+    ...         "value": [94, 95, 96, 97, 97, 99],
+    ...     }
+    ... )
+    >>> df.group_by("group", maintain_order=True).agg(pl.col("value").aggGroups())
+    shape: (2, 2)
+    ┌───────┬───────────┐
+    │ group ┆ value     │
+    │ ---   ┆ ---       │
+    │ str   ┆ list[u32] │
+    ╞═══════╪═══════════╡
+    │ one   ┆ [0, 1, 2] │
+    │ two   ┆ [3, 4, 5] │
+    └───────┴───────────┘
+   *```
+   */
   aggGroups(): Expr;
   /**
    * Rename the output of an expression.
@@ -137,6 +167,60 @@ export interface Expr
   backwardFill(): Expr;
   /** Cast between data types. */
   cast(dtype: DataType, strict?: boolean): Expr;
+  /**
+   * Compute the element-wise value for the cosine.
+   * @returns Expression of data type :class:`Float64`.
+   * @example
+   * ```
+      >>> const df = pl.DataFrame({"a": [0.0]})
+      >>> df.select(pl.col("a").cos())
+      shape: (1, 1)
+      ┌─────┐
+      │ a   │
+      │ --- │
+      │ f64 │
+      ╞═════╡
+      │ 1.0 │
+      └─────┘
+   * ```
+   */
+  cos(): Expr;
+  /**
+   * Compute the element-wise value for the hyperbolic cosine.
+   * @returns Expression of data type :class:`Float64`.
+   * @example
+   * ```
+      >>> const df = pl.DataFrame({"a": [1.0]})
+      >>> df.select(pl.col("a").cosh())
+      shape: (1, 1)
+      ┌──────────┐
+      │ a        │
+      │ ---      │
+      │ f64      │
+      ╞══════════╡
+      │ 1.543081 │
+      └──────────┘
+   * ```
+   */
+  cosh(): Expr;
+  /**
+   * Compute the element-wise value for the cotangent.
+   * @returns Expression of data type :class:`Float64`.
+   * @example
+   * ```
+    >>> const df = pl.DataFrame({"a": [1.0]})
+    >>> df.select(pl.col("a").cot().round(2))
+    shape: (1, 1)
+    ┌──────┐
+    │ a    │
+    │ ---  │
+    │ f64  │
+    ╞══════╡
+    │ 0.64 │
+    └──────┘
+   * ```
+   */
+  cot(): Expr;
   /** Count the number of values in this expression */
   count(): Expr;
   /** Calculate the n-th discrete difference.
@@ -151,7 +235,6 @@ export interface Expr
    * @param other Expression to compute dot product with
    */
   dot(other: any): Expr;
-
   /**
    * Exclude certain columns from a wildcard/regex selection.
    *
@@ -197,6 +280,25 @@ export interface Expr
    */
   exclude(column: string, ...columns: string[]): Expr;
   /**
+   * Compute the exponential, element-wise.
+   * @example
+   * ``` 
+    >>> const df = pl.DataFrame({"values": [1.0, 2.0, 4.0]})
+    >>> df.select(pl.col("values").exp())
+    shape: (3, 1)
+    ┌──────────┐
+    │ values   │
+    │ ---      │
+    │ f64      │
+    ╞══════════╡
+    │ 2.718282 │
+    │ 7.389056 │
+    │ 54.59815 │
+    └──────────┘
+   * ```
+   */
+  exp(): Expr;
+  /**
    * Explode a list or utf8 Series.
    *
    * This means that every item is expanded to a new row.
@@ -236,6 +338,14 @@ export interface Expr
   flatten(): Expr;
   /** Fill missing values with the latest seen values */
   forwardFill(): Expr;
+  /**
+   * Take values by index.
+   * @param index An expression that leads to a UInt32 dtyped Series.
+   */
+  gather(index: Expr | number[] | Series): Expr;
+  gather({ index }: { index: Expr | number[] | Series }): Expr;
+  /** Take every nth value in the Series and return as a new Series. */
+  gatherEvery(n: number, offset?: number): Expr;
   /** Hash the Series. */
   hash(k0?: number, k1?: number, k2?: number, k3?: number): Expr;
   hash({
@@ -356,6 +466,46 @@ export interface Expr
   last(): Expr;
   /** Aggregate to list. */
   list(): Expr;
+  /***
+   * Compute the natural logarithm of each element plus one.
+   * This computes `log(1 + x)` but is more numerically stable for `x` close to zero.
+   * @example
+   * ```
+    >>> const df = pl.DataFrame({"a": [1, 2, 3]})
+    >>> df.select(pl.col("a").log1p())
+    shape: (3, 1)
+    ┌──────────┐
+    │ a        │
+    │ ---      │
+    │ f64      │
+    ╞══════════╡
+    │ 0.693147 │
+    │ 1.098612 │
+    │ 1.386294 │
+    └──────────┘
+   * ```
+   */
+  log1p(): Expr;
+  /**
+   * Compute the logarithm to a given base.
+   * @param base - Given base, defaults to `e`
+   * @example
+   * ```
+    >>> const df = pl.DataFrame({"a": [1, 2, 3]})
+    >>> df.select(pl.col("a").log(base=2))
+    shape: (3, 1)
+    ┌──────────┐
+    │ a        │
+    │ ---      │
+    │ f64      │
+    ╞══════════╡
+    │ 0.0      │
+    │ 1.0      │
+    │ 1.584963 │
+    └──────────┘
+   * ```
+   */
+  log(base?: number): Expr;
   /** Returns a unit Series with the lowest value possible for the dtype of this expression. */
   lowerBound(): Expr;
   peakMax(): Expr;
@@ -504,6 +654,42 @@ export interface Expr
     fillValue,
   }: { periods: number; fillValue: number }): Expr;
   /**
+   * Compute the element-wise value for the sine.
+   * @returns Expression of data type :class:`Float64`.
+   * @example
+   * ```
+    >>> const df = pl.DataFrame({"a": [0.0]})
+    >>> df.select(pl.col("a").sin())
+    shape: (1, 1)
+    ┌─────┐
+    │ a   │
+    │ --- │
+    │ f64 │
+    ╞═════╡
+    │ 0.0 │
+    └─────┘
+   *```
+   */
+  sin(): Expr;
+  /**
+   * Compute the element-wise value for the hyperbolic sine.
+   * @returns Expression of data type :class:`Float64`.
+   * @example
+   * ```
+    >>> const df = pl.DataFrame({"a": [1.0]})
+    >>> df.select(pl.col("a").sinh())
+    shape: (1, 1)
+    ┌──────────┐
+    │ a        │
+    │ ---      │
+    │ f64      │
+    ╞══════════╡
+    │ 1.175201 │
+    └──────────┘
+   *```
+   */
+  sinh(): Expr;
+  /**
    * Compute the sample skewness of a data set.
    * For normally distributed data, the skewness should be about zero. For
    * unimodal continuous distributions, a skewness value greater than zero means
@@ -565,13 +751,41 @@ export interface Expr
   tail(length?: number): Expr;
   tail({ length }: { length: number }): Expr;
   /**
-   * Take values by index.
-   * @param index An expression that leads to a UInt32 dtyped Series.
+   * Compute the element-wise value for the tangent.
+   * @returns Expression of data type :class:`Float64`.
+   * @example
+   *```
+    >>> const df = pl.DataFrame({"a": [1.0]})
+    >>> df.select(pl.col("a").tan().round(2))
+    shape: (1, 1)
+    ┌──────┐
+    │ a    │
+    │ ---  │
+    │ f64  │
+    ╞══════╡
+    │ 1.56 │
+    └──────┘
+   *```
    */
-  gather(index: Expr | number[] | Series): Expr;
-  gather({ index }: { index: Expr | number[] | Series }): Expr;
-  /** Take every nth value in the Series and return as a new Series. */
-  gatherEvery(n: number, offset?: number): Expr;
+  tan(): Expr;
+  /**
+   * Compute the element-wise value for the hyperbolic tangent.
+   * @returns Expression of data type :class:`Float64`.
+   * @example
+   *```
+    >>> const df = pl.DataFrame({"a": [1.0]})
+    >>> df.select(pl.col("a").tanh())
+    shape: (1, 1)
+    ┌──────────┐
+    │ a        │
+    │ ---      │
+    │ f64      │
+    ╞══════════╡
+    │ 0.761594 │
+    └──────────┘
+   *```
+   */
+  tanh(): Expr;
   /**
    * Get the unique values of this expression;
    * @param maintainOrder Maintain order of data. This requires more work.
@@ -708,6 +922,15 @@ export const _Expr = (_expr: any): Expr => {
           exprToLitOrExpr(arg.max)._expr,
         ),
       );
+    },
+    cos() {
+      return _Expr(_expr.cos());
+    },
+    cosh() {
+      return _Expr(_expr.cosh());
+    },
+    cot() {
+      return _Expr(_expr.cot());
     },
     count() {
       return _Expr(_expr.count());
@@ -859,6 +1082,9 @@ export const _Expr = (_expr: any): Expr => {
     explode() {
       return _Expr(_expr.explode());
     },
+    exp() {
+      return _Expr(_expr.exp());
+    },
     extend(o, n?) {
       if (n !== null && typeof n === "number") {
         return _Expr(_expr.extendConstant(o, n));
@@ -907,6 +1133,17 @@ export const _Expr = (_expr: any): Expr => {
     },
     forwardFill() {
       return _Expr(_expr.forwardFill());
+    },
+    gather(indices) {
+      if (Array.isArray(indices)) {
+        indices = pli.lit(Series(indices).inner());
+      } else {
+        indices = indices.inner();
+      }
+      return wrap("gather", indices);
+    },
+    gatherEvery(n, offset = 0) {
+      return _Expr(_expr.gatherEvery(n, offset));
     },
     hash(obj: any = 0, k1 = 1, k2 = 2, k3 = 3) {
       if (typeof obj === "number" || typeof obj === "bigint") {
@@ -974,7 +1211,6 @@ export const _Expr = (_expr: any): Expr => {
     kurtosis(obj?, bias = true) {
       const fisher = obj?.["fisher"] ?? (typeof obj === "boolean" ? obj : true);
       bias = obj?.["bias"] ?? bias;
-
       return _Expr(_expr.kurtosis(fisher, bias));
     },
     last() {
@@ -982,6 +1218,13 @@ export const _Expr = (_expr: any): Expr => {
     },
     list() {
       return _Expr(_expr.list());
+    },
+    log1p() {
+      console.log(_expr.log1p);
+      return _Expr(_expr.log1p());
+    },
+    log(base?: number) {
+      return _Expr(_expr.log(base ?? Math.E));
     },
     lowerBound() {
       return _Expr(_expr.lowerBound());
@@ -1139,6 +1382,12 @@ export const _Expr = (_expr: any): Expr => {
     skew(bias) {
       return wrap("skew", bias?.bias ?? bias ?? true);
     },
+    sin() {
+      return _Expr(_expr.sin());
+    },
+    sinh() {
+      return _Expr(_expr.sinh());
+    },
     slice(arg, len?) {
       if (typeof arg === "number") {
         return wrap("slice", pli.lit(arg), pli.lit(len));
@@ -1181,16 +1430,11 @@ export const _Expr = (_expr: any): Expr => {
     tail(length) {
       return _Expr(_expr.tail(length));
     },
-    gather(indices) {
-      if (Array.isArray(indices)) {
-        indices = pli.lit(Series(indices).inner());
-      } else {
-        indices = indices.inner();
-      }
-      return wrap("gather", indices);
+    tan() {
+      return _Expr(_expr.tan());
     },
-    gatherEvery(n, offset = 0) {
-      return _Expr(_expr.gatherEvery(n, offset));
+    tanh() {
+      return _Expr(_expr.tanh());
     },
     unique(opt?) {
       if (opt || opt?.maintainOrder) {
