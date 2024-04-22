@@ -143,6 +143,114 @@ export interface Expr
    */
   alias(name: string): Expr;
   and(other: any): Expr;
+  /**
+   * Compute the element-wise value for the inverse cosine.
+   * @returns Expression of data type :class:`Float64`.
+   * @example
+   * ```
+      >>> const df = pl.DataFrame({"a": [0.0]})
+      >>> df.select(pl.col("a").acrcos())
+      shape: (1, 1)
+      ┌──────────┐
+      │ a        │
+      │ ---      │
+      │ f64      │
+      ╞══════════╡
+      │ 1.570796 │
+      └──────────┘
+   * ```
+   */
+  arccos(): Expr;
+  /**
+   * Compute the element-wise value for the inverse hyperbolic cosine.
+   * @returns Expression of data type :class:`Float64`.
+   * @example
+   * ```
+      >>> const df = pl.DataFrame({"a": [1.0]})
+      >>> df.select(pl.col("a").acrcosh())
+      shape: (1, 1)
+      ┌─────┐
+      │ a   │
+      │ --- │
+      │ f64 │
+      ╞═════╡
+      │ 0.0 │
+      └─────┘
+   * ```
+   */
+  arccosh(): Expr;
+  /**
+   * Compute the element-wise value for the inverse sine.
+   * @returns Expression of data type :class:`Float64`.
+   * @example
+   * ```
+  >>> const df = pl.DataFrame({"a": [1.0]})
+  >>> df.select(pl.col("a").acrsin())
+  shape: (1, 1)
+  ┌──────────┐
+  │ a        │
+  │ ---      │
+  │ f64      │
+  ╞══════════╡
+  │ 1.570796 │
+  └──────────┘
+  * ```
+  */
+  arcsin(): Expr;
+  /**
+   * Compute the element-wise value for the inverse hyperbolic sine.
+   * @returns Expression of data type :class:`Float64`.
+   * @example
+   * ```
+    >>> const df = pl.DataFrame({"a": [1.0]})
+    >>> df.select(pl.col("a").acrsinh())
+    shape: (1, 1)
+    ┌──────────┐
+    │ a        │
+    │ ---      │
+    │ f64      │
+    ╞══════════╡
+    │ 0.881374 │
+    └──────────┘
+    * ```
+    */
+  arcsinh(): Expr;
+  /**
+   * Compute the element-wise value for the inverse tangent.
+   * @returns Expression of data type :class:`Float64`.
+   * @example
+   * ```
+    >>> const df = pl.DataFrame({"a": [1.0]})
+    >>> df.select(pl.col("a").arctan())
+    shape: (1, 1)
+    ┌──────────┐
+    │ a        │
+    │ ---      │
+    │ f64      │
+    ╞══════════╡
+    │ 0.785398 │
+    └──────────┘
+   * ```
+   */
+  arctan(): Expr;
+  /**
+   * Compute the element-wise value for the inverse hyperbolic tangent.
+   * @returns Expression of data type :class:`Float64`.
+   * @example
+   * ```
+    >>> const df = pl.DataFrame({"a": [1.0]})
+    >>> df.select(pl.col("a").arctanh())
+    shape: (1, 1)
+    ┌─────┐
+    │ a   │
+    │ --- │
+    │ f64 │
+    ╞═════╡
+    │ inf │
+    └─────┘
+   * ```
+   */
+  arctanh(): Expr;
   /** Get the index of the maximal value. */
   argMax(): Expr;
   /** Get the index of the minimal value. */
@@ -881,8 +989,25 @@ export const _Expr = (_expr: any): Expr => {
     },
     and(other) {
       const expr = (exprToLitOrExpr(other, false) as any).inner();
-
       return _Expr(_expr.and(expr));
+    },
+    arccos() {
+      return _Expr(_expr.arccos());
+    },
+    arccosh() {
+      return _Expr(_expr.arccosh());
+    },
+    arcsin() {
+      return _Expr(_expr.arcsin());
+    },
+    arcsinh() {
+      return _Expr(_expr.arcsinh());
+    },
+    arctan() {
+      return _Expr(_expr.arctan());
+    },
+    arctanh() {
+      return _Expr(_expr.arctanh());
     },
     argMax() {
       return _Expr(_expr.argMax());

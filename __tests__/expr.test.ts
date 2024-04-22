@@ -44,6 +44,24 @@ describe("expr", () => {
     const actual = df().filter(col("bools").eq(false).and(col("int").eq(3)));
     expect(actual.height).toStrictEqual(1);
   });
+  test("arccos", () => {
+    const df = pl.DataFrame({ a: [1, 2] });
+    const expected = pl.DataFrame({ arccos: [0.0, Number.NaN] });
+    const actual = df.select(col("a").arccos().as("arccos"));
+    expect(actual).toFrameEqual(expected);
+  });
+  test("arcsin", () => {
+    const df = pl.DataFrame({ a: [1, 2] });
+    const expected = pl.DataFrame({ arcsin: [1.570796, Number.NaN] });
+    const actual = df.select(col("a").arcsin().round(6).as("arcsin"));
+    expect(actual).toFrameEqual(expected);
+  });
+  test("arcyan", () => {
+    const df = pl.DataFrame({ a: [1, 2] });
+    const expected = pl.DataFrame({ arctan: [0.785398, 1.107149] });
+    const actual = df.select(col("a").arctan().round(6).as("arctan"));
+    expect(actual).toFrameEqual(expected);
+  });
   test("argMax", () => {
     const actual = df().select(col("int").argMax()).row(0)[0];
     expect(actual).toStrictEqual(2);
