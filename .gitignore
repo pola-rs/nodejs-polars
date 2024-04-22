@@ -3,7 +3,8 @@
 Cargo.lock
 node_modules/
 .pnp.*
-
+.DS_Store
+*/.DS_Store
 coverage/
 bin/
 .vscode
