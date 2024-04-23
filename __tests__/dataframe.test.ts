@@ -2449,10 +2449,10 @@ describe("additional", () => {
     expect(dfs).toEqual(expected);
   });
   test("df from rows with schema", () => {
-    const rows = [{ a: 1, b: 2, c: null }];
+    const rows = [{ a: 1, b: 2, c: null, d: "foo" }];
 
     const df = pl.DataFrame(rows, {
-      schema: { a: pl.Int32, b: pl.Int32, c: pl.Utf8 },
+      schema: { a: pl.Int32, b: pl.Int32, c: pl.Utf8, d: pl.String },
       orient: "row",
     });
     const actual = df.toRecords();
