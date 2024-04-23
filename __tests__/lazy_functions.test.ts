@@ -172,7 +172,7 @@ describe("lazy functions", () => {
     const df = pl.DataFrame({ a: [1, 2], b: [3, 4] });
     const result = df.select(pl.intRanges("a", "b"));
     const expected_schema = { a: pl.List(pl.Int64) };
-    expect(result.schema).toEqual(expected_schema);
+    expect(result.schema).toStrictEqual(expected_schema);
   });
 
   test("intRanges:eager", () => {

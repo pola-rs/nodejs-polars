@@ -9,9 +9,9 @@ describe("dataframe", () => {
   ]);
 
   test("dtypes", () => {
-    const expected = [pl.Float64, pl.Utf8];
+    const expected = [pl.Float64, pl.String];
     const actual = pl.DataFrame({ a: [1, 2, 3], b: ["a", "b", "c"] }).dtypes;
-    expect(actual).toEqual(expected);
+    expect(actual).toStrictEqual(expected);
   });
   test("height", () => {
     const expected = 3;
@@ -447,7 +447,7 @@ describe("dataframe", () => {
         ham: ["a", "b", "c"],
       })
       .hashRows();
-    expect(actual.dtype).toEqual(pl.UInt64);
+    expect(actual.dtype).toStrictEqual(pl.UInt64);
   });
   test.each([[1], [1, 2], [1, 2, 3], [1, 2, 3, 4]])(
     "hashRows:positional",
@@ -458,7 +458,7 @@ describe("dataframe", () => {
           ham: ["a", "b", "c"],
         })
         .hashRows(...args);
-      expect(actual.dtype).toEqual(pl.UInt64);
+      expect(actual.dtype).toStrictEqual(pl.UInt64);
     },
   );
   test.each([
@@ -473,7 +473,7 @@ describe("dataframe", () => {
         ham: ["a", "b", "c"],
       })
       .hashRows(opts);
-    expect(actual.dtype).toEqual(pl.UInt64);
+    expect(actual.dtype).toStrictEqual(pl.UInt64);
   });
   test("head", () => {
     const actual = pl
@@ -1777,8 +1777,8 @@ describe("create", () => {
       date_nulls: pl.Date,
       datetime: pl.Datetime("ms"),
       datetime_nulls: pl.Datetime("ms"),
-      string: pl.Utf8,
-      string_nulls: pl.Utf8,
+      string: pl.String,
+      string_nulls: pl.String,
       categorical: pl.Categorical,
       categorical_nulls: pl.Categorical,
       list: pl.List(pl.Float64),
@@ -1798,7 +1798,7 @@ describe("create", () => {
       float_64_typed: pl.Float64,
     };
     const actual = df.schema;
-    expect(actual).toEqual(expectedSchema);
+    expect(actual).toStrictEqual(expectedSchema);
   });
   test("from series-array", () => {
     const s1 = pl.Series("num", [1, 2, 3]);
@@ -1894,6 +1894,11 @@ describe("create", () => {
 
     const df = pl.readRecords(rows, { inferSchemaLength: 1 });
     expect(df.toRecords()).toEqual(expected);
+    expect(df.schema).toStrictEqual({
+      num: pl.Int32,
+      date: pl.Datetime("ms"),
+      string: pl.String,
+    });
   });
   test("from row objects, with schema", () => {
     const rows = [
@@ -1908,12 +1913,12 @@ describe("create", () => {
 
     const schema = {
       num: pl.Int32,
-      date: pl.Utf8,
-      string: pl.Utf8,
+      date: pl.String,
+      string: pl.String,
     };
     const df = pl.readRecords(rows, { schema });
     expect(df.toRecords()).toEqual(expected);
-    expect(df.schema).toEqual(schema);
+    expect(df.schema).toStrictEqual(schema);
   });
 
   test("from nulls", () => {
@@ -1954,7 +1959,7 @@ describe("create", () => {
         },
       },
     );
-    expect(df.schema).toEqual({ x: pl.Int32, y: pl.String });
+    expect(df.schema).toStrictEqual({ x: pl.Int32, y: pl.String });
   });
   test("with schema", () => {
     const df = pl.DataFrame(
@@ -1969,7 +1974,7 @@ describe("create", () => {
         },
       },
     );
-    expect(df.schema).toEqual({ x: pl.Int32, y: pl.String });
+    expect(df.schema).toStrictEqual({ x: pl.Int32, y: pl.String });
   });
   test("with schema overrides", () => {
     const df = pl.DataFrame(
@@ -1983,7 +1988,7 @@ describe("create", () => {
         },
       },
     );
-    expect(df.schema).toEqual({ a: pl.Int32, b: pl.String });
+    expect(df.schema).toStrictEqual({ a: pl.Int32, b: pl.String });
   });
   test("errors if schemaOverrides and schema are both specified", () => {
     const fn = () =>
