@@ -1710,7 +1710,7 @@ export function _Series(_s: any): Series {
       return _s.toArray();
     },
     toTypedArray() {
-      if (!this.hasValidity()) {
+      if (!this.hasValidity() || this.nullCount() === 0) {
         return _s.toTypedArray();
       }
       throw new Error("data contains nulls, unable to convert to TypedArray");
