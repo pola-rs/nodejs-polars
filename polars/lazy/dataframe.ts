@@ -364,11 +364,11 @@ export interface LazyDataFrame extends Serialize, GroupByOps<LazyGroupBy> {
   /**
    * @see {@link DataFrame.rename}
    */
-  rename(mapping: Record<string, string>);
+  rename(mapping: Record<string, string>): LazyDataFrame;
   /**
    * Reverse the DataFrame.
    */
-  reverse();
+  reverse(): LazyDataFrame;
   /**
    * @see {@link DataFrame.select}
    */
@@ -461,7 +461,7 @@ export interface LazyDataFrame extends Serialize, GroupByOps<LazyGroupBy> {
    * Add a column at index 0 that counts the rows.
    * @see {@link DataFrame.withRowCount}
    */
-  withRowCount();
+  withRowCount(): LazyDataFrame;
   /***
   *
   * Evaluate the query in streaming mode and write to a CSV file.
@@ -521,7 +521,7 @@ export interface LazyDataFrame extends Serialize, GroupByOps<LazyGroupBy> {
   sinkCSV(path: string, options?: SinkCsvOptions): void;
 
   /***
-   * 
+   *
    * Evaluate the query in streaming mode and write to a Parquet file.
 
     .. warning::
