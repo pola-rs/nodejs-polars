@@ -657,6 +657,7 @@ impl FromNapiValue for Wrap<DataType> {
                     "Float64" => DataType::Float64,
                     "Bool" => DataType::Boolean,
                     "Utf8" => DataType::String,
+                    "String" => DataType::String,
                     "List" => {
                         let inner = obj.get::<_, Array>("inner")?.unwrap();
                         let inner_dtype: Object = inner.get::<Object>(0)?.unwrap();
