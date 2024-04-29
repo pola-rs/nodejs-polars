@@ -1895,7 +1895,7 @@ describe("create", () => {
     const df = pl.readRecords(rows, { inferSchemaLength: 1 });
     expect(df.toRecords()).toEqual(expected);
     expect(df.schema).toStrictEqual({
-      num: pl.Int32,
+      num: pl.Float64,
       date: pl.Datetime("ms"),
       string: pl.String,
     });
