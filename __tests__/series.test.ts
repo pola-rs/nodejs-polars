@@ -656,6 +656,14 @@ describe("series", () => {
     const actual = s.round({ decimals: 2 });
     expect(actual).toSeriesEqual(expected);
   });
+  test("toTypedArray handles nulls", () => {
+    const s = pl.Series("ints and nulls", [1, 2, 3, null, 5], pl.UInt8);
+    expect(() => s.toTypedArray()).toThrow();
+    expect(() => s.dropNulls().toTypedArray()).not.toThrow();
+    expect(s.dropNulls().toTypedArray()).toStrictEqual(
+      new Uint8Array([1, 2, 3, 5]),
+    );
+  });
 });
 describe("comparators & math", () => {
   test("add/plus", () => {
