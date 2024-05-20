@@ -56,7 +56,6 @@ export abstract class DataType {
   public static get UInt64(): DataType {
     return new _UInt64();
   }
-
   /** A `f32` */
   public static get Float32(): DataType {
     return new _Float32();
@@ -64,6 +63,10 @@ export abstract class DataType {
   /** A `f64` */
   public static get Float64(): DataType {
     return new _Float64();
+  }
+  /** A `decimal` */
+  public static get Decimal(): DataType {
+    return new _Decimal();
   }
   public static get Date(): DataType {
     return new _Date();
@@ -163,6 +166,7 @@ class _UInt32 extends DataType {}
 class _UInt64 extends DataType {}
 class _Float32 extends DataType {}
 class _Float64 extends DataType {}
+class _Decimal extends DataType {}
 class _Date extends DataType {}
 class _Time extends DataType {}
 class _Object extends DataType {}
@@ -299,6 +303,8 @@ export namespace DataType {
   export type Float32 = _Float32;
   /** Float64 */
   export type Float64 = _Float64;
+  /** Decimal */
+  export type Decimal = _Decimal;
   /** Date dtype */
   export type Date = _Date;
   /** Datetime */

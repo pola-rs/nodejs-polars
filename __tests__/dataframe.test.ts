@@ -1621,6 +1621,19 @@ describe("io", () => {
     fs.rmSync("./test.csv");
     done();
   });
+  test("writeParquet", (done) => {
+    const df = pl.DataFrame([
+      pl.Series("doo", [1, 2, 3], pl.Decimal),
+      pl.Series("foo", [1, 2, 3], pl.UInt32),
+      pl.Series("bar", ["a", "b", "c"]),
+    ]);
+    const pqFile = "./test.parquet";
+    df.writeParquet(pqFile);
+    const newDF = pl.readParquet(pqFile);
+    expect(newDF).toFrameEqual(df);
+    fs.rmSync(pqFile);
+    done();
+  });
   test("JSON.stringify", () => {
     const df = pl.DataFrame({
       foo: [1],
@@ -1951,30 +1964,21 @@ describe("create", () => {
       {
         a: [1, 2, 3],
         b: ["1", "2", "3"],
+        d: [1, 2, 3],
       },
       {
         schema: {
           x: pl.Int32,
           y: pl.String,
+          z: pl.Decimal,
         },
       },
     );
-    expect(df.schema).toStrictEqual({ x: pl.Int32, y: pl.String });
-  });
-  test("with schema", () => {
-    const df = pl.DataFrame(
-      {
-        a: [1, 2, 3],
-        b: ["1", "2", "3"],
-      },
-      {
-        schema: {
-          x: pl.Int32,
-          y: pl.String,
-        },
-      },
-    );
-    expect(df.schema).toStrictEqual({ x: pl.Int32, y: pl.String });
+    expect(df.schema).toStrictEqual({
+      x: pl.Int32,
+      y: pl.String,
+      z: pl.Decimal,
+    });
   });
   test("with schema overrides", () => {
     const df = pl.DataFrame(

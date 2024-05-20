@@ -156,6 +156,12 @@ impl JsSeries {
         s.rename(&name);
         JsSeries::new(s)
     }
+    #[napi(factory, catch_unwind)]
+    pub fn new_opt_decimal(name: String, val: Wrap<Int128Chunked>, _strict: bool) -> JsSeries {
+        let mut s = val.0.into_series();
+        s.rename(&name);
+        JsSeries::new(s)
+    }
 
     #[napi(factory, catch_unwind)]
     pub fn new_opt_date(

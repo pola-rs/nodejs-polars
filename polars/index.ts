@@ -98,6 +98,7 @@ export namespace pl {
   export import UInt64 = DataType.UInt64;
   export import Float32 = DataType.Float32;
   export import Float64 = DataType.Float64;
+  export import Decimal = DataType.Decimal;
   export import Bool = DataType.Bool;
   export import Utf8 = DataType.Utf8;
   // biome-ignore lint/suspicious/noShadowRestrictedNames: pl.String

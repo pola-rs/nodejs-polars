@@ -1853,6 +1853,7 @@ function mapPolarsTypeToJSONSchema(colType: DataType): string {
     UInt64: "integer",
     Float32: "number",
     Float64: "number",
+    Decimal: "number",
     Date: "string",
     Datetime: "string",
     Utf8: "string",

@@ -42,6 +42,7 @@ export const DTYPE_TO_FFINAME = {
   UInt64: "U64",
   Float32: "F32",
   Float64: "F64",
+  Decimal: "Decimal",
   Bool: "Bool",
   Utf8: "Str",
   String: "Str",
@@ -60,6 +61,9 @@ const POLARS_TYPE_TO_CONSTRUCTOR: Record<string, any> = {
   },
   Float64(name, values, strict?) {
     return pli.JsSeries.newOptF64(name, values, strict);
+  },
+  Decimal(name, values, strict?) {
+    return pli.JsSeries.newOptDecimal(name, values, strict);
   },
   Int8(name, values, strict?) {
     return pli.JsSeries.newOptI32(name, values, strict);

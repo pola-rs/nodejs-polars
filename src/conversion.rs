@@ -261,6 +261,29 @@ impl FromNapiValue for Wrap<ChunkedArray<UInt64Type>> {
     }
 }
 
+impl FromNapiValue for Wrap<ChunkedArray<Int128Type>> {
+    unsafe fn from_napi_value(env: sys::napi_env, napi_val: sys::napi_value) -> JsResult<Self> {
+        let arr = Array::from_napi_value(env, napi_val)?;
+        let len = arr.len() as usize;
+        let mut builder = PrimitiveChunkedBuilder::<Int128Type>::new("", len);
+        for i in 0..len {
+            match arr.get::<BigInt>(i as u32) {
+                Ok(val) => match val {
+                    Some(v) => {
+                        let (v, _b) = v.get_i128();
+                        builder.append_value(v)
+                    }
+                    None => builder.append_null(),
+                },
+                Err(_) => {
+                    builder.append_null()
+                }
+            }
+        }
+        Ok(Wrap(builder.finish()))
+    }
+}
+
 impl FromNapiValue for Wrap<Expr> {
     unsafe fn from_napi_value(env: sys::napi_env, napi_val: sys::napi_value) -> JsResult<Self> {
         let obj = Object::from_napi_value(env, napi_val)?;
@@ -655,6 +678,7 @@ impl FromNapiValue for Wrap<DataType> {
                     "UInt64" => DataType::UInt64,
                     "Float32" => DataType::Float32,
                     "Float64" => DataType::Float64,
+                    "Decimal" => DataType::Decimal(None, None),
                     "Bool" => DataType::Boolean,
                     "Utf8" => DataType::String,
                     "String" => DataType::String,
@@ -927,6 +951,7 @@ impl ToNapiValue for Wrap<DataType> {
             DataType::UInt64 => String::to_napi_value(env, "UInt64".to_owned()),
             DataType::Float32 => String::to_napi_value(env, "Float32".to_owned()),
             DataType::Float64 => String::to_napi_value(env, "Float64".to_owned()),
+            DataType::Decimal(_,_) => String::to_napi_value(env, "Decimal".to_owned()),
             DataType::Boolean => String::to_napi_value(env, "Bool".to_owned()),
             DataType::String => String::to_napi_value(env, "String".to_owned()),
             DataType::List(inner) => {
