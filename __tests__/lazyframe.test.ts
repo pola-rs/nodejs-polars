@@ -36,7 +36,7 @@ describe("lazyframe", () => {
       })
       .lazy();
     let actual = df.describeOptimizedPlan().replace(/\s+/g, " ");
-    const expected = `DF ["foo", "bar"]; PROJECT */2 COLUMNS; SELECTION: "None"`;
+    const expected = `DF ["foo", "bar"]; PROJECT */2 COLUMNS; SELECTION: None`;
     expect(actual).toEqual(expected);
     actual = df.describePlan().replace(/\s+/g, " ");
     expect(actual).toEqual(expected);
@@ -601,11 +601,12 @@ describe("lazyframe", () => {
         })
         .collectSync();
       const expected = pl.DataFrame({
-        foo: [1, 2, 3, null],
-        bar: [6, 7, 8, null],
-        ham: ["a", "b", "c", "d"],
-        apple: ["x", null, null, "y"],
-        fooright: [1, null, null, 10],
+        foo: [1, null, 2, 3],
+        bar: [6, null, 7, 8],
+        ham: ["a", null, "b", "c"],
+        apple: ["x", "y", null, null],
+        hamright: ["a", "d", null, null],
+        fooright: [1, 10, null, null],
       });
       expect(actual).toFrameEqualIgnoringOrder(expected);
     });

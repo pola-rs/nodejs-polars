@@ -375,7 +375,7 @@ export const ExprStringFunctions = (_expr: any): StringNamespace => {
       return wrap("strJsonDecode", dtype, inferSchemaLength);
     },
     jsonPathMatch(pat: string) {
-      return wrap("strJsonPathMatch", pat);
+      return wrap("strJsonPathMatch", [pat]);
     },
     lengths() {
       return wrap("strLengths");

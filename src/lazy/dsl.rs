@@ -904,7 +904,7 @@ impl JsExpr {
             .into()
     }
     #[napi(catch_unwind)]
-    pub fn str_json_path_match(&self, pat: Wrap<StringChunked>) -> JsExpr {
+    pub fn str_json_path_match(&self, pat: Wrap<ChunkedArray<StringType>>) -> JsExpr {
         let function = move |s: Series| {
             let ca = s.str()?;
             match ca.json_path_match(&pat.0) {

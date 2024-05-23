@@ -759,7 +759,7 @@ pub fn scan_parquet(path: String, options: ScanParquetOptions) -> napi::Result<J
             enabled: false,
             ..Default::default()
         },
-        glob: true
+        glob: true,
     };
     let lf = LazyFrame::scan_parquet(path, args).map_err(JsPolarsErr::from)?;
     Ok(lf.into())

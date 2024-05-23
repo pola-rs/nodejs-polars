@@ -87,8 +87,8 @@ pub struct ReadCsvOptions {
     pub eol_char: String,
 }
 
-fn reader_to_df<B: MmapBytesReader>(
-    csv: impl FnOnce() -> CsvReader<B>,
+fn mmap_reader_to_df<'a>(
+    csv: impl FnOnce() -> Box<dyn MmapBytesReader> + 'a,
     options: ReadCsvOptions,
 ) -> napi::Result<JsDataFrame> {
     let null_values = options.null_values.map(|w| w.0);
@@ -151,14 +151,13 @@ fn reader_to_df<B: MmapBytesReader>(
                 .with_try_parse_dates(options.try_parse_dates)
                 .with_quote_char(quote_char)
                 .with_eol_char(options.eol_char.as_bytes()[0])
-                .with_truncate_ragged_lines(options.truncate_ragged_lines)
+                .with_truncate_ragged_lines(options.truncate_ragged_lines),
         )
         .into_reader_with_file_handle(csv())
         .finish()
         .map_err(JsPolarsErr::from)?;
 
     Ok(df.into())
-
 }
 
 #[napi(catch_unwind)]
@@ -167,98 +166,22 @@ pub fn read_csv(
     options: ReadCsvOptions,
 ) -> napi::Result<JsDataFrame> {
     match path_or_buffer {
-        Either::A(path) => reader_to_df(
-            || CsvReader::new(std::fs::File::open(path).unwrap()),
+        Either::A(path) => mmap_reader_to_df(
+            || {
+                Box::new(std::fs::File::open(path).expect("unable to read file"))
+                    as Box<dyn MmapBytesReader>
+            },
             options,
         ),
-        Either::B(buffer) => reader_to_df(
-            || CsvReader::new(Cursor::new(buffer.as_ref())),
+        Either::B(buffer) => mmap_reader_to_df(
+            || {
+                let bytes = unsafe { std::mem::transmute::<&'_ [u8], &'static [u8]>(&buffer) };
+                Box::new(Cursor::new(bytes.to_owned()))
+            },
             options,
-        )
+        ),
     }
 }
-
-
-// #[napi(catch_unwind)]
-// pub fn read_csv2(
-//     path_or_buffer: Either<String, Buffer>,
-//     options: ReadCsvOptions,
-// ) -> napi::Result<JsDataFrame> {
-//     let null_values = options.null_values.map(|w| w.0);
-//     let row_count = options.row_count.map(RowIndex::from);
-//     let projection = options
-//         .projection
-//         .map(|p: Vec<u32>| p.into_iter().map(|p| p as usize).collect());
-
-//     let quote_char = if let Some(s) = options.quote_char {
-//         if s.is_empty() {
-//             None
-//         } else {
-//             Some(s.as_bytes()[0])
-//         }
-//     } else {
-//         None
-//     };
-
-//     let encoding = match options.encoding.as_ref() {
-//         "utf8" => CsvEncoding::Utf8,
-//         "utf8-lossy" => CsvEncoding::LossyUtf8,
-//         e => return Err(JsPolarsErr::Other(format!("encoding not {} not implemented.", e)).into()),
-//     };
-
-//     let overwrite_dtype = options.dtypes.map(|overwrite_dtype| {
-//         overwrite_dtype
-//             .iter()
-//             .map(|(name, dtype)| {
-//                 let dtype = dtype.0.clone();
-//                 Field::new(name, dtype)
-//             })
-//             .collect::<Schema>()
-//     });
-
-
-//     let file = match path_or_buffer {
-//         Either::A(path) => Box::new(std::fs::File::open(path).unwrap()) as Box<dyn MmapBytesReader>,
-//         Either::B(buffer) => {
-//             Box::new(Cursor::new(buffer.as_ref())) as Box<dyn MmapBytesReader>}
-//     };
-
-//     let df = CsvReadOptions::default()
-//         .with_infer_schema_length(Some(options.infer_schema_length.unwrap_or(100) as usize))
-//         .with_projection(projection.map(Arc::new))
-//         .with_has_header(options.has_header)
-//         .with_n_rows(options.n_rows.map(|i| i as usize))
-//         .with_skip_rows(options.skip_rows as usize)
-//         .with_ignore_errors(options.ignore_errors)
-//         .with_rechunk(options.rechunk)
-//         .with_chunk_size(options.chunk_size as usize)
-//         .with_columns(options.columns.map(Arc::new))
-//         .with_n_threads(options.num_threads.map(|i| i as usize))
-//         .with_schema_overwrite(overwrite_dtype.map(Arc::new))
-//         .with_schema(options.schema.map(|schema| Arc::new(schema.0)))
-//         .with_low_memory(options.low_memory)
-//         .with_row_index(row_count)
-//         .with_sample_size(options.sample_size as usize)
-//         .with_skip_rows_after_header(options.skip_rows_after_header as usize)
-//         .with_raise_if_empty(options.raise_if_empty)
-//         .with_parse_options(
-//             CsvParseOptions::default()
-//                 .with_separator(options.sep.unwrap_or(",".to_owned()).as_bytes()[0])
-//                 .with_encoding(encoding)
-//                 .with_missing_is_null(options.missing_is_null)
-//                 .with_comment_prefix(options.comment_char.as_deref())
-//                 .with_null_values(null_values)
-//                 .with_try_parse_dates(options.try_parse_dates)
-//                 .with_quote_char(quote_char)
-//                 .with_eol_char(options.eol_char.as_bytes()[0])
-//                 .with_truncate_ragged_lines(options.truncate_ragged_lines)
-//         )
-//         .into_reader_with_file_handle(file)
-//         .finish()
-//         .map_err(JsPolarsErr::from)?;
-
-//     Ok(df.into())
-// }
 
 #[napi(object)]
 pub struct ReadJsonOptions {
