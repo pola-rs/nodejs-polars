@@ -571,7 +571,7 @@ impl JsDataFrame {
     }
 
     #[napi(catch_unwind)]
-    pub fn rechunk(&mut self) -> JsDataFrame {
+    pub fn rechunk(&self) -> JsDataFrame {
         let mut df = self.df.clone();
         df.as_single_chunk_par();
         df.into()

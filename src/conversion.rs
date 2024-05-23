@@ -520,23 +520,6 @@ impl From<JsRollingOptions> for RollingOptionsFixedWindow {
     }
 }
 
-// impl From<JsRollingOptions> for RollingOptions {
-//     fn from(o: JsRollingOptions) -> Self {
-//         RollingOptions {
-//             window_size: Duration::parse(&o.window_size),
-//             weights: o.weights,
-//             min_periods: o.min_periods as usize,
-//             center: o.center,
-//             by: None,
-//             closed_window: None,
-//             fn_params: Some(Arc::new(RollingVarParams {
-//                 ddof: o.ddof.unwrap_or(1),
-//             }) as Arc<dyn Any + Send + Sync>),
-//             ..Default::default()
-//         }
-//     }
-// }
-
 #[napi(object)]
 pub struct JsRowCount {
     pub name: String,
