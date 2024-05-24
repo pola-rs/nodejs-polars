@@ -167,7 +167,7 @@ pub fn read_csv(
     options: ReadCsvOptions,
 ) -> napi::Result<JsDataFrame> {
     match path_or_buffer {
-        Either::A(path) => mmap_reader_to_df(std::fs::File::open(path).expect("unable to read file"), options),
+        Either::A(path) => mmap_reader_to_df(std::fs::File::open(path)?, options),
         Either::B(buffer) => mmap_reader_to_df(Cursor::new(buffer.as_ref()), options),
     }
 }
