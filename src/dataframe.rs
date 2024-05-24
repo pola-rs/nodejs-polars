@@ -88,9 +88,10 @@ pub struct ReadCsvOptions {
 }
 
 fn mmap_reader_to_df<'a>(
-    csv: impl FnOnce() -> Box<dyn MmapBytesReader> + 'a,
+    csv: impl MmapBytesReader + 'a,
     options: ReadCsvOptions,
-) -> napi::Result<JsDataFrame> {
+) -> napi::Result<JsDataFrame>
+{
     let null_values = options.null_values.map(|w| w.0);
     let row_count = options.row_count.map(RowIndex::from);
     let projection = options
@@ -153,7 +154,7 @@ fn mmap_reader_to_df<'a>(
                 .with_eol_char(options.eol_char.as_bytes()[0])
                 .with_truncate_ragged_lines(options.truncate_ragged_lines),
         )
-        .into_reader_with_file_handle(csv())
+        .into_reader_with_file_handle(csv)
         .finish()
         .map_err(JsPolarsErr::from)?;
 
@@ -166,20 +167,8 @@ pub fn read_csv(
     options: ReadCsvOptions,
 ) -> napi::Result<JsDataFrame> {
     match path_or_buffer {
-        Either::A(path) => mmap_reader_to_df(
-            || {
-                Box::new(std::fs::File::open(path).expect("unable to read file"))
-                    as Box<dyn MmapBytesReader>
-            },
-            options,
-        ),
-        Either::B(buffer) => mmap_reader_to_df(
-            || {
-                let bytes = unsafe { std::mem::transmute::<&'_ [u8], &'static [u8]>(&buffer) };
-                Box::new(Cursor::new(bytes.to_owned()))
-            },
-            options,
-        ),
+        Either::A(path) => mmap_reader_to_df(std::fs::File::open(path).expect("unable to read file"), options),
+        Either::B(buffer) => mmap_reader_to_df(Cursor::new(buffer.as_ref()), options),
     }
 }
 
