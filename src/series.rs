@@ -993,12 +993,10 @@ impl JsSeries {
     //   Ok(ca.into_series().into())
     // }
     #[napi(catch_unwind)]
-    pub fn to_dummies(&self) -> napi::Result<JsSeries> {
-        todo!()
-        // let df = self.series.to_dummies().map_err(JsPolarsErr::from)?;
-        // Ok(df.into())
+    pub fn to_dummies(&self, separator: Option<&str>, drop_first: bool) -> napi::Result<JsDataFrame> {
+        let df = self.series.to_dummies(separator, drop_first).map_err(JsPolarsErr::from)?;
+        Ok(df.into())
     }
-
     #[napi(catch_unwind)]
     pub fn get_list(&self, index: i64) -> Option<JsSeries> {
         if let Ok(ca) = &self.series.list() {
