@@ -20,6 +20,8 @@ jobs:
         with:
           toolchain: nightly-2024-05-14
           components: rustfmt, clippy
+      - name: Enable corepack
+        run: corepack enable
       - run: yarn --version
       - name: Install Node Dependencies
         run: yarn install
