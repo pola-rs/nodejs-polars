@@ -782,9 +782,9 @@ impl JsSeries {
     ) -> JsAnyValue {
         let binding = self
             .series
-            .quantile_as_series(quantile, interpolation.0)
+            .quantile_reduce(quantile, interpolation.0)
             .expect("invalid quantile");
-        let v = binding.get(0).unwrap_or(AnyValue::Null);
+        let v = binding.as_any_value();
         v.into()
     }
     /// Rechunk and return a pointer to the start of the Series.
@@ -886,10 +886,10 @@ impl JsSeries {
     }
 
     #[napi(catch_unwind)]
-    pub fn str_json_path_match(&self, pat: String) -> napi::Result<JsSeries> {
+    pub fn str_json_path_match(&self, pat: Wrap<StringChunked>) -> napi::Result<JsSeries> {
         let ca = self.series.str().map_err(JsPolarsErr::from)?;
         let s = ca
-            .json_path_match(&pat)
+            .json_path_match(&pat.0)
             .map_err(JsPolarsErr::from)?
             .into_series();
         Ok(s.into())
@@ -993,12 +993,10 @@ impl JsSeries {
     //   Ok(ca.into_series().into())
     // }
     #[napi(catch_unwind)]
-    pub fn to_dummies(&self) -> napi::Result<JsSeries> {
-        todo!()
-        // let df = self.series.to_dummies().map_err(JsPolarsErr::from)?;
-        // Ok(df.into())
+    pub fn to_dummies(&self, separator: Option<&str>, drop_first: bool) -> napi::Result<JsDataFrame> {
+        let df = self.series.to_dummies(separator, drop_first).map_err(JsPolarsErr::from)?;
+        Ok(df.into())
     }
-
     #[napi(catch_unwind)]
     pub fn get_list(&self, index: i64) -> Option<JsSeries> {
         if let Ok(ca) = &self.series.list() {

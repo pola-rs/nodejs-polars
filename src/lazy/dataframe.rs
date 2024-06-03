@@ -71,7 +71,7 @@ impl JsLazyFrame {
 
     #[napi(factory, catch_unwind)]
     pub fn deserialize(buf: Buffer, format: String) -> napi::Result<JsLazyFrame> {
-        let lp: LogicalPlan = match format.as_ref() {
+        let lp: DslPlan = match format.as_ref() {
             "bincode" => bincode::deserialize(&buf)
                 .map_err(|err| napi::Error::from_reason(format!("{:?}", err)))?,
             "json" => serde_json::from_slice(&buf)
@@ -89,8 +89,9 @@ impl JsLazyFrame {
         Ok(lf.clone())
     }
     #[napi(catch_unwind)]
-    pub fn describe_plan(&self) -> String {
-        self.ldf.describe_plan()
+    pub fn describe_plan(&self) -> napi::Result<String> {
+        let result = self.ldf.describe_plan().map_err(JsPolarsErr::from)?;
+        Ok(result)
     }
     #[napi(catch_unwind)]
     pub fn describe_optimized_plan(&self) -> napi::Result<String> {
@@ -398,28 +399,28 @@ impl JsLazyFrame {
     #[napi(catch_unwind)]
     pub fn min(&self) -> napi::Result<JsLazyFrame> {
         let ldf = self.ldf.clone();
-        let out = ldf.min().map_err(JsPolarsErr::from)?;
+        let out = ldf.min();
         Ok(out.into())
     }
 
     #[napi(catch_unwind)]
     pub fn max(&self) -> napi::Result<JsLazyFrame> {
         let ldf = self.ldf.clone();
-        let out = ldf.max().map_err(JsPolarsErr::from)?;
+        let out = ldf.max();
         Ok(out.into())
     }
 
     #[napi(catch_unwind)]
     pub fn sum(&self) -> napi::Result<JsLazyFrame> {
         let ldf = self.ldf.clone();
-        let out = ldf.sum().map_err(JsPolarsErr::from)?;
+        let out = ldf.sum();
         Ok(out.into())
     }
 
     #[napi(catch_unwind)]
     pub fn mean(&self) -> napi::Result<JsLazyFrame> {
         let ldf = self.ldf.clone();
-        let out = ldf.mean().map_err(JsPolarsErr::from)?;
+        let out = ldf.mean();
         Ok(out.into())
     }
 
@@ -427,7 +428,7 @@ impl JsLazyFrame {
     pub fn std(&self, ddof: Option<u8>) -> napi::Result<JsLazyFrame> {
         let ddof = ddof.unwrap_or(1);
         let ldf = self.ldf.clone();
-        let out = ldf.std(ddof).map_err(JsPolarsErr::from)?;
+        let out = ldf.std(ddof);
         Ok(out.into())
     }
 
@@ -435,14 +436,14 @@ impl JsLazyFrame {
     pub fn var(&self, ddof: Option<u8>) -> napi::Result<JsLazyFrame> {
         let ddof = ddof.unwrap_or(1);
         let ldf = self.ldf.clone();
-        let out = ldf.var(ddof).map_err(JsPolarsErr::from)?;
+        let out = ldf.var(ddof);
         Ok(out.into())
     }
 
     #[napi(catch_unwind)]
     pub fn median(&self) -> napi::Result<JsLazyFrame> {
         let ldf = self.ldf.clone();
-        let out = ldf.median().map_err(JsPolarsErr::from)?;
+        let out = ldf.median();
         Ok(out.into())
     }
 
@@ -453,9 +454,7 @@ impl JsLazyFrame {
         interpolation: Wrap<QuantileInterpolOptions>,
     ) -> napi::Result<JsLazyFrame> {
         let ldf = self.ldf.clone();
-        let out = ldf
-            .quantile(lit(quantile), interpolation.0)
-            .map_err(JsPolarsErr::from)?;
+        let out = ldf.quantile(lit(quantile), interpolation.0);
         Ok(out.into())
     }
 
@@ -680,17 +679,17 @@ pub fn scan_csv(path: String, options: ScanCsvOptions) -> napi::Result<JsLazyFra
     let r = LazyCsvReader::new(path)
         .with_infer_schema_length(Some(options.infer_schema_length.unwrap_or(100) as usize))
         .with_separator(options.sep.unwrap_or(",".to_owned()).as_bytes()[0])
-        .has_header(options.has_header.unwrap_or(true))
+        .with_has_header(options.has_header.unwrap_or(true))
         .with_ignore_errors(options.ignore_errors)
         .with_skip_rows(options.skip_rows.unwrap_or(0) as usize)
         .with_n_rows(n_rows)
         .with_cache(options.cache.unwrap_or(true))
-        .with_dtype_overwrite(overwrite_dtype.as_ref())
+        .with_dtype_overwrite(overwrite_dtype.map(Arc::new))
         .with_schema(options.schema.map(|schema| Arc::new(schema.0)))
-        .low_memory(options.low_memory.unwrap_or(false))
+        .with_low_memory(options.low_memory.unwrap_or(false))
         .with_comment_prefix(options.comment_prefix.as_deref())
         .with_quote_char(quote_char)
-        .with_end_of_line_char(options.eol_char.unwrap_or(b'\n'))
+        .with_eol_char(options.eol_char.unwrap_or(b'\n'))
         .with_rechunk(options.rechunk.unwrap_or(false))
         .with_skip_rows_after_header(options.skip_rows_after_header as usize)
         .with_encoding(encoding)
@@ -698,8 +697,8 @@ pub fn scan_csv(path: String, options: ScanCsvOptions) -> napi::Result<JsLazyFra
         .with_try_parse_dates(options.parse_dates.unwrap_or(false))
         .with_null_values(options.null_values.map(|s| s.0))
         .with_missing_is_null(!missing_utf8_is_empty_string)
-        .truncate_ragged_lines(options.truncate_ragged_lines.unwrap_or(false))
-        .raise_if_empty(options.raise_if_empty.unwrap_or(true))
+        .with_truncate_ragged_lines(options.truncate_ragged_lines.unwrap_or(false))
+        .with_raise_if_empty(options.raise_if_empty.unwrap_or(true))
         .finish()
         .map_err(JsPolarsErr::from)?;
     Ok(r.into())
@@ -760,6 +759,7 @@ pub fn scan_parquet(path: String, options: ScanParquetOptions) -> napi::Result<J
             enabled: false,
             ..Default::default()
         },
+        glob: true,
     };
     let lf = LazyFrame::scan_parquet(path, args).map_err(JsPolarsErr::from)?;
     Ok(lf.into())
