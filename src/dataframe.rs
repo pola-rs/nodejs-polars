@@ -4,6 +4,7 @@ use crate::series::JsSeries;
 use napi::JsUnknown;
 use polars::frame::row::{infer_schema, Row};
 use polars::frame::NullStrategy;
+use polars_io::mmap::MmapBytesReader;
 use polars_io::RowIndex;
 
 use std::borrow::Borrow;
@@ -86,11 +87,11 @@ pub struct ReadCsvOptions {
     pub eol_char: String,
 }
 
-#[napi(catch_unwind)]
-pub fn read_csv(
-    path_or_buffer: Either<String, Buffer>,
+fn mmap_reader_to_df<'a>(
+    csv: impl MmapBytesReader + 'a,
     options: ReadCsvOptions,
-) -> napi::Result<JsDataFrame> {
+) -> napi::Result<JsDataFrame>
+{
     let null_values = options.null_values.map(|w| w.0);
     let row_count = options.row_count.map(RowIndex::from);
     let projection = options
@@ -123,72 +124,54 @@ pub fn read_csv(
             .collect::<Schema>()
     });
 
-    let df = match path_or_buffer {
-        Either::A(path) => CsvReader::from_path(path)
-            .expect("unable to read file")
-            .infer_schema(Some(options.infer_schema_length.unwrap_or(100) as usize))
-            .with_projection(projection)
-            .has_header(options.has_header)
-            .with_n_rows(options.n_rows.map(|i| i as usize))
-            .with_separator(options.sep.unwrap_or(",".to_owned()).as_bytes()[0])
-            .with_skip_rows(options.skip_rows as usize)
-            .with_ignore_errors(options.ignore_errors)
-            .with_rechunk(options.rechunk)
-            .with_chunk_size(options.chunk_size as usize)
-            .with_encoding(encoding)
-            .with_columns(options.columns)
-            .with_n_threads(options.num_threads.map(|i| i as usize))
-            .with_dtypes(overwrite_dtype.map(Arc::new))
-            .with_schema(options.schema.map(|schema| Arc::new(schema.0)))
-            .low_memory(options.low_memory)
-            .with_comment_prefix(options.comment_char.as_deref())
-            .with_null_values(null_values)
-            .with_try_parse_dates(options.try_parse_dates)
-            .with_quote_char(quote_char)
-            .with_row_index(row_count)
-            .sample_size(options.sample_size as usize)
-            .with_skip_rows_after_header(options.skip_rows_after_header as usize)
-            .raise_if_empty(options.raise_if_empty)
-            .truncate_ragged_lines(options.truncate_ragged_lines)
-            .with_missing_is_null(options.missing_is_null)
-            .with_end_of_line_char(options.eol_char.as_bytes()[0])
-            .finish()
-            .map_err(JsPolarsErr::from)?,
-        Either::B(buffer) => {
-            let cursor = Cursor::new(buffer.as_ref());
-            CsvReader::new(cursor)
-                .infer_schema(Some(options.infer_schema_length.unwrap_or(100) as usize))
-                .with_projection(projection)
-                .has_header(options.has_header)
-                .with_n_rows(options.n_rows.map(|i| i as usize))
+    let df = CsvReadOptions::default()
+        .with_infer_schema_length(Some(options.infer_schema_length.unwrap_or(100) as usize))
+        .with_projection(projection.map(Arc::new))
+        .with_has_header(options.has_header)
+        .with_n_rows(options.n_rows.map(|i| i as usize))
+        .with_skip_rows(options.skip_rows as usize)
+        .with_ignore_errors(options.ignore_errors)
+        .with_rechunk(options.rechunk)
+        .with_chunk_size(options.chunk_size as usize)
+        .with_columns(options.columns.map(Arc::new))
+        .with_n_threads(options.num_threads.map(|i| i as usize))
+        .with_schema_overwrite(overwrite_dtype.map(Arc::new))
+        .with_schema(options.schema.map(|schema| Arc::new(schema.0)))
+        .with_low_memory(options.low_memory)
+        .with_row_index(row_count)
+        .with_sample_size(options.sample_size as usize)
+        .with_skip_rows_after_header(options.skip_rows_after_header as usize)
+        .with_raise_if_empty(options.raise_if_empty)
+        .with_parse_options(
+            CsvParseOptions::default()
                 .with_separator(options.sep.unwrap_or(",".to_owned()).as_bytes()[0])
-                .with_skip_rows(options.skip_rows as usize)
-                .with_ignore_errors(options.ignore_errors)
-                .with_rechunk(options.rechunk)
-                .with_chunk_size(options.chunk_size as usize)
                 .with_encoding(encoding)
-                .with_columns(options.columns)
-                .with_n_threads(options.num_threads.map(|i| i as usize))
-                .with_dtypes(overwrite_dtype.map(Arc::new))
-                .with_schema(options.schema.map(|schema| Arc::new(schema.0)))
-                .low_memory(options.low_memory)
+                .with_missing_is_null(options.missing_is_null)
                 .with_comment_prefix(options.comment_char.as_deref())
                 .with_null_values(null_values)
                 .with_try_parse_dates(options.try_parse_dates)
                 .with_quote_char(quote_char)
-                .with_row_index(row_count)
-                .sample_size(options.sample_size as usize)
-                .with_skip_rows_after_header(options.skip_rows_after_header as usize)
-                .raise_if_empty(options.raise_if_empty)
-                .truncate_ragged_lines(options.truncate_ragged_lines)
-                .with_missing_is_null(options.missing_is_null)
-                .with_end_of_line_char(options.eol_char.as_bytes()[0])
-                .finish()
-                .map_err(JsPolarsErr::from)?
-        }
-    };
+                .with_eol_char(options.eol_char.as_bytes()[0])
+                .with_truncate_ragged_lines(options.truncate_ragged_lines),
+        )
+        .into_reader_with_file_handle(csv)
+        .finish()
+        .map_err(JsPolarsErr::from)?;
+
     Ok(df.into())
 }
+
+#[napi(catch_unwind)]
+pub fn read_csv(
+    path_or_buffer: Either<String, Buffer>,
+    options: ReadCsvOptions,
+) -> napi::Result<JsDataFrame> {
+    match path_or_buffer {
+        Either::A(path) => mmap_reader_to_df(std::fs::File::open(path)?, options),
+        Either::B(buffer) => mmap_reader_to_df(Cursor::new(buffer.as_ref()), options),
+    }
+}
+
 #[napi(object)]
 pub struct ReadJsonOptions {
     pub infer_schema_length: Option<u32>,
@@ -577,8 +560,10 @@ impl JsDataFrame {
     }
 
     #[napi(catch_unwind)]
-    pub fn rechunk(&mut self) -> JsDataFrame {
-        self.df.agg_chunks().into()
+    pub fn rechunk(&self) -> JsDataFrame {
+        let mut df = self.df.clone();
+        df.as_single_chunk_par();
+        df.into()
     }
     #[napi(catch_unwind)]
     pub fn fill_null(&self, strategy: Wrap<FillNullStrategy>) -> napi::Result<JsDataFrame> {
@@ -596,7 +581,7 @@ impl JsDataFrame {
         let how = match how.as_ref() {
             "left" => JoinType::Left,
             "inner" => JoinType::Inner,
-            "outer" => JoinType::Outer { coalesce: true },
+            "outer" => JoinType::Outer,
             "semi" => JoinType::Semi,
             "anti" => JoinType::Anti,
             "asof" => JoinType::AsOf(AsOfOptions {

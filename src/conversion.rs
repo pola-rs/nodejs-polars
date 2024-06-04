@@ -498,41 +498,20 @@ impl FromNapiValue for Wrap<u64> {
 
 #[napi(object)]
 pub struct JsRollingOptions {
-    pub window_size: String,
+    pub window_size: i16,
     pub weights: Option<Vec<f64>>,
     pub min_periods: i64,
     pub center: bool,
     pub ddof: Option<u8>,
 }
 
-impl From<JsRollingOptions> for RollingOptionsImpl<'static> {
+impl From<JsRollingOptions> for RollingOptionsFixedWindow {
     fn from(o: JsRollingOptions) -> Self {
-        RollingOptionsImpl {
-            window_size: Duration::parse(&o.window_size),
+        RollingOptionsFixedWindow {
+            window_size: o.window_size as usize,
             weights: o.weights,
             min_periods: o.min_periods as usize,
             center: o.center,
-            by: None,
-            tu: None,
-            tz: None,
-            closed_window: None,
-            fn_params: Some(Arc::new(RollingVarParams {
-                ddof: o.ddof.unwrap_or(1),
-            }) as Arc<dyn Any + Send + Sync>),
-            ..Default::default()
-        }
-    }
-}
-
-impl From<JsRollingOptions> for RollingOptions {
-    fn from(o: JsRollingOptions) -> Self {
-        RollingOptions {
-            window_size: Duration::parse(&o.window_size),
-            weights: o.weights,
-            min_periods: o.min_periods as usize,
-            center: o.center,
-            by: None,
-            closed_window: None,
             fn_params: Some(Arc::new(RollingVarParams {
                 ddof: o.ddof.unwrap_or(1),
             }) as Arc<dyn Any + Send + Sync>),
@@ -550,7 +529,7 @@ pub struct JsRowCount {
 impl From<JsRowCount> for RowIndex {
     fn from(o: JsRowCount) -> Self {
         RowIndex {
-            name: o.name,
+            name: o.name.into(),
             offset: o.offset,
         }
     }
@@ -832,7 +811,7 @@ impl FromNapiValue for Wrap<JoinType> {
         let parsed = match s.as_ref() {
             "inner" => JoinType::Inner,
             "left" => JoinType::Left,
-            "outer" => JoinType::Outer { coalesce: true },
+            "outer" => JoinType::Outer,
             "semi" => JoinType::Semi,
             "anti" => JoinType::Anti,
             "cross" => JoinType::Cross,

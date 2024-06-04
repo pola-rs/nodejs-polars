@@ -664,6 +664,21 @@ describe("series", () => {
       new Uint8Array([1, 2, 3, 5]),
     );
   });
+  test("toDummies", () => {
+    const s = pl.Series("a", [1, 2, 3]);
+    let actual = s.toDummies();
+    let expected = pl.DataFrame(
+      { "a_1.0": [1, 0, 0], "a_2.0": [0, 1, 0], "a_3.0": [0, 0, 1] },
+      { schema: { "a_1.0": pl.UInt8, "a_2.0": pl.UInt8, "a_3.0": pl.UInt8 } },
+    );
+    expect(actual).toFrameEqual(expected);
+    actual = s.toDummies(":", true);
+    expected = pl.DataFrame(
+      { "a:2.0": [0, 1, 0], "a:3.0": [0, 0, 1] },
+      { schema: { "a:2.0": pl.UInt8, "a:3.0": pl.UInt8 } },
+    );
+    expect(actual).toFrameEqual(expected);
+  });
 });
 describe("comparators & math", () => {
   test("add/plus", () => {

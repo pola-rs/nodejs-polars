@@ -57,9 +57,8 @@ describe("dataframe", () => {
       describe: ["mean", "std", "min", "max", "median"],
       a: [2, 1, 1, 3, 2],
       b: [null, null, "a", "c", null],
-      c: [0.6666666666666666, 0.5773502588272095, 0, 1, 1],
+      c: [0.6666666666666666, 0.5773502691896258, 0, 1, 1],
     });
-
     expect(actual).toFrameEqual(expected);
   });
   test("drop", () => {
@@ -1526,8 +1525,9 @@ describe("join", () => {
     const expected = pl.DataFrame({
       foo: [1, 2, 3, null],
       bar: [6, 7, 8, null],
-      ham: ["a", "b", "c", "d"],
+      ham: ["a", "b", "c", null],
       apple: ["x", null, null, "y"],
+      ham_right: ["a", null, null, "d"],
       foo_right: [1, null, null, 10],
     });
     expect(actual).toFrameEqual(expected);

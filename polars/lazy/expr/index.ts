@@ -932,7 +932,7 @@ export const _Expr = (_expr: any): Expr => {
         throw new Error("window size is required");
       }
       const callOpts = {
-        windowSize: `${windowSize}i`,
+        windowSize: windowSize,
         weights: opts?.["weights"] ?? weights,
         minPeriods: opts?.["minPeriods"] ?? minPeriods ?? windowSize,
         center: opts?.["center"] ?? center ?? false,
@@ -1459,7 +1459,7 @@ export const _Expr = (_expr: any): Expr => {
         "rollingQuantile",
         val.quantile,
         val.interpolation ?? "nearest",
-        `${windowSize}i`,
+        windowSize,
         val?.["weights"] ?? weights ?? null,
         val?.["minPeriods"] ?? minPeriods ?? windowSize,
         val?.["center"] ?? center ?? false,

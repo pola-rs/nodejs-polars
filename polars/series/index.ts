@@ -1041,6 +1041,40 @@ export interface Series
   toTypedArray(): any;
 
   /**
+   * Get dummy/indicator variables.
+   * @param separator: str = "_", 
+   * @param dropFirst: bool = False
+   * 
+   * @example
+   * const s = pl.Series("a", [1, 2, 3])
+    >>> s.toDummies()
+    shape: (3, 3)
+    ┌─────┬─────┬─────┐
+    │ a_1 ┆ a_2 ┆ a_3 │
+    │ --- ┆ --- ┆ --- │
+    │ u8  ┆ u8  ┆ u8  │
+    ╞═════╪═════╪═════╡
+    │ 1   ┆ 0   ┆ 0   │
+    │ 0   ┆ 1   ┆ 0   │
+    │ 0   ┆ 0   ┆ 1   │
+    └─────┴─────┴─────┘
+
+    >>> s.toDummies(":", true)
+    shape: (3, 2)
+    ┌─────┬─────┐
+    │ a:2 ┆ a:3 │
+    │ --- ┆ --- │
+    │ u8  ┆ u8  │
+    ╞═════╪═════╡
+    │ 0   ┆ 0   │
+    │ 1   ┆ 0   │
+    │ 0   ┆ 1   │
+    └─────┴─────┘
+   * 
+   */
+  toDummies(separator?: string, dropFirst?: boolean): DataFrame;
+
+  /**
    * _Returns a Javascript object representation of Series_
    * Often this is much faster than the iterator, or `values` method
    *
@@ -1714,6 +1748,9 @@ export function _Series(_s: any): Series {
         return _s.toTypedArray();
       }
       throw new Error("data contains nulls, unable to convert to TypedArray");
+    },
+    toDummies(separator = "_", dropFirst = false) {
+      return _DataFrame(_s.toDummies(separator, dropFirst));
     },
     toFrame() {
       return _DataFrame(new pli.JsDataFrame([_s]));
