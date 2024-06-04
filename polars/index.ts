@@ -53,6 +53,7 @@ export namespace pl {
 
   // lazy
   export import col = lazy.col;
+  export import nth = lazy.nth;
   export import cols = lazy.cols;
   export import lit = lazy.lit;
   export import intRange = lazy.intRange;

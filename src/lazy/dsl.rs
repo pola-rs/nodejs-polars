@@ -1632,6 +1632,11 @@ pub fn last() -> JsExpr {
 }
 
 #[napi(catch_unwind)]
+pub fn nth(n: i64) -> JsExpr {
+    Expr::Nth(n).into()
+}
+
+#[napi(catch_unwind)]
 pub fn cols(names: Vec<String>) -> JsExpr {
     dsl::cols(names).into()
 }

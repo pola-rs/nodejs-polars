@@ -117,6 +117,10 @@ export function cols(...cols): Expr {
   return col(cols.flat());
 }
 
+export function nth(n: number): Expr {
+  return _Expr(pli.nth(n));
+}
+
 export function lit(value: any): Expr {
   if (Array.isArray(value)) {
     value = Series(value);
