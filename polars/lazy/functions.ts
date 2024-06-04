@@ -117,6 +117,30 @@ export function cols(...cols): Expr {
   return col(cols.flat());
 }
 
+/**
+ * Select nth column index in a DataFrame.
+ * @param n - Column index to select, starting at 0.
+ * @example
+ * ```
+ * > df = pl.DataFrame({
+ * > "ham": [1, 2, 3],
+ * > "hamburger": [11, 22, 33],
+ * > "foo": [3, 2, 1]})
+ * > df.select(nth(2))
+ * shape: (3, 1)
+ * ╭─────╮
+ * │ foo │
+ * │ --- │
+ * │ i64 │
+ * ╞═════╡
+ * │ 3   │
+ * ├╌╌╌╌╌┤
+ * │ 2   │
+ * ├╌╌╌╌╌┤
+ * │ 1   │
+ * ╰─────╯
+ * ```
+ */
 export function nth(n: number): Expr {
   return _Expr(pli.nth(n));
 }
