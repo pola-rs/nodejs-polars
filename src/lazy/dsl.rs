@@ -904,10 +904,10 @@ impl JsExpr {
             .into()
     }
     #[napi(catch_unwind)]
-    pub fn str_json_path_match(&self, pat: String) -> JsExpr {
+    pub fn str_json_path_match(&self, pat: Wrap<ChunkedArray<StringType>>) -> JsExpr {
         let function = move |s: Series| {
             let ca = s.str()?;
-            match ca.json_path_match(&pat) {
+            match ca.json_path_match(&pat.0) {
                 Ok(ca) => Ok(Some(ca.into_series())),
                 Err(e) => Err(PolarsError::ComputeError(format!("{:?}", e).into())),
             }
@@ -1169,26 +1169,20 @@ impl JsExpr {
         &self,
         quantile: f64,
         interpolation: Wrap<QuantileInterpolOptions>,
-        window_size: String,
+        window_size: i16,
         weights: Option<Vec<f64>>,
         min_periods: i64,
         center: bool,
-        by: Option<String>,
-        closed: Option<Wrap<ClosedWindow>>,
-        warn_if_unsorted: bool,
     ) -> JsExpr {
-        let options = RollingOptions {
-            window_size: Duration::parse(&window_size),
+        let options = RollingOptionsFixedWindow {
+            window_size: window_size as usize,
             min_periods: min_periods as usize,
             weights,
             center,
-            by,
-            closed_window: closed.map(|c| c.0),
             fn_params: Some(Arc::new(RollingQuantileParams {
                 prob: quantile,
                 interpol: interpolation.0,
             }) as Arc<dyn Any + Send + Sync>),
-            warn_if_unsorted,
         };
         self.inner
             .clone()

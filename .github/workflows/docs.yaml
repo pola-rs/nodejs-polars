@@ -14,7 +14,7 @@ jobs:
       - name: Install latest Rust nightly
         uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: nightly-2024-04-15
+          toolchain: nightly-2024-05-14
           components: rustfmt, clippy
       - name: Install ghp-import
         uses: actions/setup-python@v5

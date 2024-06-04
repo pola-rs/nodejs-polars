@@ -12,7 +12,7 @@ describe("serde", () => {
     expect(actual).toFrameEqual(expected);
   });
 
-  test.skip("lazyframe:bincode", () => {
+  test("lazyframe:bincode", () => {
     const df = pl.scanCSV(csvpath);
     const buf = df.serialize("bincode");
     const deserde = pl.LazyDataFrame.deserialize(buf, "bincode");

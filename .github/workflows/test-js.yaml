@@ -10,6 +10,8 @@ jobs:
         node: ["18", "20"]
     steps:
       - uses: actions/checkout@v4
+      - name: Enable Corepack
+        run: corepack enable
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node }}
@@ -18,9 +20,10 @@ jobs:
       - name: Install latest Rust nightly
         uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: nightly-2024-04-15
+          toolchain: nightly-2024-05-14
           components: rustfmt, clippy
-      - run: yarn --version
+      - name: Check yarn version
+        run: yarn --version
       - name: Install Node Dependencies
         run: yarn install
       - name: Build Binary
@@ -43,7 +46,7 @@ jobs:
       - name: Install latest Rust nightly
         uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: nightly-2024-04-15
+          toolchain: nightly-2024-05-14
           components: rustfmt, clippy
       - name: Bun version
         uses: oven-sh/setup-bun@v1
