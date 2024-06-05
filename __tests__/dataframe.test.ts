@@ -691,6 +691,28 @@ describe("dataframe", () => {
     });
     expect(actual.nChunks()).toEqual(1);
   });
+  test("nth", () => {
+    const actual = pl
+      .DataFrame({
+        foo: [1, 2, null],
+        bar: [6, 2, 8],
+        apple: [6, 2, 8],
+        pizza: [null, null, 8],
+      })
+      .select(pl.nth(2));
+    expect(actual.columns).toEqual(["apple"]);
+  });
+  test("nth:multiple", () => {
+    const actual = pl
+      .DataFrame({
+        foo: [1, 2, null],
+        bar: [6, 2, 8],
+        apple: [6, 2, 8],
+        pizza: [null, null, 8],
+      })
+      .select(pl.nth(2), pl.nth(3));
+    expect(actual.columns).toEqual(["apple", "pizza"]);
+  });
   test("nullCount", () => {
     const actual = pl
       .DataFrame({
