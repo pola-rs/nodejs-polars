@@ -18,11 +18,12 @@ jobs:
             target: x86_64-apple-darwin
             architecture: x64
             build: |
+              corepack enable
               yarn build
               strip -x polars/*.node
           - host: windows-latest
             architecture: x64
-            build: yarn build
+            build: corepack enable && yarn build
             target: x86_64-pc-windows-msvc
           - host: ubuntu-latest
             architecture: x64
@@ -30,6 +31,7 @@ jobs:
             docker: ghcr.io/napi-rs/napi-rs/nodejs-rust:lts-alpine-zig
             build: |-
               set -e &&
+              corepack enable &&
               rustup target add x86_64-unknown-linux-gnu &&
               yarn build --target x86_64-unknown-linux-gnu --zig --zig-abi-suffix 2.12 &&
               llvm-strip -x polars/*.node
@@ -38,7 +40,7 @@ jobs:
             architecture: x64
             target: x86_64-unknown-linux-musl
             docker: ghcr.io/napi-rs/napi-rs/nodejs-rust:lts-alpine
-            build: set -e && unset CC && unset CXX && yarn build && strip polars/*.node
+            build: set -e && unset CC && unset CXX && corepack enable && yarn build && strip polars/*.node
           - host: macos-latest
             target: aarch64-apple-darwin
             build: |
@@ -47,6 +49,7 @@ jobs:
               export CXX=$(xcrun -f clang++);
               SYSROOT=$(xcrun --sdk macosx --show-sdk-path);
               export CFLAGS="-isysroot $SYSROOT -isystem $SYSROOT";
+              corepack enable;
               yarn build --target aarch64-apple-darwin
               strip -x polars/*.node
           - host: ubuntu-latest
@@ -59,6 +62,7 @@ jobs:
               cp -r /usr/aarch64-unknown-linux-gnu/lib/gcc /usr/aarch64-unknown-linux-gnu/aarch64-unknown-linux-gnu/sysroot/lib/
               export LDFLAGS="--sysroot=/usr/aarch64-unknown-linux-gnu/aarch64-unknown-linux-gnu/sysroot -L/usr/aarch64-unknown-linux-gnu/lib/gcc/aarch64-unknown-linux-gnu/4.8.5"
               export CFLAGS="-fuse-ld=lld --sysroot=/usr/aarch64-unknown-linux-gnu/aarch64-unknown-linux-gnu/sysroot -L/usr/aarch64-unknown-linux-gnu/lib/gcc/aarch64-unknown-linux-gnu/4.8.5"
+              corepack enable
               yarn build --target aarch64-unknown-linux-gnu
               llvm-strip polars/*.node
           # Disabled until a simd-json fallback can be implemented. see https://github.com/simd-lite/simd-json/issues/263 and https://github.com/simd-lite/simd-json/issues/218
@@ -80,6 +84,7 @@ jobs:
               touch "${ANDROID_NDK_LATEST_HOME}/toolchains/llvm/prebuilt/linux-x86_64/lib/clang/${CLANG_VERSION}/lib/linux/aarch64/libgcc.a"
               chmod 777 "${ANDROID_NDK_LATEST_HOME}/toolchains/llvm/prebuilt/linux-x86_64/lib/clang/${CLANG_VERSION}/lib/linux/aarch64/libgcc.a"
               echo "INPUT(-lunwind)" > "${ANDROID_NDK_LATEST_HOME}/toolchains/llvm/prebuilt/linux-x86_64/lib/clang/${CLANG_VERSION}/lib/linux/aarch64/libgcc.a"
+              corepack enable
               yarn build --target aarch64-linux-android
               ${ANDROID_NDK_LATEST_HOME}/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-strip polars/*.node
 
@@ -92,6 +97,7 @@ jobs:
               rustup target add aarch64-unknown-linux-musl
               unset CC
               unset CXX
+              corepack enable
               yarn build --target=aarch64-unknown-linux-musl
               /aarch64-linux-musl-cross/bin/aarch64-linux-musl-strip polars/*.node
 
@@ -158,6 +164,8 @@ jobs:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Enable Corepack
+        run: corepack enable
       - name: Install dependencies
         run: yarn install
       - name: Download all artifacts
@@ -180,7 +188,8 @@ jobs:
           registry-url: "https://registry.npmjs.org"
           cache: yarn
           cache-dependency-path: yarn.lock
-
+      - name: Enable Corepack
+        run: corepack enable
       - name: "Install dependencies"
         run: yarn install
 
