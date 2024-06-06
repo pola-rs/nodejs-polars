@@ -18,7 +18,8 @@ jobs:
             target: x86_64-apple-darwin
             architecture: x64
             build: |
-              yarn build
+              rustup target add x86_64-apple-darwin
+              yarn build --target x86_64-apple-darwin
               strip -x polars/*.node
           - host: windows-latest
             architecture: x64
