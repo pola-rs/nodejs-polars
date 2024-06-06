@@ -164,7 +164,7 @@ jobs:
       - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
-          name: bindings-x86_64-apple-darwin
+          name: bindings-aarch64-apple-darwin
           path: polars
       - name: Run test
         run: yarn test
