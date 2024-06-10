@@ -1546,14 +1546,14 @@ describe("join", () => {
     const actual = df.join(otherDF, {
       on: "ham",
       how: "left",
-      suffix: "_right",
+      suffix: "_other",
     });
     const expected = pl.DataFrame({
       foo: [1, 2, 3],
       bar: [6, 7, 8],
       ham: ["a", "b", "c"],
       apple: ["x", "y", null],
-      foo_right: [1, 10, null],
+      foo_other: [1, 10, null],
     });
     expect(actual).toFrameEqual(expected);
   });

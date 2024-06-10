@@ -2135,7 +2135,7 @@ export const _DataFrame = (_df: any): DataFrame => {
     isEmpty: () => _df.height === 0,
     isUnique: () => _Series(_df.isUnique()) as any,
     join(other: DataFrame, options): DataFrame {
-      options = { how: "inner", suffix: "right", ...options };
+      options = { how: "inner", ...options };
       const on = columnOrColumns(options.on);
       const how = options.how;
       const suffix = options.suffix;
@@ -2154,7 +2154,6 @@ export const _DataFrame = (_df: any): DataFrame => {
           "You should pass the column to join on as an argument.",
         );
       }
-
       return wrap("join", other._df, leftOn, rightOn, how, suffix);
     },
     joinAsof(other, options) {

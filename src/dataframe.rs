@@ -577,6 +577,7 @@ impl JsDataFrame {
         left_on: Vec<&str>,
         right_on: Vec<&str>,
         how: String,
+        suffix: Option<String>,
     ) -> napi::Result<JsDataFrame> {
         let how = match how.as_ref() {
             "left" => JoinType::Left,
@@ -597,7 +598,13 @@ impl JsDataFrame {
 
         let df = self
             .df
-            .join(&other.df, left_on, right_on, how.into())
+            .join(&other.df, left_on, right_on,
+                JoinArgs {
+                    how: how,
+                    suffix: suffix,
+                    ..Default::default()
+                }
+            )
             .map_err(JsPolarsErr::from)?;
         Ok(JsDataFrame::new(df))
     }
