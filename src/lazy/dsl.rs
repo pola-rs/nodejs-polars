@@ -954,7 +954,18 @@ impl JsExpr {
             .split_exact_inclusive(by.0, n as usize)
             .into()
     }
-
+    #[napi(catch_unwind)]
+    pub fn replace(&self, old: &JsExpr, new: &JsExpr, default: Option<&JsExpr>, return_dtype: Option<Wrap<DataType>>) -> JsExpr {
+        self.inner
+        .clone()
+        .replace(
+            old.inner.clone(),
+            new.inner.clone(),
+            default.map(|e| e.inner.clone()),
+            return_dtype.map(|dt| dt.0),
+        )
+        .into()
+    }
     #[napi(catch_unwind)]
     pub fn year(&self) -> JsExpr {
         self.clone().inner.dt().year().into()

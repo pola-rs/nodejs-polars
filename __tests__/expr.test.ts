@@ -1135,7 +1135,7 @@ describe("expr.str", () => {
     expect(actual).toFrameEqual(expected);
     expect(seriesActual).toFrameEqual(expected);
   });
-  test("replace", () => {
+  test("str.replace", () => {
     const df = pl.DataFrame({
       os: ["kali-linux", "debian-linux", "ubuntu-linux", "mac-sierra"],
     });
@@ -1151,7 +1151,7 @@ describe("expr.str", () => {
     expect(actual).toFrameEqual(expected);
     expect(seriesActual).toFrameEqual(expected);
   });
-  test("replaceAll", () => {
+  test("str.replaceAll", () => {
     const df = pl.DataFrame({
       os: [
         "kali-linux-2021.3a",
@@ -1176,6 +1176,20 @@ describe("expr.str", () => {
     const actual = df.select(col("os").str.replaceAll("-", ":").as("os"));
     expect(actual).toFrameEqual(expected);
     expect(seriesActual).toFrameEqual(expected);
+  });
+  test("expr.replace", () => {
+    const df = pl.DataFrame({ a: [1, 2, 2, 3] });
+    let actual = df.withColumns(pl.col("a").replace(2, 100).alias("replaced"));
+    let expected = pl.DataFrame({
+      a: [1, 2, 2, 3],
+      replaced: [1, 100, 100, 3],
+    });
+    expect(actual).toFrameEqual(expected);
+    actual = df.withColumns(
+      pl.col("a").replace([2, 3], [100, 200]).alias("replaced"),
+    );
+    expected = pl.DataFrame({ a: [1, 2, 2, 3], replaced: [1, 100, 100, 200] });
+    expect(actual).toFrameEqual(expected);
   });
   test("slice", () => {
     const df = pl.DataFrame({
