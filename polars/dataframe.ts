@@ -1292,13 +1292,7 @@ export interface DataFrame
    * ```
    */
   shiftAndFill(n: number, fillValue: number): DataFrame;
-  shiftAndFill({
-    n,
-    fillValue,
-  }: {
-    n: number;
-    fillValue: number;
-  }): DataFrame;
+  shiftAndFill({ n, fillValue }: { n: number; fillValue: number }): DataFrame;
   /**
    * Shrink memory usage of this DataFrame to fit the exact capacity needed to hold the data.
    */

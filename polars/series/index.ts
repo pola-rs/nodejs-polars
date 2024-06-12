@@ -207,7 +207,10 @@ export interface Series
   diff({
     n,
     nullBehavior,
-  }: { n: number; nullBehavior: "ignore" | "drop" }): Series;
+  }: {
+    n: number;
+    nullBehavior: "ignore" | "drop";
+  }): Series;
   /**
    * Compute the dot/inner product between two Series
    * ___
@@ -537,7 +540,10 @@ export interface Series
   kurtosis({
     fisher,
     bias,
-  }: { fisher?: boolean; bias?: boolean }): Optional<number>;
+  }: {
+    fisher?: boolean;
+    bias?: boolean;
+  }): Optional<number>;
   /**
    * __Length of this Series.__
    * ___
