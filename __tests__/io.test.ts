@@ -274,6 +274,18 @@ describe("parquet", () => {
     const df = pl.scanParquet(parquetpath, { nRows: 4 }).collectSync();
     expect(df.shape).toEqual({ height: 4, width: 4 });
   });
+
+  test("writeParquet with decimals", async () => {
+    const df = pl.DataFrame([
+      pl.Series("decimal", [1n, 2n, 3n], pl.Decimal()),
+      pl.Series("u32", [1, 2, 3], pl.UInt32),
+      pl.Series("str", ["a", "b", "c"]),
+    ]);
+
+    const buf = df.writeParquet();
+    const newDF = pl.readParquet(buf);
+    expect(newDF).toFrameEqual(df);
+  });
 });
 
 describe("ipc", () => {

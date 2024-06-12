@@ -81,7 +81,8 @@ export abstract class DataType {
     return new Categorical();
   }
 
-  public static Decimal(precision: number, scale: number): DataType {
+  /** Decimal type */
+  public static Decimal(precision?: number, scale?: number): DataType {
     return new Decimal(precision, scale);
   }
 
@@ -191,11 +192,12 @@ export class String extends DataType {}
 export class Categorical extends DataType {}
 
 export class Decimal extends DataType {
-  constructor(
-    private precision: number,
-    private scale: number,
-  ) {
+  private precision: number | null;
+  private scale: number | null;
+  constructor(precision?: number, scale?: number) {
     super();
+    this.precision = precision ?? null;
+    this.scale = scale ?? null;
   }
   override get inner() {
     return [this.precision, this.scale];
@@ -268,10 +270,6 @@ export class FixedSizeList extends DataType {
     protected listSize: number,
   ) {
     super();
-  }
-
-  override get variant() {
-    return "FixedSizeList";
   }
 
   override get inner(): [DataType, number] {

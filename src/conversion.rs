@@ -692,9 +692,9 @@ impl FromNapiValue for Wrap<DataType> {
                     }
                     "Decimal" => {
                         let inner = obj.get::<_, Array>("inner")?.unwrap(); // [precision, scale]
-                        let precision = inner.get::<i32>(0)?.unwrap();
-                        let scale = inner.get::<i32>(1)?.unwrap();
-                        DataType::Decimal(Some(precision as usize), Some(scale as usize))
+                        let precision = inner.get::<Option<i32>>(0)?.unwrap().map(|x| x as usize);
+                        let scale = inner.get::<Option<i32>>(1)?.unwrap().map(|x| x as usize);
+                        DataType::Decimal(precision, scale)
                     }
                     tp => panic!("Type {} not implemented in str_to_polarstype", tp),
                 };
