@@ -106,16 +106,7 @@ const POLARS_TYPE_TO_CONSTRUCTOR: Record<string, any> = {
   },
   List(name, values, _strict, dtype) {
     return pli.JsSeries.newList(name, values, dtype);
-  },
-  Decimal(name, values, strict, dtype) {
-    return pli.JsSeries.newDecimal(
-      name,
-      values,
-      strict,
-      dtype.inner[0], // precision
-      dtype.inner[1], // scale
-    );
-  },
+  }
 };
 
 /** @ignore */
