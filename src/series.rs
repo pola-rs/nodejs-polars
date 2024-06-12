@@ -1162,7 +1162,6 @@ impl JsSeries {
 
     #[napi(catch_unwind)]
     pub fn cast(&self, dtype: Wrap<DataType>, strict: Option<bool>) -> napi::Result<JsSeries> {
-        println!("cast: {:?}", dtype.0);
         let strict = strict.unwrap_or(false);
         let dtype = dtype.0;
         let out = if strict {
