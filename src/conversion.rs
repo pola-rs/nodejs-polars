@@ -645,6 +645,18 @@ impl FromNapiValue for Wrap<DataType> {
                         let dt = Wrap::<DataType>::from_napi_value(env, napi_dt)?;
                         DataType::List(Box::new(dt.0))
                     }
+                    "FixedSizeList" => {
+                        let inner = obj.get::<_, Array>("inner")?.unwrap();
+                        let inner_dtype: Object = inner.get::<Object>(0)?.unwrap();
+                        let napi_dt = Object::to_napi_value(env, inner_dtype).unwrap();
+
+                        let dt = Wrap::<DataType>::from_napi_value(env, napi_dt)?;
+
+                        let size = inner.get::<i32>(1)?.unwrap();
+
+                        DataType::Array(Box::new(dt.0), size as usize)
+                    }
+
                     "Date" => DataType::Date,
                     "Datetime" => {
                         let tu = obj.get::<_, Wrap<TimeUnit>>("timeUnit")?.unwrap();

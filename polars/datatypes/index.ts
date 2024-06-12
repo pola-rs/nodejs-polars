@@ -1,8 +1,9 @@
-import { DataType, TimeUnit } from "./datatype";
-export { DataType, TimeUnit };
+export * from "./datatype";
 export { Field } from "./field";
 
 import pli from "../internals/polars_internal";
+// biome-ignore lint/style/useImportType: <explanation>
+import { type DataType } from "./datatype";
 
 /** @ignore */
 export type TypedArray =
@@ -110,6 +111,7 @@ const POLARS_TYPE_TO_CONSTRUCTOR: Record<string, any> = {
 
 /** @ignore */
 export const polarsTypeToConstructor = (dtype: DataType): CallableFunction => {
+  console.log("variant=", dtype.variant);
   const ctor = POLARS_TYPE_TO_CONSTRUCTOR[dtype.variant];
   if (!ctor) {
     throw new Error(`Cannot construct Series for type ${dtype.variant}.`);
