@@ -1566,7 +1566,7 @@ export const _Expr = (_expr: any): Expr => {
 
       return _Expr(_expr.repeatBy(e));
     },
-    replace(old, _new, _default, returnDtype) {
+    replace(old, newValue, defaultValue, returnDtype) {
       let oldI: any = old;
       let newI = _new;
       let defI = _default;
