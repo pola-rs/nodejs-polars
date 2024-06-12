@@ -111,7 +111,6 @@ const POLARS_TYPE_TO_CONSTRUCTOR: Record<string, any> = {
 
 /** @ignore */
 export const polarsTypeToConstructor = (dtype: DataType): CallableFunction => {
-  console.log("variant=", dtype.variant);
   const ctor = POLARS_TYPE_TO_CONSTRUCTOR[dtype.variant];
   if (!ctor) {
     throw new Error(`Cannot construct Series for type ${dtype.variant}.`);
