@@ -3,7 +3,7 @@ import { DataType, polarsTypeToConstructor } from "../datatypes";
 import { isTypedArray } from "util/types";
 import { Series } from "../series";
 import { _DataFrame } from "../dataframe";
-import { TimeUnit } from "../datatypes/datatype";
+import { FixedSizeList, TimeUnit } from "../datatypes/datatype";
 import { Field } from "../datatypes/field";
 
 export const jsTypeToPolarsType = (value: unknown): DataType => {
@@ -141,21 +141,28 @@ export function arrayToJsSeries(
   const firstValue = firstNonNull(values);
   if (Array.isArray(firstValue) || isTypedArray(firstValue)) {
     const listDtype = jsTypeToPolarsType(firstValue);
-
     const ctor = polarsTypeToConstructor(DataType.List(listDtype));
+    const s = ctor(name, values, strict, listDtype);
+    if (dtype instanceof FixedSizeList) {
+      // TODO: build a FixedSizeList natively in Rust
+      return s.cast(dtype, strict);
+    }
 
-    return ctor(name, values, strict, listDtype);
+    return s;
   }
 
   dtype = dtype ?? jsTypeToPolarsType(firstValue);
-  let series: any;
+  let series: Series;
   if (dtype?.variant === "Struct") {
     const df = pli.fromRows(values, null, 1);
 
     return df.toStruct(name);
   }
-  
+
   if (dtype?.variant === "Decimal") {
+    if (typeof firstValue !== "bigint") {
+      throw new Error("Decimal type can only be constructed from BigInt");
+    }
     return pli.JsSeries.newAnyvalue(name, values, dtype, strict);
   }
   if (firstValue instanceof Date) {
@@ -164,6 +171,7 @@ export function arrayToJsSeries(
     const ctor = polarsTypeToConstructor(dtype);
     series = ctor(name, values, strict);
   }
+
   if (
     [
       "Datetime",

@@ -154,19 +154,15 @@ impl<'a> ToNapiValue for Wrap<AnyValue<'a>> {
             AnyValue::Time(v) => i64::to_napi_value(env, v),
             AnyValue::List(ser) => Wrap::<&Series>::to_napi_value(env, Wrap(&ser)),
             ref av @ AnyValue::Struct(_, _, flds) => struct_dict(env, av._iter_struct_av(), flds),
+            AnyValue::Array(ser, _) => Wrap::<&Series>::to_napi_value(env, Wrap(&ser)),
             AnyValue::Enum(_, _, _) => todo!(),
-            AnyValue::Array(_, _) => todo!(),
             AnyValue::Object(_) => todo!(),
             AnyValue::ObjectOwned(_) => todo!(),
             AnyValue::StructOwned(_) => todo!(),
             AnyValue::Binary(_) => todo!(),
             AnyValue::BinaryOwned(_) => todo!(),
-            AnyValue::Decimal(v, scale) => {
-                let env_ = Env::from_raw(env);
-                let mut obj = env_.create_object()?;
-                obj.set("value", v)?;
-                obj.set("scale", scale)?;
-                Object::to_napi_value(env, obj)
+            AnyValue::Decimal(_, _) => {
+                Err(napi::Error::from_reason("Decimal is not a supported type in javascript, please convert to string or number before collecting to js"))
             }
         }
     }
@@ -660,6 +656,18 @@ impl FromNapiValue for Wrap<DataType> {
                         let dt = Wrap::<DataType>::from_napi_value(env, napi_dt)?;
                         DataType::List(Box::new(dt.0))
                     }
+                    "FixedSizeList" => {
+                        let inner = obj.get::<_, Array>("inner")?.unwrap();
+                        let inner_dtype: Object = inner.get::<Object>(0)?.unwrap();
+                        let napi_dt = Object::to_napi_value(env, inner_dtype).unwrap();
+
+                        let dt = Wrap::<DataType>::from_napi_value(env, napi_dt)?;
+
+                        let size = inner.get::<i32>(1)?.unwrap();
+
+                        DataType::Array(Box::new(dt.0), size as usize)
+                    }
+
                     "Date" => DataType::Date,
                     "Datetime" => {
                         let tu = obj.get::<_, Wrap<TimeUnit>>("timeUnit")?.unwrap();
@@ -970,6 +978,27 @@ impl ToNapiValue for Wrap<DataType> {
                 obj.set("variant", "Struct")?;
                 obj.set("inner", vec![js_flds])?;
 
+                Object::to_napi_value(env, obj)
+            }
+            DataType::Array(dtype, size) => {
+                let env_ctx = Env::from_raw(env);
+                let mut obj = env_ctx.create_object()?;
+                let wrapped = Wrap(*dtype);
+                let mut inner_arr = env_ctx.create_array(2)?;
+                inner_arr.set(0, wrapped)?;
+                inner_arr.set(1, size as u32)?;
+                obj.set("variant", "FixedSizeList")?;
+                obj.set("inner", inner_arr)?;
+                Object::to_napi_value(env, obj)
+            }
+            DataType::Decimal(precision, scale) => {
+                let env_ctx = Env::from_raw(env);
+                let mut obj = env_ctx.create_object()?;
+                let mut inner_arr = env_ctx.create_array(2)?;
+                inner_arr.set(0, precision.map(|p| p as u32))?;
+                inner_arr.set(1, scale.map(|s| s as u32))?;
+                obj.set("variant", "Decimal")?;
+                obj.set("inner", inner_arr)?;
                 Object::to_napi_value(env, obj)
             }
             _ => {
