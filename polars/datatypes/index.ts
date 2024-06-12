@@ -106,7 +106,7 @@ const POLARS_TYPE_TO_CONSTRUCTOR: Record<string, any> = {
   },
   List(name, values, _strict, dtype) {
     return pli.JsSeries.newList(name, values, dtype);
-  }
+  },
 };
 
 /** @ignore */
