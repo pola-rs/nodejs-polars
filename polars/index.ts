@@ -112,6 +112,7 @@ export namespace pl {
   export import Object = DataType.Object;
   export import Null = DataType.Null;
   export import Struct = DataType.Struct;
+  export import Decimal = DataType.Decimal;
 
   /**
    * Run SQL queries against DataFrame/LazyFrame data.

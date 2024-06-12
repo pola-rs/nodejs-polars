@@ -154,6 +154,10 @@ export function arrayToJsSeries(
 
     return df.toStruct(name);
   }
+  
+  if (dtype?.variant === "Decimal") {
+    return pli.JsSeries.newAnyvalue(name, values, dtype, strict);
+  }
   if (firstValue instanceof Date) {
     series = pli.JsSeries.newOptDate(name, values, strict);
   } else {

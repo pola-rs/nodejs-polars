@@ -194,6 +194,22 @@ impl JsSeries {
             .into_series()
             .into())
     }
+    
+    #[napi(factory, catch_unwind)]
+    pub fn new_anyvalue(
+        name: String,
+        values: Vec<Wrap<AnyValue>>,
+        dtype: Wrap<DataType>,
+        strict: bool,
+    ) -> napi::Result<JsSeries> {
+        let values = values.into_iter().map(|v| v.0).collect::<Vec<_>>();
+
+        let s = Series::from_any_values_and_dtype(&name, &values, &dtype.0, strict)
+            .map_err(JsPolarsErr::from)?;
+
+        Ok(s.into())
+    }
+
     #[napi(factory, catch_unwind)]
     pub fn new_list(name: String, values: Array, dtype: Wrap<DataType>) -> napi::Result<JsSeries> {
         use crate::list_construction::js_arr_to_list;
@@ -993,8 +1009,15 @@ impl JsSeries {
     //   Ok(ca.into_series().into())
     // }
     #[napi(catch_unwind)]
-    pub fn to_dummies(&self, separator: Option<&str>, drop_first: bool) -> napi::Result<JsDataFrame> {
-        let df = self.series.to_dummies(separator, drop_first).map_err(JsPolarsErr::from)?;
+    pub fn to_dummies(
+        &self,
+        separator: Option<&str>,
+        drop_first: bool,
+    ) -> napi::Result<JsDataFrame> {
+        let df = self
+            .series
+            .to_dummies(separator, drop_first)
+            .map_err(JsPolarsErr::from)?;
         Ok(df.into())
     }
     #[napi(catch_unwind)]
