@@ -1,6 +1,5 @@
 /* eslint-disable newline-per-chained-call */
 import pl from "@polars";
-import { InvalidOperationError } from "../polars/error";
 import Chance from "chance";
 
 describe("from lists", () => {
@@ -185,6 +184,32 @@ describe("typedArrays", () => {
     const float64Array = new Float64Array([1, 2, 3]);
     const actual = pl.Series(float64Array).toTypedArray();
     expect(JSON.stringify(actual)).toEqual(JSON.stringify(float64Array));
+  });
+
+  test("decimal", () => {
+    const expected = [1n, 2n, 3n];
+    const expectedDtype = pl.Decimal(10, 2);
+    const actual = pl.Series("", expected, expectedDtype);
+    expect(actual.dtype).toEqual(expectedDtype);
+    try {
+      actual.toArray();
+    } catch (e: any) {
+      expect(e.message).toContain(
+        "Decimal is not a supported type in javascript, please convert to string or number before collecting to js",
+      );
+    }
+  });
+
+  test("fixed list", () => {
+    const expectedDtype = pl.FixedSizeList(pl.Float32, 3);
+    const expected = [
+      [1, 2, 3],
+      [4, 5, 6],
+    ];
+    const actual = pl.Series("", expected, expectedDtype);
+    expect(actual.dtype).toEqual(expectedDtype);
+    const actualValues = actual.toArray();
+    expect(actualValues).toEqual(expected);
   });
 });
 describe("series", () => {

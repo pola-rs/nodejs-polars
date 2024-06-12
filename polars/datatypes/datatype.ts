@@ -81,6 +81,11 @@ export abstract class DataType {
     return new Categorical();
   }
 
+  /** Decimal type */
+  public static Decimal(precision?: number, scale?: number): DataType {
+    return new Decimal(precision, scale);
+  }
+
   /**
    * Calendar date and time type
    * @param timeUnit any of 'ms' | 'ns' | 'us'
@@ -186,6 +191,39 @@ export class String extends DataType {}
 
 export class Categorical extends DataType {}
 
+export class Decimal extends DataType {
+  private precision: number | null;
+  private scale: number | null;
+  constructor(precision?: number, scale?: number) {
+    super();
+    this.precision = precision ?? null;
+    this.scale = scale ?? null;
+  }
+  override get inner() {
+    return [this.precision, this.scale];
+  }
+  override equals(other: DataType): boolean {
+    if (other.variant === this.variant) {
+      return (
+        this.precision === (other as Decimal).precision &&
+        this.scale === (other as Decimal).scale
+      );
+    }
+    return false;
+  }
+
+  override toJSON() {
+    return {
+      [this.identity]: {
+        [this.variant]: {
+          precision: this.precision,
+          scale: this.scale,
+        },
+      },
+    };
+  }
+}
+
 /**
  * Datetime type
  */
@@ -232,10 +270,6 @@ export class FixedSizeList extends DataType {
     protected listSize: number,
   ) {
     super();
-  }
-
-  override get variant() {
-    return "FixedSizeList";
   }
 
   override get inner(): [DataType, number] {
@@ -349,6 +383,7 @@ export namespace DataType {
   export type Object = import(".").Object_;
   export type Null = import(".").Null;
   export type Struct = import(".").Struct;
+  export type Decimal = import(".").Decimal;
   /**
    * deserializes a datatype from the serde output of rust polars `DataType`
    * @param dtype dtype object

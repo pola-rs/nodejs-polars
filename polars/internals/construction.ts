@@ -158,6 +158,13 @@ export function arrayToJsSeries(
 
     return df.toStruct(name);
   }
+
+  if (dtype?.variant === "Decimal") {
+    if (typeof firstValue !== "bigint") {
+      throw new Error("Decimal type can only be constructed from BigInt");
+    }
+    return pli.JsSeries.newAnyvalue(name, values, dtype, strict);
+  }
   if (firstValue instanceof Date) {
     series = pli.JsSeries.newOptDate(name, values, strict);
   } else {

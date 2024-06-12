@@ -90,8 +90,7 @@ pub struct ReadCsvOptions {
 fn mmap_reader_to_df<'a>(
     csv: impl MmapBytesReader + 'a,
     options: ReadCsvOptions,
-) -> napi::Result<JsDataFrame>
-{
+) -> napi::Result<JsDataFrame> {
     let null_values = options.null_values.map(|w| w.0);
     let row_count = options.row_count.map(RowIndex::from);
     let projection = options
@@ -598,12 +597,15 @@ impl JsDataFrame {
 
         let df = self
             .df
-            .join(&other.df, left_on, right_on,
+            .join(
+                &other.df,
+                left_on,
+                right_on,
                 JoinArgs {
                     how: how,
                     suffix: suffix,
                     ..Default::default()
-                }
+                },
             )
             .map_err(JsPolarsErr::from)?;
         Ok(JsDataFrame::new(df))

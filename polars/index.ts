@@ -1,7 +1,8 @@
+import { Decimal } from "./datatypes/datatype";
 import * as series from "./series";
 import * as df from "./dataframe";
 import { DataType, Field as _field } from "./datatypes";
-export { DataType } from "./datatypes";
+export * from "./datatypes";
 import * as func from "./functions";
 import * as io from "./io";
 import * as cfg from "./cfg";
@@ -111,6 +112,7 @@ export namespace pl {
   export type Object = import("./datatypes").Object_;
   export type Null = import("./datatypes").Null;
   export type Struct = import("./datatypes").Struct;
+  export type Decimal = import("./datatypes").Decimal;
 
   export const Categorical = DataType.Categorical;
   export const Int8 = DataType.Int8;
@@ -137,6 +139,7 @@ export namespace pl {
   export const Object = DataType.Object;
   export const Null = DataType.Null;
   export const Struct = DataType.Struct;
+  export const Decimal = DataType.Decimal;
 
   /**
    * Run SQL queries against DataFrame/LazyFrame data.
