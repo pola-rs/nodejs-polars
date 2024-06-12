@@ -194,7 +194,7 @@ impl JsSeries {
             .into_series()
             .into())
     }
-    
+
     #[napi(factory, catch_unwind)]
     pub fn new_anyvalue(
         name: String,
