@@ -1,6 +1,6 @@
 {
   "name": "nodejs-polars",
-  "version": "0.12.3",
+  "version": "0.13.0",
   "repository": "https://github.com/pola-rs/nodejs-polars.git",
   "license": "MIT",
   "main": "bin/index.js",
