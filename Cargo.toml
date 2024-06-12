@@ -152,6 +152,7 @@ features = [
   "timezones",
   "peaks",
   "string_pad",
+  "replace",
   "cov",
   "http",
   "cloud",
