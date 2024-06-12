@@ -743,15 +743,14 @@ export interface Expr
    * The column will be coerced to UInt32. Give this dtype to make the coercion a no-op.
    */
   repeatBy(by: Expr | string): Expr;
-
   /**
    * Replace values by different values.
    * @param old - Value or sequence of values to replace.
                   Accepts expression input. Sequences are parsed as Series, other non-expression inputs are parsed as literals.
-   * @param _new - Value or sequence of values to replace by.
+   * @param new_ - Value or sequence of values to replace by.
                   Accepts expression input. Sequences are parsed as Series, other non-expression inputs are parsed as literals.
                   Length must match the length of `old` or have length 1.
-   * @param _default - Set values that were not replaced to this value.
+   * @param default_ - Set values that were not replaced to this value.
                       Defaults to keeping the original value.
                       Accepts expression input. Non-expression inputs are parsed as literals.
    * @param returnDtype - The data type of the resulting expression. If set to `None` (default), the data type is determined automatically based on the other inputs.
@@ -759,8 +758,8 @@ export interface Expr
    * @example
    * Replace a single value by another value. Values that were not replaced remain unchanged.
    * ```
-    >>> df = pl.DataFrame({"a": [1, 2, 2, 3]})
-    >>> df.withColumns(pl.col("a").replace(2, 100).alias("replaced"))
+    >>> const df = pl.DataFrame({"a": [1, 2, 2, 3]});
+    >>> df.withColumns(pl.col("a").replace(2, 100).alias("replaced"));
     shape: (4, 2)
     ┌─────┬──────────┐
     │ a   ┆ replaced │
@@ -773,9 +772,9 @@ export interface Expr
     │ 3   ┆ 3        │
     └─────┴──────────┘
    * ```
-   * Replace multiple values by passing sequences to the `old` and `_new` parameters.
+   * Replace multiple values by passing sequences to the `old` and `new_` parameters.
    * ```
-    >>> df.withColumns(pl.col("a").replace([2, 3], [100, 200]).alias("replaced"))
+    >>> df.withColumns(pl.col("a").replace([2, 3], [100, 200]).alias("replaced"));
     shape: (4, 2)
     ┌─────┬──────────┐
     │ a   ┆ replaced │
@@ -791,8 +790,8 @@ export interface Expr
   * Passing a mapping with replacements is also supported as syntactic sugar.
     Specify a default to set all values that were not matched.
   * ```
-    >>> mapping = {2: 100, 3: 200}
-    >>> df.withColumns(pl.col("a").replace(mapping, default=-1).alias("replaced"))
+    >>> const mapping = {2: 100, 3: 200};
+    >>> df.withColumns(pl.col("a").replace({ old: mapping, default_: -1, returnDtype: pl.Int64 }).alias("replaced");
     shape: (4, 2)
     ┌─────┬──────────┐
     │ a   ┆ replaced │
@@ -809,9 +808,9 @@ export interface Expr
     a combination of the `new` data type and either the original data type or the
     default data type if it was set.
   * ```
-    >>> df = pl.DataFrame({"a": ["x", "y", "z"]})
-    >>> mapping = {"x": 1, "y": 2, "z": 3}
-    >>> df.withColumns(pl.col("a").replace(mapping).alias("replaced"))
+    >>> const df = pl.DataFrame({"a": ["x", "y", "z"]});
+    >>> const mapping = {"x": 1, "y": 2, "z": 3};
+    >>> df.withColumns(pl.col("a").replace({ old: mapping }).alias("replaced"));
     shape: (3, 2)
     ┌─────┬──────────┐
     │ a   ┆ replaced │
@@ -822,7 +821,7 @@ export interface Expr
     │ y   ┆ 2        │
     │ z   ┆ 3        │
     └─────┴──────────┘
-    >>> df.withColumns(pl.col("a").replace(mapping, default=None).alias("replaced"))
+    >>> df.withColumns(pl.col("a").replace({ old: mapping, default_: None }).alias("replaced"));
     shape: (3, 2)
     ┌─────┬──────────┐
     │ a   ┆ replaced │
@@ -834,9 +833,9 @@ export interface Expr
     │ z   ┆ 3        │
     └─────┴──────────┘
   * ```
-    Set the `return_dtype` parameter to control the resulting data type directly.
+    Set the `returnDtype` parameter to control the resulting data type directly.
   * ```
-    >>> df.withColumns(pl.col("a").replace(mapping, returnDtype=pl.UInt8).alias("replaced"))
+    >>> df.withColumns(pl.col("a").replace({ old: mapping, returnDtype: pl.UInt8 }).alias("replaced"));
     shape: (3, 2)
     ┌─────┬──────────┐
     │ a   ┆ replaced │
@@ -850,14 +849,14 @@ export interface Expr
   * ```
   * Expression input is supported for all parameters.
   * ```
-    >>> df = pl.DataFrame({"a": [1, 2, 2, 3], "b": [1.5, 2.5, 5.0, 1.0]})
+    >>> const df = pl.DataFrame({"a": [1, 2, 2, 3], "b": [1.5, 2.5, 5.0, 1.0]});
     >>> df.withColumns(
-    ...         pl.col("a").replace(
-    ...         old=pl.col("a").max(),
-    ...         _new=pl.col("b").sum(),
-    ...         _default=pl.col("b"),
-    ...     ).alias("replaced")
-    ... )
+    ...         pl.col("a").replace({
+    ...         old: pl.col("a").max(),
+    ...         new_: pl.col("b").sum(),
+    ...         default_: pl.col("b"),
+    ...     }).alias("replaced")
+    ... );
     shape: (4, 3)
     ┌─────┬─────┬──────────┐
     │ a   ┆ b   ┆ replaced │
@@ -873,19 +872,19 @@ export interface Expr
    */
   replace(
     old: Expr | number | number[],
-    _new: Expr | number | number[],
-    _default?: Expr | number | number[],
+    new_: Expr | number | number[],
+    default_?: Expr | number | number[],
     returnDtype?: DataType,
   ): Expr;
   replace({
     old,
-    _new,
-    _default,
+    new_,
+    default_,
     returnDtype,
   }: {
     old: unknown | Expr | number | number[];
-    _new?: Expr | number | number[];
-    _default?: Expr | number | number[];
+    new_?: Expr | number | number[];
+    default_?: Expr | number | number[];
     returnDtype?: DataType;
   }): Expr;
   /** Reverse the arrays in the list */
@@ -1567,18 +1566,22 @@ export const _Expr = (_expr: any): Expr => {
       return _Expr(_expr.repeatBy(e));
     },
     replace(old, newValue, defaultValue, returnDtype) {
-      let oldI: any = old;
-      let newI = _new;
-      let defI = _default;
+      let oldIn: any = old;
+      let newIn = newValue;
+      let defIn = defaultValue;
       if (old && typeof old === "object" && !Array.isArray(old)) {
-        oldI = Object.keys(old["old"]);
-        newI = Object.values(old["old"]);
-        defI = old["_default"];
+        oldIn = Object.keys(old["old"]);
+        newIn = Object.values(old["old"]);
+        defIn = old["default_"];
       }
-      const oldP = exprToLitOrExpr(oldI)._expr;
-      const newP = exprToLitOrExpr(newI)._expr;
-      const defP = defI ? exprToLitOrExpr(defI)._expr : undefined;
-      return _Expr(_expr.replace(oldP, newP, defP, returnDtype));
+      return _Expr(
+        _expr.replace(
+          exprToLitOrExpr(oldIn)._expr,
+          exprToLitOrExpr(newIn)._expr,
+          defIn ? exprToLitOrExpr(defIn)._expr : undefined,
+          returnDtype,
+        ),
+      );
     },
     reverse() {
       return _Expr(_expr.reverse());

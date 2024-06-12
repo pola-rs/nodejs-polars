@@ -1194,7 +1194,7 @@ describe("expr.str", () => {
     actual = df.withColumns(
       pl
         .col("a")
-        .replace({ old: mapping, _default: -1, returnDtype: pl.Int64 })
+        .replace({ old: mapping, default_: -1, returnDtype: pl.Int64 })
         .alias("replaced"),
     );
     expected = pl.DataFrame({ a: [1, 2, 2, 3], replaced: [-1, 100, 100, 200] });
