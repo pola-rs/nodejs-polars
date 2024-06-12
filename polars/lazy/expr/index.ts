@@ -748,7 +748,6 @@ export interface Expr
    * Replace values by different values.
    * @param old - Value or sequence of values to replace.
                   Accepts expression input. Sequences are parsed as Series, other non-expression inputs are parsed as literals.
-                  Also accepts a mapping of values to their replacement as syntactic sugar for `replace(old=Series(mapping.keys()), new=Series(mapping.values()))`.
    * @param _new - Value or sequence of values to replace by.
                   Accepts expression input. Sequences are parsed as Series, other non-expression inputs are parsed as literals.
                   Length must match the length of `old` or have length 1.
@@ -875,9 +874,20 @@ export interface Expr
   replace(
     old: Expr | number | number[],
     _new: Expr | number | number[],
-    _default?: Expr,
+    _default?: Expr | number | number[],
     returnDtype?: DataType,
   ): Expr;
+  replace({
+    old,
+    _new,
+    _default,
+    returnDtype,
+  }: {
+    old: unknown | Expr | number | number[];
+    _new?: Expr | number | number[];
+    _default?: Expr | number | number[];
+    returnDtype?: DataType;
+  }): Expr;
   /** Reverse the arrays in the list */
   reverse(): Expr;
   /**
@@ -1557,10 +1567,17 @@ export const _Expr = (_expr: any): Expr => {
       return _Expr(_expr.repeatBy(e));
     },
     replace(old, _new, _default, returnDtype) {
-      const oldP = exprToLitOrExpr(old)._expr;
-      const newP = exprToLitOrExpr(_new)._expr;
-      const defP = _default ? exprToLitOrExpr(_default)._expr : undefined;
-
+      let oldI: any = old;
+      let newI = _new;
+      let defI = _default;
+      if (old && typeof old === "object" && !Array.isArray(old)) {
+        oldI = Object.keys(old["old"]);
+        newI = Object.values(old["old"]);
+        defI = old["_default"];
+      }
+      const oldP = exprToLitOrExpr(oldI)._expr;
+      const newP = exprToLitOrExpr(newI)._expr;
+      const defP = defI ? exprToLitOrExpr(defI)._expr : undefined;
       return _Expr(_expr.replace(oldP, newP, defP, returnDtype));
     },
     reverse() {

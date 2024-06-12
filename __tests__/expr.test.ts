@@ -1186,7 +1186,22 @@ describe("expr.str", () => {
     });
     expect(actual).toFrameEqual(expected);
     actual = df.withColumns(
-      pl.col("a").replace([2, 3], [100, 200]).alias("replaced"),
+      pl.col("a").replace([2, 3], [100, 200], -1, pl.Float64).alias("replaced"),
+    );
+    expected = pl.DataFrame({ a: [1, 2, 2, 3], replaced: [-1, 100, 100, 200] });
+    expect(actual).toFrameEqual(expected);
+    const mapping = { 2: 100, 3: 200 };
+    actual = df.withColumns(
+      pl
+        .col("a")
+        .replace({ old: mapping, _default: -1, returnDtype: pl.Int64 })
+        .alias("replaced"),
+    );
+    expected = pl.DataFrame({ a: [1, 2, 2, 3], replaced: [-1, 100, 100, 200] });
+    expect(actual).toFrameEqual(expected);
+
+    actual = df.withColumns(
+      pl.col("a").replace({ old: mapping }).alias("replaced"),
     );
     expected = pl.DataFrame({ a: [1, 2, 2, 3], replaced: [1, 100, 100, 200] });
     expect(actual).toFrameEqual(expected);
