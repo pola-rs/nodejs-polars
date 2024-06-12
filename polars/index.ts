@@ -1,8 +1,7 @@
-import { Decimal } from "./datatypes/datatype";
 import * as series from "./series";
 import * as df from "./dataframe";
 import { DataType, Field as _field } from "./datatypes";
-export * from "./datatypes";
+export { DataType } from "./datatypes";
 import * as func from "./functions";
 import * as io from "./io";
 import * as cfg from "./cfg";
@@ -176,7 +175,6 @@ export type Then = lazy.Then;
 export type ChainedWhen = lazy.ChainedWhen;
 export type ChainedThen = lazy.ChainedThen;
 export import Config = cfg.Config;
-export import Categorical = DataType.Categorical;
 export import Field = _field;
 export import repeat = func.repeat;
 export import concat = func.concat;
@@ -233,6 +231,57 @@ export import tail = lazy.tail;
 export import list = lazy.list;
 export import when = lazy.when;
 export const version = pli.version();
+
+export type Categorical = import("./datatypes").Categorical;
+export type Int8 = import("./datatypes").Int8;
+export type Int16 = import("./datatypes").Int16;
+export type Int32 = import("./datatypes").Int32;
+export type Int64 = import("./datatypes").Int64;
+export type UInt8 = import("./datatypes").UInt8;
+export type UInt16 = import("./datatypes").UInt16;
+export type UInt32 = import("./datatypes").UInt32;
+export type UInt64 = import("./datatypes").UInt64;
+export type Float32 = import("./datatypes").Float32;
+export type Float64 = import("./datatypes").Float64;
+export type Bool = import("./datatypes").Bool;
+export type Utf8 = import("./datatypes").Utf8;
+export type String = import("./datatypes").String;
+export type List = import("./datatypes").List;
+export type FixedSizeList = import("./datatypes").FixedSizeList;
+export type Date = import("./datatypes").Date;
+export type Datetime = import("./datatypes").Datetime;
+export type Time = import("./datatypes").Time;
+export type Object = import("./datatypes").Object_;
+export type Null = import("./datatypes").Null;
+export type Struct = import("./datatypes").Struct;
+export type Decimal = import("./datatypes").Decimal;
+
+export const Categorical = DataType.Categorical;
+export const Int8 = DataType.Int8;
+export const Int16 = DataType.Int16;
+export const Int32 = DataType.Int32;
+export const Int64 = DataType.Int64;
+export const UInt8 = DataType.UInt8;
+export const UInt16 = DataType.UInt16;
+export const UInt32 = DataType.UInt32;
+export const UInt64 = DataType.UInt64;
+export const Float32 = DataType.Float32;
+export const Float64 = DataType.Float64;
+export const Bool = DataType.Bool;
+export const Utf8 = DataType.Utf8;
+// biome-ignore lint/suspicious/noShadowRestrictedNames: pl.String
+export const String = DataType.String;
+export const List = DataType.List;
+export const FixedSizeList = DataType.FixedSizeList;
+// biome-ignore lint/suspicious/noShadowRestrictedNames: pl.Date
+export const Date = DataType.Date;
+export const Datetime = DataType.Datetime;
+export const Time = DataType.Time;
+// biome-ignore lint/suspicious/noShadowRestrictedNames: pl.Object
+export const Object = DataType.Object;
+export const Null = DataType.Null;
+export const Struct = DataType.Struct;
+export const Decimal = DataType.Decimal;
 
 /**
  * Run SQL queries against DataFrame/LazyFrame data.
