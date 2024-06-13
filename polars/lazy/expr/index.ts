@@ -871,9 +871,9 @@ export interface Expr
    * ``` 
    */
   replace(
-    old: Expr | number | number[],
-    new_: Expr | number | number[],
-    default_?: Expr | number | number[],
+    old: Expr | string | number | (number | string)[],
+    new_: Expr | string | number | (number | string)[],
+    default_?: Expr | string | number | (number | string)[],
     returnDtype?: DataType,
   ): Expr;
   replace({
@@ -882,9 +882,9 @@ export interface Expr
     default_,
     returnDtype,
   }: {
-    old: unknown | Expr | number | number[];
-    new_?: Expr | number | number[];
-    default_?: Expr | number | number[];
+    old: unknown | Expr | string | number | (number | string)[];
+    new_?: Expr | string | number | (number | string)[];
+    default_?: Expr | string | number | (number | string)[];
     returnDtype?: DataType;
   }): Expr;
   /** Reverse the arrays in the list */
