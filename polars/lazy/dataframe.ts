@@ -28,6 +28,7 @@ export interface LazyDataFrame extends Serialize, GroupByOps<LazyGroupBy> {
   /** @ignore */
   _ldf: any;
   [inspect](): string;
+  [Symbol.toStringTag]: string;
   get columns(): string[];
   /**
    * Cache the result once the execution of the physical plan hits this node.
@@ -600,6 +601,9 @@ export const _LazyDataFrame = (_ldf: any): LazyDataFrame => {
     _ldf,
     [inspect]() {
       return _ldf.describeOptimizedPlan();
+    },
+    get [Symbol.toStringTag]() {
+      return "LazyDataFrame";
     },
 
     get columns() {
