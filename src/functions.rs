@@ -1,7 +1,10 @@
 use crate::dataframe::*;
+use crate::export::JsLazyFrame;
 use crate::lazy::dsl::JsExpr;
+use polars::prelude::{
+    concat, concat_lf_diagonal, concat_lf_horizontal, DataFrame, LazyFrame, UnionArgs,
+};
 use polars_core::functions as pl_functions;
-use polars_core::prelude::DataFrame;
 
 #[napi(catch_unwind)]
 pub fn horizontal_concat(dfs: Vec<&JsDataFrame>) -> napi::Result<JsDataFrame> {
@@ -15,6 +18,41 @@ pub fn diagonal_concat(dfs: Vec<&JsDataFrame>) -> napi::Result<JsDataFrame> {
     let dfs: Vec<DataFrame> = dfs.iter().map(|df| df.df.clone()).collect();
     let df = pl_functions::concat_df_diagonal(&dfs).map_err(crate::error::JsPolarsErr::from)?;
     Ok(df.into())
+}
+
+#[napi(catch_unwind)]
+pub fn concat_lf(
+    ldfs: Vec<&JsLazyFrame>,
+    how: Option<String>,
+    rechunk: Option<bool>,
+) -> napi::Result<JsLazyFrame> {
+    let ldfs: Vec<LazyFrame> = ldfs.iter().map(|ldf| ldf.ldf.clone()).collect();
+
+    let union_args = UnionArgs {
+        rechunk: rechunk.unwrap_or(false),
+        ..Default::default()
+    };
+    let ldf = match how.as_deref() {
+        Some("vertical") => concat(&ldfs, union_args),
+        Some("horizontal") => concat_lf_horizontal(&ldfs, union_args),
+        Some("diagonal") => concat_lf_diagonal(
+            &ldfs,
+            UnionArgs {
+                diagonal: true,
+                ..union_args
+            },
+        ),
+        Some(unknown) => {
+            return Err(napi::Error::from_reason(format!(
+                "Unknown concat method: {}",
+                unknown
+            )))
+        }
+        None => concat(&ldfs, union_args),
+    }
+    .map_err(crate::error::JsPolarsErr::from)?;
+
+    Ok(ldf.into())
 }
 
 #[napi(catch_unwind)]
