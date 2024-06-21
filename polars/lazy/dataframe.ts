@@ -1021,7 +1021,11 @@ export const _LazyDataFrame = (_ldf: any): LazyDataFrame => {
 
 export interface LazyDataFrameConstructor extends Deserialize<LazyDataFrame> {
   fromExternal(external: any): LazyDataFrame;
+  isLazyDataFrame(arg: any): arg is LazyDataFrame;
 }
+
+const isLazyDataFrame = (anyVal: any): anyVal is LazyDataFrame =>
+  anyVal?.[Symbol.toStringTag] === "LazyDataFrame";
 
 /** @ignore */
 export const LazyDataFrame: LazyDataFrameConstructor = Object.assign(
@@ -1032,5 +1036,6 @@ export const LazyDataFrame: LazyDataFrameConstructor = Object.assign(
     fromExternal(external) {
       return _LazyDataFrame(pli.JsLazyFrame.cloneExternal(external));
     },
+    isLazyDataFrame,
   },
 );
