@@ -1,6 +1,7 @@
 import { Expr, exprToLitOrExpr } from "./lazy/expr";
 import { Series } from "./series";
 import { DataFrame } from "./dataframe";
+import { LazyDataFrame } from "./lazy/dataframe";
 import path from "path";
 import { isExternal, isRegExp } from "util/types";
 /** @ignore */
@@ -52,6 +53,8 @@ export const range = (start: number, end: number) => {
 
 export const isDataFrameArray = (ty: any): ty is DataFrame[] =>
   Array.isArray(ty) && DataFrame.isDataFrame(ty[0]);
+export const isLazyDataFrameArray = (ty: any): ty is LazyDataFrame[] =>
+  Array.isArray(ty) && LazyDataFrame.isLazyDataFrame(ty[0]);
 export const isSeriesArray = <T>(ty: any): ty is Series[] =>
   Array.isArray(ty) && ty.every(Series.isSeries);
 export const isExprArray = (ty: any): ty is Expr[] =>
