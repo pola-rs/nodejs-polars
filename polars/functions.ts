@@ -2,8 +2,9 @@
 import { jsTypeToPolarsType } from "./internals/construction";
 import { type Series, _Series } from "./series";
 import { type DataFrame, _DataFrame } from "./dataframe";
+import { type LazyDataFrame, _LazyDataFrame } from "./lazy/dataframe";
 import pli from "./internals/polars_internal";
-import { isDataFrameArray, isSeriesArray } from "./utils";
+import { isDataFrameArray, isLazyDataFrameArray, isSeriesArray } from "./utils";
 import type { ConcatOptions } from "./types";
 
 /**
@@ -84,15 +85,16 @@ export function concat(
   items: Array<DataFrame>,
   options?: ConcatOptions,
 ): DataFrame;
-export function concat<T>(
+export function concat(
   items: Array<Series>,
   options?: { rechunk: boolean },
 ): Series;
-export function concat<T>(
-  items,
-  options: ConcatOptions = { rechunk: true, how: "vertical" },
-) {
-  const { rechunk, how } = options;
+export function concat(
+  items: Array<LazyDataFrame>,
+  options?: ConcatOptions,
+): LazyDataFrame;
+export function concat(items, options?: ConcatOptions) {
+  const { rechunk = false, how = "vertical", parallel = true } = options || {};
 
   if (!items.length) {
     throw new RangeError("cannot concat empty list");
@@ -116,7 +118,18 @@ export function concat<T>(
     return rechunk ? df.rechunk() : df;
   }
 
-  if (isSeriesArray<T>(items)) {
+  if (isLazyDataFrameArray(items)) {
+    const df: LazyDataFrame = _LazyDataFrame(
+      pli.concatLf(
+        items.map((i: any) => i.inner()),
+        how,
+      ),
+    );
+
+    return df;
+  }
+
+  if (isSeriesArray(items)) {
     const s = items.reduce((acc, curr) => acc.concat(curr));
 
     return rechunk ? s.rechunk() : s;
