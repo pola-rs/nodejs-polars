@@ -167,6 +167,7 @@ export interface LazyDataFrame extends Serialize, GroupByOps<LazyGroupBy> {
    * The `fetch` operation will truly load the first `n`rows lazily.
    */
   head(length?: number): LazyDataFrame;
+  inner(): any;
   /**
    *  __SQL like joins.__
    * @param df - DataFrame to join with.
@@ -780,6 +781,9 @@ export const _LazyDataFrame = (_ldf: any): LazyDataFrame => {
     },
     head(len = 5) {
       return _LazyDataFrame(_ldf.slice(0, len));
+    },
+    inner() {
+      return _ldf;
     },
     join(df, options) {
       options = {
