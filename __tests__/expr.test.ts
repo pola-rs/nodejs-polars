@@ -1178,17 +1178,43 @@ describe("expr.str", () => {
     expect(seriesActual).toFrameEqual(expected);
   });
   test("expr.replace", () => {
-    const df = pl.DataFrame({ a: [1, 2, 2, 3] });
+    const df = pl.DataFrame({ a: [1, 2, 2, 3], b: ["a", "b", "c", "d"] });
     let actual = df.withColumns(pl.col("a").replace(2, 100).alias("replaced"));
     let expected = pl.DataFrame({
       a: [1, 2, 2, 3],
+      b: ["a", "b", "c", "d"],
       replaced: [1, 100, 100, 3],
     });
     expect(actual).toFrameEqual(expected);
     actual = df.withColumns(
       pl.col("a").replace([2, 3], [100, 200], -1, pl.Float64).alias("replaced"),
     );
-    expected = pl.DataFrame({ a: [1, 2, 2, 3], replaced: [-1, 100, 100, 200] });
+    expected = pl.DataFrame({
+      a: [1, 2, 2, 3],
+      b: ["a", "b", "c", "d"],
+      replaced: [-1, 100, 100, 200],
+    });
+    expect(actual).toFrameEqual(expected);
+    actual = df.withColumns(
+      pl.col("b").replace("a", "c", "e", pl.Utf8).alias("replaced"),
+    );
+    expected = pl.DataFrame({
+      a: [1, 2, 2, 3],
+      b: ["a", "b", "c", "d"],
+      replaced: ["c", "e", "e", "e"],
+    });
+    expect(actual).toFrameEqual(expected);
+    actual = df.withColumns(
+      pl
+        .col("b")
+        .replace(["a", "b"], ["c", "d"], "e", pl.Utf8)
+        .alias("replaced"),
+    );
+    expected = pl.DataFrame({
+      a: [1, 2, 2, 3],
+      b: ["a", "b", "c", "d"],
+      replaced: ["c", "d", "e", "e"],
+    });
     expect(actual).toFrameEqual(expected);
     const mapping = { 2: 100, 3: 200 };
     actual = df.withColumns(
@@ -1197,13 +1223,20 @@ describe("expr.str", () => {
         .replace({ old: mapping, default_: -1, returnDtype: pl.Int64 })
         .alias("replaced"),
     );
-    expected = pl.DataFrame({ a: [1, 2, 2, 3], replaced: [-1, 100, 100, 200] });
+    expected = pl.DataFrame({
+      a: [1, 2, 2, 3],
+      b: ["a", "b", "c", "d"],
+      replaced: [-1, 100, 100, 200],
+    });
     expect(actual).toFrameEqual(expected);
-
     actual = df.withColumns(
       pl.col("a").replace({ old: mapping }).alias("replaced"),
     );
-    expected = pl.DataFrame({ a: [1, 2, 2, 3], replaced: [1, 100, 100, 200] });
+    expected = pl.DataFrame({
+      a: [1, 2, 2, 3],
+      b: ["a", "b", "c", "d"],
+      replaced: [1, 100, 100, 200],
+    });
     expect(actual).toFrameEqual(expected);
   });
   test("slice", () => {
