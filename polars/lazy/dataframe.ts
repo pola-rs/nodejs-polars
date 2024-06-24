@@ -28,6 +28,7 @@ export interface LazyDataFrame extends Serialize, GroupByOps<LazyGroupBy> {
   /** @ignore */
   _ldf: any;
   [inspect](): string;
+  [Symbol.toStringTag]: string;
   get columns(): string[];
   /**
    * Cache the result once the execution of the physical plan hits this node.
@@ -166,6 +167,7 @@ export interface LazyDataFrame extends Serialize, GroupByOps<LazyGroupBy> {
    * The `fetch` operation will truly load the first `n`rows lazily.
    */
   head(length?: number): LazyDataFrame;
+  inner(): any;
   /**
    *  __SQL like joins.__
    * @param df - DataFrame to join with.
@@ -601,6 +603,9 @@ export const _LazyDataFrame = (_ldf: any): LazyDataFrame => {
     [inspect]() {
       return _ldf.describeOptimizedPlan();
     },
+    get [Symbol.toStringTag]() {
+      return "LazyDataFrame";
+    },
 
     get columns() {
       return _ldf.columns;
@@ -776,6 +781,9 @@ export const _LazyDataFrame = (_ldf: any): LazyDataFrame => {
     },
     head(len = 5) {
       return _LazyDataFrame(_ldf.slice(0, len));
+    },
+    inner() {
+      return _ldf;
     },
     join(df, options) {
       options = {
@@ -1017,7 +1025,11 @@ export const _LazyDataFrame = (_ldf: any): LazyDataFrame => {
 
 export interface LazyDataFrameConstructor extends Deserialize<LazyDataFrame> {
   fromExternal(external: any): LazyDataFrame;
+  isLazyDataFrame(arg: any): arg is LazyDataFrame;
 }
+
+const isLazyDataFrame = (anyVal: any): anyVal is LazyDataFrame =>
+  anyVal?.[Symbol.toStringTag] === "LazyDataFrame";
 
 /** @ignore */
 export const LazyDataFrame: LazyDataFrameConstructor = Object.assign(
@@ -1028,5 +1040,6 @@ export const LazyDataFrame: LazyDataFrameConstructor = Object.assign(
     fromExternal(external) {
       return _LazyDataFrame(pli.JsLazyFrame.cloneExternal(external));
     },
+    isLazyDataFrame,
   },
 );

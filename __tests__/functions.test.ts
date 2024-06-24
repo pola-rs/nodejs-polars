@@ -18,6 +18,72 @@ describe("concat", () => {
     expect(actual).toFrameEqual(expected);
   });
 
+  it("can concat multiple lazy dataframes vertically", () => {
+    const df1 = pl
+      .DataFrame({
+        a: [1, 2, 3],
+        b: ["a", "b", "c"],
+      })
+      .lazy();
+    const df2 = pl
+      .DataFrame({
+        a: [4, 5, 6],
+        b: ["d", "e", "f"],
+      })
+      .lazy();
+    const actual = pl.concat([df1, df2]).collectSync();
+    const expected = pl.DataFrame({
+      a: [1, 2, 3, 4, 5, 6],
+      b: ["a", "b", "c", "d", "e", "f"],
+    });
+    expect(actual).toFrameEqual(expected);
+  });
+
+  it("can concat multiple lazy dataframes horizontally", () => {
+    const df1 = pl
+      .DataFrame({
+        a: [1, 2, 3],
+        b: ["a", "b", "c"],
+      })
+      .lazy();
+    const df2 = pl
+      .DataFrame({
+        c: [4, 5, 6],
+        d: ["d", "e", "f"],
+      })
+      .lazy();
+    const actual = pl.concat([df1, df2], { how: "horizontal" }).collectSync();
+    const expected = pl.DataFrame({
+      a: [1, 2, 3],
+      b: ["a", "b", "c"],
+      c: [4, 5, 6],
+      d: ["d", "e", "f"],
+    });
+    expect(actual).toFrameEqual(expected);
+  });
+
+  it("can concat multiple lazy dataframes diagonally", () => {
+    const df1 = pl
+      .DataFrame({
+        a: [1],
+        b: [3],
+      })
+      .lazy();
+    const df2 = pl
+      .DataFrame({
+        a: [2],
+        d: [4],
+      })
+      .lazy();
+    const actual = pl.concat([df1, df2], { how: "diagonal" }).collectSync();
+    const expected = pl.DataFrame({
+      a: [1, 2],
+      b: [3, null],
+      d: [null, 4],
+    });
+    expect(actual).toFrameEqual(expected);
+  });
+
   it("can concat multiple series vertically", () => {
     const s1 = pl.Series("a", [1, 2, 3]);
     const s2 = pl.Series("a", [4, 5, 6]);
