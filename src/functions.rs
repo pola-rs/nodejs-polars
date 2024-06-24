@@ -33,6 +33,8 @@ pub fn concat_lf(
         ..Default::default()
     };
     let ldf = match how.as_deref() {
+        // Default to vertical
+        None => concat(&ldfs, union_args),
         Some("vertical") => concat(&ldfs, union_args),
         Some("horizontal") => concat_lf_horizontal(&ldfs, union_args),
         Some("diagonal") => concat_lf_diagonal(
@@ -48,7 +50,6 @@ pub fn concat_lf(
                 unknown
             )))
         }
-        None => concat(&ldfs, union_args),
     }
     .map_err(crate::error::JsPolarsErr::from)?;
 
