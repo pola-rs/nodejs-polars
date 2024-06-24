@@ -93,8 +93,11 @@ export function concat(
   items: Array<LazyDataFrame>,
   options?: ConcatOptions,
 ): LazyDataFrame;
-export function concat(items, options?: ConcatOptions) {
-  const { rechunk = false, how = "vertical", parallel = true } = options || {};
+export function concat(
+  items,
+  options: ConcatOptions = { rechunk: true, how: "vertical" },
+) {
+  const { rechunk, how } = options;
 
   if (!items.length) {
     throw new RangeError("cannot concat empty list");
@@ -123,6 +126,7 @@ export function concat(items, options?: ConcatOptions) {
       pli.concatLf(
         items.map((i: any) => i.inner()),
         how,
+        rechunk,
       ),
     );
 
