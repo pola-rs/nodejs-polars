@@ -1336,6 +1336,7 @@ export interface DataFrame
   sort(
     by: ColumnsOrExpr,
     descending?: boolean,
+    nulls_last?: boolean,
     maintain_order?: boolean,
   ): DataFrame;
   sort({
@@ -1345,6 +1346,7 @@ export interface DataFrame
   }: {
     by: ColumnsOrExpr;
     descending?: boolean;
+    nulls_last?: boolean;
     maintain_order?: boolean;
   }): DataFrame;
   /**
@@ -2332,17 +2334,22 @@ export const _DataFrame = (_df: any): DataFrame => {
       }
       return wrap("slice", opts.offset, opts.length);
     },
-    sort(arg, descending = false, maintain_order = false) {
+    sort(arg, descending = false, nulls_last = false, maintain_order = false) {
       if (arg?.by !== undefined) {
-        return this.sort(arg.by, arg.descending);
+        return this.sort(
+          arg.by,
+          arg.descending,
+          arg.nulls_last,
+          arg.maintain_order,
+        );
       }
       if (Array.isArray(arg) || Expr.isExpr(arg)) {
         return _DataFrame(_df)
           .lazy()
-          .sort(arg, descending, maintain_order)
+          .sort(arg, descending, nulls_last, maintain_order)
           .collectSync({ noOptimization: true, stringCache: false });
       }
-      return wrap("sort", arg, descending, true, maintain_order);
+      return wrap("sort", arg, descending, nulls_last, maintain_order);
     },
     std() {
       return this.lazy().std().collectSync();

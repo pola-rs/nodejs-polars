@@ -401,11 +401,13 @@ export interface LazyDataFrame extends Serialize, GroupByOps<LazyGroupBy> {
   sort(
     by: ColumnsOrExpr,
     descending?: ValueOrArray<boolean>,
+    nulls_last?: boolean,
     maintain_order?: boolean,
   ): LazyDataFrame;
   sort(opts: {
     by: ColumnsOrExpr;
     descending?: ValueOrArray<boolean>;
+    nulls_last?: boolean;
     maintain_order?: boolean;
   }): LazyDataFrame;
   /**
@@ -965,15 +967,20 @@ export const _LazyDataFrame = (_ldf: any): LazyDataFrame => {
       }
       return _LazyDataFrame(_ldf.slice(opt, len));
     },
-    sort(arg, descending = false, maintain_order = false) {
+    sort(arg, descending = false, nulls_last = false, maintain_order = false) {
       if (arg?.by !== undefined) {
-        return this.sort(arg.by, arg.descending, arg.maintain_order);
+        return this.sort(
+          arg.by,
+          arg.descending,
+          arg.nulls_last,
+          arg.maintain_order,
+        );
       }
       if (typeof arg === "string") {
-        return wrap("sort", arg, descending, true, maintain_order);
+        return wrap("sort", arg, descending, nulls_last, maintain_order);
       }
       const by = selectionToExprList(arg, false);
-      return wrap("sortByExprs", by, descending, true, maintain_order);
+      return wrap("sortByExprs", by, descending, nulls_last, maintain_order);
     },
     std() {
       return _LazyDataFrame(_ldf.std());
