@@ -997,6 +997,32 @@ describe("lazyframe", () => {
     });
     expect(actual).toFrameEqual(expected);
   });
+  test("sort:nulls_last:false", () => {
+    const actual = pl
+      .DataFrame({
+        foo: [1, null, 2, 3],
+      })
+      .lazy()
+      .sort({ by: "foo", nulls_last: false })
+      .collectSync();
+    const expected = pl.DataFrame({
+      foo: [null, 1, 2, 3],
+    });
+    expect(actual).toFrameEqual(expected);
+  });
+  test("sort:nulls_last:true", () => {
+    const actual = pl
+      .DataFrame({
+        foo: [1, null, 2, 3],
+      })
+      .lazy()
+      .sort({ by: "foo", nulls_last: true })
+      .collectSync();
+    const expected = pl.DataFrame({
+      foo: [1, 2, 3, null],
+    });
+    expect(actual).toFrameEqual(expected);
+  });
   test("sum", () => {
     const actual = pl
       .DataFrame({
