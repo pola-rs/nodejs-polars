@@ -870,13 +870,13 @@ export interface Expr
     └─────┴─────┴──────────┘
    * ``` 
    */
-  replace(
+  replaceStrict(
     old: Expr | string | number | (number | string)[],
     new_: Expr | string | number | (number | string)[],
     default_?: Expr | string | number | (number | string)[],
     returnDtype?: DataType,
   ): Expr;
-  replace({
+  replaceStrict({
     old,
     new_,
     default_,
@@ -886,6 +886,17 @@ export interface Expr
     new_?: Expr | string | number | (number | string)[];
     default_?: Expr | string | number | (number | string)[];
     returnDtype?: DataType;
+  }): Expr;
+  replace(
+    old: Expr | string | number | (number | string)[],
+    new_: Expr | string | number | (number | string)[],
+  ): Expr;
+  replace({
+    old,
+    new_,
+  }: {
+    old: unknown | Expr | string | number | (number | string)[];
+    new_?: Expr | string | number | (number | string)[];
   }): Expr;
   /** Reverse the arrays in the list */
   reverse(): Expr;
@@ -1565,7 +1576,21 @@ export const _Expr = (_expr: any): Expr => {
 
       return _Expr(_expr.repeatBy(e));
     },
-    replace(old, newValue, defaultValue, returnDtype) {
+    replace(old, newValue) {
+      let oldIn: any = old;
+      let newIn = newValue;
+      if (old && typeof old === "object" && !Array.isArray(old)) {
+        oldIn = Object.keys(old["old"]);
+        newIn = Object.values(old["old"]);
+      }
+      return _Expr(
+        _expr.replace(
+          exprToLitOrExpr(oldIn)._expr,
+          exprToLitOrExpr(newIn)._expr,
+        ),
+      );
+    },
+    replaceStrict(old, newValue, defaultValue, returnDtype) {
       let oldIn: any = old;
       let newIn = newValue;
       let defIn = defaultValue;
@@ -1575,7 +1600,7 @@ export const _Expr = (_expr: any): Expr => {
         defIn = old["default_"];
       }
       return _Expr(
-        _expr.replace(
+        _expr.replaceStrict(
           exprToLitOrExpr(oldIn)._expr,
           exprToLitOrExpr(newIn)._expr,
           defIn ? exprToLitOrExpr(defIn)._expr : undefined,

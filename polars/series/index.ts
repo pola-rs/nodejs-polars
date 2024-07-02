@@ -991,6 +991,13 @@ export interface Series
    * __Count the unique values in a Series.__
    * @param sort - Sort the output by count in descending order.
    *               If set to `False` (default), the order of the output is random.
+   * @param parallel - Execute the computation in parallel.
+            .. note::
+                This option should likely not be enabled in a group by context,
+                as the computation is already parallelized per group.
+   * @param name - Give the resulting count column a specific name;
+            if `normalize` is True defaults to "count", otherwise defaults to "proportion".
+   * @param normalize - If true gives relative frequencies of the unique values
    * ___
    * @example
    * ```
@@ -1010,7 +1017,12 @@ export interface Series
    * ╰─────┴────────╯
    * ```
    */
-  valueCounts(sort?: boolean): DataFrame;
+  valueCounts(
+    sort?: boolean,
+    parallel?: boolean,
+    name?: string,
+    normalize?: boolean,
+  ): DataFrame;
   /**
    * Where mask evaluates true, take values from self.
    *
@@ -1780,8 +1792,22 @@ export function _Series(_s: any): Series {
       }
       return wrap("unique");
     },
-    valueCounts(sorted?) {
-      return _DataFrame(unwrap("valueCounts", sorted ?? false));
+    valueCounts(
+      sort?: boolean,
+      parallel?: boolean,
+      name?: string,
+      normalize?: boolean,
+    ) {
+      name = name ?? normalize ? "proportion" : "count";
+      return _DataFrame(
+        unwrap(
+          "valueCounts",
+          sort ?? false,
+          parallel ?? false,
+          name,
+          normalize ?? false,
+        ),
+      );
     },
     values() {
       return this[Symbol.iterator]();

@@ -1324,7 +1324,7 @@ describe("dataframe", () => {
 
     let actual = df.pivot("b", {
       index: "a",
-      columns: "a",
+      on: "a",
       aggregateFunc: "first",
       sortColumns: true,
     });
@@ -1340,7 +1340,7 @@ describe("dataframe", () => {
     });
     actual = df.pivot(["a", "e"], {
       index: "b",
-      columns: ["c"],
+      on: ["b"],
       aggregateFunc: "first",
       separator: "|",
       maintainOrder: true,
@@ -1348,10 +1348,10 @@ describe("dataframe", () => {
 
     expected = pl.DataFrame({
       b: ["a", "b"],
-      "a|c|s": ["beep", null],
-      "a|c|f": [null, "bop"],
-      "e|c|s": ["x", null],
-      "e|c|f": [null, "y"],
+      "a|a": ["beep", null],
+      "a|b": [null, "bop"],
+      "e|a": ["x", null],
+      "e|b": [null, "y"],
     });
     expect(actual).toFrameEqual(expected, true);
   });
@@ -1529,7 +1529,7 @@ describe("join", () => {
     });
     expect(actual).toFrameEqual(expected);
   });
-  test("how:outer", () => {
+  test("how:full", () => {
     const df = pl.DataFrame({
       foo: [1, 2, 3],
       bar: [6.0, 7.0, 8.0],
@@ -1542,7 +1542,7 @@ describe("join", () => {
     });
     const actual = df.join(otherDF, {
       on: "ham",
-      how: "outer",
+      how: "full",
     });
     const expected = pl.DataFrame({
       foo: [1, 2, 3, null],
@@ -2523,7 +2523,7 @@ describe("additional", () => {
       .sort("date");
 
     let actual = df
-      .upsample("date", "1mo", "0ns", "groups", true)
+      .upsample("date", "1mo", "groups", true)
       .select(pl.col("*").forwardFill());
 
     let expected = pl
@@ -2548,7 +2548,6 @@ describe("additional", () => {
       .upsample({
         timeColumn: "date",
         every: "1mo",
-        offset: "0ns",
         by: "groups",
         maintainOrder: true,
       })

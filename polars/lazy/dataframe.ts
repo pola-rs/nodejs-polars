@@ -352,9 +352,11 @@ export interface LazyDataFrame extends Serialize, GroupByOps<LazyGroupBy> {
    */
   median(): LazyDataFrame;
   /**
-   * @see {@link DataFrame.melt}
+   * @see {@link DataFrame.unpivot}
+   * @deprecated *since 0.13.0* use {@link unpivot}
    */
   melt(idVars: ColumnSelection, valueVars: ColumnSelection): LazyDataFrame;
+  unpivot(idVars: ColumnSelection, valueVars: ColumnSelection): LazyDataFrame;
   /**
    * @see {@link DataFrame.min}
    */
@@ -929,7 +931,12 @@ export const _LazyDataFrame = (_ldf: any): LazyDataFrame => {
     },
     melt(ids, values) {
       return _LazyDataFrame(
-        _ldf.melt(columnOrColumnsStrict(ids), columnOrColumnsStrict(values)),
+        _ldf.unpivot(columnOrColumnsStrict(ids), columnOrColumnsStrict(values)),
+      );
+    },
+    unpivot(ids, values) {
+      return _LazyDataFrame(
+        _ldf.unpivot(columnOrColumnsStrict(ids), columnOrColumnsStrict(values)),
       );
     },
     min() {
