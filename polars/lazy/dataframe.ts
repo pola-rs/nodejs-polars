@@ -1032,6 +1032,7 @@ export const _LazyDataFrame = (_ldf: any): LazyDataFrame => {
     },
     sinkParquet(path: string, options: SinkParquetOptions = {}) {
       options.compression = options.compression ?? "zstd";
+      options.statistics = options.statistics ?? false;
       _ldf.sinkParquet(path, options);
     },
   };
