@@ -277,7 +277,6 @@ export const FixedSizeList = DataType.FixedSizeList;
 export const Date = DataType.Date;
 export const Datetime = DataType.Datetime;
 
-
 export const Time = DataType.Time;
 // biome-ignore lint/suspicious/noShadowRestrictedNames: pl.Object
 export const Object = DataType.Object;
