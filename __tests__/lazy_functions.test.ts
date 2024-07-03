@@ -153,8 +153,14 @@ describe("lazy functions", () => {
   });
   test.each`
     start  | end  | expected
-    ${"a"} | ${"b"} | ${pl.Series("a", [[1, 2], [2, 3]])}
-    ${-1} | ${"a"} | ${pl.Series("literal", [[-1, 0], [-1, 0, 1]])}
+    ${"a"} | ${"b"} | ${pl.Series("a", [
+  [1, 2],
+  [2, 3],
+])}
+    ${-1} | ${"a"} | ${pl.Series("literal", [
+  [-1, 0],
+  [-1, 0, 1],
+])}
     ${"b"} | ${4} | ${pl.Series("b", [[3], []])}
   `("$# cumMax", ({ start, end, expected }) => {
     const df = pl.DataFrame({ a: [1, 2], b: [3, 4] });

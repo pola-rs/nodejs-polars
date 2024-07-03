@@ -45,7 +45,7 @@
     "build:ts": " rm -rf bin; tsc -p tsconfig.build.json",
     "cp:bin": "cp ./polars/*.node bin/",
     "format:rs": "cargo fmt",
-    "lint:ts:fix": "biome check --write --unsafe {polars,__tests__} && biome format --write {polars,__tests__}",
+    "lint:ts:fix": "biome check --apply-unsafe {polars,__tests__} && biome format --write {polars,__tests__}",
     "lint:ts": "biome check {polars,__tests__} && biome format {polars,__tests__}",
     "lint": "yarn lint:ts && yarn format:rs",
     "prepublishOnly": "napi prepublish -t npm",
@@ -54,7 +54,7 @@
     "precommit": "yarn lint && yarn test"
   },
   "devDependencies": {
-    "@biomejs/biome": "=1.8.3",
+    "@biomejs/biome": "=1.7.3",
     "@napi-rs/cli": "^2.18.4",
     "@types/chance": "^1.1.6",
     "@types/jest": "^29.5.12",
