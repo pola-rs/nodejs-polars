@@ -755,6 +755,7 @@ export interface Expr
                       Accepts expression input. Non-expression inputs are parsed as literals.
    * @param returnDtype - The data type of the resulting expression. If set to `None` (default), the data type is determined automatically based on the other inputs.
    * @see {@link str.replace}
+   * @see {@link replace}
    * @example
    * Replace a single value by another value. Values that were not replaced remain unchanged.
    * ```
@@ -791,7 +792,7 @@ export interface Expr
     Specify a default to set all values that were not matched.
   * ```
     >>> const mapping = {2: 100, 3: 200};
-    >>> df.withColumns(pl.col("a").replace({ old: mapping, default_: -1, returnDtype: pl.Int64 }).alias("replaced");
+    >>> df.withColumns(pl.col("a").replaceStrict({ old: mapping, default_: -1, returnDtype: pl.Int64 }).alias("replaced");
     shape: (4, 2)
     ┌─────┬──────────┐
     │ a   ┆ replaced │
@@ -805,12 +806,12 @@ export interface Expr
     └─────┴──────────┘
   * ```
     Replacing by values of a different data type sets the return type based on
-    a combination of the `new` data type and either the original data type or the
+    a combination of the `new_` data type and either the original data type or the
     default data type if it was set.
   * ```
     >>> const df = pl.DataFrame({"a": ["x", "y", "z"]});
     >>> const mapping = {"x": 1, "y": 2, "z": 3};
-    >>> df.withColumns(pl.col("a").replace({ old: mapping }).alias("replaced"));
+    >>> df.withColumns(pl.col("a").replaceStrict({ old: mapping }).alias("replaced"));
     shape: (3, 2)
     ┌─────┬──────────┐
     │ a   ┆ replaced │
@@ -821,7 +822,7 @@ export interface Expr
     │ y   ┆ 2        │
     │ z   ┆ 3        │
     └─────┴──────────┘
-    >>> df.withColumns(pl.col("a").replace({ old: mapping, default_: None }).alias("replaced"));
+    >>> df.withColumns(pl.col("a").replaceStrict({ old: mapping, default_: None }).alias("replaced"));
     shape: (3, 2)
     ┌─────┬──────────┐
     │ a   ┆ replaced │
@@ -835,7 +836,7 @@ export interface Expr
   * ```
     Set the `returnDtype` parameter to control the resulting data type directly.
   * ```
-    >>> df.withColumns(pl.col("a").replace({ old: mapping, returnDtype: pl.UInt8 }).alias("replaced"));
+    >>> df.withColumns(pl.col("a").replaceStrict({ old: mapping, returnDtype: pl.UInt8 }).alias("replaced"));
     shape: (3, 2)
     ┌─────┬──────────┐
     │ a   ┆ replaced │
@@ -851,7 +852,7 @@ export interface Expr
   * ```
     >>> const df = pl.DataFrame({"a": [1, 2, 2, 3], "b": [1.5, 2.5, 5.0, 1.0]});
     >>> df.withColumns(
-    ...         pl.col("a").replace({
+    ...         pl.col("a").replaceStrict({
     ...         old: pl.col("a").max(),
     ...         new_: pl.col("b").sum(),
     ...         default_: pl.col("b"),
@@ -887,6 +888,65 @@ export interface Expr
     default_?: Expr | string | number | (number | string)[];
     returnDtype?: DataType;
   }): Expr;
+  /**
+   * Replace the given values by different values of the same data type.
+   * @param old - Value or sequence of values to replace.
+                  Accepts expression input. Sequences are parsed as Series, other non-expression inputs are parsed as literals.
+   * @param new_ - Value or sequence of values to replace by.
+                  Accepts expression input. Sequences are parsed as Series, other non-expression inputs are parsed as literals.
+                  Length must match the length of `old` or have length 1.
+   * @see {@link replace_strict}
+   * @see {@link str.replace}
+   * @example
+   * Replace a single value by another value. Values that were not replaced remain unchanged.
+   * ```
+    >>> const df = pl.DataFrame({"a": [1, 2, 2, 3]});
+    >>> df.withColumns(pl.col("a").replace(2, 100).alias("replaced"));
+    shape: (4, 2)
+    ┌─────┬──────────┐
+    │ a   ┆ replaced │
+    │ --- ┆ ---      │
+    │ i64 ┆ i64      │
+    ╞═════╪══════════╡
+    │ 1   ┆ 1        │
+    │ 2   ┆ 100      │
+    │ 2   ┆ 100      │
+    │ 3   ┆ 3        │
+    └─────┴──────────┘
+   * ```
+   * Replace multiple values by passing sequences to the `old` and `new_` parameters.
+   * ```
+    >>> df.withColumns(pl.col("a").replace([2, 3], [100, 200]).alias("replaced"));
+    shape: (4, 2)
+    ┌─────┬──────────┐
+    │ a   ┆ replaced │
+    │ --- ┆ ---      │
+    │ i64 ┆ i64      │
+    ╞═════╪══════════╡
+    │ 1   ┆ 1        │
+    │ 2   ┆ 100      │
+    │ 2   ┆ 100      │
+    │ 3   ┆ 200      │
+    └─────┴──────────┘
+  * ```
+  * Passing a mapping with replacements is also supported as syntactic sugar.
+    Specify a default to set all values that were not matched.
+  * ```
+    >>> const mapping = {2: 100, 3: 200};
+    >>> df.withColumns(pl.col("a").replace({ old: mapping }).alias("replaced");
+    shape: (4, 2)
+    ┌─────┬──────────┐
+    │ a   ┆ replaced │
+    │ --- ┆ ---      │
+    │ i64 ┆ i64      │
+    ╞═════╪══════════╡
+    │ 1   ┆ -1       │
+    │ 2   ┆ 100      │
+    │ 2   ┆ 100      │
+    │ 3   ┆ 200      │
+    └─────┴──────────┘
+  * ```
+  */
   replace(
     old: Expr | string | number | (number | string)[],
     new_: Expr | string | number | (number | string)[],
