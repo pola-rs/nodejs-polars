@@ -267,6 +267,7 @@ export interface StringNamespace extends StringFunctions<Series> {
    */
   strptime(datatype: DataType.Date, fmt?: string): Series;
   strptime(datatype: DataType.Datetime, fmt?: string): Series;
+  strptime(datatype: typeof DataType.Datetime, fmt?: string): Series;
 }
 
 export const SeriesStringFunctions = (_s: any): StringNamespace => {

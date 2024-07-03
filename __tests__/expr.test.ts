@@ -1282,7 +1282,7 @@ describe("expr.str", () => {
 
     const datetimeSeries = df
       .getColumn("timestamp")
-      .str.strptime(pl.Datetime("ms"), "%FT%T%.3f")
+      .str.strptime(pl.Datetime, "%FT%T%.3f")
       .rename("datetime");
     const dateSeries = df
       .getColumn("timestamp")

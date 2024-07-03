@@ -993,7 +993,10 @@ export interface StringFunctions<T> {
    * @param datatype Date or Datetime.
    * @param fmt formatting syntax. [Read more](https://docs.rs/chrono/0.4.19/chrono/format/strftime/index.html)
    */
-  strptime(datatype: DataType.Date | DataType.Datetime, fmt?: string): T;
+  strptime(
+    datatype: DataType.Date | DataType.Datetime | typeof DataType.Datetime,
+    fmt?: string,
+  ): T;
 }
 
 export interface Serialize {
@@ -1005,6 +1008,7 @@ export interface Serialize {
    */
   serialize(format: "json" | "bincode"): Buffer;
 }
+
 export interface Deserialize<T> {
   /**
    * De-serializes buffer via [serde](https://serde.rs/)
