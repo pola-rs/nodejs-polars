@@ -133,6 +133,7 @@ export namespace pl {
   // biome-ignore lint/suspicious/noShadowRestrictedNames: pl.Date
   export const Date = DataType.Date;
   export const Datetime = DataType.Datetime;
+
   export const Time = DataType.Time;
   // biome-ignore lint/suspicious/noShadowRestrictedNames: pl.Object
   export const Object = DataType.Object;
@@ -153,7 +154,6 @@ export namespace pl {
     return new sql.SQLContext(frames);
   }
 }
-
 export default pl;
 
 // ------
@@ -276,6 +276,8 @@ export const FixedSizeList = DataType.FixedSizeList;
 // biome-ignore lint/suspicious/noShadowRestrictedNames: pl.Date
 export const Date = DataType.Date;
 export const Datetime = DataType.Datetime;
+
+
 export const Time = DataType.Time;
 // biome-ignore lint/suspicious/noShadowRestrictedNames: pl.Object
 export const Object = DataType.Object;

@@ -85,21 +85,18 @@ export abstract class DataType {
   public static Decimal(precision?: number, scale?: number): DataType {
     return new Decimal(precision, scale);
   }
-
   /**
    * Calendar date and time type
    * @param timeUnit any of 'ms' | 'ns' | 'us'
    * @param timeZone timezone string as defined by Intl.DateTimeFormat `America/New_York` for example.
-   *
    */
-  public static Datetime(timeUnit: TimeUnit, timeZone?): DataType;
-  public static Datetime(timeUnit: "ms" | "ns" | "us", timeZone?): DataType;
   public static Datetime(
-    timeUnit,
+    timeUnit?: TimeUnit | "ms" | "ns" | "us",
     timeZone: string | null | undefined = null,
   ): DataType {
-    return new Datetime(timeUnit, timeZone as any);
+    return new Datetime(timeUnit ?? "ms", timeZone);
   }
+
   /**
    * Nested list/array type
    *
@@ -109,6 +106,7 @@ export abstract class DataType {
   public static List(inner: DataType): DataType {
     return new List(inner);
   }
+
   /**
    * List of fixed length
    * This is called `Array` in other polars implementations, but `Array` is widely used in JS, so we use `FixedSizeList` instead.
@@ -142,6 +140,7 @@ export abstract class DataType {
     }
     return `${this.identity}(${this.variant})`;
   }
+
   toJSON() {
     const inner = (this as any).inner;
     if (inner) {
@@ -156,10 +155,7 @@ export abstract class DataType {
     };
   }
   [Symbol.for("nodejs.util.inspect.custom")]() {
-    return this.toJSON();
-  }
-  static from(obj): DataType {
-    return null as any;
+    return this.toString();
   }
   asFixedSizeList() {
     if (this instanceof FixedSizeList) {
@@ -229,8 +225,8 @@ export class Decimal extends DataType {
  */
 export class Datetime extends DataType {
   constructor(
-    private timeUnit: TimeUnit,
-    private timeZone?: string,
+    private timeUnit: TimeUnit | "ms" | "ns" | "us" = "ms",
+    private timeZone?: string | null,
   ) {
     super();
   }
