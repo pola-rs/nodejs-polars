@@ -2,6 +2,7 @@
 import pl from "@polars";
 import { Stream } from "stream";
 import fs from "fs";
+import { StructRow } from "apache-arrow";
 describe("dataframe", () => {
   const df = pl.DataFrame([
     pl.Series("foo", [1, 2, 9], pl.Int16),
@@ -2582,4 +2583,15 @@ describe("additional", () => {
 
     expect(actual.shape).toEqual({ height: 174_241, width: 3 });
   });
+});
+
+test("arrow integration", () => {
+  const df = pl.DataFrame({
+    a: [1, 2, 3],
+    b: ["a", "b", "c"],
+    c: [true, false, true],
+  });
+  const fromArrow = df.toArrow().toArray();
+
+  expect(fromArrow[0].toJSON()).toEqual({ a: 1, b: "a", c: true });
 });

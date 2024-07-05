@@ -13,18 +13,6 @@ use std::fs::File;
 use std::io::{BufReader, BufWriter, Cursor};
 use std::num::NonZeroUsize;
 
-#[napi]
-#[repr(transparent)]
-#[derive(Clone)]
-pub struct JsDataFrame {
-    pub(crate) df: DataFrame,
-}
-
-impl JsDataFrame {
-    pub(crate) fn new(df: DataFrame) -> JsDataFrame {
-        JsDataFrame { df }
-    }
-}
 impl From<DataFrame> for JsDataFrame {
     fn from(s: DataFrame) -> JsDataFrame {
         JsDataFrame::new(s)
@@ -437,7 +425,50 @@ pub fn from_rows(
 }
 
 #[napi]
+#[repr(transparent)]
+#[derive(Clone)]
+pub struct JsDataFrame {
+    pub(crate) df: DataFrame,
+}
+
+#[napi]
 impl JsDataFrame {
+    #[napi(factory, catch_unwind)]
+    pub fn deserialize(buf: Buffer, format: String) -> napi::Result<Self> {
+        let df: DataFrame = match format.as_ref() {
+            "bincode" => bincode::deserialize(&buf)
+                .map_err(|err| napi::Error::from_reason(format!("{:?}", err)))?,
+            "json" => serde_json::from_slice(&buf)
+                .map_err(|err| napi::Error::from_reason(format!("{:?}", err)))?,
+            _ => {
+                return Err(napi::Error::from_reason(
+                    "unexpected format. \n supported options are 'json', 'bincode'".to_owned(),
+                ))
+            }
+        };
+        Ok(df.into())
+    }
+
+    #[napi(constructor, catch_unwind)]
+    pub fn from_columns(columns: Array) -> napi::Result<Self> {
+        let len = columns.len();
+        let cols: Vec<Series> = (0..len)
+            .map(|idx| {
+                let item: &JsSeries = columns.get(idx).unwrap().unwrap();
+                item.series.clone()
+            })
+            .collect();
+
+        let df = DataFrame::new(cols).map_err(JsPolarsErr::from)?;
+        Ok(JsDataFrame::new(df))
+    }
+}
+
+#[napi]
+impl JsDataFrame {
+    pub(crate) fn new(df: DataFrame) -> JsDataFrame {
+        JsDataFrame { df }
+    }
     #[napi(catch_unwind)]
     pub fn to_js(&self, env: Env) -> napi::Result<napi::JsUnknown> {
         env.to_js_value(&self.df)
@@ -459,41 +490,12 @@ impl JsDataFrame {
         Ok(Buffer::from(buf))
     }
 
-    #[napi(factory, catch_unwind)]
-    pub fn deserialize(buf: Buffer, format: String) -> napi::Result<JsDataFrame> {
-        let df: DataFrame = match format.as_ref() {
-            "bincode" => bincode::deserialize(&buf)
-                .map_err(|err| napi::Error::from_reason(format!("{:?}", err)))?,
-            "json" => serde_json::from_slice(&buf)
-                .map_err(|err| napi::Error::from_reason(format!("{:?}", err)))?,
-            _ => {
-                return Err(napi::Error::from_reason(
-                    "unexpected format. \n supported options are 'json', 'bincode'".to_owned(),
-                ))
-            }
-        };
-        Ok(df.into())
-    }
-    #[napi(constructor)]
-    pub fn from_columns(columns: Array) -> napi::Result<JsDataFrame> {
-        let len = columns.len();
-        let cols: Vec<Series> = (0..len)
-            .map(|idx| {
-                let item: &JsSeries = columns.get(idx).unwrap().unwrap();
-                item.series.clone()
-            })
-            .collect();
-
-        let df = DataFrame::new(cols).map_err(JsPolarsErr::from)?;
-        Ok(JsDataFrame::new(df))
-    }
-
-    #[napi(catch_unwind)]
+    #[napi]
     pub fn estimated_size(&self) -> u32 {
         self.df.estimated_size() as u32
     }
 
-    #[napi(catch_unwind)]
+    #[napi]
     pub fn to_string(&self) -> String {
         format!("{:?}", self.df)
     }
@@ -1401,6 +1403,7 @@ impl JsDataFrame {
         };
         Ok(())
     }
+
     #[napi(catch_unwind)]
     pub fn write_ipc(
         &mut self,
@@ -1433,6 +1436,16 @@ impl JsDataFrame {
         };
         Ok(())
     }
+    #[napi(catch_unwind)]
+    pub fn write_ipc_buffer(&mut self) -> napi::Result<Buffer> {
+        let mut buf = Vec::new();
+        IpcWriter::new(&mut buf)
+            .finish(&mut self.df)
+            .map_err(JsPolarsErr::from)?;
+
+        Ok(buf.into())
+    }
+
     #[napi(catch_unwind)]
     pub fn write_json(
         &mut self,

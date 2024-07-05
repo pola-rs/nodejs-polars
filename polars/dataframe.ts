@@ -1446,9 +1446,27 @@ export interface DataFrame
    *   {"foo":3.0,"bar":"c"}
    * ]
    * ```
+
    * @category IO
    */
   toRecords(): Record<string, any>[];
+  /**
+   * Converts dataframe object into row oriented javascript objects
+   * @experimental
+   * @param options.useArrow - use 'apache-arrow' to perform the conversion
+   * @note 'useArrow' may significantly increase the performance of the conversion, but it may also produce different results for some data types
+   * @example
+   * ```
+   * > df.toRecords({useArrow: true})
+   * [
+   *   {"foo":1.0,"bar":"a"},
+   *   {"foo":2.0,"bar":"b"},
+   *   {"foo":3.0,"bar":"c"}
+   * ]
+   * ```
+   * @category IO
+   */
+  toRecords(options: { useArrow: true }): Record<string, any>[];
 
   /**
    * compat with `JSON.stringify`
@@ -1479,6 +1497,10 @@ export interface DataFrame
    * @category IO
    */
   toObject(): Record<string, any[]>;
+  /**
+  * Converts dataframe into an Apache Arrow Table
+  */
+  toArrow(): import('apache-arrow').Table;
 
   /**
    * @deprecated *since 0.4.0* use {@link writeIPC}
@@ -2383,7 +2405,11 @@ export const _DataFrame = (_df: any): DataFrame => {
 
       return Buffer.concat(buffers);
     },
-    toRecords() {
+    toRecords(opts?: {useArrow: true}) {
+      if (opts?.useArrow) {
+        return this.toArrow().toArray();
+        
+      }
       return _df.toObjects();
     },
     toJSON(...args: any[]) {
@@ -2432,6 +2458,19 @@ export const _DataFrame = (_df: any): DataFrame => {
 
         return acc;
       }, {});
+    },
+    toArrow(): import("apache-arrow").Table {
+      // biome-ignore lint/style/noVar: <explanation>
+      var arrow: typeof import("apache-arrow") | undefined;
+      try {
+        arrow = require("apache-arrow");
+      } catch (e) {
+        throw new Error("toArrow requires the 'apache-arrow' package");
+      }
+      const buf = Buffer.from(_df.writeIpcBuffer());
+      // biome-ignore lint/style/noNonNullAssertion: we already checked if arrow is defined
+      const tbl = arrow!.tableFromIPC(buf);
+      return tbl;
     },
     writeJSON(dest?, options = { format: "lines" }) {
       if (dest instanceof Writable || typeof dest === "string") {
