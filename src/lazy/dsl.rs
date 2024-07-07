@@ -462,7 +462,7 @@ impl JsExpr {
     pub fn slice(&self, offset: &JsExpr, length: &JsExpr) -> JsExpr {
         self.inner
             .clone()
-            .slice(offset.inner.clone(), length.inner.clone())
+            .slice(offset.inner.clone().cast(DataType::Int64), length.inner.clone().cast(DataType::Int64))
             .into()
     }
     #[napi(catch_unwind)]

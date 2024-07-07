@@ -790,7 +790,7 @@ describe("expr", () => {
     );
     expect(actual).toFrameStrictEqual(expected);
   });
-  test.skip("slice", () => {
+  test("slice", () => {
     const df = pl.DataFrame({ a: [1, 2, 3, 4] });
     const expected = pl.DataFrame({
       "slice(0,2)": [1, 2],
