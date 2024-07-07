@@ -917,7 +917,7 @@ describe("expr", () => {
     const actual = df.select(col("a").tail(3).as("tail3"));
     expect(actual).toFrameEqual(expected);
   });
-  test.skip("take", () => {
+  test("take", () => {
     const df = pl.DataFrame({ a: [1, 2, 2, 3, 3, 8, null, 1] });
     const expected = pl.DataFrame({
       "take:array": [1, 2, 3, 8],
