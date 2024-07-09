@@ -587,7 +587,7 @@ describe("lazyframe", () => {
       });
       expect(actual).toFrameEqualIgnoringOrder(expected);
     });
-    test("how:outer", () => {
+    test("how:full", () => {
       const df = pl.DataFrame({
         foo: [1, 2, 3],
         bar: [6.0, 7.0, 8.0],
@@ -605,7 +605,7 @@ describe("lazyframe", () => {
         .lazy()
         .join(otherDF, {
           on: "ham",
-          how: "outer",
+          how: "full",
         })
         .collectSync();
       const expected = pl.DataFrame({

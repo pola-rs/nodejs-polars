@@ -917,7 +917,7 @@ describe("expr", () => {
     const actual = df.select(col("a").tail(3).as("tail3"));
     expect(actual).toFrameEqual(expected);
   });
-  test.skip("take", () => {
+  test("take", () => {
     const df = pl.DataFrame({ a: [1, 2, 2, 3, 3, 8, null, 1] });
     const expected = pl.DataFrame({
       "take:array": [1, 2, 3, 8],
@@ -1187,7 +1187,10 @@ describe("expr.str", () => {
     });
     expect(actual).toFrameEqual(expected);
     actual = df.withColumns(
-      pl.col("a").replace([2, 3], [100, 200], -1, pl.Float64).alias("replaced"),
+      pl
+        .col("a")
+        .replaceStrict([2, 3], [100, 200], -1, pl.Float64)
+        .alias("replaced"),
     );
     expected = pl.DataFrame({
       a: [1, 2, 2, 3],
@@ -1196,7 +1199,7 @@ describe("expr.str", () => {
     });
     expect(actual).toFrameEqual(expected);
     actual = df.withColumns(
-      pl.col("b").replace("a", "c", "e", pl.Utf8).alias("replaced"),
+      pl.col("b").replaceStrict("a", "c", "e", pl.Utf8).alias("replaced"),
     );
     expected = pl.DataFrame({
       a: [1, 2, 2, 3],
@@ -1207,7 +1210,7 @@ describe("expr.str", () => {
     actual = df.withColumns(
       pl
         .col("b")
-        .replace(["a", "b"], ["c", "d"], "e", pl.Utf8)
+        .replaceStrict(["a", "b"], ["c", "d"], "e", pl.Utf8)
         .alias("replaced"),
     );
     expected = pl.DataFrame({
@@ -1220,7 +1223,7 @@ describe("expr.str", () => {
     actual = df.withColumns(
       pl
         .col("a")
-        .replace({ old: mapping, default_: -1, returnDtype: pl.Int64 })
+        .replaceStrict({ old: mapping, default_: -1, returnDtype: pl.Int64 })
         .alias("replaced"),
     );
     expected = pl.DataFrame({
@@ -1282,7 +1285,7 @@ describe("expr.str", () => {
 
     const datetimeSeries = df
       .getColumn("timestamp")
-      .str.strptime(pl.Datetime("ms"), "%FT%T%.3f")
+      .str.strptime(pl.Datetime, "%FT%T%.3f")
       .rename("datetime");
     const dateSeries = df
       .getColumn("timestamp")

@@ -914,11 +914,20 @@ export interface DataFrame
    */
   median(): DataFrame;
   /**
+   * Unpivot a DataFrame from wide to long format.
+   * @deprecated *since 0.13.0* use {@link unpivot}
+   */
+  melt(idVars: ColumnSelection, valueVars: ColumnSelection): DataFrame;
+  /**
    * Unpivot DataFrame to long format.
    * ___
    *
    * @param idVars - Columns to use as identifier variables.
    * @param valueVars - Values to use as value variables.
+   * @param variableName - Name to give to the `variable` column. Defaults to "variable"
+   * @param valueName - Name to give to the `value` column. Defaults to "value"
+   * @param streamable - Allow this node to run in the streaming engine.
+                         If this runs in streaming, the output of the unpivot operation will not have a stable ordering.
    * @example
    * ```
    * > const df1 = pl.DataFrame({
@@ -927,7 +936,7 @@ export interface DataFrame
    * ...   'asset_key_2': ['456'],
    * ...   'asset_key_3': ['abc'],
    * ... });
-   * > df1.melt('id', ['asset_key_1', 'asset_key_2', 'asset_key_3']);
+   * > df1.unpivot('id', ['asset_key_1', 'asset_key_2', 'asset_key_3']);
    * shape: (3, 3)
    * ┌─────┬─────────────┬───────┐
    * │ id  ┆ variable    ┆ value │
@@ -942,7 +951,7 @@ export interface DataFrame
    * └─────┴─────────────┴───────┘
    * ```
    */
-  melt(idVars: ColumnSelection, valueVars: ColumnSelection): DataFrame;
+  unpivot(idVars: ColumnSelection, valueVars: ColumnSelection): DataFrame;
   /**
    * Aggregate the columns of this DataFrame to their minimum value.
    * ___
@@ -1051,7 +1060,7 @@ export interface DataFrame
     values: string | string[],
     options: {
       index: string | string[];
-      columns: string | string[];
+      on: string | string[];
       aggregateFunc?:
         | "sum"
         | "max"
@@ -1070,7 +1079,7 @@ export interface DataFrame
   pivot(options: {
     values: string | string[];
     index: string | string[];
-    columns: string | string[];
+    on: string | string[];
     aggregateFunc?:
       | "sum"
       | "max"
@@ -1750,7 +1759,6 @@ export interface DataFrame
     @param timeColumn Time column will be used to determine a date range.
                         Note that this column has to be sorted for the output to make sense.
     @param every Interval will start 'every' duration.
-    @param offset Change the start of the date range by this offset.
     @param by First group by these columns and then upsample for every group.
     @param maintainOrder Keep the ordering predictable. This is slower.
 
@@ -1776,7 +1784,7 @@ export interface DataFrame
           .withColumn(pl.col("date").cast(pl.Date).alias("date"))
           .sort("date");
 
-    >>> df.upsample({timeColumn: "date", every: "1mo", offset: "0ns", by: "groups", maintainOrder: true})
+    >>> df.upsample({timeColumn: "date", every: "1mo", by: "groups", maintainOrder: true})
           .select(pl.col("*").forwardFill());
 shape: (7, 3)
 ┌────────────┬────────┬────────┐
@@ -1796,14 +1804,12 @@ shape: (7, 3)
   upsample(
     timeColumn: string,
     every: string,
-    offset?: string,
     by?: string | string[],
     maintainOrder?: boolean,
   ): DataFrame;
   upsample(opts: {
     timeColumn: string;
     every: string;
-    offset?: string;
     by?: string | string[];
     maintainOrder?: boolean;
   }): DataFrame;
@@ -2070,14 +2076,13 @@ export const _DataFrame = (_df: any): DataFrame => {
         by,
       );
     },
-    upsample(opts, every?, offset?, by?, maintainOrder?) {
+    upsample(opts, every?, by?, maintainOrder?) {
       let timeColumn;
       if (typeof opts === "string") {
         timeColumn = opts;
       } else {
         timeColumn = opts.timeColumn;
         by = opts.by;
-        offset = opts.offset;
         every = opts.every;
         maintainOrder = opts.maintainOrder ?? false;
       }
@@ -2088,11 +2093,7 @@ export const _DataFrame = (_df: any): DataFrame => {
         by = by ?? [];
       }
 
-      offset = offset ?? "0ns";
-
-      return _DataFrame(
-        _df.upsample(by, timeColumn, every, offset, maintainOrder),
-      );
+      return _DataFrame(_df.upsample(by, timeColumn, every, maintainOrder));
     },
     hashRows(obj: any = 0n, k1 = 1n, k2 = 2n, k3 = 3n) {
       if (typeof obj === "number" || typeof obj === "bigint") {
@@ -2174,7 +2175,10 @@ export const _DataFrame = (_df: any): DataFrame => {
       return this.lazy().median().collectSync();
     },
     melt(ids, values) {
-      return wrap("melt", columnOrColumns(ids), columnOrColumns(values));
+      return wrap("unpivot", columnOrColumns(ids), columnOrColumns(values));
+    },
+    unpivot(ids, values) {
+      return wrap("unpivot", columnOrColumns(ids), columnOrColumns(values));
     },
     min(axis = 0) {
       if (axis === 1) {
@@ -2198,7 +2202,7 @@ export const _DataFrame = (_df: any): DataFrame => {
       let {
         values: values_,
         index,
-        columns,
+        on,
         maintainOrder = true,
         sortColumns = false,
         aggregateFunc = "first",
@@ -2207,7 +2211,7 @@ export const _DataFrame = (_df: any): DataFrame => {
       values = values_ ?? values;
       values = typeof values === "string" ? [values] : values;
       index = typeof index === "string" ? [index] : index;
-      columns = typeof columns === "string" ? [columns] : columns;
+      on = typeof on === "string" ? [on] : on;
 
       let fn: Expr;
       if (Expr.isExpr(aggregateFunc)) {
@@ -2234,7 +2238,7 @@ export const _DataFrame = (_df: any): DataFrame => {
         _df.pivotExpr(
           values,
           index,
-          columns,
+          on,
           fn,
           maintainOrder,
           sortColumns,

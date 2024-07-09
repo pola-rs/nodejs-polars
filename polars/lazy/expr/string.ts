@@ -323,6 +323,7 @@ export interface StringNamespace extends StringFunctions<Expr> {
    */
   strptime(datatype: DataType.Date, fmt?: string): Expr;
   strptime(datatype: DataType.Datetime, fmt?: string): Expr;
+  strptime(datatype: typeof DataType.Datetime, fmt?: string): Expr;
 }
 
 export const ExprStringFunctions = (_expr: any): StringNamespace => {
@@ -422,7 +423,13 @@ export const ExprStringFunctions = (_expr: any): StringNamespace => {
     strip() {
       return wrap("strStrip");
     },
-    strptime(dtype, format?) {
+    strptime(
+      dtype: DataType.Date | DataType.Datetime | typeof DataType.Datetime,
+      format?: string,
+    ) {
+      if (!(dtype instanceof DataType)) {
+        dtype = dtype();
+      }
       if (dtype.equals(DataType.Date)) {
         return wrap("strToDate", format, false, false, false);
       }

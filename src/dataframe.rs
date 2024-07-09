@@ -132,7 +132,7 @@ fn mmap_reader_to_df<'a>(
         .with_ignore_errors(options.ignore_errors)
         .with_rechunk(options.rechunk)
         .with_chunk_size(options.chunk_size as usize)
-        .with_columns(options.columns.map(Arc::new))
+        .with_columns(options.columns.map(|c| Arc::from(c)))
         .with_n_threads(options.num_threads.map(|i| i as usize))
         .with_schema_overwrite(overwrite_dtype.map(Arc::new))
         .with_schema(options.schema.map(|schema| Arc::new(schema.0)))
@@ -188,7 +188,7 @@ pub fn read_json_lines(
     path_or_buffer: Either<String, Buffer>,
     options: ReadJsonOptions,
 ) -> napi::Result<JsDataFrame> {
-    let infer_schema_length = options.infer_schema_length.unwrap_or(100) as usize;
+    let infer_schema_length = NonZeroUsize::new(options.infer_schema_length.unwrap_or(100) as usize);
     let batch_size = options
         .batch_size
         .map(|b| NonZeroUsize::try_from(b as usize).unwrap());
@@ -196,14 +196,14 @@ pub fn read_json_lines(
     let df = match path_or_buffer {
         Either::A(path) => JsonLineReader::from_path(path)
             .expect("unable to read file")
-            .infer_schema_len(Some(infer_schema_length))
+            .infer_schema_len(infer_schema_length)
             .with_chunk_size(batch_size)
             .finish()
             .map_err(JsPolarsErr::from)?,
         Either::B(buf) => {
             let cursor = Cursor::new(buf.as_ref());
             JsonLineReader::new(cursor)
-                .infer_schema_len(Some(infer_schema_length))
+                .infer_schema_len(infer_schema_length)
                 .with_chunk_size(batch_size)
                 .finish()
                 .map_err(JsPolarsErr::from)?
@@ -216,7 +216,7 @@ pub fn read_json(
     path_or_buffer: Either<String, Buffer>,
     options: ReadJsonOptions,
 ) -> napi::Result<JsDataFrame> {
-    let infer_schema_length = options.infer_schema_length.unwrap_or(100) as usize;
+    let infer_schema_length = NonZeroUsize::new(options.infer_schema_length.unwrap_or(100) as usize);
     let batch_size = options.batch_size.unwrap_or(10000) as usize;
     let batch_size = NonZeroUsize::new(batch_size).unwrap();
     let format: JsonFormat = options
@@ -234,7 +234,7 @@ pub fn read_json(
             let f = File::open(&path)?;
             let reader = BufReader::new(f);
             JsonReader::new(reader)
-                .infer_schema_len(Some(infer_schema_length))
+                .infer_schema_len(infer_schema_length)
                 .with_batch_size(batch_size)
                 .with_json_format(format)
                 .finish()
@@ -243,7 +243,7 @@ pub fn read_json(
         Either::B(buf) => {
             let cursor = Cursor::new(buf.as_ref());
             JsonReader::new(cursor)
-                .infer_schema_len(Some(infer_schema_length))
+                .infer_schema_len(infer_schema_length)
                 .with_batch_size(batch_size)
                 .with_json_format(format)
                 .finish()
@@ -581,7 +581,7 @@ impl JsDataFrame {
         let how = match how.as_ref() {
             "left" => JoinType::Left,
             "inner" => JoinType::Inner,
-            "outer" => JoinType::Outer,
+            "full" => JoinType::Full,
             "semi" => JoinType::Semi,
             "anti" => JoinType::Anti,
             "asof" => JoinType::AsOf(AsOfOptions {
@@ -907,7 +907,7 @@ impl JsDataFrame {
         fun(
             &self.df,
             index,
-            columns,
+            Some(columns),
             Some(values),
             sort_columns,
             aggregate_expr.map(|e| e.0 as Expr),
@@ -921,7 +921,7 @@ impl JsDataFrame {
         JsDataFrame::new(self.df.clone())
     }
     #[napi(catch_unwind)]
-    pub fn melt(
+    pub fn unpivot(
         &self,
         id_vars: Vec<String>,
         value_vars: Vec<String>,
@@ -929,15 +929,15 @@ impl JsDataFrame {
         variable_name: Option<String>,
         streamable: Option<bool>,
     ) -> napi::Result<JsDataFrame> {
-        let args = MeltArgs {
-            id_vars: strings_to_smartstrings(id_vars),
-            value_vars: strings_to_smartstrings(value_vars),
+        let args = UnpivotArgs {
+            index: strings_to_smartstrings(id_vars),
+            on: strings_to_smartstrings(value_vars),
             value_name: value_name.map(|s| s.into()),
             variable_name: variable_name.map(|s| s.into()),
             streamable: streamable.unwrap_or(false),
         };
 
-        let df = self.df.melt2(args).map_err(JsPolarsErr::from)?;
+        let df = self.df.unpivot2(args).map_err(JsPolarsErr::from)?;
         Ok(JsDataFrame::new(df))
     }
 
@@ -1110,22 +1110,19 @@ impl JsDataFrame {
         by: Vec<String>,
         index_column: String,
         every: String,
-        offset: String,
         stable: bool,
     ) -> napi::Result<JsDataFrame> {
         let out = if stable {
             self.df.upsample_stable(
                 by,
                 &index_column,
-                Duration::parse(&every),
-                Duration::parse(&offset),
+                Duration::parse(&every)
             )
         } else {
             self.df.upsample(
                 by,
                 &index_column,
-                Duration::parse(&every),
-                Duration::parse(&offset),
+                Duration::parse(&every)
             )
         };
         let out = out.map_err(JsPolarsErr::from)?;

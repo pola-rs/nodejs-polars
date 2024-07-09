@@ -237,7 +237,6 @@ impl JsLazyFrame {
         offset: String,
         closed: Wrap<ClosedWindow>,
         by: Vec<&JsExpr>,
-        check_sorted: bool,
     ) -> JsLazyGroupBy {
         let closed_window = closed.0;
         let ldf = self.ldf.clone();
@@ -249,8 +248,7 @@ impl JsLazyFrame {
                 index_column: "".into(),
                 period: Duration::parse(&period),
                 offset: Duration::parse(&offset),
-                closed_window,
-                check_sorted,
+                closed_window
             },
         );
 
@@ -269,7 +267,6 @@ impl JsLazyFrame {
         closed: Wrap<ClosedWindow>,
         by: Vec<&JsExpr>,
         start_by: Wrap<StartBy>,
-        check_sorted: bool,
     ) -> JsLazyGroupBy {
         let closed_window = closed.0;
         let by = by.to_exprs();
@@ -285,7 +282,6 @@ impl JsLazyFrame {
                 include_boundaries,
                 closed_window,
                 start_by: start_by.0,
-                check_sorted,
                 ..Default::default()
             },
         );
@@ -504,7 +500,7 @@ impl JsLazyFrame {
         ldf.tail(n).into()
     }
     #[napi(catch_unwind)]
-    pub fn melt(
+    pub fn unpivot(
         &self,
         id_vars: Vec<&str>,
         value_vars: Vec<&str>,
@@ -512,15 +508,15 @@ impl JsLazyFrame {
         variable_name: Option<&str>,
         streamable: Option<bool>,
     ) -> JsLazyFrame {
-        let args = MeltArgs {
-            id_vars: strings_to_smartstrings(id_vars),
-            value_vars: strings_to_smartstrings(value_vars),
+        let args = UnpivotArgs {
+            index: strings_to_smartstrings(id_vars),
+            on: strings_to_smartstrings(value_vars),
             value_name: value_name.map(|s| s.into()),
             variable_name: variable_name.map(|s| s.into()),
             streamable: streamable.unwrap_or(false),
         };
         let ldf = self.ldf.clone();
-        ldf.melt(args).into()
+        ldf.unpivot(args).into()
     }
 
     #[napi(catch_unwind)]
@@ -540,7 +536,7 @@ impl JsLazyFrame {
     }
 
     #[napi(getter, js_name = "columns", catch_unwind)]
-    pub fn columns(&self) -> napi::Result<Vec<String>> {
+    pub fn columns(&mut self) -> napi::Result<Vec<String>> {
         Ok(self
             .ldf
             .schema()
@@ -557,7 +553,6 @@ impl JsLazyFrame {
 
     #[napi(catch_unwind)]
     pub fn sink_csv(&self, path: String, options: SinkCsvOptions) -> napi::Result<()> {
-        let quote_style = QuoteStyle::default();
         let null_value = options
             .null_value
             .unwrap_or(SerializeOptions::default().null);
@@ -578,7 +573,7 @@ impl JsLazyFrame {
             quote_char,
             null: null_value,
             line_terminator,
-            quote_style,
+            ..SerializeOptions::default()
         };
 
         let batch_size = options.batch_size.map(|bs| bs).unwrap_or(1024) as usize;
@@ -605,7 +600,11 @@ impl JsLazyFrame {
     pub fn sink_parquet(&self, path: String, options: SinkParquetOptions) -> napi::Result<()> {
         let compression_str = options.compression.unwrap_or("zstd".to_string());
         let compression = parse_parquet_compression(compression_str, options.compression_level)?;
-        let statistics = options.statistics.unwrap_or(false);
+        let statistics = if options.statistics.expect("Expect statistics") {
+            StatisticsOptions::full()
+        } else {
+            StatisticsOptions::empty()
+        };
         let row_group_size = options.row_group_size.map(|i| i as usize);
         let data_pagesize_limit = options.data_pagesize_limit.map(|i| i as usize);
         let maintain_order = options.maintain_order.unwrap_or(true);
@@ -765,7 +764,7 @@ pub fn scan_parquet(path: String, options: ScanParquetOptions) -> napi::Result<J
         use_statistics,
         // TODO: Support Hive partitioning.
         hive_options: HiveOptions {
-            enabled: false,
+            enabled: Some(false),
             ..Default::default()
         },
         glob: true,
