@@ -188,7 +188,8 @@ pub fn read_json_lines(
     path_or_buffer: Either<String, Buffer>,
     options: ReadJsonOptions,
 ) -> napi::Result<JsDataFrame> {
-    let infer_schema_length = NonZeroUsize::new(options.infer_schema_length.unwrap_or(100) as usize);
+    let infer_schema_length =
+        NonZeroUsize::new(options.infer_schema_length.unwrap_or(100) as usize);
     let batch_size = options
         .batch_size
         .map(|b| NonZeroUsize::try_from(b as usize).unwrap());
@@ -216,7 +217,8 @@ pub fn read_json(
     path_or_buffer: Either<String, Buffer>,
     options: ReadJsonOptions,
 ) -> napi::Result<JsDataFrame> {
-    let infer_schema_length = NonZeroUsize::new(options.infer_schema_length.unwrap_or(100) as usize);
+    let infer_schema_length =
+        NonZeroUsize::new(options.infer_schema_length.unwrap_or(100) as usize);
     let batch_size = options.batch_size.unwrap_or(10000) as usize;
     let batch_size = NonZeroUsize::new(batch_size).unwrap();
     let format: JsonFormat = options
@@ -1113,17 +1115,10 @@ impl JsDataFrame {
         stable: bool,
     ) -> napi::Result<JsDataFrame> {
         let out = if stable {
-            self.df.upsample_stable(
-                by,
-                &index_column,
-                Duration::parse(&every)
-            )
+            self.df
+                .upsample_stable(by, &index_column, Duration::parse(&every))
         } else {
-            self.df.upsample(
-                by,
-                &index_column,
-                Duration::parse(&every)
-            )
+            self.df.upsample(by, &index_column, Duration::parse(&every))
         };
         let out = out.map_err(JsPolarsErr::from)?;
         Ok(out.into())

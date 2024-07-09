@@ -277,7 +277,13 @@ impl JsExpr {
     }
 
     #[napi(catch_unwind)]
-    pub fn value_counts(&self, sort: bool, parallel: bool, name: String, normalize: bool)  -> JsExpr {
+    pub fn value_counts(
+        &self,
+        sort: bool,
+        parallel: bool,
+        name: String,
+        normalize: bool,
+    ) -> JsExpr {
         self.inner
             .clone()
             .value_counts(sort, parallel, name, normalize)
@@ -330,7 +336,10 @@ impl JsExpr {
     }
     #[napi(catch_unwind)]
     pub fn gather(&self, idx: &JsExpr) -> JsExpr {
-        self.clone().inner.gather(idx.inner.clone().cast(DataType::Int64)).into()
+        self.clone()
+            .inner
+            .gather(idx.inner.clone().cast(DataType::Int64))
+            .into()
     }
     #[napi(catch_unwind)]
     pub fn sort_by(&self, by: Vec<&JsExpr>, reverse: Vec<bool>) -> JsExpr {
@@ -462,7 +471,10 @@ impl JsExpr {
     pub fn slice(&self, offset: &JsExpr, length: &JsExpr) -> JsExpr {
         self.inner
             .clone()
-            .slice(offset.inner.clone().cast(DataType::Int64), length.inner.clone().cast(DataType::Int64))
+            .slice(
+                offset.inner.clone().cast(DataType::Int64),
+                length.inner.clone().cast(DataType::Int64),
+            )
             .into()
     }
     #[napi(catch_unwind)]
@@ -955,17 +967,10 @@ impl JsExpr {
             .into()
     }
     #[napi(catch_unwind)]
-    pub fn replace(
-        &self,
-        old: &JsExpr,
-        new: &JsExpr
-    ) -> JsExpr {
+    pub fn replace(&self, old: &JsExpr, new: &JsExpr) -> JsExpr {
         self.inner
             .clone()
-            .replace(
-                old.inner.clone(),
-                new.inner.clone()
-            )
+            .replace(old.inner.clone(), new.inner.clone())
             .into()
     }
     #[napi(catch_unwind)]

@@ -482,22 +482,22 @@ impl JsSeries {
         Ok(JsSeries { series })
     }
     #[napi(catch_unwind)]
-    pub fn sub(&self, other: &JsSeries) -> napi::Result<JsSeries>  {
+    pub fn sub(&self, other: &JsSeries) -> napi::Result<JsSeries> {
         let series = (&self.series - &other.series).map_err(JsPolarsErr::from)?;
         Ok(JsSeries { series })
     }
     #[napi(catch_unwind)]
-    pub fn mul(&self, other: &JsSeries) -> napi::Result<JsSeries>  {
+    pub fn mul(&self, other: &JsSeries) -> napi::Result<JsSeries> {
         let series = (&self.series * &other.series).map_err(JsPolarsErr::from)?;
         Ok(JsSeries { series })
     }
     #[napi(catch_unwind)]
-    pub fn div(&self, other: &JsSeries) -> napi::Result<JsSeries>  {
+    pub fn div(&self, other: &JsSeries) -> napi::Result<JsSeries> {
         let series = (&self.series / &other.series).map_err(JsPolarsErr::from)?;
         Ok(JsSeries { series })
     }
     #[napi(catch_unwind)]
-    pub fn rem(&self, other: &JsSeries) -> napi::Result<JsSeries>  {
+    pub fn rem(&self, other: &JsSeries) -> napi::Result<JsSeries> {
         let series = (&self.series % &other.series).map_err(JsPolarsErr::from)?;
         Ok(JsSeries { series })
     }
@@ -552,7 +552,13 @@ impl JsSeries {
         Ok(unique.into())
     }
     #[napi(catch_unwind)]
-    pub fn value_counts(&self, sort: bool, parallel: bool, name: String, normalize: bool) -> napi::Result<JsDataFrame> {
+    pub fn value_counts(
+        &self,
+        sort: bool,
+        parallel: bool,
+        name: String,
+        normalize: bool,
+    ) -> napi::Result<JsDataFrame> {
         let df = self
             .series
             .value_counts(sort, parallel, name, normalize)

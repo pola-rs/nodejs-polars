@@ -408,18 +408,18 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@biomejs/biome@npm:=1.7.3":
-  version: 1.7.3
-  resolution: "@biomejs/biome@npm:1.7.3"
+"@biomejs/biome@npm:=1.8.3":
+  version: 1.8.3
+  resolution: "@biomejs/biome@npm:1.8.3"
   dependencies:
-    "@biomejs/cli-darwin-arm64": 1.7.3
-    "@biomejs/cli-darwin-x64": 1.7.3
-    "@biomejs/cli-linux-arm64": 1.7.3
-    "@biomejs/cli-linux-arm64-musl": 1.7.3
-    "@biomejs/cli-linux-x64": 1.7.3
-    "@biomejs/cli-linux-x64-musl": 1.7.3
-    "@biomejs/cli-win32-arm64": 1.7.3
-    "@biomejs/cli-win32-x64": 1.7.3
+    "@biomejs/cli-darwin-arm64": 1.8.3
+    "@biomejs/cli-darwin-x64": 1.8.3
+    "@biomejs/cli-linux-arm64": 1.8.3
+    "@biomejs/cli-linux-arm64-musl": 1.8.3
+    "@biomejs/cli-linux-x64": 1.8.3
+    "@biomejs/cli-linux-x64-musl": 1.8.3
+    "@biomejs/cli-win32-arm64": 1.8.3
+    "@biomejs/cli-win32-x64": 1.8.3
   dependenciesMeta:
     "@biomejs/cli-darwin-arm64":
       optional: true
@@ -439,62 +439,62 @@ __metadata:
       optional: true
   bin:
     biome: bin/biome
-  checksum: ad6a6585f1d6fcb9c060319c614b4437d715637ecedbe5f4d45f170f0532894654e7cf5c80420da38c8c626d76fef4b6334c7ee85e6c790bd5ad4f7aa49c5182
+  checksum: c5e6379aa640ab1d2b6490abd3820b6998b08d94bb6a3907c39d40c4396efe26996cbf1f03bda6ab86cd83adbb52b5124d81a68dd914c3a03eedc8070d72bce9
   languageName: node
   linkType: hard
 
-"@biomejs/cli-darwin-arm64@npm:1.7.3":
-  version: 1.7.3
-  resolution: "@biomejs/cli-darwin-arm64@npm:1.7.3"
+"@biomejs/cli-darwin-arm64@npm:1.8.3":
+  version: 1.8.3
+  resolution: "@biomejs/cli-darwin-arm64@npm:1.8.3"
   conditions: os=darwin & cpu=arm64
   languageName: node
   linkType: hard
 
-"@biomejs/cli-darwin-x64@npm:1.7.3":
-  version: 1.7.3
-  resolution: "@biomejs/cli-darwin-x64@npm:1.7.3"
+"@biomejs/cli-darwin-x64@npm:1.8.3":
+  version: 1.8.3
+  resolution: "@biomejs/cli-darwin-x64@npm:1.8.3"
   conditions: os=darwin & cpu=x64
   languageName: node
   linkType: hard
 
-"@biomejs/cli-linux-arm64-musl@npm:1.7.3":
-  version: 1.7.3
-  resolution: "@biomejs/cli-linux-arm64-musl@npm:1.7.3"
+"@biomejs/cli-linux-arm64-musl@npm:1.8.3":
+  version: 1.8.3
+  resolution: "@biomejs/cli-linux-arm64-musl@npm:1.8.3"
   conditions: os=linux & cpu=arm64 & libc=musl
   languageName: node
   linkType: hard
 
-"@biomejs/cli-linux-arm64@npm:1.7.3":
-  version: 1.7.3
-  resolution: "@biomejs/cli-linux-arm64@npm:1.7.3"
+"@biomejs/cli-linux-arm64@npm:1.8.3":
+  version: 1.8.3
+  resolution: "@biomejs/cli-linux-arm64@npm:1.8.3"
   conditions: os=linux & cpu=arm64 & libc=glibc
   languageName: node
   linkType: hard
 
-"@biomejs/cli-linux-x64-musl@npm:1.7.3":
-  version: 1.7.3
-  resolution: "@biomejs/cli-linux-x64-musl@npm:1.7.3"
+"@biomejs/cli-linux-x64-musl@npm:1.8.3":
+  version: 1.8.3
+  resolution: "@biomejs/cli-linux-x64-musl@npm:1.8.3"
   conditions: os=linux & cpu=x64 & libc=musl
   languageName: node
   linkType: hard
 
-"@biomejs/cli-linux-x64@npm:1.7.3":
-  version: 1.7.3
-  resolution: "@biomejs/cli-linux-x64@npm:1.7.3"
+"@biomejs/cli-linux-x64@npm:1.8.3":
+  version: 1.8.3
+  resolution: "@biomejs/cli-linux-x64@npm:1.8.3"
   conditions: os=linux & cpu=x64 & libc=glibc
   languageName: node
   linkType: hard
 
-"@biomejs/cli-win32-arm64@npm:1.7.3":
-  version: 1.7.3
-  resolution: "@biomejs/cli-win32-arm64@npm:1.7.3"
+"@biomejs/cli-win32-arm64@npm:1.8.3":
+  version: 1.8.3
+  resolution: "@biomejs/cli-win32-arm64@npm:1.8.3"
   conditions: os=win32 & cpu=arm64
   languageName: node
   linkType: hard
 
-"@biomejs/cli-win32-x64@npm:1.7.3":
-  version: 1.7.3
-  resolution: "@biomejs/cli-win32-x64@npm:1.7.3"
+"@biomejs/cli-win32-x64@npm:1.8.3":
+  version: 1.8.3
+  resolution: "@biomejs/cli-win32-x64@npm:1.8.3"
   conditions: os=win32 & cpu=x64
   languageName: node
   linkType: hard
@@ -1023,12 +1023,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/node@npm:^20.14.9":
-  version: 20.14.9
-  resolution: "@types/node@npm:20.14.9"
+"@types/node@npm:^20.14.10":
+  version: 20.14.10
+  resolution: "@types/node@npm:20.14.10"
   dependencies:
     undici-types: ~5.26.4
-  checksum: 5e9eda1ac8c6cc6bcd1063903ae195eaede9aad1bdad00408a919409cfbcdd2d6535aa3d50346f0d385528f9e03dafc7d1b3bad25aedb1dcd79a6ad39d06c35d
+  checksum: 2f397d393de8cddb126e0b7999402ea450215ac69d49666ddef4f730a73325054499ce7345f86095e7b935c55b2e02139f3b8b9afc72fb978ed29edf6bb956b0
   languageName: node
   linkType: hard
 
@@ -1413,10 +1413,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"chance@npm:^1.1.11":
-  version: 1.1.11
-  resolution: "chance@npm:1.1.11"
-  checksum: 2e871fcc76584d274f860f0f25380b6ab547caf0d22d8b043a313be73d5c3db38941373241f83aeba049e7511f752f9746dc722a0f2b0182020d493c4e11da84
+"chance@npm:^1.1.12":
+  version: 1.1.12
+  resolution: "chance@npm:1.1.12"
+  checksum: e07a036cf8b0ddea853767695c359233ff056fb4272535fdb9ad05d26d1bb32618220f3608b4022edcfddf74323c135265c09c93aff3aab4aefab71ad68ae407
   languageName: node
   linkType: hard
 
@@ -3035,15 +3035,15 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "nodejs-polars@workspace:."
   dependencies:
-    "@biomejs/biome": =1.7.3
+    "@biomejs/biome": =1.8.3
     "@napi-rs/cli": ^2.18.4
     "@types/chance": ^1.1.6
     "@types/jest": ^29.5.12
-    "@types/node": ^20.14.9
-    chance: ^1.1.11
+    "@types/node": ^20.14.10
+    chance: ^1.1.12
     jest: ^29.7.0
     source-map-support: ^0.5.21
-    ts-jest: ^29.1.5
+    ts-jest: ^29.2.0
     ts-node: ^10.9.2
     typedoc: ^0.26.3
     typescript: 5.5.3
@@ -3672,9 +3672,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ts-jest@npm:^29.1.5":
-  version: 29.1.5
-  resolution: "ts-jest@npm:29.1.5"
+"ts-jest@npm:^29.2.0":
+  version: 29.2.0
+  resolution: "ts-jest@npm:29.2.0"
   dependencies:
     bs-logger: 0.x
     fast-json-stable-stringify: 2.x
@@ -3704,7 +3704,7 @@ __metadata:
       optional: true
   bin:
     ts-jest: cli.js
-  checksum: 96bfdea46d7faa83457c2647806a31a86f28656f703515fee9f6d2ff1ccfc58ccfbbe3ae9283f40141a85af0def30afe887843be5b002c08ed5d5189c941eab1
+  checksum: fc10f97dc89185a853fbe2a8666d3d19856c1466bb779c5739d2eb43f99b723b08a1160ed59557cf69bc9a2b77361dd2ea534ea264cb6bc34c0b6e5e8c10da97
   languageName: node
   linkType: hard
 
