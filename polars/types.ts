@@ -188,7 +188,7 @@ export type InterpolationMethod =
 /**
  * Join types
  */
-export type JoinType = "left" | "inner" | "outer" | "semi" | "anti" | "cross";
+export type JoinType = "left" | "inner" | "full" | "semi" | "anti" | "cross";
 
 /** @ignore */
 export type JoinBaseOptions = {

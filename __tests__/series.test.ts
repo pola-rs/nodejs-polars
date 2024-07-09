@@ -600,7 +600,7 @@ describe("series", () => {
     expect(actual).toFrameEqual(expected);
   });
   it("series:valueCounts", () => {
-    const actual = pl.Series("a", [1, 2, 2, 3]).valueCounts();
+    const actual = pl.Series("a", [1, 2, 2, 3]).valueCounts(true);
     const expected = pl.DataFrame({
       a: [2, 1, 3],
       count: [2, 1, 1],

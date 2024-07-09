@@ -840,14 +840,14 @@ impl FromNapiValue for Wrap<JoinType> {
         let parsed = match s.as_ref() {
             "inner" => JoinType::Inner,
             "left" => JoinType::Left,
-            "outer" => JoinType::Outer,
+            "full" => JoinType::Full,
             "semi" => JoinType::Semi,
             "anti" => JoinType::Anti,
             "cross" => JoinType::Cross,
             v =>
                 return Err(Error::new(
                     Status::InvalidArg,
-                    format!("how must be one of {{'inner', 'left', 'outer', 'semi', 'anti', 'cross'}}, got {v}")
+                    format!("how must be one of {{'inner', 'left', 'full', 'semi', 'anti', 'cross'}}, got {v}")
                 ))
         };
         Ok(Wrap(parsed))

@@ -20,7 +20,7 @@ jobs:
       - name: Install latest Rust nightly
         uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: nightly-2024-05-14
+          toolchain: nightly-2024-06-23
           components: rustfmt, clippy
       - name: Check yarn version
         run: yarn --version
@@ -46,7 +46,7 @@ jobs:
       - name: Install latest Rust nightly
         uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: nightly-2024-05-14
+          toolchain: nightly-2024-06-23
           components: rustfmt, clippy
       - name: Bun version
         uses: oven-sh/setup-bun@v1
