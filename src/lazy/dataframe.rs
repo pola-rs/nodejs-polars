@@ -113,14 +113,19 @@ impl JsLazyFrame {
         predicate_pushdown: Option<bool>,
         projection_pushdown: Option<bool>,
         simplify_expr: Option<bool>,
-        _string_cache: Option<bool>,
         slice_pushdown: Option<bool>,
+        comm_subplan_elim: Option<bool>,
+        comm_subexpr_elim: Option<bool>,
+        streaming: Option<bool>,
     ) -> JsLazyFrame {
         let type_coercion = type_coercion.unwrap_or(true);
         let predicate_pushdown = predicate_pushdown.unwrap_or(true);
         let projection_pushdown = projection_pushdown.unwrap_or(true);
         let simplify_expr = simplify_expr.unwrap_or(true);
         let slice_pushdown = slice_pushdown.unwrap_or(true);
+        let comm_subplan_elim = comm_subplan_elim.unwrap_or(true);
+        let comm_subexpr_elim = comm_subexpr_elim.unwrap_or(true);
+        let streaming = streaming.unwrap_or(false);
 
         let ldf = self.ldf.clone();
         let ldf = ldf
@@ -128,7 +133,11 @@ impl JsLazyFrame {
             .with_predicate_pushdown(predicate_pushdown)
             .with_simplify_expr(simplify_expr)
             .with_slice_pushdown(slice_pushdown)
-            .with_projection_pushdown(projection_pushdown);
+            .with_streaming(streaming)
+            .with_projection_pushdown(projection_pushdown)
+            .with_comm_subplan_elim(comm_subplan_elim)
+            .with_comm_subexpr_elim(comm_subexpr_elim);
+
         ldf.into()
     }
     #[napi(catch_unwind)]

@@ -44,12 +44,16 @@ export interface LazyDataFrame extends Serialize, GroupByOps<LazyGroupBy> {
    * @param predicatePushdown - Do predicate pushdown optimization.
    * @param projectionPushdown - Do projection pushdown optimization.
    * @param simplifyExpression - Run simplify expressions optimization.
-   * @param stringCache - Use a global string cache in this query.
-   *     This is needed if you want to join on categorical columns.
-   *     Caution!
-   * *  If you already have set a global string cache, set this to `false` as this will reset the
-   * *  global cache when the query is finished.
    * @param noOptimization - Turn off optimizations.
+   * @param commSubplanElim - Will try to cache branching subplans that occur on self-joins or unions.
+   * @param commSubexprElim - Common subexpressions will be cached and reused.
+   * @param streaming - Process the query in batches to handle larger-than-memory data.
+            If set to `False` (default), the entire query is processed in a single
+            batch.
+
+            .. warning::
+                Streaming mode is considered **unstable**. It may be changed
+                at any point without it being considered a breaking change.
    * @return DataFrame
    *
    */
@@ -113,7 +117,16 @@ export interface LazyDataFrame extends Serialize, GroupByOps<LazyGroupBy> {
    * @param opts.predicatePushdown - Do predicate pushdown optimization.
    * @param opts.projectionPushdown - Do projection pushdown optimization.
    * @param opts.simplifyExpression - Run simplify expressions optimization.
-   * @param opts.stringCache - Use a global string cache in this query.
+   * @param opts.commSubplanElim - Will try to cache branching subplans that occur on self-joins or unions.
+   * @param opts.commSubexprElim - Common subexpressions will be cached and reused.
+   * @param opts.streaming - Process the query in batches to handle larger-than-memory data.
+            If set to `False` (default), the entire query is processed in a single
+            batch.
+
+            .. warning::
+                Streaming mode is considered **unstable**. It may be changed
+                at any point without it being considered a breaking change.
+   * 
    */
   fetch(numRows?: number): Promise<DataFrame>;
   fetch(numRows: number, opts: LazyOptions): Promise<DataFrame>;
@@ -629,7 +642,30 @@ export const _LazyDataFrame = (_ldf: any): LazyDataFrame => {
     collectSync() {
       return _DataFrame(_ldf.collectSync());
     },
-    collect() {
+    collect(opts?) {
+      if (opts?.noOptimization) {
+        opts.predicatePushdown = false;
+        opts.projectionPushdown = false;
+        opts.slicePushdown = false;
+        opts.commSubplanElim = false;
+        opts.commSubexprElim = false;
+      }
+
+      if (opts?.streaming) opts.commSubplanElim = false;
+
+      if (opts) {
+        _ldf = _ldf.optimizationToggle(
+          opts.typeCoercion,
+          opts.predicatePushdown,
+          opts.projectionPushdown,
+          opts.simplifyExpression,
+          opts.slicePushdown,
+          opts.commSubplanElim,
+          opts.commSubexprElim,
+          opts.streaming,
+        );
+      }
+
       return _ldf.collect().then(_DataFrame);
     },
     drop(...cols) {
@@ -679,15 +715,21 @@ export const _LazyDataFrame = (_ldf: any): LazyDataFrame => {
       if (opts?.noOptimization) {
         opts.predicatePushdown = false;
         opts.projectionPushdown = false;
+        opts.slicePushdown = false;
+        opts.commSubplanElim = false;
+        opts.commSubexprElim = false;
       }
+      if (opts?.streaming) opts.commSubplanElim = false;
       if (opts) {
         _ldf = _ldf.optimizationToggle(
           opts.typeCoercion,
           opts.predicatePushdown,
           opts.projectionPushdown,
           opts.simplifyExpr,
-          opts.stringCache,
           opts.slicePushdown,
+          opts.commSubplanElim,
+          opts.commSubexprElim,
+          opts.streaming,
         );
       }
 
@@ -697,15 +739,21 @@ export const _LazyDataFrame = (_ldf: any): LazyDataFrame => {
       if (opts?.noOptimization) {
         opts.predicatePushdown = false;
         opts.projectionPushdown = false;
+        opts.slicePushdown = false;
+        opts.commSubplanElim = false;
+        opts.commSubexprElim = false;
       }
+      if (opts?.streaming) opts.commSubplanElim = false;
       if (opts) {
         _ldf = _ldf.optimizationToggle(
           opts.typeCoercion,
           opts.predicatePushdown,
           opts.projectionPushdown,
           opts.simplifyExpr,
-          opts.stringCache,
           opts.slicePushdown,
+          opts.commSubplanElim,
+          opts.commSubexprElim,
+          opts.streaming,
         );
       }
 

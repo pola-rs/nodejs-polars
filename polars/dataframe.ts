@@ -2351,7 +2351,7 @@ export const _DataFrame = (_df: any): DataFrame => {
         return _DataFrame(_df)
           .lazy()
           .sort(arg, descending, nulls_last, maintain_order)
-          .collectSync({ noOptimization: true, stringCache: false });
+          .collectSync({ noOptimization: true });
       }
       return wrap("sort", arg, descending, nulls_last, maintain_order);
     },
@@ -2571,7 +2571,7 @@ export const _DataFrame = (_df: any): DataFrame => {
       }
       return this.lazy()
         .withColumns(columns)
-        .collectSync({ noOptimization: true, stringCache: false });
+        .collectSync({ noOptimization: true });
     },
     withColumnRenamed(opt, replacement?) {
       if (typeof opt === "string") {

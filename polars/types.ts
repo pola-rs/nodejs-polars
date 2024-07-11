@@ -226,8 +226,11 @@ export type LazyOptions = {
   predicatePushdown?: boolean;
   projectionPushdown?: boolean;
   simplifyExpression?: boolean;
-  stringCache?: boolean;
+  slicePushdown?: boolean;
   noOptimization?: boolean;
+  commSubplanElim?: boolean;
+  commSubexprElim?: boolean;
+  streaming?: boolean;
 };
 
 /**
