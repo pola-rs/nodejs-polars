@@ -925,15 +925,15 @@ impl JsDataFrame {
         &self,
         id_vars: Vec<String>,
         value_vars: Vec<String>,
-        value_name: Option<String>,
         variable_name: Option<String>,
+        value_name: Option<String>,
         streamable: Option<bool>,
     ) -> napi::Result<JsDataFrame> {
         let args = UnpivotArgs {
             index: strings_to_smartstrings(id_vars),
             on: strings_to_smartstrings(value_vars),
-            value_name: value_name.map(|s| s.into()),
             variable_name: variable_name.map(|s| s.into()),
+            value_name: value_name.map(|s| s.into()),
             streamable: streamable.unwrap_or(false),
         };
 

@@ -1347,4 +1347,29 @@ describe("lazyframe", () => {
     expect(newDF.sort("foo")).toFrameEqual(actualDf);
     fs.rmSync("./test.parquet");
   });
+  test("unpivot renamed", () => {
+    const ldf = pl
+      .DataFrame({
+        id: [1],
+        asset_key_1: ["123"],
+        asset_key_2: ["456"],
+        asset_key_3: ["abc"],
+      })
+      .lazy();
+    const actual = ldf.unpivot(
+      "id",
+      ["asset_key_1", "asset_key_2", "asset_key_3"],
+      {
+        variableName: "foo",
+        valueName: "bar",
+        streamable: true,
+      },
+    );
+    const expected = pl.DataFrame({
+      id: [1, 1, 1],
+      foo: ["asset_key_1", "asset_key_2", "asset_key_3"],
+      bar: ["123", "456", "abc"],
+    });
+    expect(actual.collectSync()).toFrameEqual(expected);
+  });
 });

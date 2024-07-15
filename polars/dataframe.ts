@@ -924,10 +924,8 @@ export interface DataFrame
    *
    * @param idVars - Columns to use as identifier variables.
    * @param valueVars - Values to use as value variables.
-   * @param variableName - Name to give to the `variable` column. Defaults to "variable"
-   * @param valueName - Name to give to the `value` column. Defaults to "value"
-   * @param streamable - Allow this node to run in the streaming engine.
-                         If this runs in streaming, the output of the unpivot operation will not have a stable ordering.
+   * @param options.variableName - Name to give to the `variable` column. Defaults to "variable"
+   * @param options.valueName - Name to give to the `value` column. Defaults to "value"
    * @example
    * ```
    * > const df1 = pl.DataFrame({
@@ -951,7 +949,14 @@ export interface DataFrame
    * └─────┴─────────────┴───────┘
    * ```
    */
-  unpivot(idVars: ColumnSelection, valueVars: ColumnSelection): DataFrame;
+  unpivot(
+    idVars: ColumnSelection,
+    valueVars: ColumnSelection,
+    options?: {
+      variableName?: string | null;
+      valueName?: string | null;
+    },
+  ): DataFrame;
   /**
    * Aggregate the columns of this DataFrame to their minimum value.
    * ___
@@ -1751,7 +1756,7 @@ export interface DataFrame
     Or combine them:
     - "3d12h4m25s" # 3 days, 12 hours, 4 minutes, and 25 seconds
 
-    By "calendar day", we mean the corresponding time on the next day (which may not be 24 hours, due to daylight savings). 
+    By "calendar day", we mean the corresponding time on the next day (which may not be 24 hours, due to daylight savings).
     Similarly for "calendar week", "calendar month", "calendar quarter", and "calendar year".
 
     Parameters
@@ -2177,8 +2182,19 @@ export const _DataFrame = (_df: any): DataFrame => {
     melt(ids, values) {
       return wrap("unpivot", columnOrColumns(ids), columnOrColumns(values));
     },
-    unpivot(ids, values) {
-      return wrap("unpivot", columnOrColumns(ids), columnOrColumns(values));
+    unpivot(ids, values, options) {
+      options = {
+        variableName: null,
+        valueName: null,
+        ...options,
+      };
+      return wrap(
+        "unpivot",
+        columnOrColumns(ids),
+        columnOrColumns(values),
+        options.variableName,
+        options.valueName,
+      );
     },
     min(axis = 0) {
       if (axis === 1) {
