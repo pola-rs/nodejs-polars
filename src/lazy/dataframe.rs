@@ -248,7 +248,7 @@ impl JsLazyFrame {
                 index_column: "".into(),
                 period: Duration::parse(&period),
                 offset: Duration::parse(&offset),
-                closed_window
+                closed_window,
             },
         );
 
