@@ -70,7 +70,7 @@ impl ToSeries for JsUnknown {
 
 impl ToNapiValue for Wrap<&Series> {
     unsafe fn to_napi_value(napi_env: sys::napi_env, val: Self) -> napi::Result<sys::napi_value> {
-        let s = val.0;
+        let s = val.0.rechunk();
         let len = s.len();
         let dtype = s.dtype();
         let env = Env::from_raw(napi_env);
@@ -79,8 +79,10 @@ impl ToNapiValue for Wrap<&Series> {
             DataType::Struct(_) => {
                 let ca = s.struct_().map_err(JsPolarsErr::from)?;
                 let df: DataFrame = ca.clone().into();
+
                 let (height, _) = df.shape();
                 let mut rows = env.create_array(height as u32)?;
+
                 for idx in 0..height {
                     let mut row = env.create_object()?;
                     for col in df.get_columns() {
@@ -94,6 +96,7 @@ impl ToNapiValue for Wrap<&Series> {
             }
             _ => {
                 let mut arr = env.create_array(len as u32)?;
+
                 for (idx, val) in s.iter().enumerate() {
                     arr.set(idx as u32, Wrap(val))?;
                 }
@@ -840,14 +843,14 @@ impl FromNapiValue for Wrap<JoinType> {
         let parsed = match s.as_ref() {
             "inner" => JoinType::Inner,
             "left" => JoinType::Left,
-            "outer" => JoinType::Outer,
+            "full" => JoinType::Full,
             "semi" => JoinType::Semi,
             "anti" => JoinType::Anti,
             "cross" => JoinType::Cross,
             v =>
                 return Err(Error::new(
                     Status::InvalidArg,
-                    format!("how must be one of {{'inner', 'left', 'outer', 'semi', 'anti', 'cross'}}, got {v}")
+                    format!("how must be one of {{'inner', 'left', 'full', 'semi', 'anti', 'cross'}}, got {v}")
                 ))
         };
         Ok(Wrap(parsed))

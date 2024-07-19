@@ -28,6 +28,14 @@ describe("lazyframe", () => {
     const actual = await expected.lazy().collect();
     expect(actual).toFrameEqual(expected);
   });
+  test("collect:streaming", async () => {
+    const expected = pl.DataFrame({
+      foo: [1, 2],
+      bar: ["a", "b"],
+    });
+    const actual = await expected.lazy().collect({ streaming: true });
+    expect(actual).toFrameEqual(expected);
+  });
   test("describeOptimizedPlan", () => {
     const df = pl
       .DataFrame({
@@ -579,7 +587,7 @@ describe("lazyframe", () => {
       });
       expect(actual).toFrameEqualIgnoringOrder(expected);
     });
-    test("how:outer", () => {
+    test("how:full", () => {
       const df = pl.DataFrame({
         foo: [1, 2, 3],
         bar: [6.0, 7.0, 8.0],
@@ -597,7 +605,7 @@ describe("lazyframe", () => {
         .lazy()
         .join(otherDF, {
           on: "ham",
-          how: "outer",
+          how: "full",
         })
         .collectSync();
       const expected = pl.DataFrame({
@@ -1268,7 +1276,7 @@ describe("lazyframe", () => {
       .lazy();
     ldf.sinkCSV("./test.csv");
     const newDF: pl.DataFrame = pl.readCSV("./test.csv");
-    const actualDf: pl.DataFrame = await ldf.collect();
+    const actualDf: pl.DataFrame = await ldf.collect({ streaming: true });
     expect(newDF.sort("foo")).toFrameEqual(actualDf);
     fs.rmSync("./test.csv");
   });

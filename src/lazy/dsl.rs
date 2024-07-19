@@ -277,10 +277,16 @@ impl JsExpr {
     }
 
     #[napi(catch_unwind)]
-    pub fn value_counts(&self, multithreaded: bool, sorted: bool) -> JsExpr {
+    pub fn value_counts(
+        &self,
+        sort: bool,
+        parallel: bool,
+        name: String,
+        normalize: bool,
+    ) -> JsExpr {
         self.inner
             .clone()
-            .value_counts(multithreaded, sorted)
+            .value_counts(sort, parallel, name, normalize)
             .into()
     }
 
@@ -330,7 +336,10 @@ impl JsExpr {
     }
     #[napi(catch_unwind)]
     pub fn gather(&self, idx: &JsExpr) -> JsExpr {
-        self.clone().inner.gather(idx.inner.clone()).into()
+        self.clone()
+            .inner
+            .gather(idx.inner.clone().cast(DataType::Int64))
+            .into()
     }
     #[napi(catch_unwind)]
     pub fn sort_by(&self, by: Vec<&JsExpr>, reverse: Vec<bool>) -> JsExpr {
@@ -338,7 +347,7 @@ impl JsExpr {
             .inner
             .sort_by(
                 by.to_exprs(),
-                SortMultipleOptions::default().with_order_descendings(reverse),
+                SortMultipleOptions::default().with_order_descending_multi(reverse),
             )
             .into()
     }
@@ -462,7 +471,10 @@ impl JsExpr {
     pub fn slice(&self, offset: &JsExpr, length: &JsExpr) -> JsExpr {
         self.inner
             .clone()
-            .slice(offset.inner.clone(), length.inner.clone())
+            .slice(
+                offset.inner.clone().cast(DataType::Int64),
+                length.inner.clone().cast(DataType::Int64),
+            )
             .into()
     }
     #[napi(catch_unwind)]
@@ -955,7 +967,14 @@ impl JsExpr {
             .into()
     }
     #[napi(catch_unwind)]
-    pub fn replace(
+    pub fn replace(&self, old: &JsExpr, new: &JsExpr) -> JsExpr {
+        self.inner
+            .clone()
+            .replace(old.inner.clone(), new.inner.clone())
+            .into()
+    }
+    #[napi(catch_unwind)]
+    pub fn replace_strict(
         &self,
         old: &JsExpr,
         new: &JsExpr,
@@ -964,7 +983,7 @@ impl JsExpr {
     ) -> JsExpr {
         self.inner
             .clone()
-            .replace(
+            .replace_strict(
                 old.inner.clone(),
                 new.inner.clone(),
                 default.map(|e| e.inner.clone()),
@@ -1365,11 +1384,11 @@ impl JsExpr {
         self.inner.clone().kurtosis(fisher, bias).into()
     }
     #[napi(catch_unwind)]
-    pub fn str_concat(&self, delimiter: String, ignore_nulls: bool) -> JsExpr {
+    pub fn str_concat(&self, separator: String, ignore_nulls: bool) -> JsExpr {
         self.inner
             .clone()
             .str()
-            .concat(&delimiter, ignore_nulls)
+            .join(&separator, ignore_nulls)
             .into()
     }
     #[napi(catch_unwind)]
@@ -1387,7 +1406,7 @@ impl JsExpr {
     }
     #[napi(catch_unwind)]
     pub fn reshape(&self, dims: Vec<i64>) -> JsExpr {
-        self.inner.clone().reshape(&dims).into()
+        self.inner.clone().reshape(&dims, NestedType::Array).into()
     }
     #[napi(catch_unwind)]
     pub fn cum_count(&self, reverse: bool) -> JsExpr {
@@ -1399,7 +1418,7 @@ impl JsExpr {
             .clone()
             .map(
                 |s| Ok(Some(s.to_physical_repr().into_owned())),
-                GetOutput::map_dtype(|dt| dt.to_physical()),
+                GetOutput::map_dtype(|dt| Ok(dt.to_physical())),
             )
             .with_fmt("to_physical")
             .into()
@@ -1711,7 +1730,7 @@ pub fn arg_sort_by(by: Vec<&JsExpr>, descending: Vec<bool>) -> JsExpr {
     let by = by.to_exprs();
     polars::lazy::dsl::arg_sort_by(
         by,
-        SortMultipleOptions::default().with_order_descendings(descending),
+        SortMultipleOptions::default().with_order_descending_multi(descending),
     )
     .into()
 }

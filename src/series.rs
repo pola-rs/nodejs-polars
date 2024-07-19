@@ -477,24 +477,29 @@ impl JsSeries {
         }
     }
     #[napi(catch_unwind)]
-    pub fn add(&self, other: &JsSeries) -> JsSeries {
-        (&self.series + &other.series).into()
+    pub fn add(&self, other: &JsSeries) -> napi::Result<JsSeries> {
+        let series = (&self.series + &other.series).map_err(JsPolarsErr::from)?;
+        Ok(JsSeries { series })
     }
     #[napi(catch_unwind)]
-    pub fn sub(&self, other: &JsSeries) -> JsSeries {
-        (&self.series - &other.series).into()
+    pub fn sub(&self, other: &JsSeries) -> napi::Result<JsSeries> {
+        let series = (&self.series - &other.series).map_err(JsPolarsErr::from)?;
+        Ok(JsSeries { series })
     }
     #[napi(catch_unwind)]
-    pub fn mul(&self, other: &JsSeries) -> JsSeries {
-        (&self.series * &other.series).into()
+    pub fn mul(&self, other: &JsSeries) -> napi::Result<JsSeries> {
+        let series = (&self.series * &other.series).map_err(JsPolarsErr::from)?;
+        Ok(JsSeries { series })
     }
     #[napi(catch_unwind)]
-    pub fn div(&self, other: &JsSeries) -> JsSeries {
-        (&self.series / &other.series).into()
+    pub fn div(&self, other: &JsSeries) -> napi::Result<JsSeries> {
+        let series = (&self.series / &other.series).map_err(JsPolarsErr::from)?;
+        Ok(JsSeries { series })
     }
     #[napi(catch_unwind)]
-    pub fn rem(&self, other: &JsSeries) -> JsSeries {
-        (&self.series % &other.series).into()
+    pub fn rem(&self, other: &JsSeries) -> napi::Result<JsSeries> {
+        let series = (&self.series % &other.series).map_err(JsPolarsErr::from)?;
+        Ok(JsSeries { series })
     }
     #[napi(catch_unwind)]
     pub fn head(&self, length: Option<i64>) -> JsSeries {
@@ -547,10 +552,16 @@ impl JsSeries {
         Ok(unique.into())
     }
     #[napi(catch_unwind)]
-    pub fn value_counts(&self, sorted: bool) -> napi::Result<JsDataFrame> {
+    pub fn value_counts(
+        &self,
+        sort: bool,
+        parallel: bool,
+        name: String,
+        normalize: bool,
+    ) -> napi::Result<JsDataFrame> {
         let df = self
             .series
-            .value_counts(true, sorted)
+            .value_counts(sort, parallel, name, normalize)
             .map_err(JsPolarsErr::from)?;
         Ok(df.into())
     }
@@ -1204,7 +1215,7 @@ impl JsSeries {
 
     #[napi(catch_unwind)]
     pub fn reshape(&self, dims: Vec<i64>) -> napi::Result<JsSeries> {
-        let out = self.series.reshape(&dims).map_err(JsPolarsErr::from)?;
+        let out = self.series.reshape_list(&dims).map_err(JsPolarsErr::from)?;
         Ok(out.into())
     }
 
