@@ -420,6 +420,7 @@ export type DataTypeName =
   | "UInt64"
   | "Float32"
   | "Float64"
+  | "Decimal"
   | "Date"
   | "Datetime"
   | "Utf8"
@@ -435,39 +436,43 @@ export type JsToDtype<T> = T extends number
     : T extends string
       ? DataType.Utf8
       : never;
-export type DTypeToJs<T> = T extends DataType.Float64
-  ? number
-  : T extends DataType.Int64
-    ? bigint
-    : T extends DataType.Int32
-      ? number
-      : T extends DataType.Bool
-        ? boolean
-        : T extends DataType.Utf8
-          ? string
-          : never;
-export type DtypeToJsName<T> = T extends DataType.Float64
-  ? "Float64"
-  : T extends DataType.Float32
-    ? "Float32"
+export type DTypeToJs<T> = T extends DataType.Decimal
+  ? bigint
+  : T extends DataType.Float64
+    ? number
     : T extends DataType.Int64
-      ? "Int64"
+      ? bigint
       : T extends DataType.Int32
-        ? "Int32"
-        : T extends DataType.Int16
-          ? "Int16"
-          : T extends DataType.Int8
-            ? "Int8"
-            : T extends DataType.UInt64
-              ? "UInt64"
-              : T extends DataType.UInt32
-                ? "UInt32"
-                : T extends DataType.UInt16
-                  ? "UInt16"
-                  : T extends DataType.UInt8
-                    ? "UInt8"
-                    : T extends DataType.Bool
-                      ? "Bool"
-                      : T extends DataType.Utf8
-                        ? "Utf8"
-                        : never;
+        ? number
+        : T extends DataType.Bool
+          ? boolean
+          : T extends DataType.Utf8
+            ? string
+            : never;
+export type DtypeToJsName<T> = T extends DataType.Decimal
+  ? "Decimal"
+  : T extends DataType.Float64
+    ? "Float64"
+    : T extends DataType.Float32
+      ? "Float32"
+      : T extends DataType.Int64
+        ? "Int64"
+        : T extends DataType.Int32
+          ? "Int32"
+          : T extends DataType.Int16
+            ? "Int16"
+            : T extends DataType.Int8
+              ? "Int8"
+              : T extends DataType.UInt64
+                ? "UInt64"
+                : T extends DataType.UInt32
+                  ? "UInt32"
+                  : T extends DataType.UInt16
+                    ? "UInt16"
+                    : T extends DataType.UInt8
+                      ? "UInt8"
+                      : T extends DataType.Bool
+                        ? "Bool"
+                        : T extends DataType.Utf8
+                          ? "Utf8"
+                          : never;

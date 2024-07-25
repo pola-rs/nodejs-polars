@@ -20,7 +20,7 @@ import type {
 } from "../shared_traits";
 import { col } from "../lazy/functions";
 import type { InterpolationMethod, RankMethod } from "../types";
-import {
+import type {
   DTypeToJs,
   DtypeToJsName,
   JsToDtype,
