@@ -142,7 +142,7 @@ interface WriteMethods {
   ): void;
   /**
    * Write to Arrow IPC feather file, either to a file path or to a write stream.
-   * @param file File path to which the file should be written.
+   * @param destination File path to which the file should be written, or writable.
    * @param options.compression Compression method *defaults to "uncompressed"*
    * @category IO
    */
@@ -151,7 +151,7 @@ interface WriteMethods {
 
   /**
    * Write to Arrow IPC stream file, either to a file path or to a write stream.
-   * @param file File path to which the file should be written.
+   * @param destination File path to which the file should be written, or writable.
    * @param options.compression Compression method *defaults to "uncompressed"*
    * @category IO
    */
@@ -160,7 +160,7 @@ interface WriteMethods {
 
   /**
    * Write the DataFrame disk in parquet format.
-   * @param file File path to which the file should be written.
+   * @param destination File path to which the file should be written, or writable.
    * @param options.compression Compression method *defaults to "uncompressed"*
    * @category IO
    */
@@ -172,7 +172,7 @@ interface WriteMethods {
 
   /**
    * Write the DataFrame disk in avro format.
-   * @param file File path to which the file should be written.
+   * @param destination File path to which the file should be written, or writable.
    * @param options.compression Compression method *defaults to "uncompressed"*
    * @category IO
    */
