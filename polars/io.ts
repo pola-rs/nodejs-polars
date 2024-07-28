@@ -579,7 +579,9 @@ export function readIPCStream(pathOrBody, options = {}) {
   if (typeof pathOrBody === "string") {
     const inline = !isPath(pathOrBody, [".ipc"]);
     if (inline) {
-      return _DataFrame(pli.readIpcStream(Buffer.from(pathOrBody, "utf-8"), options));
+      return _DataFrame(
+        pli.readIpcStream(Buffer.from(pathOrBody, "utf-8"), options),
+      );
     }
     return _DataFrame(pli.readIpcStream(pathOrBody, options));
   }

@@ -156,7 +156,10 @@ interface WriteMethods {
    * @category IO
    */
   writeIPCStream(options?: WriteIPCOptions): Buffer;
-  writeIPCStream(destination: string | Writable, options?: WriteIPCOptions): void;
+  writeIPCStream(
+    destination: string | Writable,
+    options?: WriteIPCOptions,
+  ): void;
 
   /**
    * Write the DataFrame disk in parquet format.
@@ -2532,7 +2535,10 @@ export const _DataFrame = (_df: any): DataFrame => {
         },
       });
 
-      _df.writeIpcStream(writeStream, dest?.compression ?? options?.compression);
+      _df.writeIpcStream(
+        writeStream,
+        dest?.compression ?? options?.compression,
+      );
       writeStream.end("");
 
       return Buffer.concat(buffers);
