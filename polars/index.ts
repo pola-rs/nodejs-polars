@@ -44,6 +44,7 @@ export namespace pl {
   export import readRecords = io.readRecords;
   export import readCSV = io.readCSV;
   export import readIPC = io.readIPC;
+  export import readIPCStream = io.readIPCStream;
   export import readJSON = io.readJSON;
   export import readParquet = io.readParquet;
   export import readAvro = io.readAvro;
@@ -188,6 +189,7 @@ export import scanParquet = io.scanParquet;
 export import readRecords = io.readRecords;
 export import readCSV = io.readCSV;
 export import readIPC = io.readIPC;
+export import readIPCStream = io.readIPCStream;
 export import readJSON = io.readJSON;
 export import readParquet = io.readParquet;
 export import readAvro = io.readAvro;

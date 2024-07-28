@@ -531,7 +531,7 @@ export interface ReadIPCOptions {
 }
 
 /**
- * __Read into a DataFrame from Arrow IPC (Feather v2) file.__
+ * __Read into a DataFrame from Arrow IPC file (Feather v2).__
  * ___
  * @param pathOrBody - path or buffer or string
  *   - path: Path to a file or a file like string. Any valid filepath can be used. Example: `file.ipc`.
@@ -558,6 +558,36 @@ export function readIPC(pathOrBody, options = {}) {
   throw new Error("must supply either a path or body");
 }
 
+/**
+ * __Read into a DataFrame from Arrow IPC stream.__
+ * ___
+ * @param pathOrBody - path or buffer or string
+ *   - path: Path to a file or a file like string. Any valid filepath can be used. Example: `file.ipc`.
+ *   - body: String or buffer to be read as Arrow IPC
+ * @param options.columns Columns to select. Accepts a list of column names.
+ * @param options.nRows Stop reading from parquet file after reading ``nRows``.
+ */
+export function readIPCStream(
+  pathOrBody: string | Buffer,
+  options?: Partial<ReadIPCOptions>,
+): DataFrame;
+export function readIPCStream(pathOrBody, options = {}) {
+  if (Buffer.isBuffer(pathOrBody)) {
+    return _DataFrame(pli.readIpcStream(pathOrBody, options));
+  }
+
+  if (typeof pathOrBody === "string") {
+    const inline = !isPath(pathOrBody, [".ipc"]);
+    if (inline) {
+      return _DataFrame(
+        pli.readIpcStream(Buffer.from(pathOrBody, "utf-8"), options),
+      );
+    }
+    return _DataFrame(pli.readIpcStream(pathOrBody, options));
+  }
+  throw new Error("must supply either a path or body");
+}
+
 export interface ScanIPCOptions {
   nRows: number;
   cache: boolean;
@@ -565,7 +595,7 @@ export interface ScanIPCOptions {
 }
 
 /**
- * __Lazily read from an Arrow IPC (Feather v2) file or multiple files via glob patterns.__
+ * __Lazily read from an Arrow IPC file (Feather v2) or multiple files via glob patterns.__
  * ___
  * @param path Path to a IPC file.
  * @param options.nRows Stop reading from IPC file after reading ``nRows``
