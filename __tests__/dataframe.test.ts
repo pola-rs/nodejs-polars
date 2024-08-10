@@ -1354,6 +1354,49 @@ describe("dataframe", () => {
       "e|b": [null, "y"],
     });
     expect(actual).toFrameEqual(expected, true);
+
+    df = pl.DataFrame({
+      foo: ["A", "A", "B", "B", "C"],
+      N: [1, 2, 2, 4, 2],
+      bar: ["k", "l", "m", "n", "o"],
+    });
+    actual = df.pivot(["N"], {
+      index: "foo",
+      on: "bar",
+      aggregateFunc: "first",
+    });
+    expected = pl.DataFrame({
+      foo: ["A", "B", "C"],
+      k: [1, null, null],
+      l: [2, null, null],
+      m: [null, 2, null],
+      n: [null, 4, null],
+      o: [null, null, 2],
+    });
+    expect(actual).toFrameEqual(expected, true);
+
+    df = pl.DataFrame({
+      ix: [1, 1, 2, 2, 1, 2],
+      col: ["a", "a", "a", "a", "b", "b"],
+      foo: [0, 1, 2, 2, 7, 1],
+      bar: [0, 2, 0, 0, 9, 4],
+    });
+
+    actual = df.pivot(["foo", "bar"], {
+      index: "ix",
+      on: "col",
+      aggregateFunc: "sum",
+      separator: "/",
+    });
+
+    expected = pl.DataFrame({
+      ix: [1, 2],
+      "foo/a": [1, 4],
+      "foo/b": [7, 1],
+      "bar/a": [2, 0],
+      "bar/b": [9, 4],
+    });
+    expect(actual).toFrameEqual(expected, true);
   });
 });
 describe("join", () => {
