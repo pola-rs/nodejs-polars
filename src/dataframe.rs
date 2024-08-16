@@ -349,6 +349,43 @@ pub fn read_ipc(
     Ok(JsDataFrame::new(df))
 }
 
+#[napi(catch_unwind)]
+pub fn read_ipc_stream(
+    path_or_buffer: Either<String, Buffer>,
+    options: ReadIpcOptions,
+) -> napi::Result<JsDataFrame> {
+    let columns = options.columns;
+    let projection = options
+        .projection
+        .map(|projection| projection.into_iter().map(|p| p as usize).collect());
+    let row_count = options.row_count.map(|rc| rc.into());
+    let n_rows = options.n_rows.map(|nr| nr as usize);
+
+    let result = match path_or_buffer {
+        Either::A(path) => {
+            let f = File::open(&path)?;
+            let reader = BufReader::new(f);
+            IpcStreamReader::new(reader)
+                .with_projection(projection)
+                .with_columns(columns)
+                .with_n_rows(n_rows)
+                .with_row_index(row_count)
+                .finish()
+        }
+        Either::B(buf) => {
+            let cursor = Cursor::new(buf.as_ref());
+            IpcStreamReader::new(cursor)
+                .with_projection(projection)
+                .with_columns(columns)
+                .with_n_rows(n_rows)
+                .with_row_index(row_count)
+                .finish()
+        }
+    };
+    let df = result.map_err(JsPolarsErr::from)?;
+    Ok(JsDataFrame::new(df))
+}
+
 #[napi(object)]
 pub struct ReadAvroOptions {
     pub columns: Option<Vec<String>>,
@@ -895,8 +932,8 @@ impl JsDataFrame {
     pub fn pivot_expr(
         &self,
         values: Vec<String>,
+        on: Vec<String>,
         index: Vec<String>,
-        columns: Vec<String>,
         aggregate_expr: Option<Wrap<polars::prelude::Expr>>,
         maintain_order: bool,
         sort_columns: bool,
@@ -908,8 +945,8 @@ impl JsDataFrame {
         };
         fun(
             &self.df,
-            index,
-            Some(columns),
+            on,
+            Some(index),
             Some(values),
             sort_columns,
             aggregate_expr.map(|e| e.0 as Expr),
@@ -1415,6 +1452,38 @@ impl JsDataFrame {
                 let inner: napi::JsObject = unsafe { path_or_buffer.cast() };
                 let writeable = JsWriteStream { inner, env: &env };
                 IpcWriter::new(writeable)
+                    .with_compression(compression)
+                    .finish(&mut self.df)
+                    .map_err(JsPolarsErr::from)?;
+            }
+            _ => panic!(),
+        };
+        Ok(())
+    }
+    #[napi(catch_unwind)]
+    pub fn write_ipc_stream(
+        &mut self,
+        path_or_buffer: JsUnknown,
+        compression: Wrap<Option<IpcCompression>>,
+        env: Env,
+    ) -> napi::Result<()> {
+        let compression = compression.0;
+
+        match path_or_buffer.get_type()? {
+            ValueType::String => {
+                let path: napi::JsString = unsafe { path_or_buffer.cast() };
+                let path = path.into_utf8()?.into_owned()?;
+                let f = std::fs::File::create(path).unwrap();
+                let f = BufWriter::new(f);
+                IpcStreamWriter::new(f)
+                    .with_compression(compression)
+                    .finish(&mut self.df)
+                    .map_err(JsPolarsErr::from)?;
+            }
+            ValueType::Object => {
+                let inner: napi::JsObject = unsafe { path_or_buffer.cast() };
+                let writeable = JsWriteStream { inner, env: &env };
+                IpcStreamWriter::new(writeable)
                     .with_compression(compression)
                     .finish(&mut self.df)
                     .map_err(JsPolarsErr::from)?;
