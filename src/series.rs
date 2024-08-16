@@ -599,7 +599,7 @@ impl JsSeries {
 
     #[napi(catch_unwind)]
     pub fn has_validity(&self) -> bool {
-        self.series.has_validity()
+        self.series.has_nulls()
     }
 
     #[napi(catch_unwind)]
@@ -868,14 +868,14 @@ impl JsSeries {
     #[napi(catch_unwind)]
     pub fn struct_to_frame(&self) -> napi::Result<crate::dataframe::JsDataFrame> {
         let ca = self.series.struct_().map_err(JsPolarsErr::from)?;
-        let df: DataFrame = ca.clone().into();
+        let df: DataFrame = ca.clone().unnest();
         Ok(df.into())
     }
 
     #[napi(catch_unwind)]
     pub fn struct_fields(&self) -> napi::Result<Vec<&str>> {
         let ca = self.series.struct_().map_err(JsPolarsErr::from)?;
-        Ok(ca.fields().iter().map(|s| s.name()).collect())
+        Ok(ca.struct_fields().iter().map(|s| s.name().as_str()).collect())
     }
     // String Namespace
 
@@ -1141,7 +1141,7 @@ impl JsSeries {
 
     #[napi(catch_unwind)]
     pub fn hash(&self, k0: Wrap<u64>, k1: Wrap<u64>, k2: Wrap<u64>, k3: Wrap<u64>) -> JsSeries {
-        let hb = polars::export::ahash::RandomState::with_seeds(k0.0, k1.0, k2.0, k3.0);
+        let hb = PlRandomState::with_seeds(k0.0, k1.0, k2.0, k3.0);
         self.series.hash(hb).into_series().into()
     }
     #[napi(catch_unwind)]

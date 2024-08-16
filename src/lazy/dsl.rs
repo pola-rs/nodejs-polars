@@ -1109,7 +1109,7 @@ impl JsExpr {
     #[napi(catch_unwind)]
     pub fn hash(&self, k0: Wrap<u64>, k1: Wrap<u64>, k2: Wrap<u64>, k3: Wrap<u64>) -> JsExpr {
         let function = move |s: Series| {
-            let hb = polars::export::ahash::RandomState::with_seeds(k0.0, k1.0, k2.0, k3.0);
+            let hb = PlRandomState::with_seeds(k0.0, k1.0, k2.0, k3.0);
             Ok(Some(s.hash(hb).into_series()))
         };
         self.clone()

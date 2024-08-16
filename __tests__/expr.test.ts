@@ -1069,15 +1069,15 @@ describe("expr.str", () => {
   });
   test("jsonDecode", () => {
     const df = pl.DataFrame({
-      json: ['{"a":1, "b": true}', null, '{"a":2, "b": false}'],
+      json: [
+        '{"a":1, "b": true}',
+        '{"a": null, "b": null }',
+        '{"a":2, "b": false}',
+      ],
     });
     const actual = df.select(pl.col("json").str.jsonDecode());
     const expected = pl.DataFrame({
-      json: [
-        { a: 1, b: true },
-        { a: null, b: null },
-        { a: 2, b: false },
-      ],
+      json: [{ a: 1, b: true }, "null", { a: 2, b: false }],
     });
     expect(actual).toFrameEqual(expected);
     let s = pl.Series(["[1, 2, 3]", null, "[4, 5, 6]"]);
@@ -1089,7 +1089,11 @@ describe("expr.str", () => {
       new pl.Field("a", pl.Int64),
       new pl.Field("b", pl.Bool),
     ]);
-    s = pl.Series("json", ['{"a":1, "b": true}', null, '{"a":2, "b": false}']);
+    s = pl.Series("json", [
+      '{"a":1, "b": true}',
+      '{"a": null, "b": null }',
+      '{"a":2, "b": false}',
+    ]);
     expect(s.str.jsonDecode().as("json")).toSeriesEqual(
       expected.getColumn("json"),
     );

@@ -1260,7 +1260,11 @@ describe("lazyframe", () => {
     });
     const actual = pl
       .DataFrame({
-        json: ['{"a": 1, "b": true}', null, '{"a": 2, "b": false}'],
+        json: [
+          '{"a": 1, "b": true}',
+          '{"a": null, "b": null }',
+          '{"a": 2, "b": false}',
+        ],
       })
       .lazy()
       .select(pl.col("json").str.jsonDecode())
