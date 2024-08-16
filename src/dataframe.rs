@@ -895,8 +895,8 @@ impl JsDataFrame {
     pub fn pivot_expr(
         &self,
         values: Vec<String>,
+        on: Vec<String>,
         index: Vec<String>,
-        columns: Vec<String>,
         aggregate_expr: Option<Wrap<polars::prelude::Expr>>,
         maintain_order: bool,
         sort_columns: bool,
@@ -908,8 +908,8 @@ impl JsDataFrame {
         };
         fun(
             &self.df,
-            index,
-            Some(columns),
+            on,
+            Some(index),
             Some(values),
             sort_columns,
             aggregate_expr.map(|e| e.0 as Expr),

@@ -2237,8 +2237,8 @@ export const _DataFrame = (_df: any): DataFrame => {
       return _DataFrame(
         _df.pivotExpr(
           values,
-          index,
           on,
+          index,
           fn,
           maintainOrder,
           sortColumns,
