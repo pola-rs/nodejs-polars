@@ -141,8 +141,8 @@ interface WriteMethods {
     options?: { format: "lines" | "json" },
   ): void;
   /**
-   * Write to Arrow IPC binary stream, or a feather file.
-   * @param file File path to which the file should be written.
+   * Write to Arrow IPC feather file, either to a file path or to a write stream.
+   * @param destination File path to which the file should be written, or writable.
    * @param options.compression Compression method *defaults to "uncompressed"*
    * @category IO
    */
@@ -150,8 +150,20 @@ interface WriteMethods {
   writeIPC(destination: string | Writable, options?: WriteIPCOptions): void;
 
   /**
+   * Write to Arrow IPC stream file, either to a file path or to a write stream.
+   * @param destination File path to which the file should be written, or writable.
+   * @param options.compression Compression method *defaults to "uncompressed"*
+   * @category IO
+   */
+  writeIPCStream(options?: WriteIPCOptions): Buffer;
+  writeIPCStream(
+    destination: string | Writable,
+    options?: WriteIPCOptions,
+  ): void;
+
+  /**
    * Write the DataFrame disk in parquet format.
-   * @param file File path to which the file should be written.
+   * @param destination File path to which the file should be written, or writable.
    * @param options.compression Compression method *defaults to "uncompressed"*
    * @category IO
    */
@@ -163,7 +175,7 @@ interface WriteMethods {
 
   /**
    * Write the DataFrame disk in avro format.
-   * @param file File path to which the file should be written.
+   * @param destination File path to which the file should be written, or writable.
    * @param options.compression Compression method *defaults to "uncompressed"*
    * @category IO
    */
@@ -2507,6 +2519,26 @@ export const _DataFrame = (_df: any): DataFrame => {
       });
 
       _df.writeIpc(writeStream, dest?.compression ?? options?.compression);
+      writeStream.end("");
+
+      return Buffer.concat(buffers);
+    },
+    writeIPCStream(dest?, options = { compression: "uncompressed" }) {
+      if (dest instanceof Writable || typeof dest === "string") {
+        return _df.writeIpcStream(dest, options.compression) as any;
+      }
+      const buffers: Buffer[] = [];
+      const writeStream = new Stream.Writable({
+        write(chunk, _encoding, callback) {
+          buffers.push(chunk);
+          callback(null);
+        },
+      });
+
+      _df.writeIpcStream(
+        writeStream,
+        dest?.compression ?? options?.compression,
+      );
       writeStream.end("");
 
       return Buffer.concat(buffers);

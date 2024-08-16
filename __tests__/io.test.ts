@@ -334,6 +334,42 @@ describe("ipc", () => {
     expect(ipcDF).toFrameEqual(csvDF);
   });
 });
+describe("ipc stream", () => {
+  beforeEach(() => {
+    pl.readCSV(csvpath).writeIPCStream(ipcpath);
+  });
+  afterEach(() => {
+    fs.rmSync(ipcpath);
+  });
+
+  test("read", () => {
+    const df = pl.readIPCStream(ipcpath);
+    expect(df.shape).toEqual({ height: 27, width: 4 });
+  });
+  test("read/write:buffer", () => {
+    const buff = pl.readCSV(csvpath).writeIPCStream();
+    const df = pl.readIPCStream(buff);
+    expect(df.shape).toEqual({ height: 27, width: 4 });
+  });
+  test("read:compressed", () => {
+    const csvDF = pl.readCSV(csvpath);
+    csvDF.writeIPCStream(ipcpath, { compression: "lz4" });
+    const ipcDF = pl.readIPCStream(ipcpath);
+    expect(ipcDF).toFrameEqual(csvDF);
+  });
+
+  test("read:options", () => {
+    const df = pl.readIPCStream(ipcpath, { nRows: 4 });
+    expect(df.shape).toEqual({ height: 4, width: 4 });
+  });
+
+  test("writeIPCStream", () => {
+    const csvDF = pl.readCSV(csvpath);
+    csvDF.writeIPCStream(ipcpath);
+    const ipcDF = pl.readIPCStream(ipcpath);
+    expect(ipcDF).toFrameEqual(csvDF);
+  });
+});
 
 describe("avro", () => {
   beforeEach(() => {
