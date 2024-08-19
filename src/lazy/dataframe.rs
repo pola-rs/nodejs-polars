@@ -504,15 +504,15 @@ impl JsLazyFrame {
         &self,
         id_vars: Vec<&str>,
         value_vars: Vec<&str>,
-        value_name: Option<&str>,
         variable_name: Option<&str>,
+        value_name: Option<&str>,
         streamable: Option<bool>,
     ) -> JsLazyFrame {
         let args = UnpivotArgs {
             index: strings_to_smartstrings(id_vars),
             on: strings_to_smartstrings(value_vars),
-            value_name: value_name.map(|s| s.into()),
             variable_name: variable_name.map(|s| s.into()),
+            value_name: value_name.map(|s| s.into()),
             streamable: streamable.unwrap_or(false),
         };
         let ldf = self.ldf.clone();

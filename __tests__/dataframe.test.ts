@@ -664,6 +664,28 @@ describe("dataframe", () => {
     });
     expect(actual).toFrameEqual(expected);
   });
+  test("unpivot renamed", () => {
+    const df = pl.DataFrame({
+      id: [1],
+      asset_key_1: ["123"],
+      asset_key_2: ["456"],
+      asset_key_3: ["abc"],
+    });
+    const actual = df.unpivot(
+      "id",
+      ["asset_key_1", "asset_key_2", "asset_key_3"],
+      {
+        variableName: "foo",
+        valueName: "bar",
+      },
+    );
+    const expected = pl.DataFrame({
+      id: [1, 1, 1],
+      foo: ["asset_key_1", "asset_key_2", "asset_key_3"],
+      bar: ["123", "456", "abc"],
+    });
+    expect(actual).toFrameEqual(expected);
+  });
   test("min:axis:0", () => {
     const actual = pl
       .DataFrame({

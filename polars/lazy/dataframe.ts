@@ -126,7 +126,7 @@ export interface LazyDataFrame extends Serialize, GroupByOps<LazyGroupBy> {
             .. warning::
                 Streaming mode is considered **unstable**. It may be changed
                 at any point without it being considered a breaking change.
-   * 
+   *
    */
   fetch(numRows?: number): Promise<DataFrame>;
   fetch(numRows: number, opts: LazyOptions): Promise<DataFrame>;
@@ -369,7 +369,21 @@ export interface LazyDataFrame extends Serialize, GroupByOps<LazyGroupBy> {
    * @deprecated *since 0.13.0* use {@link unpivot}
    */
   melt(idVars: ColumnSelection, valueVars: ColumnSelection): LazyDataFrame;
-  unpivot(idVars: ColumnSelection, valueVars: ColumnSelection): LazyDataFrame;
+  /**
+   * @see {@link DataFrame.unpivot}
+   * @param options.streamable - Allow this node to run in the streaming engine.
+   *                             If this runs in streaming, the output of the unpivot operation will not have a stable
+   *                             ordering.
+   */
+  unpivot(
+    idVars: ColumnSelection,
+    valueVars: ColumnSelection,
+    options?: {
+      variableName?: string | null;
+      valueName?: string | null;
+      streamable?: boolean;
+    },
+  ): LazyDataFrame;
   /**
    * @see {@link DataFrame.min}
    */
@@ -982,9 +996,21 @@ export const _LazyDataFrame = (_ldf: any): LazyDataFrame => {
         _ldf.unpivot(columnOrColumnsStrict(ids), columnOrColumnsStrict(values)),
       );
     },
-    unpivot(ids, values) {
+    unpivot(ids, values, options) {
+      options = {
+        variableName: null,
+        valueName: null,
+        streamable: false,
+        ...options,
+      };
       return _LazyDataFrame(
-        _ldf.unpivot(columnOrColumnsStrict(ids), columnOrColumnsStrict(values)),
+        _ldf.unpivot(
+          columnOrColumnsStrict(ids),
+          columnOrColumnsStrict(values),
+          options.variableName,
+          options.valueName,
+          options.streamable,
+        ),
       );
     },
     min() {
