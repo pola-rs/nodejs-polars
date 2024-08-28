@@ -504,16 +504,14 @@ impl JsLazyFrame {
         &self,
         id_vars: Vec<&str>,
         value_vars: Vec<&str>,
-        value_name: Option<&str>,
         variable_name: Option<&str>,
-        streamable: Option<bool>,
+        value_name: Option<&str>,
     ) -> JsLazyFrame {
-        let args = UnpivotArgs {
-            index: strings_to_smartstrings(id_vars),
-            on: strings_to_smartstrings(value_vars),
-            value_name: value_name.map(|s| s.into()),
+        let args = UnpivotArgsDSL {
+            on: strings_to_selector(value_vars),
+            index: strings_to_selector(id_vars),
             variable_name: variable_name.map(|s| s.into()),
-            streamable: streamable.unwrap_or(false),
+            value_name: value_name.map(|s| s.into())
         };
         let ldf = self.ldf.clone();
         ldf.unpivot(args).into()
@@ -606,14 +604,14 @@ impl JsLazyFrame {
             StatisticsOptions::empty()
         };
         let row_group_size = options.row_group_size.map(|i| i as usize);
-        let data_pagesize_limit = options.data_pagesize_limit.map(|i| i as usize);
+        let data_page_size = options.data_pagesize_limit.map(|i| i as usize);
         let maintain_order = options.maintain_order.unwrap_or(true);
 
         let options = ParquetWriteOptions {
             compression,
             statistics,
             row_group_size,
-            data_pagesize_limit,
+            data_page_size,
             maintain_order,
         };
 
@@ -768,6 +766,7 @@ pub fn scan_parquet(path: String, options: ScanParquetOptions) -> napi::Result<J
             ..Default::default()
         },
         glob: true,
+        include_file_paths: None
     };
     let lf = LazyFrame::scan_parquet(path, args).map_err(JsPolarsErr::from)?;
     Ok(lf.into())
@@ -796,6 +795,8 @@ pub fn scan_ipc(path: String, options: ScanIPCOptions) -> napi::Result<JsLazyFra
         row_index,
         memory_map,
         cloud_options: Default::default(),
+        hive_options: Default::default(),
+        include_file_paths: None,
     };
     let lf = LazyFrame::scan_ipc(path, args).map_err(JsPolarsErr::from)?;
     Ok(lf.into())

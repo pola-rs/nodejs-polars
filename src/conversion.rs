@@ -78,7 +78,7 @@ impl ToNapiValue for Wrap<&Series> {
         match dtype {
             DataType::Struct(_) => {
                 let ca = s.struct_().map_err(JsPolarsErr::from)?;
-                let df: DataFrame = ca.clone().into();
+                let df: DataFrame = ca.clone().unnest();
 
                 let (height, _) = df.shape();
                 let mut rows = env.create_array(height as u32)?;
@@ -760,6 +760,7 @@ impl ToNapiValue for Wrap<ParallelStrategy> {
             ParallelStrategy::Columns => "columns",
             ParallelStrategy::RowGroups => "row_groups",
             ParallelStrategy::None => "none",
+            ParallelStrategy::Prefiltered => "prefiltered",
         };
         let _ = strategy.set("strategy", unit);
         Object::to_napi_value(napi_env, strategy)
@@ -1241,6 +1242,14 @@ pub(crate) fn parse_fill_null_strategy(
 }
 
 pub(crate) fn strings_to_smartstrings<I, S>(container: I) -> Vec<SmartString>
+where
+    I: IntoIterator<Item = S>,
+    S: AsRef<str>,
+{
+    container.into_iter().map(|s| s.as_ref().into()).collect()
+}
+
+pub(crate) fn strings_to_selector<I, S>(container: I) -> Vec<Selector>
 where
     I: IntoIterator<Item = S>,
     S: AsRef<str>,

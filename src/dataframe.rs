@@ -285,7 +285,7 @@ pub fn read_parquet(
                 .with_projection(projection)
                 .with_columns(columns)
                 .read_parallel(parallel.0)
-                .with_n_rows(n_rows)
+                .with_slice(n_rows.map(|x| (0, x)))
                 .with_row_index(row_count)
                 .finish()
         }
@@ -295,7 +295,7 @@ pub fn read_parquet(
                 .with_projection(projection)
                 .with_columns(columns)
                 .read_parallel(parallel.0)
-                .with_n_rows(n_rows)
+                .with_slice(n_rows.map(|x| (0, x)))
                 .with_row_index(row_count)
                 .finish()
         }
@@ -964,16 +964,14 @@ impl JsDataFrame {
         &self,
         id_vars: Vec<String>,
         value_vars: Vec<String>,
-        value_name: Option<String>,
         variable_name: Option<String>,
-        streamable: Option<bool>,
+        value_name: Option<String>
     ) -> napi::Result<JsDataFrame> {
-        let args = UnpivotArgs {
-            index: strings_to_smartstrings(id_vars),
+        let args = UnpivotArgsIR {
             on: strings_to_smartstrings(value_vars),
-            value_name: value_name.map(|s| s.into()),
+            index: strings_to_smartstrings(id_vars),
             variable_name: variable_name.map(|s| s.into()),
-            streamable: streamable.unwrap_or(false),
+            value_name: value_name.map(|s| s.into())
         };
 
         let df = self.df.unpivot2(args).map_err(JsPolarsErr::from)?;
@@ -1086,7 +1084,7 @@ impl JsDataFrame {
         k2: Wrap<u64>,
         k3: Wrap<u64>,
     ) -> napi::Result<JsSeries> {
-        let hb = polars::export::ahash::RandomState::with_seeds(k0.0, k1.0, k2.0, k3.0);
+        let hb = PlRandomState::with_seeds(k0.0, k1.0, k2.0, k3.0);
         let hash = self.df.hash_rows(Some(hb)).map_err(JsPolarsErr::from)?;
         Ok(hash.into_series().into())
     }

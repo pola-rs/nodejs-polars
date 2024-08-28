@@ -58,16 +58,16 @@
     "@napi-rs/cli": "^2.18.4",
     "@types/chance": "^1.1.6",
     "@types/jest": "^29.5.12",
-    "@types/node": "^20.14.10",
+    "@types/node": "^22.3.0",
     "chance": "^1.1.12",
     "jest": "^29.7.0",
     "source-map-support": "^0.5.21",
-    "ts-jest": "^29.2.0",
+    "ts-jest": "^29.2.4",
     "ts-node": "^10.9.2",
-    "typedoc": "^0.26.3",
-    "typescript": "5.5.3"
+    "typedoc": "^0.26.5",
+    "typescript": "5.5.4"
   },
-  "packageManager": "yarn@4.3.1",
+  "packageManager": "yarn@4.4.0",
   "workspaces": [
     "benches"
   ]
