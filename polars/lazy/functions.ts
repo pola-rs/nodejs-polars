@@ -208,6 +208,11 @@ export function intRange(
   if (typeof opts?.low === "number") {
     return intRange(opts.low, opts.high, opts.step, opts.dtype, opts.eager);
   }
+  // if expression like pl.len() passed
+  if (high === undefined || high === null) {
+    high = opts;
+    opts = 0;
+  }
   const low = exprToLitOrExpr(opts, false);
   high = exprToLitOrExpr(high, false);
   if (eager) {
@@ -472,7 +477,10 @@ export function head(column: Series | ExprOrString, n?): Series | Expr {
   }
   return exprToLitOrExpr(column, false).head(n);
 }
-
+/** Return the number of elements in the column. */
+export function len(): any {
+  return _Expr(pli.len());
+}
 /** Get the last value. */
 export function last(column: ExprOrString | Series): any {
   if (Series.isSeries(column)) {

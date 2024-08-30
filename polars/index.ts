@@ -72,6 +72,7 @@ export namespace pl {
   export import groups = lazy.groups;
   export import head = lazy.head;
   export import last = lazy.last;
+  export import len = lazy.len;
   export import mean = lazy.mean;
   export import median = lazy.median;
   export import nUnique = lazy.nUnique;

@@ -517,6 +517,26 @@ describe("expr", () => {
     const actual = df.select(col("a").last().as("last"));
     expect(actual).toFrameEqual(expected);
   });
+  test("len", () => {
+    const df = pl.DataFrame({
+      a: [1, 2, 3, 3, 3],
+      b: ["a", "a", "b", "a", "a"],
+    });
+    let actual = df.select(pl.len());
+    let expected = pl.DataFrame({ len: [5] });
+    expect(actual).toFrameEqual(expected);
+
+    actual = df.withColumn(pl.len());
+    expected = df.withColumn(pl.lit(5).alias("len"));
+    expect(actual).toFrameEqual(expected);
+
+    actual = df.withColumn(pl.intRange(pl.len()).alias("index"));
+    expected = df.withColumn(pl.Series("index", [0, 1, 2, 3, 4], pl.Int64));
+    expect(actual).toFrameEqual(expected);
+
+    actual = df.groupBy("b").agg(pl.len());
+    expect(actual.shape).toEqual({ height: 2, width: 2 });
+  });
   test("list", () => {
     const df = pl.DataFrame({
       a: ["a", "b", "c"],
