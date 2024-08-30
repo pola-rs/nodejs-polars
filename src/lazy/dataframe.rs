@@ -490,9 +490,9 @@ impl JsLazyFrame {
             .into()
     }
     #[napi(catch_unwind)]
-    pub fn slice(&self, offset: i64, lenght: u32) -> JsLazyFrame {
+    pub fn slice(&self, offset: i64, length: u32) -> JsLazyFrame {
         let ldf = self.ldf.clone();
-        ldf.slice(offset, lenght).into()
+        ldf.slice(offset, length).into()
     }
     #[napi(catch_unwind)]
     pub fn tail(&self, n: u32) -> JsLazyFrame {
