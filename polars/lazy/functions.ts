@@ -208,6 +208,11 @@ export function intRange(
   if (typeof opts?.low === "number") {
     return intRange(opts.low, opts.high, opts.step, opts.dtype, opts.eager);
   }
+  // if expression like pl.len() passed
+  if (high === undefined || high === null) {
+    high = opts;
+    opts = 0;
+  }
   const low = exprToLitOrExpr(opts, false);
   high = exprToLitOrExpr(high, false);
   if (eager) {
@@ -472,7 +477,51 @@ export function head(column: Series | ExprOrString, n?): Series | Expr {
   }
   return exprToLitOrExpr(column, false).head(n);
 }
+/** Return the number of elements in the column.  
+  This is similar to `COUNT(*)` in SQL.
 
+  @return Expr - Expression of data type :class:`UInt32`.
+  @example
+  ```
+  >>> const df = pl.DataFrame(
+  ...     {
+  ...         "a": [1, 2, None],
+  ...         "b": [3, None, None],
+  ...         "c": ["foo", "bar", "foo"],
+  ...     }
+  ... )
+  >>> df.select(pl.len())
+  shape: (1, 1)
+  ┌─────┐
+  │ len │
+  │ --- │
+  │ u32 │
+  ╞═════╡
+  │ 3   │
+  └─────┘
+  ```
+  Generate an index column by using `len` in conjunction with :func:`intRange`.
+
+  ```
+  >>> df.select(
+  ...     pl.intRange(pl.len(), dtype=pl.UInt32).alias("index"),
+  ...     pl.all(),
+  ... )
+  shape: (3, 4)
+  ┌───────┬──────┬──────┬─────┐
+  │ index ┆ a    ┆ b    ┆ c   │
+  │ ---   ┆ ---  ┆ ---  ┆ --- │
+  │ u32   ┆ i64  ┆ i64  ┆ str │
+  ╞═══════╪══════╪══════╪═════╡
+  │ 0     ┆ 1    ┆ 3    ┆ foo │
+  │ 1     ┆ 2    ┆ null ┆ bar │
+  │ 2     ┆ null ┆ null ┆ foo │
+  └───────┴──────┴──────┴─────┘
+  ```
+*/
+export function len(): any {
+  return _Expr(pli.len());
+}
 /** Get the last value. */
 export function last(column: ExprOrString | Series): any {
   if (Series.isSeries(column)) {

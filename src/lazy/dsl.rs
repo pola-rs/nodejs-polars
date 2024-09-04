@@ -1720,6 +1720,11 @@ pub fn spearman_rank_corr(
 }
 
 #[napi(catch_unwind)]
+pub fn len() -> JsExpr {
+    polars::lazy::dsl::len().into()
+}
+
+#[napi(catch_unwind)]
 pub fn cov(a: Wrap<Expr>, b: Wrap<Expr>, ddof: u8) -> JsExpr {
     polars::lazy::dsl::cov(a.0, b.0, ddof).into()
 }
