@@ -169,6 +169,16 @@ describe("read:json", () => {
       json.slice(0, 30),
     );
   });
+  it("can read null json from buffer", () => {
+    const json = [
+      JSON.stringify({ bar: 1, foo: "a", nul: null }),
+      JSON.stringify({ bar: 2, foo: "b", nul: null }),
+      "",
+    ].join("\n");
+    const df = pl.readJSON(Buffer.from(json), { format: "lines" });
+    const actualCols = df.getColumns().map((x) => x.dtype);
+    expect(actualCols).toEqual([pl.Int64, pl.Utf8, pl.Null]);
+  });
 });
 
 describe("scan", () => {
