@@ -199,35 +199,39 @@ export function lit(value: any): Expr {
     └───────┴─────┴─────┘
  * ```
  */
-export function intRange<T>(opts: {
-  /** @deprecated *since 0.15.0* use `start` instead */
-  low: any;
-  /** @deprecated *since 0.15.0* use `end` instead */
-  high: any;
-  start: any;
-  end: any;
-  step: number;
-  dtype: DataType;
+export function intRange(opts: {
+  start: number | Expr;
+  end: number | Expr;
+  step?: number | Expr;
+  dtype?: DataType;
+  eager?: boolean;
+});
+/** @deprecated *since 0.15.0* use `start` and `end` instead */
+export function intRange(opts: {
+  low: number | Expr;
+  high: number | Expr;
+  step?: number | Expr;
+  dtype?: DataType;
   eager?: boolean;
 });
 export function intRange(
-  start: any,
-  end?: any,
-  step?: number,
+  start: number | Expr,
+  end?: number | Expr,
+  step?: number | Expr,
   dtype?: DataType,
   eager?: true,
 ): Series;
 export function intRange(
-  start: any,
-  end?: any,
-  step?: number,
+  start: number | Expr,
+  end?: number | Expr,
+  step?: number | Expr,
   dtype?: DataType,
   eager?: false,
 ): Expr;
 export function intRange(
   opts: any,
   end?,
-  step = 1,
+  step = 1 as number | Expr,
   dtype = DataType.Int64,
   eager?,
 ): Series | Expr {
