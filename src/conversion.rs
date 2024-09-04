@@ -963,6 +963,7 @@ impl ToNapiValue for Wrap<DataType> {
                 obj.set("inner", inner_arr)?;
                 Object::to_napi_value(env, obj)
             }
+            DataType::Null => String::to_napi_value(env, "Null".to_owned()),
             DataType::Time => String::to_napi_value(env, "Time".to_owned()),
             DataType::Object(..) => String::to_napi_value(env, "Object".to_owned()),
             DataType::Categorical(..) => String::to_napi_value(env, "Categorical".to_owned()),
