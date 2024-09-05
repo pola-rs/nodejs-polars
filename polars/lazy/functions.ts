@@ -156,83 +156,118 @@ export function lit(value: any): Expr {
   return _Expr(pli.lit(value));
 }
 
-// // ----------
-// // Helper Functions
-// // ------
+// ----------
+// Helper Functions
+// ------
 
 /**
- * __Create a range expression.__
- * ___
+ * Generate a range of integers.
  *
  * This can be used in a `select`, `with_column` etc.
  * Be sure that the range size is equal to the DataFrame you are collecting.
- * @param low - Lower bound of range.
- * @param high - Upper bound of range.
- * @param step - Step size of the range
- * @param eager - If eager evaluation is `true`, a Series is returned instead of an Expr
+ * @param start - Start of the range (inclusive). Defaults to 0.
+ * @param end - End of the range (exclusive). If set to `None` (default), the value of `start` is used and `start` is set to `0`.
+ * @param step - Step size of the range.
+ * @param dtype - Data type of the range.
+ * @param eager - Evaluate immediately and return a `Series`. If set to `False` (default), return an expression instead.
+ * @returns Expr or Series Column of integer data type `dtype`.
+ * @see {@link intRanges}
  * @example
  * ```
  * > df.lazy()
  * >   .filter(pl.col("foo").lt(pl.intRange(0, 100)))
  * >   .collect()
  * ```
+ * 
+ * 
+ * Generate an index column by using `intRange` in conjunction with :func:`len`.
+ * ```
+ *  df = pl.DataFrame({"a": [1, 3, 5], "b": [2, 4, 6]})
+    df.select(
+    ...     pl.intRange(pl.len()).alias("index"),
+    ...     pl.all(),
+    ... )
+    shape: (3, 3)
+    ┌───────┬─────┬─────┐
+    │ index ┆ a   ┆ b   │
+    │ ---   ┆ --- ┆ --- │
+    │ u32   ┆ i64 ┆ i64 │
+    ╞═══════╪═════╪═════╡
+    │ 0     ┆ 1   ┆ 2   │
+    │ 1     ┆ 3   ┆ 4   │
+    │ 2     ┆ 5   ┆ 6   │
+    └───────┴─────┴─────┘
+ * ```
  */
-export function intRange<T>(opts: {
-  low: any;
-  high: any;
-  step: number;
-  dtype: DataType;
+export function intRange(opts: {
+  start: number | Expr;
+  end: number | Expr;
+  step?: number | Expr;
+  dtype?: DataType;
+  eager?: boolean;
+});
+/** @deprecated *since 0.15.0* use `start` and `end` instead */
+export function intRange(opts: {
+  low: number | Expr;
+  high: number | Expr;
+  step?: number | Expr;
+  dtype?: DataType;
   eager?: boolean;
 });
 export function intRange(
-  low: any,
-  high?: any,
-  step?: number,
+  start: number | Expr,
+  end?: number | Expr,
+  step?: number | Expr,
   dtype?: DataType,
   eager?: true,
 ): Series;
 export function intRange(
-  low: any,
-  high?: any,
-  step?: number,
+  start: number | Expr,
+  end?: number | Expr,
+  step?: number | Expr,
   dtype?: DataType,
   eager?: false,
 ): Expr;
 export function intRange(
   opts: any,
-  high?,
-  step = 1,
+  end?,
+  step = 1 as number | Expr,
   dtype = DataType.Int64,
   eager?,
 ): Series | Expr {
+  // @deprecated since 0.15.0
   if (typeof opts?.low === "number") {
     return intRange(opts.low, opts.high, opts.step, opts.dtype, opts.eager);
   }
+  if (typeof opts?.start === "number") {
+    return intRange(opts.start, opts.end, opts.step, opts.dtype, opts.eager);
+  }
   // if expression like pl.len() passed
-  if (high === undefined || high === null) {
-    high = opts;
+  if (end === undefined || end === null) {
+    end = opts;
     opts = 0;
   }
-  const low = exprToLitOrExpr(opts, false);
-  high = exprToLitOrExpr(high, false);
+  const start = exprToLitOrExpr(opts, false);
+  end = exprToLitOrExpr(end, false);
   if (eager) {
     const df = DataFrame({ a: [1] });
 
     return df
-      .select(intRange(low, high, step).alias("intRange") as any)
+      .select(intRange(start, end, step).alias("intRange") as any)
       .getColumn("intRange") as any;
   }
-  return _Expr(pli.intRange(low, high, step, dtype));
+  return _Expr(pli.intRange(start, end, step, dtype));
 }
-
 /***
  * Generate a range of integers for each row of the input columns.
- * @param start - Lower bound of the range (inclusive).
- * @param end - Upper bound of the range (exclusive).
+ * @param start - Start of the range (inclusive). Defaults to 0.
+ * @param end - End of the range (exclusive). If set to `None` (default), the value of `start` is used and `start` is set to `0`.
  * @param step - Step size of the range.
+ * @param dtype - Integer data type of the ranges. Defaults to `Int64`.
  * @param eager - Evaluate immediately and return a ``Series``. If set to ``False`` (default), return an expression instead.
- * @return - Column of data type ``List(dtype)``.
- *  * @example
+ * @return - Expr or Series Column of data type `List(dtype)`.
+ * @see {@link intRange}
+ * @example
  * ```
  * const df = pl.DataFrame({"a": [1, 2], "b": [3, 4]})
  * const result = df.select(pl.intRanges("a", "b"));
