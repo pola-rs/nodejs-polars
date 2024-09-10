@@ -155,7 +155,11 @@ features = [
   "string_pad",
   "replace",
   "cov",
-  "http"
+  "http",
+  "cloud",
+  "aws",
+  "gcp",
+  "azure"
 ]
 git = "https://github.com/pola-rs/polars.git"
 rev = "7686025ac7738607f2d4f6887e9a1313b7c8b1e2"
