@@ -713,22 +713,38 @@ pub fn scan_csv(path: String, options: ScanCsvOptions) -> napi::Result<JsLazyFra
 #[napi(object)]
 pub struct ScanParquetOptions {
     pub n_rows: Option<i64>,
+    pub row_index_name: Option<String>,
+    pub row_index_offset: Option<u32>,
     pub cache: Option<bool>,
     pub parallel: Wrap<ParallelStrategy>,
-    pub row_count: Option<JsRowCount>,
+    pub glob: Option<bool>,
+    pub hive_partitioning: Option<bool>,
+    pub hive_schema: Option<Wrap<Schema>>,
+    pub try_parse_hive_dates: Option<bool>,
     pub rechunk: Option<bool>,
     pub low_memory: Option<bool>,
     pub use_statistics: Option<bool>,
     pub cloud_options: Option<HashMap<String, String>>,
     pub retries: Option<i64>,
+    pub include_file_paths: Option<String>,
 }
 
 #[napi(catch_unwind)]
 pub fn scan_parquet(path: String, options: ScanParquetOptions) -> napi::Result<JsLazyFrame> {
     let n_rows = options.n_rows.map(|i| i as usize);
     let cache = options.cache.unwrap_or(true);
+    let glob = options.glob.unwrap_or(true);
     let parallel = options.parallel;
-    let row_index: Option<RowIndex> = options.row_count.map(|rc| rc.into());
+
+    let row_index: Option<RowIndex> = if let Some(idn) = options.row_index_name {
+        Some(RowIndex {
+            name: idn.into(),
+            offset: options.row_index_offset.unwrap_or(0)
+        })
+    } else { 
+        None 
+    };
+
     let rechunk = options.rechunk.unwrap_or(false);
     let low_memory = options.low_memory.unwrap_or(false);
     let use_statistics = options.use_statistics.unwrap_or(false);
@@ -751,6 +767,16 @@ pub fn scan_parquet(path: String, options: ScanParquetOptions) -> napi::Result<J
                 });
     }
 
+    let hive_schema = options.hive_schema.map(|s| Arc::new(s.0));
+    let hive_options = HiveOptions {
+        enabled: options.hive_partitioning,
+        hive_start_idx: 0,
+        schema: hive_schema,
+        try_parse_dates: options.try_parse_hive_dates.unwrap_or(true),
+    };
+
+    let include_file_paths = options.include_file_paths;
+
     let args = ScanArgsParquet {
         n_rows,
         cache,
@@ -760,13 +786,9 @@ pub fn scan_parquet(path: String, options: ScanParquetOptions) -> napi::Result<J
         low_memory,
         cloud_options,
         use_statistics,
-        // TODO: Support Hive partitioning.
-        hive_options: HiveOptions {
-            enabled: Some(false),
-            ..Default::default()
-        },
-        glob: true,
-        include_file_paths: None
+        hive_options,
+        glob,
+        include_file_paths: include_file_paths.map(Arc::from),
     };
     let lf = LazyFrame::scan_parquet(path, args).map_err(JsPolarsErr::from)?;
     Ok(lf.into())
