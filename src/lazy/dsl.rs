@@ -286,7 +286,7 @@ impl JsExpr {
     ) -> JsExpr {
         self.inner
             .clone()
-            .value_counts(sort, parallel, name, normalize)
+            .value_counts(sort, parallel, &name, normalize)
             .into()
     }
 
@@ -635,7 +635,7 @@ impl JsExpr {
         cache: bool,
     ) -> JsExpr {
         let options = StrptimeOptions {
-            format,
+            format: format.map_or(None, |s| Some(PlSmallStr::from_string(s))),
             strict,
             exact,
             cache,
@@ -649,14 +649,14 @@ impl JsExpr {
         &self,
         format: Option<String>,
         time_unit: Option<Wrap<TimeUnit>>,
-        time_zone: Option<TimeZone>,
+        time_zone: Option<String>,
         strict: bool,
         exact: bool,
         cache: bool,
         ambiguous: Option<Wrap<Expr>>,
     ) -> JsExpr {
         let options = StrptimeOptions {
-            format,
+            format: format.map_or(None, |s| Some(PlSmallStr::from_string(s))),
             strict,
             exact,
             cache,
@@ -664,6 +664,7 @@ impl JsExpr {
         let ambiguous = ambiguous
             .map(|e| e.0)
             .unwrap_or(dsl::lit(String::from("raise")));
+        let time_zone = time_zone.map_or(None, |x| Some(PlSmallStr::from_string(x)));
         self.inner
             .clone()
             .str()

@@ -9,8 +9,6 @@ use polars_io::RowIndex;
 use std::any::Any;
 use std::collections::HashMap;
 
-use smartstring::alias::String as SmartString;
-
 #[derive(Debug)]
 pub struct Wrap<T: ?Sized>(pub T);
 
@@ -50,7 +48,7 @@ impl ToSeries for Array {
             let av: Wrap<AnyValue> = self.get(i).unwrap().unwrap_or(Wrap(AnyValue::Null));
             v.push(av.0);
         }
-        Series::new("", v)
+        Series::new(PlSmallStr::EMPTY, v)
     }
 }
 
@@ -64,7 +62,7 @@ impl ToSeries for JsUnknown {
             let av = AnyValue::from_js(unknown).unwrap();
             v.push(av);
         }
-        Series::new("", v)
+        Series::new(PlSmallStr::EMPTY, v)
     }
 }
 
@@ -174,7 +172,7 @@ impl FromNapiValue for Wrap<StringChunked> {
     unsafe fn from_napi_value(env: sys::napi_env, napi_val: sys::napi_value) -> JsResult<Self> {
         let arr = Array::from_napi_value(env, napi_val)?;
         let len = arr.len() as usize;
-        let mut builder = StringChunkedBuilder::new("", len);
+        let mut builder = StringChunkedBuilder::new(PlSmallStr::EMPTY, len);
         for i in 0..len {
             match arr.get::<String>(i as u32) {
                 Ok(val) => match val {
@@ -192,7 +190,7 @@ impl FromNapiValue for Wrap<BooleanChunked> {
     unsafe fn from_napi_value(env: sys::napi_env, napi_val: sys::napi_value) -> JsResult<Self> {
         let arr = Array::from_napi_value(env, napi_val)?;
         let len = arr.len() as usize;
-        let mut builder = BooleanChunkedBuilder::new("", len);
+        let mut builder = BooleanChunkedBuilder::new(PlSmallStr::EMPTY, len);
         for i in 0..len {
             match arr.get::<bool>(i as u32) {
                 Ok(val) => match val {
@@ -211,7 +209,7 @@ impl FromNapiValue for Wrap<Float32Chunked> {
     unsafe fn from_napi_value(env: sys::napi_env, napi_val: sys::napi_value) -> JsResult<Self> {
         let arr = Array::from_napi_value(env, napi_val)?;
         let len = arr.len() as usize;
-        let mut builder = PrimitiveChunkedBuilder::<Float32Type>::new("", len);
+        let mut builder = PrimitiveChunkedBuilder::<Float32Type>::new(PlSmallStr::EMPTY, len);
         for i in 0..len {
             match arr.get::<f64>(i as u32) {
                 Ok(val) => match val {
@@ -234,7 +232,7 @@ macro_rules! impl_chunked {
             ) -> JsResult<Self> {
                 let arr = Array::from_napi_value(env, napi_val)?;
                 let len = arr.len() as usize;
-                let mut builder = PrimitiveChunkedBuilder::<$type>::new("", len);
+                let mut builder = PrimitiveChunkedBuilder::<$type>::new(PlSmallStr::EMPTY, len);
                 for i in 0..len {
                     match arr.get::<$native>(i as u32) {
                         Ok(val) => match val {
@@ -258,7 +256,7 @@ impl FromNapiValue for Wrap<ChunkedArray<UInt64Type>> {
     unsafe fn from_napi_value(env: sys::napi_env, napi_val: sys::napi_value) -> JsResult<Self> {
         let arr = Array::from_napi_value(env, napi_val)?;
         let len = arr.len() as usize;
-        let mut builder = PrimitiveChunkedBuilder::<UInt64Type>::new("", len);
+        let mut builder = PrimitiveChunkedBuilder::<UInt64Type>::new(PlSmallStr::EMPTY, len);
         for i in 0..len {
             match arr.get::<BigInt>(i as u32) {
                 Ok(val) => match val {
@@ -631,11 +629,7 @@ impl FromNapiValue for Wrap<DataType> {
         match ty {
             ValueType::Object => {
                 let obj = Object::from_napi_value(env, napi_val)?;
-                let variant = if let Some(variant) = obj.get::<_, String>("variant")? {
-                    variant
-                } else {
-                    "".into()
-                };
+                let variant = obj.get::<_, String>("variant")?.map_or("".into(), |v| v);
 
                 let dtype = match variant.as_ref() {
                     "Int8" => DataType::Int8,
@@ -688,7 +682,7 @@ impl FromNapiValue for Wrap<DataType> {
                             let obj = Object::from_napi_value(env, napi_dt)?;
                             let name = obj.get::<_, String>("name")?.unwrap();
                             let dt = obj.get::<_, Wrap<DataType>>("dtype")?.unwrap();
-                            let fld = Field::new(&name, dt.0);
+                            let fld = Field::new(name.into(), dt.0);
                             fldvec.push(fld);
                         }
                         DataType::Struct(fldvec)
@@ -725,7 +719,7 @@ impl FromNapiValue for Wrap<Schema> {
                             let napi_val = Object::to_napi_value(env, value)?;
                             let dtype = Wrap::<DataType>::from_napi_value(env, napi_val)?;
 
-                            Ok(Field::new(key, dtype.0))
+                            Ok(Field::new(key.into(), dtype.0))
                         })
                         .collect::<Result<Schema>>()?,
                 ))
@@ -806,11 +800,7 @@ impl FromNapiValue for Wrap<SortOptions> {
     unsafe fn from_napi_value(env: sys::napi_env, napi_val: sys::napi_value) -> napi::Result<Self> {
         let obj = Object::from_napi_value(env, napi_val)?;
         let descending = obj.get::<_, bool>("descending")?.unwrap();
-        let nulls_last = if let Some(nulls_last) = obj.get::<_, bool>("nulls_last")? {
-            nulls_last
-        } else {
-            obj.get::<_, bool>("nullsLast")?.unwrap_or(false)
-        };
+        let nulls_last = obj.get::<_, bool>("nulls_last")?.map_or(obj.get::<_, bool>("nullsLast")?.unwrap_or(false), |n| n);
         let multithreaded = obj.get::<_, bool>("multithreaded")?.unwrap();
         let maintain_order: bool = obj.get::<_, bool>("maintain_order")?.unwrap();
         let options = SortOptions {
@@ -957,8 +947,7 @@ impl ToNapiValue for Wrap<DataType> {
                 let mut inner_arr = env_ctx.create_array(2)?;
 
                 inner_arr.set(0, tu.to_ascii())?;
-                inner_arr.set(1, tz)?;
-
+                inner_arr.set(1, tz.as_ref().map_or("", |s| s.as_str()))?;
                 obj.set("variant", "Datetime")?;
                 obj.set("inner", inner_arr)?;
                 Object::to_napi_value(env, obj)
@@ -974,7 +963,7 @@ impl ToNapiValue for Wrap<DataType> {
                 let mut js_flds = env_ctx.create_array(flds.len() as u32)?;
                 for (idx, fld) in flds.iter().enumerate() {
                     let name = fld.name().clone();
-                    let dtype = Wrap(fld.data_type().clone());
+                    let dtype = Wrap(fld.dtype().clone());
                     let mut fld_obj = env_ctx.create_object()?;
                     fld_obj.set("name", name.to_string())?;
                     fld_obj.set("dtype", dtype)?;
@@ -1016,11 +1005,11 @@ impl ToNapiValue for Wrap<DataType> {
 impl FromNapiValue for Wrap<NullValues> {
     unsafe fn from_napi_value(env: sys::napi_env, napi_val: sys::napi_value) -> JsResult<Self> {
         if let Ok(s) = String::from_napi_value(env, napi_val) {
-            Ok(Wrap(NullValues::AllColumnsSingle(s)))
+            Ok(Wrap(NullValues::AllColumnsSingle(s.into())))
         } else if let Ok(s) = Vec::<String>::from_napi_value(env, napi_val) {
-            Ok(Wrap(NullValues::AllColumns(s)))
+            Ok(Wrap(NullValues::AllColumns(s.into_iter().map(PlSmallStr::from_string).collect())))
         } else if let Ok(s) = HashMap::<String, String>::from_napi_value(env, napi_val) {
-            let null_values: Vec<(String, String)> = s.into_iter().collect();
+            let null_values = s.into_iter().map(|a| (PlSmallStr::from_string(a.0), PlSmallStr::from_string(a.1))).collect::<Vec<(PlSmallStr, PlSmallStr)>>();
             Ok(Wrap(NullValues::Named(null_values)))
         } else {
             Err(
@@ -1034,10 +1023,10 @@ impl FromNapiValue for Wrap<NullValues> {
 impl ToNapiValue for Wrap<NullValues> {
     unsafe fn to_napi_value(env: sys::napi_env, val: Self) -> napi::Result<sys::napi_value> {
         match val.0 {
-            NullValues::AllColumnsSingle(s) => String::to_napi_value(env, s),
-            NullValues::AllColumns(arr) => Vec::<String>::to_napi_value(env, arr),
+            NullValues::AllColumnsSingle(s) => String::to_napi_value(env, s.to_string()),
+            NullValues::AllColumns(arr) => Vec::<String>::to_napi_value(env, arr.iter().map(|x| x.to_string()).collect()),
             NullValues::Named(obj) => {
-                let o: HashMap<String, String> = obj.into_iter().collect();
+                let o: HashMap<String, String> = obj.into_iter().map(|s| (s.0.to_string(), s.1.to_string())).collect::<HashMap<String, String>>();
                 HashMap::<String, String>::to_napi_value(env, o)
             }
         }
@@ -1242,12 +1231,12 @@ pub(crate) fn parse_fill_null_strategy(
     Ok(parsed)
 }
 
-pub(crate) fn strings_to_smartstrings<I, S>(container: I) -> Vec<SmartString>
+pub(crate) fn strings_to_pl_smallstr<I, S>(container: I) -> Vec<PlSmallStr>
 where
     I: IntoIterator<Item = S>,
     S: AsRef<str>,
 {
-    container.into_iter().map(|s| s.as_ref().into()).collect()
+    container.into_iter().map(|s| PlSmallStr::from_str(s.as_ref())).collect()
 }
 
 pub(crate) fn strings_to_selector<I, S>(container: I) -> Vec<Selector>

@@ -97,15 +97,7 @@ fn mmap_reader_to_df<'a>(
         .projection
         .map(|p: Vec<u32>| p.into_iter().map(|p| p as usize).collect());
 
-    let quote_char = if let Some(s) = options.quote_char {
-        if s.is_empty() {
-            None
-        } else {
-            Some(s.as_bytes()[0])
-        }
-    } else {
-        None
-    };
+    let quote_char = options.quote_char.map_or(None, |q| if q.is_empty() { None } else { Some(q.as_bytes()[0]) } );
 
     let encoding = match options.encoding.as_ref() {
         "utf8" => CsvEncoding::Utf8,
@@ -118,7 +110,7 @@ fn mmap_reader_to_df<'a>(
             .iter()
             .map(|(name, dtype)| {
                 let dtype = dtype.0.clone();
-                Field::new(name, dtype)
+                Field::new((&**name).into(), dtype)
             })
             .collect::<Schema>()
     });
@@ -132,7 +124,7 @@ fn mmap_reader_to_df<'a>(
         .with_ignore_errors(options.ignore_errors)
         .with_rechunk(options.rechunk)
         .with_chunk_size(options.chunk_size as usize)
-        .with_columns(options.columns.map(|c| Arc::from(c)))
+        .with_columns(options.columns.map(|x| x.into_iter().map(PlSmallStr::from_string).collect()))
         .with_n_threads(options.num_threads.map(|i| i as usize))
         .with_schema_overwrite(overwrite_dtype.map(Arc::new))
         .with_schema(options.schema.map(|schema| Arc::new(schema.0)))
@@ -454,7 +446,7 @@ pub fn from_rows(
             Row(schema
                 .iter_fields()
                 .map(|fld| {
-                    let dtype = fld.data_type().clone();
+                    let dtype = fld.dtype().clone();
                     let key = fld.name();
                     if let Ok(unknown) = obj.get(key) {
                         let av = match unknown {
@@ -636,13 +628,14 @@ impl JsDataFrame {
 
         let df = self
             .df
-            .join(
+            .join
+            (
                 &other.df,
                 left_on,
                 right_on,
                 JoinArgs {
                     how: how,
-                    suffix: suffix,
+                    suffix: suffix.map_or(None, |s| Some(PlSmallStr::from_string(s))),
                     ..Default::default()
                 },
             )
@@ -659,13 +652,13 @@ impl JsDataFrame {
     /// Get column names
     #[napi(getter, catch_unwind)]
     pub fn columns(&self) -> Vec<&str> {
-        self.df.get_column_names()
+        self.df.get_column_names_str()
     }
 
     #[napi(setter, js_name = "columns", catch_unwind)]
     pub fn set_columns(&mut self, names: Vec<&str>) -> napi::Result<()> {
         self.df
-            .set_column_names(&names)
+            .set_column_names(names)
             .map_err(JsPolarsErr::from)?;
         Ok(())
     }
@@ -773,7 +766,7 @@ impl JsDataFrame {
     }
     #[napi(catch_unwind)]
     pub fn select(&self, selection: Vec<&str>) -> napi::Result<JsDataFrame> {
-        let df = self.df.select(&selection).map_err(JsPolarsErr::from)?;
+        let df = self.df.select(selection).map_err(JsPolarsErr::from)?;
         Ok(JsDataFrame::new(df))
     }
     #[napi(catch_unwind)]
@@ -790,7 +783,7 @@ impl JsDataFrame {
     }
     #[napi(catch_unwind)]
     pub fn take(&self, indices: Vec<u32>) -> napi::Result<JsDataFrame> {
-        let indices = UInt32Chunked::from_vec("", indices);
+        let indices = UInt32Chunked::from_vec(PlSmallStr::EMPTY, indices);
         let df = self.df.take(&indices).map_err(JsPolarsErr::from)?;
         Ok(JsDataFrame::new(df))
     }
@@ -848,7 +841,7 @@ impl JsDataFrame {
     #[napi(catch_unwind)]
     pub fn rename(&mut self, column: String, new_col: String) -> napi::Result<()> {
         self.df
-            .rename(&column, &new_col)
+            .rename(&column, PlSmallStr::from_string(new_col))
             .map_err(JsPolarsErr::from)?;
         Ok(())
     }
@@ -909,7 +902,7 @@ impl JsDataFrame {
     pub fn with_row_count(&self, name: String, offset: Option<u32>) -> napi::Result<JsDataFrame> {
         let df = self
             .df
-            .with_row_index(&name, offset)
+            .with_row_index(PlSmallStr::from_string(name), offset)
             .map_err(JsPolarsErr::from)?;
         Ok(df.into())
     }
@@ -920,7 +913,7 @@ impl JsDataFrame {
         select: Option<Vec<String>>,
         agg: String,
     ) -> napi::Result<JsDataFrame> {
-        let gb = self.df.group_by(&by).map_err(JsPolarsErr::from)?;
+        let gb = self.df.group_by(by).map_err(JsPolarsErr::from)?;
         let selection = match select.as_ref() {
             Some(s) => gb.select(s),
             None => gb,
@@ -968,8 +961,8 @@ impl JsDataFrame {
         value_name: Option<String>
     ) -> napi::Result<JsDataFrame> {
         let args = UnpivotArgsIR {
-            on: strings_to_smartstrings(value_vars),
-            index: strings_to_smartstrings(id_vars),
+            on: strings_to_pl_smallstr(value_vars),
+            index: strings_to_pl_smallstr(id_vars),
             variable_name: variable_name.map(|s| s.into()),
             value_name: value_name.map(|s| s.into())
         };
@@ -1008,7 +1001,7 @@ impl JsDataFrame {
         keep: Wrap<UniqueKeepStrategy>,
         slice: Option<Wrap<(i64, usize)>>,
     ) -> napi::Result<JsDataFrame> {
-        let subset = subset.as_ref().map(|v| v.as_ref());
+        let subset = subset.map(|v| v.iter().map(|x| PlSmallStr::from_str(x.as_str())).collect());
         let df = self
             .df
             .unique_impl(
@@ -1160,7 +1153,7 @@ impl JsDataFrame {
     }
     #[napi(catch_unwind)]
     pub fn to_struct(&self, name: String) -> JsSeries {
-        let s = self.df.clone().into_struct(&name);
+        let s = self.df.clone().into_struct(PlSmallStr::from_string(name));
         s.into_series().into()
     }
     #[napi(catch_unwind)]

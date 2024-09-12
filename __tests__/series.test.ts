@@ -217,13 +217,13 @@ describe("series", () => {
 
   describe("create series", () => {
     it.each`
-      values                    | dtype                | type
-      ${["foo", "bar", "baz"]}  | ${pl.String}         | ${"string"}
-      ${[1, 2, 3]}              | ${pl.Float64}        | ${"number"}
-      ${[1n, 2n, 3n]}           | ${pl.UInt64}         | ${"bigint"}
-      ${[true, false]}          | ${pl.Bool}           | ${"boolean"}
-      ${[]}                     | ${pl.Float64}        | ${"empty"}
-      ${[new Date(Date.now())]} | ${pl.Datetime("ms")} | ${"Date"}
+      values                    | dtype                    | type
+      ${["foo", "bar", "baz"]}  | ${pl.String}             | ${"string"}
+      ${[1, 2, 3]}              | ${pl.Float64}            | ${"number"}
+      ${[1n, 2n, 3n]}           | ${pl.UInt64}             | ${"bigint"}
+      ${[true, false]}          | ${pl.Bool}               | ${"boolean"}
+      ${[]}                     | ${pl.Float64}            | ${"empty"}
+      ${[new Date(Date.now())]} | ${pl.Datetime("ms", "")} | ${"Date"}
     `('defaults to $dtype for "$type"', ({ values, dtype }) => {
       const name = chance.string();
       const s = pl.Series(name, values);
