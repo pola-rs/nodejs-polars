@@ -141,12 +141,21 @@ export interface ReadParquetOptions {
  * Options for {@link scanParquet}
  */
 export interface ScanParquetOptions {
-  columns?: string[] | number[];
-  numRows?: number;
-  parallel?: "auto" | "columns" | "row_groups" | "none";
-  rowCount?: RowCount;
+  nRows?: number;
+  rowIndexName?: string;
+  rowIndexOffset?: number;
   cache?: boolean;
+  parallel?: "auto" | "columns" | "row_groups" | "none";
+  glob?: boolean;
+  hivePartitioning?: boolean;
+  hiveSchema?: unknown;
+  tryParseHiveDates?: boolean;
   rechunk?: boolean;
+  lowMemory?: boolean;
+  useStatistics?: boolean;
+  cloudOptions?: unknown;
+  retries?: number;
+  includeFilePaths?: string;
 }
 
 /**
@@ -156,7 +165,7 @@ export interface RowCount {
   /** name of column */
   name: string;
   /** offset */
-  offset: string;
+  offset: number;
 }
 
 /**

@@ -5,6 +5,7 @@ import { isPath } from "./utils";
 import { type LazyDataFrame, _LazyDataFrame } from "./lazy/dataframe";
 import { type Readable, Stream } from "stream";
 import { concat } from "./functions";
+import type { ScanParquetOptions, RowCount } from "./types";
 
 export interface ReadCsvOptions {
   inferSchemaLength: number | null;
@@ -31,7 +32,7 @@ export interface ReadCsvOptions {
   skipRows: number;
   tryParseDates: boolean;
   skipRowsAfterHeader: number;
-  rowCount: any;
+  rowCount: RowCount;
   raiseIfEmpty: boolean;
   truncateRaggedLines: boolean;
   missingIsNull: boolean;
@@ -470,23 +471,6 @@ export function readAvro(pathOrBody, options = {}) {
   throw new Error("must supply either a path or body");
 }
 
-interface RowCount {
-  name: string;
-  offset: string;
-}
-
-interface ScanParquetOptions {
-  nRows?: number;
-  cache?: boolean;
-  parallel?: "auto" | "columns" | "row_groups" | "none";
-  rowCount?: RowCount;
-  rechunk?: boolean;
-  lowMemory?: boolean;
-  useStatistics?: boolean;
-  cloudOptions?: Map<string, string>;
-  retries?: number;
-}
-
 /**
  * Lazily read from a local or cloud-hosted parquet file (or files).
 
@@ -503,6 +487,10 @@ interface ScanParquetOptions {
         This determines the direction of parallelism. 'auto' will try to determine the optimal direction.
    @param options.useStatistics - Use statistics in the parquet to determine if pages can be skipped from reading.
    @param options.hivePartitioning - Infer statistics and schema from hive partitioned URL and use them to prune reads.
+   @param options.glob - Expand path given via globbing rules.
+   @param options.hiveSchema - The column names and data types of the columns by which the data is partitioned.
+        If set to `None` (default), the schema of the Hive partitions is inferred.
+   @param options.tryParseHiveDates - Whether to try parsing hive values as date/datetime types.
    @param options.rechunk - In case of reading multiple files via a glob pattern rechunk the final DataFrame into contiguous memory chunks.
    @param options.lowMemory - Reduce memory pressure at the expense of performance.
    @param options.cache - Cache the result after reading.
@@ -518,6 +506,7 @@ interface ScanParquetOptions {
 
         If `storage_options` is not provided, Polars will try to infer the information from environment variables.
     @param retries - Number of retries if accessing a cloud instance fails.
+    @param includeFilePaths - Include the path of the source file(s) as a column with this name.
  */
 export function scanParquet(source: string, options: ScanParquetOptions = {}) {
   const defaultOptions = { parallel: "auto" };
