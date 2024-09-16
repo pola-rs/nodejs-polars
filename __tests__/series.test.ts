@@ -217,13 +217,13 @@ describe("series", () => {
 
   describe("create series", () => {
     it.each`
-      values                    | dtype                | type
-      ${["foo", "bar", "baz"]}  | ${pl.String}         | ${"string"}
-      ${[1, 2, 3]}              | ${pl.Float64}        | ${"number"}
-      ${[1n, 2n, 3n]}           | ${pl.UInt64}         | ${"bigint"}
-      ${[true, false]}          | ${pl.Bool}           | ${"boolean"}
-      ${[]}                     | ${pl.Float64}        | ${"empty"}
-      ${[new Date(Date.now())]} | ${pl.Datetime("ms")} | ${"Date"}
+      values                    | dtype                    | type
+      ${["foo", "bar", "baz"]}  | ${pl.String}             | ${"string"}
+      ${[1, 2, 3]}              | ${pl.Float64}            | ${"number"}
+      ${[1n, 2n, 3n]}           | ${pl.UInt64}             | ${"bigint"}
+      ${[true, false]}          | ${pl.Bool}               | ${"boolean"}
+      ${[]}                     | ${pl.Float64}            | ${"empty"}
+      ${[new Date(Date.now())]} | ${pl.Datetime("ms", "")} | ${"Date"}
     `('defaults to $dtype for "$type"', ({ values, dtype }) => {
       const name = chance.string();
       const s = pl.Series(name, values);
@@ -588,10 +588,33 @@ describe("series", () => {
     expect(actual).toFrameEqual(expected);
   });
   it("series:valueCounts", () => {
-    const actual = pl.Series("a", [1, 2, 2, 3]).valueCounts(true);
-    const expected = pl.DataFrame({
+    let actual = pl.Series("a", [1, 2, 2, 3]).valueCounts(true);
+    let expected = pl.DataFrame({
       a: [2, 1, 3],
       count: [2, 1, 1],
+    });
+    expect(actual).toFrameEqual(expected);
+
+    actual = pl
+      .Series("a", [1, 2, 2, 3])
+      .valueCounts(true, true, undefined, true);
+    expected = pl.DataFrame({
+      a: [2, 1, 3],
+      proportion: [0.5, 0.25, 0.25],
+    });
+    expect(actual).toFrameEqual(expected);
+
+    actual = pl.Series("a", [1, 2, 2, 3]).valueCounts(true, true, "foo", false);
+    expected = pl.DataFrame({
+      a: [2, 1, 3],
+      foo: [2, 1, 1],
+    });
+    expect(actual).toFrameEqual(expected);
+
+    actual = pl.Series("a", [1, 2, 2, 3]).valueCounts(true, true, "foo", true);
+    expected = pl.DataFrame({
+      a: [2, 1, 3],
+      foo: [0.5, 0.25, 0.25],
     });
     expect(actual).toFrameEqual(expected);
   });

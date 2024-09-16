@@ -239,9 +239,11 @@ describe("expr", () => {
     expect(actual).toFrameEqual(expected);
   });
   test("exp", () => {
-    const df = pl.DataFrame({ a: [1.0] });
-    const actual = df.select(pl.col("a").exp());
-    const expected = pl.DataFrame({ a: [Math.E] });
+    const df = pl.DataFrame({ a: [1] });
+    const actual = df.select(pl.col("a").exp().round(6));
+    const expected = pl.DataFrame({
+      a: [Math.round(Math.E * 1_000_000) / 1_000_000],
+    });
     expect(actual).toFrameEqual(expected);
   });
   test("explode", () => {

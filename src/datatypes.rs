@@ -171,7 +171,7 @@ impl<'a> FromNapiValue for Wrap<AnyValue<'a>> {
             ValueType::Object => {
                 if let Ok(vals) = Vec::<Wrap<AnyValue>>::from_napi_value(env, napi_val) {
                     let vals = std::mem::transmute::<_, Vec<AnyValue>>(vals);
-                    let s = Series::new("", vals);
+                    let s = Series::new(PlSmallStr::EMPTY, vals);
                     AnyValue::List(s)
                 } else if let Ok(s) = <&JsSeries>::from_napi_value(env, napi_val) {
                     AnyValue::List(s.series.clone())

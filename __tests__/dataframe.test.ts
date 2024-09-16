@@ -1862,8 +1862,8 @@ describe("create", () => {
       bool: pl.Bool,
       date: pl.Date,
       date_nulls: pl.Date,
-      datetime: pl.Datetime("ms"),
-      datetime_nulls: pl.Datetime("ms"),
+      datetime: pl.Datetime("ms", ""),
+      datetime_nulls: pl.Datetime("ms", ""),
       string: pl.String,
       string_nulls: pl.String,
       categorical: pl.Categorical,
@@ -1983,7 +1983,7 @@ describe("create", () => {
     expect(df.toRecords()).toEqual(expected);
     expect(df.schema).toStrictEqual({
       num: pl.Float64,
-      date: pl.Datetime("ms"),
+      date: pl.Datetime("ms", ""),
       string: pl.String,
     });
   });

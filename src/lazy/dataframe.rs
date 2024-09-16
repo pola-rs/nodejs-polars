@@ -321,8 +321,8 @@ impl JsLazyFrame {
             .force_parallel(force_parallel)
             .how(JoinType::AsOf(AsOfOptions {
                 strategy,
-                left_by: left_by.map(strings_to_smartstrings),
-                right_by: right_by.map(strings_to_smartstrings),
+                left_by: left_by.map(strings_to_pl_smallstr),
+                right_by: right_by.map(strings_to_pl_smallstr),
                 tolerance: tolerance.map(|t| t.0.into_static().unwrap()),
                 tolerance_str: tolerance_str.map(|s| s.into()),
             }))
@@ -478,7 +478,7 @@ impl JsLazyFrame {
     ) -> JsLazyFrame {
         let ldf = self.ldf.clone();
         match maintain_order {
-            true => ldf.unique_stable(subset, keep.0),
+            true => ldf.unique_stable(subset.map(|x| x.into_iter().map(PlSmallStr::from_string).collect()), keep.0),
             false => ldf.unique(subset, keep.0),
         }
         .into()
@@ -536,8 +536,7 @@ impl JsLazyFrame {
     #[napi(getter, js_name = "columns", catch_unwind)]
     pub fn columns(&mut self) -> napi::Result<Vec<String>> {
         Ok(self
-            .ldf
-            .schema()
+            .ldf.collect_schema()
             .map_err(JsPolarsErr::from)?
             .iter_names()
             .map(|s| s.as_str().into())
@@ -656,22 +655,14 @@ pub fn scan_csv(path: String, options: ScanCsvOptions) -> napi::Result<JsLazyFra
     let n_rows = options.n_rows.map(|i| i as usize);
     let row_count = options.row_count.map(RowIndex::from);
     let missing_utf8_is_empty_string: bool = options.missing_utf8_is_empty_string.unwrap_or(false);
-    let quote_char = if let Some(s) = options.quote_char {
-        if s.is_empty() {
-            None
-        } else {
-            Some(s.as_bytes()[0])
-        }
-    } else {
-        None
-    };
+    let quote_char = options.quote_char.map_or(None, |q| if q.is_empty() { None } else { Some(q.as_bytes()[0]) } );
 
     let overwrite_dtype = options.overwrite_dtype.map(|overwrite_dtype| {
         overwrite_dtype
             .iter()
             .map(|(name, dtype)| {
                 let dtype = dtype.0.clone();
-                Field::new(name, dtype)
+                Field::new(name.into(), dtype)
             })
             .collect::<Schema>()
     });
@@ -693,7 +684,7 @@ pub fn scan_csv(path: String, options: ScanCsvOptions) -> napi::Result<JsLazyFra
         .with_dtype_overwrite(overwrite_dtype.map(Arc::new))
         .with_schema(options.schema.map(|schema| Arc::new(schema.0)))
         .with_low_memory(options.low_memory.unwrap_or(false))
-        .with_comment_prefix(options.comment_prefix.as_deref())
+        .with_comment_prefix(options.comment_prefix.map_or(None, |s| Some(PlSmallStr::from_string(s))))
         .with_quote_char(quote_char)
         .with_eol_char(options.eol_char.unwrap_or(b'\n'))
         .with_rechunk(options.rechunk.unwrap_or(false))
@@ -800,7 +791,6 @@ pub struct ScanIPCOptions {
     pub cache: Option<bool>,
     pub rechunk: Option<bool>,
     pub row_count: Option<JsRowCount>,
-    pub memmap: Option<bool>,
 }
 
 #[napi(catch_unwind)]
@@ -808,14 +798,12 @@ pub fn scan_ipc(path: String, options: ScanIPCOptions) -> napi::Result<JsLazyFra
     let n_rows = options.n_rows.map(|i| i as usize);
     let cache = options.cache.unwrap_or(true);
     let rechunk = options.rechunk.unwrap_or(false);
-    let memory_map = options.memmap.unwrap_or(true);
     let row_index: Option<RowIndex> = options.row_count.map(|rc| rc.into());
     let args = ScanArgsIpc {
         n_rows,
         cache,
         rechunk,
         row_index,
-        memory_map,
         cloud_options: Default::default(),
         hive_options: Default::default(),
         include_file_paths: None,

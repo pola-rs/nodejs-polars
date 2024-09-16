@@ -1801,7 +1801,7 @@ export function _Series(_s: any): Series {
       name?: string,
       normalize?: boolean,
     ) {
-      name = name ?? normalize ? "proportion" : "count";
+      name = name ?? (normalize ? "proportion" : "count");
       return _DataFrame(
         unwrap(
           "valueCounts",
