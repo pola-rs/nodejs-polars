@@ -1125,6 +1125,9 @@ export function _Series(_s: any): Series {
   const wrap = (method, ...args): Series => {
     return _Series(unwrap(method, ...args));
   };
+  const wraps = (method, args: any): Series => {
+    return _Series(_s[method as any](args._s));
+  };
   const dtypeWrap = (method: string, ...args: any[]) => {
     const dtype = _s.dtype;
 
@@ -1528,16 +1531,20 @@ export function _Series(_s: any): Series {
       return this.length;
     },
     lt(field) {
-      return dtypeWrap("Lt", field);
+      if (typeof field === "number") return dtypeWrap("Lt", field);
+      return wraps("lt", field);
     },
     lessThan(field) {
-      return dtypeWrap("Lt", field);
+      if (typeof field === "number") return dtypeWrap("Lt", field);
+      return wraps("lt", field);
     },
     ltEq(field) {
-      return dtypeWrap("LtEq", field);
+      if (typeof field === "number") return dtypeWrap("LtEq", field);
+      return wraps("ltEq", field);
     },
     lessThanEquals(field) {
-      return dtypeWrap("LtEq", field);
+      if (typeof field === "number") return dtypeWrap("LtEq", field);
+      return wraps("ltEq", field);
     },
     limit(n = 10) {
       return wrap("limit", n);
@@ -1558,16 +1565,19 @@ export function _Series(_s: any): Series {
       return wrap("mode");
     },
     minus(other) {
-      return dtypeWrap("Sub", other);
+      if (typeof other === "number") return dtypeWrap("Sub", other);
+      return wraps("sub", other);
     },
     mul(other) {
-      return dtypeWrap("Mul", other);
+      if (typeof other === "number") return dtypeWrap("Mul", other);
+      return wraps("mul", other);
     },
     nChunks() {
       return _s.nChunks();
     },
     neq(other) {
-      return dtypeWrap("Neq", other);
+      if (typeof other === "number") return dtypeWrap("Neq", other);
+      return wraps("neq", other);
     },
     notEquals(other) {
       return this.neq(other);
@@ -1585,7 +1595,8 @@ export function _Series(_s: any): Series {
       return expr_op("peakMin");
     },
     plus(other) {
-      return dtypeWrap("Add", other);
+      if (typeof other === "number") return dtypeWrap("Add", other);
+      return wraps("add", other);
     },
     quantile(quantile, interpolation = "nearest") {
       return _s.quantile(quantile, interpolation);
