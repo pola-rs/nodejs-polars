@@ -1,12 +1,12 @@
-import * as series from "./series";
 import * as df from "./dataframe";
 import { DataType, Field as _field } from "./datatypes";
+import * as series from "./series";
 export { DataType } from "./datatypes";
-import * as func from "./functions";
-import * as io from "./io";
 import * as cfg from "./cfg";
-import * as ldf from "./lazy/dataframe";
+import * as func from "./functions";
 import pli from "./internals/polars_internal";
+import * as io from "./io";
+import * as ldf from "./lazy/dataframe";
 export * from "./series";
 export * from "./dataframe";
 export * from "./functions";

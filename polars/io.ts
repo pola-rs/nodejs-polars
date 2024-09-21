@@ -1,11 +1,11 @@
-import type { DataType } from "./datatypes";
-import pli from "./internals/polars_internal";
+import { type Readable, Stream } from "node:stream";
 import { type DataFrame, _DataFrame } from "./dataframe";
-import { isPath } from "./utils";
-import { type LazyDataFrame, _LazyDataFrame } from "./lazy/dataframe";
-import { type Readable, Stream } from "stream";
+import type { DataType } from "./datatypes";
 import { concat } from "./functions";
-import type { ScanParquetOptions, RowCount } from "./types";
+import pli from "./internals/polars_internal";
+import { type LazyDataFrame, _LazyDataFrame } from "./lazy/dataframe";
+import type { RowCount, ScanParquetOptions } from "./types";
+import { isPath } from "./utils";
 
 export interface ReadCsvOptions {
   inferSchemaLength: number | null;

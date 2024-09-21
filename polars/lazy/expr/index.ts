@@ -7,32 +7,32 @@ export type { ExprList as ListNamespace } from "./list";
 export type { ExprDateTime as DatetimeNamespace } from "./datetime";
 export type { ExprStruct as StructNamespace } from "./struct";
 
+import { isRegExp } from "node:util/types";
 import type { DataType } from "../../datatypes";
 import pli from "../../internals/polars_internal";
-import {
-  type ExprOrString,
-  selectionToExprList,
-  INSPECT_SYMBOL,
-  regexToString,
-} from "../../utils";
 import { Series } from "../../series";
 import type {
   Arithmetic,
   Comparison,
   Cumulative,
   Deserialize,
+  EwmOps,
   Rolling,
   Round,
   Sample,
   Serialize,
-  EwmOps,
 } from "../../shared_traits";
 import type {
-  InterpolationMethod,
   FillNullStrategy,
+  InterpolationMethod,
   RankMethod,
 } from "../../types";
-import { isRegExp } from "util/types";
+import {
+  type ExprOrString,
+  INSPECT_SYMBOL,
+  regexToString,
+  selectionToExprList,
+} from "../../utils";
 /**
  * Expressions that can be used in various contexts.
  */

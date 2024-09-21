@@ -1,12 +1,15 @@
-import pli from "../internals/polars_internal";
-import { arrayToJsSeries } from "../internals/construction";
-import { DataType, DTYPE_TO_FFINAME, type Optional } from "../datatypes";
+import type {
+  DTypeToJs,
+  DtypeToJsName,
+  JsToDtype,
+  JsType,
+} from "@polars/datatypes/datatype";
 import { DataFrame, _DataFrame } from "../dataframe";
-import { SeriesStringFunctions, type StringNamespace } from "./string";
-import { type ListNamespace, SeriesListFunctions } from "./list";
-import { SeriesDateFunctions } from "./datetime";
-import { SeriesStructFunctions } from "./struct";
+import { DTYPE_TO_FFINAME, DataType, type Optional } from "../datatypes";
 import { InvalidOperationError } from "../error";
+import { arrayToJsSeries } from "../internals/construction";
+import pli from "../internals/polars_internal";
+import { col } from "../lazy/functions";
 import type {
   Arithmetic,
   Comparison,
@@ -18,14 +21,11 @@ import type {
   Sample,
   Serialize,
 } from "../shared_traits";
-import { col } from "../lazy/functions";
 import type { InterpolationMethod, RankMethod } from "../types";
-import type {
-  DTypeToJs,
-  DtypeToJsName,
-  JsToDtype,
-  JsType,
-} from "@polars/datatypes/datatype";
+import { SeriesDateFunctions } from "./datetime";
+import { type ListNamespace, SeriesListFunctions } from "./list";
+import { SeriesStringFunctions, type StringNamespace } from "./string";
+import { SeriesStructFunctions } from "./struct";
 
 const inspect = Symbol.for("nodejs.util.inspect.custom");
 /**
