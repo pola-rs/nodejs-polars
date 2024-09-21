@@ -430,8 +430,8 @@ describe("series", () => {
     ${numSeries()}  | ${"sort"}            | ${[]}
     ${numSeries()}  | ${"sort"}            | ${[false]}
     ${numSeries()}  | ${"sort"}            | ${[true]}
-    ${numSeries()}  | ${"sort"}            | ${[{ reverse: true }]}
-    ${numSeries()}  | ${"sort"}            | ${[{ reverse: false }]}
+    ${numSeries()}  | ${"sort"}            | ${[{ descending: true }]}
+    ${numSeries()}  | ${"sort"}            | ${[{ descending: false }]}
     ${numSeries()}  | ${"sum"}             | ${[]}
     ${numSeries()}  | ${"tail"}            | ${[]}
     ${numSeries()}  | ${"gather"}          | ${[[1, 2]]}
@@ -462,7 +462,7 @@ describe("series", () => {
     ${"argMax"}          | ${pl.Series([1, 2, 3]).argMax()}                                                       | ${2}
     ${"argMin"}          | ${pl.Series([1, 2, 3]).argMin()}                                                       | ${0}
     ${"argSort"}         | ${pl.Series([3, 2, 1]).argSort()}                                                      | ${pl.Series([2, 1, 0])}
-    ${"argSort"}         | ${pl.Series([null, 3, 2, 1]).argSort({ reverse: true })}                               | ${pl.Series([1, 2, 3, 0])}
+    ${"argSort"}         | ${pl.Series([null, 3, 2, 1]).argSort({ descending: true })}                            | ${pl.Series([1, 2, 3, 0])}
     ${"argTrue"}         | ${pl.Series([true, false]).argTrue()}                                                  | ${pl.Series([0])}
     ${"argUnique"}       | ${pl.Series([1, 1, 2]).argUnique()}                                                    | ${pl.Series([0, 2])}
     ${"cast-Int16"}      | ${pl.Series("", [1, 1, 2]).cast(pl.Int16)}                                             | ${pl.Series("", [1, 1, 2], pl.Int16)}

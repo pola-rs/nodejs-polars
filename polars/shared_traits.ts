@@ -717,8 +717,8 @@ export interface ListFunctions<T> {
    * @param reverse - Sort in reverse order.
    * @category List
    */
-  sort(reverse?: boolean): T;
-  sort(opt: { reverse: boolean }): T;
+  sort(descending?: boolean): T;
+  sort(opt: { descending: boolean }): T;
   /**
    * Sum all elements of the sublists.
    * @category List

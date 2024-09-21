@@ -125,14 +125,18 @@ export interface Series<T extends DataType = any>
    */
   argUnique(): Series<T>;
   /**
-   * Index location of the sorted variant of this Series.
+   * Get the index values that would sort this Series.
    * ___
-   * @param reverse
+   * @param descending - Sort in descending order.
+   * @param nullsLast - Place null values last instead of first.
    * @return {SeriesType} indexes - Indexes that can be used to sort this array.
    */
   argSort(): Series<T>;
-  argSort(reverse: boolean): Series<T>;
-  argSort({ reverse }: { reverse: boolean }): Series<T>;
+  argSort(descending?: boolean, nullsLast?: boolean): Series<T>;
+  argSort({
+    descending,
+    nullsLast,
+  }: { descending?: boolean; nullsLast?: boolean }): Series<T>;
   /**
    * __Rename this Series.__
    *
@@ -713,6 +717,7 @@ export interface Series<T extends DataType = any>
    * Assign ranks to data, dealing with ties appropriately.
    * @param method
    * The method used to assign ranks to tied elements.
+   * @param method: {'average', 'min', 'max', 'dense', 'ordinal', 'random'}
    * The following methods are available: _default is 'average'_
    *
    *  *   __'average'__: The average of the ranks that would have been assigned to
@@ -729,8 +734,9 @@ export interface Series<T extends DataType = any>
    *    the order that the values occur in `a`.
    *  * __'random'__: Like 'ordinal', but the rank for ties is not dependent
    *    on the order that the values occur in `a`.
+   * @param descending - Rank in descending order.
    */
-  rank(method?: RankMethod): Series;
+  rank(method?: RankMethod, descending?: boolean): Series;
   rechunk(): Series;
   rechunk(inPlace: true): Series;
   rechunk(inPlace: false): void;
@@ -1216,23 +1222,23 @@ export function _Series(_s: any): Series {
       return _s.argMin();
     },
     argSort(
-      reverse: any = false,
+      descending: any = false,
       nullsLast = true,
       multithreaded = true,
       maintainOrder = false,
     ) {
-      if (typeof reverse === "boolean") {
+      if (typeof descending === "boolean") {
         return _Series(
-          _s.argsort(reverse, nullsLast, multithreaded, maintainOrder),
+          _s.argsort(descending, nullsLast, multithreaded, maintainOrder),
         );
       }
 
       return _Series(
         _s.argsort(
-          reverse.reverse,
-          reverse.nullsLast ?? nullsLast,
-          reverse.multithreaded ?? multithreaded,
-          reverse.maintainOrder ?? maintainOrder,
+          descending.descending,
+          descending.nullsLast ?? nullsLast,
+          descending.multithreaded ?? multithreaded,
+          descending.maintainOrder ?? maintainOrder,
         ),
       );
     },
@@ -1590,8 +1596,8 @@ export function _Series(_s: any): Series {
     quantile(quantile, interpolation = "nearest") {
       return _s.quantile(quantile, interpolation);
     },
-    rank(method = "average", reverse = false) {
-      return wrap("rank", method, reverse);
+    rank(method = "average", descending = false) {
+      return wrap("rank", method, descending);
     },
     rechunk(inPlace = false) {
       return wrap("rechunk", inPlace);

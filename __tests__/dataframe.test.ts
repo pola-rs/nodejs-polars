@@ -1038,23 +1038,23 @@ describe("dataframe", () => {
     });
     expect(actual).toFrameEqual(expected);
   });
-  test("sort:nulls_last:false", () => {
+  test("sort:nullsLast:false", () => {
     const actual = pl
       .DataFrame({
         foo: [1, null, 2, 3],
       })
-      .sort({ by: "foo", nulls_last: false });
+      .sort({ by: "foo", nullsLast: false });
     const expected = pl.DataFrame({
       foo: [null, 1, 2, 3],
     });
     expect(actual).toFrameEqual(expected);
   });
-  test("sort:nulls_last:true", () => {
+  test("sort:nullsLast:true", () => {
     const actual = pl
       .DataFrame({
         foo: [1, null, 2, 3],
       })
-      .sort({ by: "foo", nulls_last: true });
+      .sort({ by: "foo", nullsLast: true });
     const expected = pl.DataFrame({
       foo: [1, 2, 3, null],
     });

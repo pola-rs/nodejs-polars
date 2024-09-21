@@ -87,7 +87,7 @@ export interface Expr
     ...         "value": [94, 95, 96, 97, 97, 99],
     ...     }
     ... )
-    >>> df.group_by("group", maintain_order=True).agg(pl.col("value").aggGroups())
+    >>> df.group_by("group", maintainOrder=True).agg(pl.col("value").aggGroups())
     shape: (2, 2)
     ┌───────┬───────────┐
     │ group ┆ value     │
@@ -257,16 +257,16 @@ export interface Expr
   argMin(): Expr;
   /**
    * Get the index values that would sort this column.
-   * @param reverse
+   * @param descending
    *     - false -> order from small to large.
    *     - true -> order from large to small.
    * @returns UInt32 Series
    */
-  argSort(reverse?: boolean, maintain_order?: boolean): Expr;
+  argSort(descending?: boolean, maintainOrder?: boolean): Expr;
   argSort({
-    reverse,
-    maintain_order,
-  }: { reverse?: boolean; maintain_order?: boolean }): Expr;
+    descending,
+    maintainOrder,
+  }: { descending?: boolean; maintainOrder?: boolean }): Expr;
   /** Get index of first unique value. */
   argUnique(): Expr;
   /** @see {@link Expr.alias} */
@@ -730,9 +730,13 @@ export interface Expr
   prefix(prefix: string): Expr;
   /** Get quantile value. */
   quantile(quantile: number | Expr): Expr;
-  /** Assign ranks to data, dealing with ties appropriately. */
-  rank(method?: RankMethod): Expr;
-  rank({ method }: { method: string }): Expr;
+  /**
+   * Assign ranks to data, dealing with ties appropriately.
+   * @param - method : {'average', 'min', 'max', 'dense', 'ordinal', 'random'}
+   * @param - descending - Rank in descending order.
+   * */
+  rank(method?: RankMethod, descending?: boolean): Expr;
+  rank({ method, descending }: { method: string; descending: boolean }): Expr;
   reinterpret(signed?: boolean): Expr;
   reinterpret({ signed }: { signed: boolean }): Expr;
   /**
@@ -1030,16 +1034,16 @@ export interface Expr
   }: { offset: number | Expr; length: number | Expr }): Expr;
   /**
    * Sort this column. In projection/ selection context the whole column is sorted.
-   * @param reverse
+   * @param descending
    * * false -> order from small to large.
    * * true -> order from large to small.
    * @param nullsLast If true nulls are considered to be larger than any valid value
    */
-  sort(reverse?: boolean, nullsLast?: boolean): Expr;
+  sort(descending?: boolean, nullsLast?: boolean): Expr;
   sort({
-    reverse,
+    descending,
     nullsLast,
-  }: { reverse?: boolean; nullsLast?: boolean }): Expr;
+  }: { descending?: boolean; nullsLast?: boolean }): Expr;
   /**
    * Sort this column by the ordering of another column, or multiple other columns.
       In projection/ selection context the whole column is sorted.
@@ -1048,17 +1052,17 @@ export interface Expr
       Parameters
       ----------
       @param by The column(s) used for sorting.
-      @param reverse
+      @param descending
           false -> order from small to large.
           true -> order from large to small.
    */
   sortBy(
     by: ExprOrString[] | ExprOrString,
-    reverse?: boolean | boolean[],
+    descending?: boolean | boolean[],
   ): Expr;
   sortBy(options: {
     by: ExprOrString[] | ExprOrString;
-    reverse?: boolean | boolean[];
+    descending?: boolean | boolean[];
   }): Expr;
   /** Get standard deviation. */
   std(): Expr;
@@ -1230,10 +1234,10 @@ export const _Expr = (_expr: any): Expr => {
     argMin() {
       return _Expr(_expr.argMin());
     },
-    argSort(reverse: any = false, maintain_order?: boolean) {
-      reverse = reverse?.reverse ?? reverse;
-      maintain_order = reverse?.maintain_order ?? maintain_order;
-      return _Expr(_expr.argSort(reverse, false, false, maintain_order));
+    argSort(descending: any = false, maintainOrder?: boolean) {
+      descending = descending?.descending ?? descending;
+      maintainOrder = descending?.maintainOrder ?? maintainOrder;
+      return _Expr(_expr.argSort(descending, false, false, maintainOrder));
     },
     argUnique() {
       return _Expr(_expr.argUnique());
@@ -1621,9 +1625,9 @@ export const _Expr = (_expr: any): Expr => {
 
       return _Expr(_expr.quantile(quantile, interpolation));
     },
-    rank(method: any = "average", reverse = false) {
+    rank(method: any = "average", descending = false) {
       return _Expr(
-        _expr.rank(method?.method ?? method, method?.reverse ?? reverse),
+        _expr.rank(method?.method ?? method, method?.descending ?? descending),
       );
     },
     reinterpret(signed: any = true) {
@@ -1767,28 +1771,30 @@ export const _Expr = (_expr: any): Expr => {
 
       return wrap("slice", pli.lit(arg.offset), pli.lit(arg.length));
     },
-    sort(reverse: any = false, nullsLast = false, maintain_order = false) {
-      if (typeof reverse === "boolean") {
-        return wrap("sortWith", reverse, nullsLast, false, maintain_order);
+    sort(descending: any = false, nullsLast = false, maintainOrder = false) {
+      if (typeof descending === "boolean") {
+        return wrap("sortWith", descending, nullsLast, false, maintainOrder);
       }
 
       return wrap(
         "sortWith",
-        reverse?.reverse ?? false,
-        reverse?.nullsLast ?? nullsLast,
+        descending?.descending ?? false,
+        descending?.nullsLast ?? nullsLast,
         false,
-        reverse?.maintain_order ?? maintain_order,
+        descending?.maintainOrder ?? maintainOrder,
       );
     },
-    sortBy(arg, reverse = false) {
+    sortBy(arg, descending = false) {
       if (arg?.by !== undefined) {
-        return this.sortBy(arg.by, arg.reverse);
+        return this.sortBy(arg.by, arg.descending);
       }
 
-      reverse = Array.isArray(reverse) ? reverse.flat() : ([reverse] as any);
+      descending = Array.isArray(descending)
+        ? descending.flat()
+        : ([descending] as any);
       const by = selectionToExprList(arg, false);
 
-      return wrap("sortBy", by, reverse);
+      return wrap("sortBy", by, descending);
     },
     std() {
       return _Expr(_expr.std());
