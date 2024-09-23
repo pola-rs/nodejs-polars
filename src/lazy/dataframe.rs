@@ -779,7 +779,7 @@ pub fn scan_parquet(path: String, options: ScanParquetOptions) -> napi::Result<J
         use_statistics,
         hive_options,
         glob,
-        include_file_paths: include_file_paths.map(Arc::from),
+        include_file_paths: include_file_paths.map(PlSmallStr::from),
     };
     let lf = LazyFrame::scan_parquet(path, args).map_err(JsPolarsErr::from)?;
     Ok(lf.into())
