@@ -1,11 +1,11 @@
+import { DataFrame, _DataFrame } from "../dataframe";
+import { DTYPE_TO_FFINAME, DataType, type Optional } from "../datatypes";
 import type {
   DTypeToJs,
   DtypeToJsName,
   JsToDtype,
   JsType,
 } from "../datatypes/datatype";
-import { DataFrame, _DataFrame } from "../dataframe";
-import { DTYPE_TO_FFINAME, DataType, type Optional } from "../datatypes";
 import { InvalidOperationError } from "../error";
 import { arrayToJsSeries } from "../internals/construction";
 import pli from "../internals/polars_internal";
