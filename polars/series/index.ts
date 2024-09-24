@@ -3,7 +3,7 @@ import type {
   DtypeToJsName,
   JsToDtype,
   JsType,
-} from "@polars/datatypes/datatype";
+} from "../datatypes/datatype";
 import { DataFrame, _DataFrame } from "../dataframe";
 import { DTYPE_TO_FFINAME, DataType, type Optional } from "../datatypes";
 import { InvalidOperationError } from "../error";
