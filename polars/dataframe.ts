@@ -1358,6 +1358,7 @@ export interface DataFrame
    * Sort the DataFrame by column.
    * ___
    * @param by - Column(s) to sort by. Accepts expression input, including selectors. Strings are parsed as column names.
+   * @deprecated *since 0.16.0* @use descending
    * @param reverse - Reverse/descending sort.
    * @param descending - Sort in descending order. When sorting by multiple columns, can be specified per column by passing a sequence of booleans.
    * @param nullsLast - Place null values last; can specify a single boolean applying to all columns or a sequence of booleans for per-column control.
@@ -1369,6 +1370,16 @@ export interface DataFrame
     nullsLast?: boolean,
     maintainOrder?: boolean,
   ): DataFrame;
+  sort({
+    by,
+    reverse, // deprecated
+    maintainOrder,
+  }: {
+    by: ColumnsOrExpr;
+    reverse?: boolean; // deprecated
+    nullsLast?: boolean;
+    maintainOrder?: boolean;
+  }): DataFrame;
   sort({
     by,
     descending,
@@ -2363,7 +2374,7 @@ export const _DataFrame = (_df: any): DataFrame => {
       if (arg?.by !== undefined) {
         return this.sort(
           arg.by,
-          arg.descending,
+          arg.descending ?? arg.reverse ?? false,
           arg.nullsLast,
           arg.maintainOrder,
         );

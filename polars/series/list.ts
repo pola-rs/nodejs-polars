@@ -80,7 +80,7 @@ export const SeriesListFunctions = (_s): ListFunctions<Series> => {
     sort(descending: any = false) {
       return typeof descending === "boolean"
         ? wrap("sort", descending)
-        : wrap("sort", descending.descending);
+        : wrap("sort", descending.descending ?? descending.reverse ?? false);
     },
     sum() {
       return wrap("sum");

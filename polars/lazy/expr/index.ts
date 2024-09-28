@@ -257,12 +257,18 @@ export interface Expr
   argMin(): Expr;
   /**
    * Get the index values that would sort this column.
+   * @deprecated *since 0.16.0* @use descending
+   * @param reverse - Reverse/descending sort.
    * @param descending
    *     - false -> order from small to large.
    *     - true -> order from large to small.
    * @returns UInt32 Series
    */
   argSort(descending?: boolean, maintainOrder?: boolean): Expr;
+  argSort({
+    reverse, // deprecated
+    maintainOrder,
+  }: { reverse?: boolean; maintainOrder?: boolean }): Expr;
   argSort({
     descending,
     maintainOrder,
@@ -1034,6 +1040,8 @@ export interface Expr
   }: { offset: number | Expr; length: number | Expr }): Expr;
   /**
    * Sort this column. In projection/ selection context the whole column is sorted.
+   * @deprecated *since 0.16.0* @use descending
+   * @param reverse - Reverse/descending sort.
    * @param descending
    * * false -> order from small to large.
    * * true -> order from large to small.
@@ -1044,6 +1052,10 @@ export interface Expr
     descending,
     nullsLast,
   }: { descending?: boolean; nullsLast?: boolean }): Expr;
+  sort({
+    reverse, // deprecated
+    nullsLast,
+  }: { reverse?: boolean; nullsLast?: boolean }): Expr;
   /**
    * Sort this column by the ordering of another column, or multiple other columns.
       In projection/ selection context the whole column is sorted.
@@ -1052,6 +1064,8 @@ export interface Expr
       Parameters
       ----------
       @param by The column(s) used for sorting.
+      @deprecated *since 0.16.0* @use descending
+      @param reverse - Reverse/descending sort.
       @param descending
           false -> order from small to large.
           true -> order from large to small.
@@ -1063,6 +1077,10 @@ export interface Expr
   sortBy(options: {
     by: ExprOrString[] | ExprOrString;
     descending?: boolean | boolean[];
+  }): Expr;
+  sortBy(options: {
+    by: ExprOrString[] | ExprOrString;
+    reverse?: boolean | boolean[];
   }): Expr;
   /** Get standard deviation. */
   std(): Expr;
@@ -1235,7 +1253,7 @@ export const _Expr = (_expr: any): Expr => {
       return _Expr(_expr.argMin());
     },
     argSort(descending: any = false, maintainOrder?: boolean) {
-      descending = descending?.descending ?? descending;
+      descending = descending?.descending ?? descending?.reverse ?? descending;
       maintainOrder = descending?.maintainOrder ?? maintainOrder;
       return _Expr(_expr.argSort(descending, false, false, maintainOrder));
     },
@@ -1778,7 +1796,7 @@ export const _Expr = (_expr: any): Expr => {
 
       return wrap(
         "sortWith",
-        descending?.descending ?? false,
+        descending?.descending ?? descending?.reverse ?? false,
         descending?.nullsLast ?? nullsLast,
         false,
         descending?.maintainOrder ?? maintainOrder,
@@ -1786,7 +1804,7 @@ export const _Expr = (_expr: any): Expr => {
     },
     sortBy(arg, descending = false) {
       if (arg?.by !== undefined) {
-        return this.sortBy(arg.by, arg.descending);
+        return this.sortBy(arg.by, arg.descending ?? arg.reverse ?? false);
       }
 
       descending = Array.isArray(descending)

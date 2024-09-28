@@ -127,6 +127,8 @@ export interface Series<T extends DataType = any>
   /**
    * Get the index values that would sort this Series.
    * ___
+   * @deprecated *since 0.16.0* @use descending
+   * @param reverse - Reverse/descending sort.
    * @param descending - Sort in descending order.
    * @param nullsLast - Place null values last instead of first.
    * @return {SeriesType} indexes - Indexes that can be used to sort this array.
@@ -137,6 +139,10 @@ export interface Series<T extends DataType = any>
     descending,
     nullsLast,
   }: { descending?: boolean; nullsLast?: boolean }): Series<T>;
+  argSort({
+    reverse, // deprecated
+    nullsLast,
+  }: { reverse?: boolean; nullsLast?: boolean }): Series<T>;
   /**
    * __Rename this Series.__
    *
@@ -877,6 +883,8 @@ export interface Series<T extends DataType = any>
   slice(start: number, length?: number): Series;
   /**
    * __Sort this Series.__
+   * @deprecated *since 0.16.0* @use descending
+   * @param reverse - Reverse/descending sort.
    * @param descending - Sort in descending order.
    * @param nullsLast - Place nulls at the end.
    * @example
@@ -904,6 +912,7 @@ export interface Series<T extends DataType = any>
    */
   sort(): Series;
   sort(options: { descending?: boolean; nullsLast?: boolean }): Series;
+  sort(options: { reverse?: boolean; nullsLast?: boolean }): Series;
   /**
    * Reduce this Series to the sum value.
    * @example
@@ -1235,7 +1244,7 @@ export function _Series(_s: any): Series {
 
       return _Series(
         _s.argsort(
-          descending.descending,
+          descending.descending ?? descending.reverse ?? false,
           descending.nullsLast ?? nullsLast,
           descending.multithreaded ?? multithreaded,
           descending.maintainOrder ?? maintainOrder,
@@ -1747,7 +1756,11 @@ export function _Series(_s: any): Series {
     },
     sort(options?) {
       options = { descending: false, nullsLast: false, ...(options ?? {}) };
-      return wrap("sort", options.descending, options.nullsLast);
+      return wrap(
+        "sort",
+        options.descending ?? options.reverse ?? false,
+        options.nullsLast,
+      );
     },
     sub(field) {
       return dtypeWrap("Sub", field);

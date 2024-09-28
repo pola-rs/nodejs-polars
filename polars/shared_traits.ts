@@ -714,11 +714,14 @@ export interface ListFunctions<T> {
   slice(offset: number, length: number): T;
   /**
    * Sort the sublists.
-   * @param reverse - Sort in reverse order.
+   * @deprecated *since 0.16.0* @use descending
+   * @param reverse - Reverse/descending sort.
+   * @param descending - Sort in reverse order.
    * @category List
    */
   sort(descending?: boolean): T;
   sort(opt: { descending: boolean }): T;
+  sort(opt: { reverse: boolean }): T;
   /**
    * Sum all elements of the sublists.
    * @category List

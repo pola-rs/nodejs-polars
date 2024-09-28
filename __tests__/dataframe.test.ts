@@ -1009,7 +1009,7 @@ describe("dataframe", () => {
     expect(actual).toFrameEqual(expected);
   });
   test("sort:named", () => {
-    const actual = pl
+    let actual = pl
       .DataFrame({
         foo: [1, 2, 3, 1],
         bar: [6, 7, 8, 1],
@@ -1019,6 +1019,13 @@ describe("dataframe", () => {
       foo: [3, 2, 1, 1],
       bar: [8, 7, 6, 1],
     });
+    expect(actual).toFrameEqual(expected);
+    actual = pl
+      .DataFrame({
+        foo: [1, 2, 3, 1],
+        bar: [6, 7, 8, 1],
+      })
+      .sort({ by: "bar", reverse: true }); // deprecated
     expect(actual).toFrameEqual(expected);
   });
   test("sort:multi-args", () => {

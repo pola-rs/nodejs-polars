@@ -75,6 +75,7 @@ describe("expr", () => {
     ${undefined}            | ${[1, 0, 3, 2]}
     ${true}                 | ${[2, 3, 0, 1]}
     ${{ descending: true }} | ${[2, 3, 0, 1]}
+    ${{ reverse: true }}    | ${[2, 3, 0, 1]}
   `("argSort", ({ args, expectedSort }) => {
     const df = pl.DataFrame({ a: [1, 0, 2, 1.5] });
     const expected = pl.DataFrame({ argSort: expectedSort });
