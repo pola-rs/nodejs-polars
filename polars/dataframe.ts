@@ -931,7 +931,7 @@ export interface DataFrame
    */
   melt(idVars: ColumnSelection, valueVars: ColumnSelection): DataFrame;
   /**
-   * Unpivot DataFrame to long format.
+   * Unpivot a DataFrame from wide to long format.
    * ___
    *
    * @param idVars - Columns to use as identifier variables.
@@ -1029,9 +1029,15 @@ export interface DataFrame
   /**
    *   Create a spreadsheet-style pivot table as a DataFrame.
    *
-   *   @param values Column values to aggregate. Can be multiple columns if the *columns* arguments contains multiple columns as well
-   *   @param options.index One or multiple keys to group by
-   *   @param options.columns Columns whose values will be used as the header of the output DataFrame
+   *   @param values The existing column(s) of values which will be moved under the new columns from index. If an
+   *                  aggregation is specified, these are the values on which the aggregation will be computed.
+   *                  If None, all remaining columns not specified on `on` and `index` will be used.
+   *                  At least one of `index` and `values` must be specified.
+   *   @param options.index The column(s) that remain from the input to the output. The output DataFrame will have one row
+   *                        for each unique combination of the `index`'s values.
+   *                        If None, all remaining columns not specified on `on` and `values` will be used. At least one
+   *                        of `index` and `values` must be specified.
+   *   @param options.on The column(s) whose values will be used as the new columns of the output DataFrame.
    *   @param options.aggregateFunc
    *       Any of:
    *       - "sum"
@@ -1055,7 +1061,7 @@ export interface DataFrame
    *   ...         "baz": [1, 2, 3, 4, 5, 6],
    *   ...     }
    *   ... );
-   *   > df.pivot("baz", {index:"foo", columns:"bar"});
+   *   > df.pivot("baz", {index:"foo", on:"bar"});
    *   shape: (2, 4)
    *   ┌─────┬─────┬─────┬─────┐
    *   │ foo ┆ A   ┆ B   ┆ C   │

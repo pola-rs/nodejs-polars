@@ -25,7 +25,7 @@ import type {
   DtypeToJsName,
   JsToDtype,
   JsType,
-} from "@polars/datatypes/datatype";
+} from "../datatypes/datatype";
 
 const inspect = Symbol.for("nodejs.util.inspect.custom");
 /**
