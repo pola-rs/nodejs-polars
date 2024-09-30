@@ -1,8 +1,8 @@
+import util from "node:util";
 import { type DataFrame, _DataFrame } from "./dataframe";
-import * as utils from "./utils";
-import util from "util";
 import type { Expr } from "./lazy/expr";
 import { col, exclude } from "./lazy/functions";
+import * as utils from "./utils";
 import type { ColumnsOrExpr, StartBy } from "./utils";
 
 const inspect = Symbol.for("nodejs.util.inspect.custom");

@@ -1,9 +1,9 @@
-import { Expr, exprToLitOrExpr } from "./lazy/expr";
-import { Series } from "./series";
+import path from "node:path";
+import { isExternal, isRegExp } from "node:util/types";
 import { DataFrame } from "./dataframe";
 import { LazyDataFrame } from "./lazy/dataframe";
-import path from "path";
-import { isExternal, isRegExp } from "util/types";
+import { Expr, exprToLitOrExpr } from "./lazy/expr";
+import { Series } from "./series";
 /** @ignore */
 export type ValueOrArray<T> = T | Array<ValueOrArray<T>>;
 /** @ignore */

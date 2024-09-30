@@ -1,7 +1,7 @@
+import fs from "node:fs";
+import { Stream } from "node:stream";
 /* eslint-disable newline-per-chained-call */
 import pl from "@polars";
-import { Stream } from "stream";
-import fs from "fs";
 describe("dataframe", () => {
   const df = pl.DataFrame([
     pl.Series("foo", [1, 2, 9], pl.Int16),
@@ -338,24 +338,30 @@ describe("dataframe", () => {
     const actual = df.fold((a, b) => a.concat(b));
     expect(actual).toSeriesEqual(expected);
   });
-  // test("fold", () => {
-  //   const s1 = pl.Series([1, 2, 3]);
-  //   const s2 = pl.Series([4, 5, 6]);
-  //   const s3 = pl.Series([7, 8, 1]);
-  //   const expected = pl.Series("foo", [true, true, false]);
-  //   const df = pl.DataFrame([s1, s2, s3]);
-  //   const actual = df.fold((a, b) => a.lessThan(b)).alias("foo");
-  //   expect(actual).toSeriesEqual(expected);
-  // });
-  // test("fold-again", () => {
-  //   const s1 = pl.Series([1, 2, 3]);
-  //   const s2 = pl.Series([4, 5, 6]);
-  //   const s3 = pl.Series([7, 8, 1]);
-  //   const expected = pl.Series("foo", [12, 15, 10]);
-  //   const df = pl.DataFrame([s1, s2, s3]);
-  //   const actual = df.fold((a, b) => a.plus(b)).alias("foo");
-  //   expect(actual).toSeriesEqual(expected);
-  // });
+  it.each`
+    name                     | actual                                                 | expected
+    ${"fold:lessThan"}       | ${df.fold((a, b) => a.lessThan(b)).alias("foo")}       | ${pl.Series("foo", [true, false, false])}
+    ${"fold:lt"}             | ${df.fold((a, b) => a.lt(b)).alias("foo")}             | ${pl.Series("foo", [true, false, false])}
+    ${"fold:lessThanEquals"} | ${df.fold((a, b) => a.lessThanEquals(b)).alias("foo")} | ${pl.Series("foo", [true, true, false])}
+    ${"fold:ltEq"}           | ${df.fold((a, b) => a.ltEq(b)).alias("foo")}           | ${pl.Series("foo", [true, true, false])}
+    ${"fold:neq"}            | ${df.fold((a, b) => a.neq(b)).alias("foo")}            | ${pl.Series("foo", [true, false, true])}
+    ${"fold:plus"}           | ${df.fold((a, b) => a.plus(b)).alias("foo")}           | ${pl.Series("foo", [7, 4, 17])}
+    ${"fold:minus"}          | ${df.fold((a, b) => a.minus(b)).alias("foo")}          | ${pl.Series("foo", [-5, 0, 1])}
+    ${"fold:mul"}            | ${df.fold((a, b) => a.mul(b)).alias("foo")}            | ${pl.Series("foo", [6, 4, 72])}
+  `("$# $name expected matches actual", ({ expected, actual }) => {
+    expect(expected).toSeriesEqual(actual);
+  });
+  test("fold:lt", () => {
+    const s1 = pl.Series([1, 2, 3]);
+    const s2 = pl.Series([4, 5, 6]);
+    const s3 = pl.Series([7, 8, 1]);
+    const df = pl.DataFrame([s1, s2, s3]);
+    const expected = pl.Series("foo", [true, true, false]);
+    let actual = df.fold((a, b) => a.lessThan(b)).alias("foo");
+    expect(actual).toSeriesEqual(expected);
+    actual = df.fold((a, b) => a.lt(b)).alias("foo");
+    expect(actual).toSeriesEqual(expected);
+  });
   test("frameEqual:true", () => {
     const df = pl.DataFrame({
       foo: [1, 2, 3],

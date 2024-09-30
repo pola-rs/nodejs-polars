@@ -1,7 +1,7 @@
-import { Expr, _Expr, exprToLitOrExpr } from "../expr";
-import type { ListFunctions } from "../../shared_traits";
-import { Series } from "../../series";
 import pli from "../../internals/polars_internal";
+import { Series } from "../../series";
+import type { ListFunctions } from "../../shared_traits";
+import { Expr, _Expr, exprToLitOrExpr } from "../expr";
 import { concatList } from "../functions";
 
 /**
