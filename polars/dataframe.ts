@@ -1,16 +1,16 @@
-import pli from "./internals/polars_internal";
-import { arrayToJsDataFrame } from "./internals/construction";
+import { Stream, Writable } from "node:stream";
+import { concat } from "./functions";
 import {
-  _GroupBy,
   DynamicGroupBy,
   type GroupBy,
   RollingGroupBy,
+  _GroupBy,
 } from "./groupby";
-import { _LazyDataFrame, type LazyDataFrame } from "./lazy/dataframe";
-import { concat } from "./functions";
+import { arrayToJsDataFrame } from "./internals/construction";
+import pli from "./internals/polars_internal";
+import { type LazyDataFrame, _LazyDataFrame } from "./lazy/dataframe";
 import { Expr } from "./lazy/expr";
-import { _Series, Series } from "./series";
-import { Stream, Writable } from "stream";
+import { Series, _Series } from "./series";
 import type {
   FillNullStrategy,
   JoinOptions,
@@ -23,13 +23,13 @@ import type {
 import { DataType } from "./datatypes";
 
 import {
-  columnOrColumns,
-  columnOrColumnsStrict,
   type ColumnSelection,
   type ColumnsOrExpr,
   type ExprOrString,
-  isSeriesArray,
   type ValueOrArray,
+  columnOrColumns,
+  columnOrColumnsStrict,
+  isSeriesArray,
 } from "./utils";
 
 import type {

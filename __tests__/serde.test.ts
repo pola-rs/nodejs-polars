@@ -1,5 +1,5 @@
+import path from "node:path";
 import pl from "@polars";
-import path from "path";
 // eslint-disable-next-line no-undef
 const csvpath = path.resolve(__dirname, "./examples/datasets/foods1.csv");
 describe("serde", () => {

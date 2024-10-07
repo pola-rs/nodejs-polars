@@ -1,10 +1,10 @@
-import pli from "./polars_internal";
-import { DataType, polarsTypeToConstructor } from "../datatypes";
-import { isTypedArray } from "util/types";
-import { Series } from "../series";
+import { isTypedArray } from "node:util/types";
 import { _DataFrame } from "../dataframe";
+import { DataType, polarsTypeToConstructor } from "../datatypes";
 import { FixedSizeList, TimeUnit } from "../datatypes/datatype";
 import { Field } from "../datatypes/field";
+import { Series } from "../series";
+import pli from "./polars_internal";
 
 export const jsTypeToPolarsType = (value: unknown): DataType => {
   if (value === null) {

@@ -1,11 +1,11 @@
+import { type DataFrame, _DataFrame } from "./dataframe";
 /* eslint-disable no-redeclare */
 import { jsTypeToPolarsType } from "./internals/construction";
-import { type Series, _Series } from "./series";
-import { type DataFrame, _DataFrame } from "./dataframe";
-import { type LazyDataFrame, _LazyDataFrame } from "./lazy/dataframe";
 import pli from "./internals/polars_internal";
-import { isDataFrameArray, isLazyDataFrameArray, isSeriesArray } from "./utils";
+import { type LazyDataFrame, _LazyDataFrame } from "./lazy/dataframe";
+import { type Series, _Series } from "./series";
 import type { ConcatOptions } from "./types";
+import { isDataFrameArray, isLazyDataFrameArray, isSeriesArray } from "./utils";
 
 /**
  * _Repeat a single value n times and collect into a Series._
