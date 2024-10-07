@@ -27,6 +27,7 @@ thiserror = "1"
 smartstring = { version = "1" }
 serde_json = { version = "1" }
 either = "1.13.0"
+hashbrown = {version = "=0.14.5", features = ["raw"]}
 
 [dependencies.polars]
 features = [
