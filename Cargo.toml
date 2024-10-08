@@ -1,6 +1,6 @@
 [package]
 name = "nodejs-polars"
-version = "0.15.0"
+version = "0.16.0"
 authors = ["Cory Grinstead"]
 documentation = "https://pola-rs.github.io/polars-book/"
 edition = "2021"
@@ -27,6 +27,7 @@ thiserror = "1"
 smartstring = { version = "1" }
 serde_json = { version = "1" }
 either = "1.13.0"
+hashbrown = {version = "=0.14.5", features = ["raw"]}
 
 [dependencies.polars]
 features = [
