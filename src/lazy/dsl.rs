@@ -1357,13 +1357,13 @@ impl JsExpr {
             .into()
     }
     #[napi(catch_unwind)]
-    pub fn rank(&self, method: Wrap<RankMethod>, reverse: bool, seed: Option<Wrap<u64>>) -> JsExpr {
+    pub fn rank(&self, method: Wrap<RankMethod>, descending: bool, seed: Option<Wrap<u64>>) -> JsExpr {
         // Safety:
         // Wrap is transparent.
         let seed: Option<u64> = unsafe { std::mem::transmute(seed) };
         let options = RankOptions {
             method: method.0,
-            descending: reverse,
+            descending,
         };
         self.inner.clone().rank(options, seed).into()
     }

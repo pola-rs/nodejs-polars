@@ -42,7 +42,7 @@ const pl = require('nodejs-polars');
 // a lot operations support both positional and named arguments
 // you can see the full specs in the docs or the type definitions
 > fooSeries.sort(true)
-> fooSeries.sort({reverse: true})
+> fooSeries.sort({descending: true})
 shape: (3,)
 Series: 'foo' [f64]
 [

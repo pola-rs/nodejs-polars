@@ -1011,7 +1011,7 @@ describe("lazyframe", () => {
         foo: [1, null, 2, 3],
       })
       .lazy()
-      .sort({ by: "foo", nulls_last: false })
+      .sort({ by: "foo", nullsLast: false })
       .collectSync();
     const expected = pl.DataFrame({
       foo: [null, 1, 2, 3],
@@ -1024,7 +1024,7 @@ describe("lazyframe", () => {
         foo: [1, null, 2, 3],
       })
       .lazy()
-      .sort({ by: "foo", nulls_last: true })
+      .sort({ by: "foo", nullsLast: true })
       .collectSync();
     const expected = pl.DataFrame({
       foo: [1, 2, 3, null],

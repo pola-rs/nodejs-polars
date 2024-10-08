@@ -110,10 +110,10 @@ export const ExprListFunctions = (_expr: any): ExprList => {
         exprToLitOrExpr(length)._expr,
       );
     },
-    sort(reverse: any = false) {
-      return typeof reverse === "boolean"
-        ? wrap("listSort", reverse)
-        : wrap("listSort", reverse.reverse);
+    sort(descending: any = false) {
+      return typeof descending === "boolean"
+        ? wrap("listSort", descending)
+        : wrap("listSort", descending.descending);
     },
     sum() {
       return wrap("listSum");

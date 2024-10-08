@@ -526,14 +526,14 @@ impl JsSeries {
     #[napi]
     pub fn argsort(
         &self,
-        reverse: bool,
+        descending: bool,
         nulls_last: bool,
         multithreaded: bool,
         maintain_order: bool,
     ) -> JsSeries {
         self.series
             .arg_sort(SortOptions {
-                descending: reverse,
+                descending,
                 nulls_last,
                 multithreaded,
                 maintain_order,
