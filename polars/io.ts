@@ -325,7 +325,7 @@ export function readJSON(
   options = { ...readJsonDefaultOptions, ...options };
   const method = options.format === "lines" ? pli.readJsonLines : pli.readJson;
   const extensions = [".ndjson", ".json", ".jsonl"];
-  
+
   // Handle If set to `null` case
   options.inferSchemaLength = options.inferSchemaLength ?? 0;
 
