@@ -24,7 +24,7 @@ describe("read:csv", () => {
     expect(df.shape).toEqual({ height: 27, width: 4 });
   });
   it("can read from a csv file with inferSchemaLength = 0 option", () => {
-    const df = pl.readCSV(csvpath, { inferSchemaLength: 0 });
+    let df = pl.readCSV(csvpath, { inferSchemaLength: 0 });
     const expected = `shape: (1, 4)
 ┌────────────┬──────────┬────────┬──────────┐
 │ category   ┆ calories ┆ fats_g ┆ sugars_g │
@@ -33,6 +33,8 @@ describe("read:csv", () => {
 ╞════════════╪══════════╪════════╪══════════╡
 │ vegetables ┆ 45       ┆ 0.5    ┆ 2        │
 └────────────┴──────────┴────────┴──────────┘`;
+    expect(df.head(1).toString()).toEqual(expected);
+    df = pl.readCSV(csvpath, { inferSchemaLength: null });
     expect(df.head(1).toString()).toEqual(expected);
   });
   it("can read from a csv file with options", () => {
@@ -154,7 +156,11 @@ describe("read:json", () => {
     expect(df.shape).toEqual({ height: 27, width: 4 });
   });
   it("can specify read options", () => {
-    const df = pl.readJSON(jsonpath, { batchSize: 10, inferSchemaLength: 100 });
+    let df = pl.readJSON(jsonpath, { batchSize: 10, inferSchemaLength: 100 });
+    expect(df.shape).toEqual({ height: 27, width: 4 });
+    df = pl.readJSON(jsonpath, { batchSize: 10, inferSchemaLength: null });
+    expect(df.shape).toEqual({ height: 27, width: 4 });
+    df = pl.readJSON(jsonpath, { batchSize: 10, inferSchemaLength: 0 });
     expect(df.shape).toEqual({ height: 27, width: 4 });
   });
   it("can read from a json buffer", () => {
