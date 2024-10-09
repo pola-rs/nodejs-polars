@@ -186,6 +186,9 @@ export function readCSV(pathOrBody, options?) {
   options = { ...readCsvDefaultOptions, ...options };
   const extensions = [".tsv", ".csv"];
 
+  // Handle If set to `null` case
+  options.inferSchemaLength = options.inferSchemaLength ?? 0;
+
   if (Buffer.isBuffer(pathOrBody)) {
     return _DataFrame(pli.readCsv(pathOrBody, options));
   }
@@ -275,6 +278,8 @@ export function scanCSV(
 export function scanCSV(path, options?) {
   options = { ...scanCsvDefaultOptions, ...options };
 
+  // Handle If set to `null` case
+  options.inferSchemaLength = options.inferSchemaLength ?? 0;
   return _LazyDataFrame(pli.scanCsv(path, options));
 }
 /**
@@ -320,6 +325,10 @@ export function readJSON(
   options = { ...readJsonDefaultOptions, ...options };
   const method = options.format === "lines" ? pli.readJsonLines : pli.readJson;
   const extensions = [".ndjson", ".json", ".jsonl"];
+  
+  // Handle If set to `null` case
+  options.inferSchemaLength = options.inferSchemaLength ?? 0;
+
   if (Buffer.isBuffer(pathOrBody)) {
     return _DataFrame(pli.readJson(pathOrBody, options));
   }
@@ -382,6 +391,8 @@ export function scanJson(
 export function scanJson(path: string, options?: Partial<ScanJsonOptions>) {
   options = { ...readJsonDefaultOptions, ...options };
 
+  // Handle If set to `null` case
+  options.inferSchemaLength = options.inferSchemaLength ?? 0;
   return _LazyDataFrame(pli.scanJson(path, options));
 }
 
