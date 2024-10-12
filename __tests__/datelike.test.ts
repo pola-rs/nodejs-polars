@@ -8,7 +8,7 @@ describe("datelike", () => {
           .Series([
             "2016-05-25 13:30:00.023",
             "2016-05-25 13:30:00.023",
-            "2016-05-25 13:30:00.030",
+            "2016-05-25 13:30:00.035",
             "2016-05-25 13:30:00.041",
             "2016-05-25 13:30:00.048",
             "2016-05-25 13:30:00.049",
@@ -90,7 +90,11 @@ describe("datelike", () => {
     out = quotes
       .joinAsof(trades, { on: "dates", strategy: "forward", tolerance: "5ms" })
       ["bid_right"].toArray();
-    expect(out).toEqual([51.95, 51.95, null, null, 720.77, null, null, null]);
+    expect(out).toEqual([51.95, 51.95, 51.95, null, 720.77, null, null, null]);
+    out = quotes
+      .joinAsof(trades, { on: "dates", strategy: "nearest", tolerance: "5ms" })
+      ["bid_right"].toArray();
+    expect(out).toEqual([51.95, 51.95, 51.95, 51.95, 98.0, 98.0, null, null]);
   });
   test("asofjoin tolerance grouper", () => {
     const df1 = pl.DataFrame({

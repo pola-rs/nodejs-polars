@@ -253,6 +253,10 @@ export interface LazyDataFrame extends Serialize, GroupByOps<LazyGroupBy> {
         - A "forward" search selects the first row in the right DataFrame whose
           'on' key is greater than or equal to the left's key.
 
+        - A "nearest" search selects the last row in the right DataFrame whose value
+          is nearest to the left's key. String keys are not currently supported for a
+          nearest search.
+
       The default is "backward".
 
       Parameters
@@ -263,7 +267,7 @@ export interface LazyDataFrame extends Serialize, GroupByOps<LazyGroupBy> {
       @param options.on Join column of both DataFrames. If set, `leftOn` and `rightOn` should be undefined.
       @param options.byLeft join on these columns before doing asof join
       @param options.byRight join on these columns before doing asof join
-      @param options.strategy One of {'forward', 'backward'}
+      @param options.strategy One of {'forward', 'backward', 'nearest'}
       @param options.suffix Suffix to append to columns with a duplicate name.
       @param options.tolerance
         Numeric tolerance. By setting this the join will only be done if the near keys are within this distance.
@@ -337,7 +341,7 @@ export interface LazyDataFrame extends Serialize, GroupByOps<LazyGroupBy> {
       byLeft?: string | string[];
       byRight?: string | string[];
       by?: string | string[];
-      strategy?: "backward" | "forward";
+      strategy?: "backward" | "forward" | "nearest";
       suffix?: string;
       tolerance?: number | string;
       allowParallel?: boolean;
