@@ -307,7 +307,8 @@ impl JsLazyFrame {
         let strategy = match strategy.as_ref() {
             "forward" => AsofStrategy::Forward,
             "backward" => AsofStrategy::Backward,
-            _ => panic!("expected one of {{'forward', 'backward'}}"),
+            "nearest" => AsofStrategy::Nearest,
+            _ => panic!("expected one of {{'forward', 'backward', 'nearest'}}"),
         };
         let ldf = self.ldf.clone();
         let other = other.ldf.clone();
