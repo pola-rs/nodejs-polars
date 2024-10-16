@@ -132,7 +132,7 @@ export interface StringNamespace extends StringFunctions<Series> {
    * @see https://goessner.net/articles/JsonPath/
    * @param jsonPath - A valid JSON path query string
    * @param dtype - The dtype to cast the extracted value to. If None, the dtype will be inferred from the JSON value.
-   * @param inferSchemaLength - How many rows to parse to determine the schema. If ``None`` all rows are used.
+   * @param inferSchemaLength - How many rows to parse to determine the schema. If ``null`` all rows are used.
    * @returns Utf8 array. Contain null if original value is null or the `jsonPath` return nothing.
    * @example
    * ```
