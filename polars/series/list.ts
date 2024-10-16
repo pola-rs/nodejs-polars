@@ -77,10 +77,10 @@ export const SeriesListFunctions = (_s): ListFunctions<Series> => {
     slice(offset, length) {
       return wrap("slice", offset, length);
     },
-    sort(reverse: any = false) {
-      return typeof reverse === "boolean"
-        ? wrap("sort", reverse)
-        : wrap("sort", reverse.reverse);
+    sort(descending: any = false) {
+      return typeof descending === "boolean"
+        ? wrap("sort", descending)
+        : wrap("sort", descending.descending ?? descending.reverse ?? false);
     },
     sum() {
       return wrap("sum");

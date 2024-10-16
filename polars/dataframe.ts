@@ -1361,24 +1361,38 @@ export interface DataFrame
   /**
    * Sort the DataFrame by column.
    * ___
-   * @param by - By which columns to sort. Only accepts string.
+   * @param by - Column(s) to sort by. Accepts expression input, including selectors. Strings are parsed as column names.
+   * @deprecated *since 0.16.0* @use descending
    * @param reverse - Reverse/descending sort.
+   * @param descending - Sort in descending order. When sorting by multiple columns, can be specified per column by passing a sequence of booleans.
+   * @param nullsLast - Place null values last; can specify a single boolean applying to all columns or a sequence of booleans for per-column control.
+   * @param maintainOrder - Whether the order should be maintained if elements are equal.
    */
   sort(
     by: ColumnsOrExpr,
     descending?: boolean,
-    nulls_last?: boolean,
-    maintain_order?: boolean,
+    nullsLast?: boolean,
+    maintainOrder?: boolean,
   ): DataFrame;
   sort({
     by,
+    reverse, // deprecated
+    maintainOrder,
+  }: {
+    by: ColumnsOrExpr;
+    reverse?: boolean; // deprecated
+    nullsLast?: boolean;
+    maintainOrder?: boolean;
+  }): DataFrame;
+  sort({
+    by,
     descending,
-    maintain_order,
+    maintainOrder,
   }: {
     by: ColumnsOrExpr;
     descending?: boolean;
-    nulls_last?: boolean;
-    maintain_order?: boolean;
+    nullsLast?: boolean;
+    maintainOrder?: boolean;
   }): DataFrame;
   /**
    * Aggregate the columns of this DataFrame to their standard deviation value.
@@ -2360,22 +2374,22 @@ export const _DataFrame = (_df: any): DataFrame => {
       }
       return wrap("slice", opts.offset, opts.length);
     },
-    sort(arg, descending = false, nulls_last = false, maintain_order = false) {
+    sort(arg, descending = false, nullsLast = false, maintainOrder = false) {
       if (arg?.by !== undefined) {
         return this.sort(
           arg.by,
-          arg.descending,
-          arg.nulls_last,
-          arg.maintain_order,
+          arg.descending ?? arg.reverse ?? false,
+          arg.nullsLast,
+          arg.maintainOrder,
         );
       }
       if (Array.isArray(arg) || Expr.isExpr(arg)) {
         return _DataFrame(_df)
           .lazy()
-          .sort(arg, descending, nulls_last, maintain_order)
+          .sort(arg, descending, nullsLast, maintainOrder)
           .collectSync({ noOptimization: true });
       }
-      return wrap("sort", arg, descending, nulls_last, maintain_order);
+      return wrap("sort", arg, descending, nullsLast, maintainOrder);
     },
     std() {
       return this.lazy().std().collectSync();

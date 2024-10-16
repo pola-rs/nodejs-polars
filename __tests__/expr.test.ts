@@ -71,10 +71,11 @@ describe("expr", () => {
     expect(actual).toStrictEqual(0);
   });
   test.each`
-    args                 | expectedSort
-    ${undefined}         | ${[1, 0, 3, 2]}
-    ${true}              | ${[2, 3, 0, 1]}
-    ${{ reverse: true }} | ${[2, 3, 0, 1]}
+    args                    | expectedSort
+    ${undefined}            | ${[1, 0, 3, 2]}
+    ${true}                 | ${[2, 3, 0, 1]}
+    ${{ descending: true }} | ${[2, 3, 0, 1]}
+    ${{ reverse: true }}    | ${[2, 3, 0, 1]}
   `("argSort", ({ args, expectedSort }) => {
     const df = pl.DataFrame({ a: [1, 0, 2, 1.5] });
     const expected = pl.DataFrame({ argSort: expectedSort });
@@ -845,16 +846,16 @@ describe("expr", () => {
     const b = col("b");
     const actual = df.select(
       a.sort().as("a_sorted_default"),
-      a.sort({ reverse: true }).as("a_sorted_reverse"),
+      a.sort({ descending: true }).as("a_sorted_reverse"),
       a.sort({ nullsLast: true }).as("a_sorted_nulls_last"),
       a
-        .sort({ reverse: true, nullsLast: true })
+        .sort({ descending: true, nullsLast: true })
         .as("a_sorted_reverse_nulls_last"),
       b.sort().as("b_sorted_default"),
-      b.sort({ reverse: true }).as("b_sorted_reverse"),
+      b.sort({ descending: true }).as("b_sorted_reverse"),
       b.sort({ nullsLast: true }).as("b_sorted_nulls_last"),
       b
-        .sort({ reverse: true, nullsLast: true })
+        .sort({ descending: true, nullsLast: true })
         .as("b_sorted_reverse_nulls_last"),
     );
     expect(actual).toFrameEqual(expected);
@@ -903,7 +904,7 @@ describe("expr", () => {
     const actual = df.withColumns(
       pl
         .col(["name", "value"])
-        .sortBy({ by: [pl.col("value")], reverse: [true] })
+        .sortBy({ by: [pl.col("value")], descending: [true] })
         .last()
         .over("label")
         .suffix("_min"),
@@ -1829,12 +1830,12 @@ describe("expr.lst", () => {
     });
     const actual = df.select(
       col("a").lst.sort().as("sort"),
-      col("a").lst.sort({ reverse: true }).as("sort:reverse"),
+      col("a").lst.sort({ descending: true }).as("sort:reverse"),
     );
     const sortSeries = df.getColumn("a").lst.sort().rename("sort");
     const sortReverseSeries = df
       .getColumn("a")
-      .lst.sort({ reverse: true })
+      .lst.sort({ descending: true })
       .rename("sort:reverse");
 
     const actualFromSeries = pl.DataFrame([sortSeries, sortReverseSeries]);
