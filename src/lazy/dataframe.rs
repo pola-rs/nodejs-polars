@@ -457,7 +457,7 @@ impl JsLazyFrame {
     pub fn quantile(
         &self,
         quantile: f64,
-        interpolation: Wrap<QuantileInterpolOptions>,
+        interpolation: Wrap<QuantileMethod>,
     ) -> napi::Result<JsLazyFrame> {
         let ldf = self.ldf.clone();
         let out = ldf.quantile(lit(quantile), interpolation.0);
@@ -714,11 +714,13 @@ pub struct ScanParquetOptions {
     pub hive_schema: Option<Wrap<Schema>>,
     pub try_parse_hive_dates: Option<bool>,
     pub rechunk: Option<bool>,
+    pub schema: Option<SchemaRef>,
     pub low_memory: Option<bool>,
     pub use_statistics: Option<bool>,
     pub cloud_options: Option<HashMap<String, String>>,
     pub retries: Option<i64>,
     pub include_file_paths: Option<String>,
+    pub allow_missing_columns: Option<bool>,
 }
 
 #[napi(catch_unwind)]
@@ -768,6 +770,7 @@ pub fn scan_parquet(path: String, options: ScanParquetOptions) -> napi::Result<J
     };
 
     let include_file_paths = options.include_file_paths;
+    let allow_missing_columns = options.allow_missing_columns.unwrap_or(false);
 
     let args = ScanArgsParquet {
         n_rows,
@@ -775,12 +778,14 @@ pub fn scan_parquet(path: String, options: ScanParquetOptions) -> napi::Result<J
         parallel: parallel.0,
         rechunk,
         row_index,
+        schema: options.schema,
         low_memory,
         cloud_options,
         use_statistics,
         hive_options,
         glob,
         include_file_paths: include_file_paths.map(PlSmallStr::from),
+        allow_missing_columns,
     };
     let lf = LazyFrame::scan_parquet(path, args).map_err(JsPolarsErr::from)?;
     Ok(lf.into())

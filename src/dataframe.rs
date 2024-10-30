@@ -508,7 +508,7 @@ impl JsDataFrame {
     #[napi(constructor)]
     pub fn from_columns(columns: Array) -> napi::Result<JsDataFrame> {
         let len = columns.len();
-        let cols: Vec<Series> = (0..len)
+        let cols: Vec<Column> = (0..len)
             .map(|idx| {
                 let item: &JsSeries = columns.get(idx).unwrap().unwrap();
                 item.series.clone()
@@ -701,7 +701,7 @@ impl JsDataFrame {
     #[napi(catch_unwind)]
     pub fn hstack_mut(&mut self, columns: Array) -> napi::Result<()> {
         let columns = to_series_collection(columns);
-        self.df.hstack_mut(&columns).map_err(JsPolarsErr::from)?;
+        self.df.hstack_mut(columns).map_err(JsPolarsErr::from)?;
         Ok(())
     }
     #[napi(catch_unwind)]
@@ -728,7 +728,7 @@ impl JsDataFrame {
     #[napi(catch_unwind)]
     pub fn drop_in_place(&mut self, name: String) -> napi::Result<JsSeries> {
         let s = self.df.drop_in_place(&name).map_err(JsPolarsErr::from)?;
-        Ok(JsSeries { series: s })
+        Ok(JsSeries { series: s.take_materialized_series() })
     }
     #[napi(catch_unwind)]
     pub fn drop_nulls(&self, subset: Option<Vec<String>>) -> napi::Result<JsDataFrame> {
@@ -748,7 +748,7 @@ impl JsDataFrame {
     pub fn select_at_idx(&self, idx: i64) -> Option<JsSeries> {
         self.df
             .select_at_idx(idx as usize)
-            .map(|s| JsSeries::new(s.clone()))
+            .map(|s| JsSeries::new(s.clone().take_materialized_series()))
     }
 
     #[napi(catch_unwind)]
@@ -760,7 +760,7 @@ impl JsDataFrame {
         let series = self
             .df
             .column(&name)
-            .map(|s| JsSeries::new(s.clone()))
+            .map(|s| JsSeries::new(s.clone().take_materialized_series()))
             .map_err(JsPolarsErr::from)?;
         Ok(series)
     }
@@ -1030,13 +1030,13 @@ impl JsDataFrame {
     #[napi(catch_unwind)]
     pub fn hmax(&self) -> napi::Result<Option<JsSeries>> {
         let s = self.df.max_horizontal().map_err(JsPolarsErr::from)?;
-        Ok(s.map(|s| s.into()))
+        Ok(s.map(|s| s.take_materialized_series().into()))
     }
 
     #[napi(catch_unwind)]
     pub fn hmin(&self) -> napi::Result<Option<JsSeries>> {
         let s = self.df.min_horizontal().map_err(JsPolarsErr::from)?;
-        Ok(s.map(|s| s.into()))
+        Ok(s.map(|s| s.take_materialized_series().into()))
     }
 
     #[napi(catch_unwind)]
@@ -1748,13 +1748,13 @@ unsafe fn coerce_js_anyvalue<'a>(val: JsUnknown, dtype: DataType) -> JsResult<An
             AnyValue::Date(n)
         }),
         (ValueType::BigInt | ValueType::Number, Datetime(_, _)) => {
-            i64::from_js(val).map(|d| AnyValue::Datetime(d, TimeUnit::Milliseconds, &None))
+            i64::from_js(val).map(|d| AnyValue::Datetime(d, TimeUnit::Milliseconds, None))
         }
         (ValueType::Object, DataType::Datetime(_, _)) => {
             if val.is_date()? {
                 let d: napi::JsDate = val.cast();
                 let d = d.value_of()?;
-                Ok(AnyValue::Datetime(d as i64, TimeUnit::Milliseconds, &None))
+                Ok(AnyValue::Datetime(d as i64, TimeUnit::Milliseconds, None))
             } else {
                 Ok(AnyValue::Null)
             }

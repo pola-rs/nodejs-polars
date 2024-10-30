@@ -6,7 +6,6 @@ use polars::frame::NullStrategy;
 use polars::prelude::*;
 use polars_core::series::ops::NullBehavior;
 use polars_io::RowIndex;
-use std::any::Any;
 use std::collections::HashMap;
 
 #[derive(Debug)]
@@ -165,6 +164,9 @@ impl<'a> ToNapiValue for Wrap<AnyValue<'a>> {
             AnyValue::Decimal(_, _) => {
                 Err(napi::Error::from_reason("Decimal is not a supported type in javascript, please convert to string or number before collecting to js"))
             }
+            AnyValue::CategoricalOwned(_,_,_) => todo!(),
+            AnyValue::DatetimeOwned(_,_,_) => todo!(),
+            AnyValue::EnumOwned(_,_,_) => todo!(),
         }
     }
 }
@@ -293,9 +295,9 @@ impl FromNapiValue for Wrap<JsExpr> {
     }
 }
 
-impl TypeName for Wrap<QuantileInterpolOptions> {
+impl TypeName for Wrap<QuantileMethod> {
     fn type_name() -> &'static str {
-        "QuantileInterpolOptions"
+        "QuantileMethod"
     }
 
     fn value_type() -> ValueType {
@@ -303,15 +305,15 @@ impl TypeName for Wrap<QuantileInterpolOptions> {
     }
 }
 
-impl FromNapiValue for Wrap<QuantileInterpolOptions> {
+impl FromNapiValue for Wrap<QuantileMethod> {
     unsafe fn from_napi_value(env: sys::napi_env, napi_val: sys::napi_value) -> JsResult<Self> {
         let interpolation = String::from_napi_value(env, napi_val)?;
         let interpol = match interpolation.as_ref() {
-            "nearest" => QuantileInterpolOptions::Nearest,
-            "lower" => QuantileInterpolOptions::Lower,
-            "higher" => QuantileInterpolOptions::Higher,
-            "midpoint" => QuantileInterpolOptions::Midpoint,
-            "linear" => QuantileInterpolOptions::Linear,
+            "nearest" => QuantileMethod::Nearest,
+            "lower" => QuantileMethod::Lower,
+            "higher" => QuantileMethod::Higher,
+            "midpoint" => QuantileMethod::Midpoint,
+            "linear" => QuantileMethod::Linear,
             _ => return Err(napi::Error::from_reason("not supported".to_owned())),
         };
         Ok(Wrap(interpol))
@@ -524,9 +526,9 @@ impl From<JsRollingOptions> for RollingOptionsFixedWindow {
             weights: o.weights,
             min_periods: o.min_periods as usize,
             center: o.center,
-            fn_params: Some(Arc::new(RollingVarParams {
+            fn_params: Some(RollingFnParams::Var( RollingVarParams {
                 ddof: o.ddof.unwrap_or(1),
-            }) as Arc<dyn Any + Send + Sync>),
+            })),
             ..Default::default()
         }
     }
@@ -1057,7 +1059,7 @@ impl FromJsUnknown for AnyValue<'_> {
                     let d: JsDate = unsafe { val.cast() };
                     let d = d.value_of()?;
                     let d = d as i64;
-                    Ok(AnyValue::Datetime(d, TimeUnit::Milliseconds, &None))
+                    Ok(AnyValue::Datetime(d, TimeUnit::Milliseconds, None))
                 } else {
                     Err(JsPolarsErr::Other("Unsupported Data type".to_owned()).into())
                 }

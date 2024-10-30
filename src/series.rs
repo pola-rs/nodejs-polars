@@ -805,7 +805,7 @@ impl JsSeries {
     pub fn quantile(
         &self,
         quantile: f64,
-        interpolation: Wrap<QuantileInterpolOptions>,
+        interpolation: Wrap<QuantileMethod>,
     ) -> JsAnyValue {
         let binding = self
             .series
@@ -1147,7 +1147,7 @@ impl JsSeries {
     #[napi(catch_unwind)]
     pub fn reinterpret(&self, signed: bool) -> napi::Result<JsSeries> {
         let s = reinterpret(&self.series, signed).map_err(JsPolarsErr::from)?;
-        Ok(s.into())
+        Ok(s.take_materialized_series().into())
     }
 
     #[napi(catch_unwind)]
