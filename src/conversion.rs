@@ -526,7 +526,7 @@ impl From<JsRollingOptions> for RollingOptionsFixedWindow {
             weights: o.weights,
             min_periods: o.min_periods as usize,
             center: o.center,
-            fn_params: Some(RollingFnParams::Var( RollingVarParams {
+            fn_params: Some(RollingFnParams::Var(RollingVarParams {
                 ddof: o.ddof.unwrap_or(1),
             })),
             ..Default::default()
@@ -802,7 +802,9 @@ impl FromNapiValue for Wrap<SortOptions> {
     unsafe fn from_napi_value(env: sys::napi_env, napi_val: sys::napi_value) -> napi::Result<Self> {
         let obj = Object::from_napi_value(env, napi_val)?;
         let descending = obj.get::<_, bool>("descending")?.unwrap();
-        let nulls_last = obj.get::<_, bool>("nulls_last")?.map_or(obj.get::<_, bool>("nullsLast")?.unwrap_or(false), |n| n);
+        let nulls_last = obj
+            .get::<_, bool>("nulls_last")?
+            .map_or(obj.get::<_, bool>("nullsLast")?.unwrap_or(false), |n| n);
         let multithreaded = obj.get::<_, bool>("multithreaded")?.unwrap();
         let maintain_order: bool = obj.get::<_, bool>("maintain_order")?.unwrap();
         let options = SortOptions {
@@ -1009,9 +1011,14 @@ impl FromNapiValue for Wrap<NullValues> {
         if let Ok(s) = String::from_napi_value(env, napi_val) {
             Ok(Wrap(NullValues::AllColumnsSingle(s.into())))
         } else if let Ok(s) = Vec::<String>::from_napi_value(env, napi_val) {
-            Ok(Wrap(NullValues::AllColumns(s.into_iter().map(PlSmallStr::from_string).collect())))
+            Ok(Wrap(NullValues::AllColumns(
+                s.into_iter().map(PlSmallStr::from_string).collect(),
+            )))
         } else if let Ok(s) = HashMap::<String, String>::from_napi_value(env, napi_val) {
-            let null_values = s.into_iter().map(|a| (PlSmallStr::from_string(a.0), PlSmallStr::from_string(a.1))).collect::<Vec<(PlSmallStr, PlSmallStr)>>();
+            let null_values = s
+                .into_iter()
+                .map(|a| (PlSmallStr::from_string(a.0), PlSmallStr::from_string(a.1)))
+                .collect::<Vec<(PlSmallStr, PlSmallStr)>>();
             Ok(Wrap(NullValues::Named(null_values)))
         } else {
             Err(
@@ -1026,9 +1033,14 @@ impl ToNapiValue for Wrap<NullValues> {
     unsafe fn to_napi_value(env: sys::napi_env, val: Self) -> napi::Result<sys::napi_value> {
         match val.0 {
             NullValues::AllColumnsSingle(s) => String::to_napi_value(env, s.to_string()),
-            NullValues::AllColumns(arr) => Vec::<String>::to_napi_value(env, arr.iter().map(|x| x.to_string()).collect()),
+            NullValues::AllColumns(arr) => {
+                Vec::<String>::to_napi_value(env, arr.iter().map(|x| x.to_string()).collect())
+            }
             NullValues::Named(obj) => {
-                let o: HashMap<String, String> = obj.into_iter().map(|s| (s.0.to_string(), s.1.to_string())).collect::<HashMap<String, String>>();
+                let o: HashMap<String, String> = obj
+                    .into_iter()
+                    .map(|s| (s.0.to_string(), s.1.to_string()))
+                    .collect::<HashMap<String, String>>();
                 HashMap::<String, String>::to_napi_value(env, o)
             }
         }
@@ -1238,7 +1250,10 @@ where
     I: IntoIterator<Item = S>,
     S: AsRef<str>,
 {
-    container.into_iter().map(|s| PlSmallStr::from_str(s.as_ref())).collect()
+    container
+        .into_iter()
+        .map(|s| PlSmallStr::from_str(s.as_ref()))
+        .collect()
 }
 
 pub(crate) fn strings_to_selector<I, S>(container: I) -> Vec<Selector>

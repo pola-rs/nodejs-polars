@@ -254,11 +254,7 @@ impl JsExpr {
     }
 
     #[napi(catch_unwind)]
-    pub fn quantile(
-        &self,
-        quantile: &JsExpr,
-        interpolation: Wrap<QuantileMethod>,
-    ) -> JsExpr {
+    pub fn quantile(&self, quantile: &JsExpr, interpolation: Wrap<QuantileMethod>) -> JsExpr {
         self.clone()
             .inner
             .quantile(quantile.inner.clone(), interpolation.0)
@@ -1095,7 +1091,8 @@ impl JsExpr {
             .inner
             .map(
                 |s: Column| {
-                    s.take_materialized_series().timestamp(TimeUnit::Milliseconds)
+                    s.take_materialized_series()
+                        .timestamp(TimeUnit::Milliseconds)
                         .map(|ca| Some((ca / 1000).into_column()))
                 },
                 GetOutput::from_type(DataType::Int64),
@@ -1215,7 +1212,7 @@ impl JsExpr {
             min_periods: min_periods as usize,
             weights,
             center,
-            fn_params: Some(RollingFnParams::Quantile(RollingQuantileParams{
+            fn_params: Some(RollingFnParams::Quantile(RollingQuantileParams {
                 prob: quantile,
                 method: method.0,
             })),
@@ -1356,7 +1353,12 @@ impl JsExpr {
             .into()
     }
     #[napi(catch_unwind)]
-    pub fn rank(&self, method: Wrap<RankMethod>, descending: bool, seed: Option<Wrap<u64>>) -> JsExpr {
+    pub fn rank(
+        &self,
+        method: Wrap<RankMethod>,
+        descending: bool,
+        seed: Option<Wrap<u64>>,
+    ) -> JsExpr {
         // Safety:
         // Wrap is transparent.
         let seed: Option<u64> = unsafe { std::mem::transmute(seed) };
@@ -1742,7 +1744,10 @@ pub fn arg_sort_by(by: Vec<&JsExpr>, descending: Vec<bool>) -> JsExpr {
 
 #[napi(catch_unwind)]
 pub fn lit(value: Wrap<AnyValue>) -> JsResult<JsExpr> {
-    let lit: LiteralValue = value.0.try_into().map_err(JsPolarsErr::from)?;
+    let lit: LiteralValue = value
+        .0
+        .try_into()
+        .map_err(|e| napi::Error::from_reason(format!("{e:?}")))?;
     Ok(dsl::lit(lit).into())
 }
 

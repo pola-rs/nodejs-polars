@@ -22,7 +22,6 @@ export interface ReadCsvOptions {
   encoding: "utf8" | "utf8-lossy";
   numThreads: number;
   dtypes: Record<string, DataType>;
-  sampleSize: number;
   lowMemory: boolean;
   commentChar: string;
   quoteChar: string;
@@ -44,7 +43,6 @@ const readCsvDefaultOptions: Partial<ReadCsvOptions> = {
   ignoreErrors: true,
   chunkSize: 10000,
   skipRows: 0,
-  sampleSize: 1024,
   sep: ",",
   rechunk: false,
   encoding: "utf8",

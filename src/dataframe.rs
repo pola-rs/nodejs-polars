@@ -31,16 +31,16 @@ impl From<DataFrame> for JsDataFrame {
     }
 }
 
-pub(crate) fn to_series_collection(ps: Array) -> Vec<Series> {
+pub(crate) fn to_series_collection(ps: Array) -> Vec<Column> {
     let len = ps.len();
     (0..len)
         .map(|idx| {
             let item: &JsSeries = ps.get(idx).unwrap().unwrap();
-            item.series.clone()
+            item.series.clone().into()
         })
         .collect()
 }
-pub(crate) fn to_jsseries_collection(s: Vec<Series>) -> Vec<JsSeries> {
+pub(crate) fn to_jsseries_collection(s: Vec<Column>) -> Vec<JsSeries> {
     let mut s = std::mem::ManuallyDrop::new(s);
 
     let p = s.as_mut_ptr() as *mut JsSeries;
@@ -67,7 +67,6 @@ pub struct ReadCsvOptions {
     pub num_threads: Option<u32>,
     pub path: Option<String>,
     pub dtypes: Option<HashMap<String, Wrap<DataType>>>,
-    pub sample_size: u32,
     pub chunk_size: u32,
     pub comment_char: Option<String>,
     pub null_values: Option<Wrap<NullValues>>,
@@ -97,7 +96,13 @@ fn mmap_reader_to_df<'a>(
         .projection
         .map(|p: Vec<u32>| p.into_iter().map(|p| p as usize).collect());
 
-    let quote_char = options.quote_char.map_or(None, |q| if q.is_empty() { None } else { Some(q.as_bytes()[0]) } );
+    let quote_char = options.quote_char.map_or(None, |q| {
+        if q.is_empty() {
+            None
+        } else {
+            Some(q.as_bytes()[0])
+        }
+    });
 
     let encoding = match options.encoding.as_ref() {
         "utf8" => CsvEncoding::Utf8,
@@ -124,13 +129,16 @@ fn mmap_reader_to_df<'a>(
         .with_ignore_errors(options.ignore_errors)
         .with_rechunk(options.rechunk)
         .with_chunk_size(options.chunk_size as usize)
-        .with_columns(options.columns.map(|x| x.into_iter().map(PlSmallStr::from_string).collect()))
+        .with_columns(
+            options
+                .columns
+                .map(|x| x.into_iter().map(PlSmallStr::from_string).collect()),
+        )
         .with_n_threads(options.num_threads.map(|i| i as usize))
         .with_schema_overwrite(overwrite_dtype.map(Arc::new))
         .with_schema(options.schema.map(|schema| Arc::new(schema.0)))
         .with_low_memory(options.low_memory)
         .with_row_index(row_count)
-        .with_sample_size(options.sample_size as usize)
         .with_skip_rows_after_header(options.skip_rows_after_header as usize)
         .with_raise_if_empty(options.raise_if_empty)
         .with_parse_options(
@@ -511,7 +519,7 @@ impl JsDataFrame {
         let cols: Vec<Column> = (0..len)
             .map(|idx| {
                 let item: &JsSeries = columns.get(idx).unwrap().unwrap();
-                item.series.clone()
+                item.series.clone().into()
             })
             .collect();
 
@@ -628,8 +636,7 @@ impl JsDataFrame {
 
         let df = self
             .df
-            .join
-            (
+            .join(
                 &other.df,
                 left_on,
                 right_on,
@@ -657,9 +664,7 @@ impl JsDataFrame {
 
     #[napi(setter, js_name = "columns", catch_unwind)]
     pub fn set_columns(&mut self, names: Vec<&str>) -> napi::Result<()> {
-        self.df
-            .set_column_names(names)
-            .map_err(JsPolarsErr::from)?;
+        self.df.set_column_names(names).map_err(JsPolarsErr::from)?;
         Ok(())
     }
 
@@ -701,7 +706,7 @@ impl JsDataFrame {
     #[napi(catch_unwind)]
     pub fn hstack_mut(&mut self, columns: Array) -> napi::Result<()> {
         let columns = to_series_collection(columns);
-        self.df.hstack_mut(columns).map_err(JsPolarsErr::from)?;
+        self.df.hstack_mut(&columns).map_err(JsPolarsErr::from)?;
         Ok(())
     }
     #[napi(catch_unwind)]
@@ -728,7 +733,9 @@ impl JsDataFrame {
     #[napi(catch_unwind)]
     pub fn drop_in_place(&mut self, name: String) -> napi::Result<JsSeries> {
         let s = self.df.drop_in_place(&name).map_err(JsPolarsErr::from)?;
-        Ok(JsSeries { series: s.take_materialized_series() })
+        Ok(JsSeries {
+            series: s.take_materialized_series(),
+        })
     }
     #[napi(catch_unwind)]
     pub fn drop_nulls(&self, subset: Option<Vec<String>>) -> napi::Result<JsDataFrame> {
@@ -958,13 +965,13 @@ impl JsDataFrame {
         id_vars: Vec<String>,
         value_vars: Vec<String>,
         variable_name: Option<String>,
-        value_name: Option<String>
+        value_name: Option<String>,
     ) -> napi::Result<JsDataFrame> {
         let args = UnpivotArgsIR {
             on: strings_to_pl_smallstr(value_vars),
             index: strings_to_pl_smallstr(id_vars),
             variable_name: variable_name.map(|s| s.into()),
-            value_name: value_name.map(|s| s.into())
+            value_name: value_name.map(|s| s.into()),
         };
 
         let df = self.df.unpivot2(args).map_err(JsPolarsErr::from)?;

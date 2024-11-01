@@ -324,7 +324,7 @@ impl JsLazyFrame {
                 strategy,
                 left_by: left_by.map(strings_to_pl_smallstr),
                 right_by: right_by.map(strings_to_pl_smallstr),
-                tolerance: tolerance.map(|t| t.0.into_static().unwrap()),
+                tolerance: tolerance.map(|t| t.0.into_static()),
                 tolerance_str: tolerance_str.map(|s| s.into()),
             }))
             .suffix(suffix)
@@ -372,7 +372,7 @@ impl JsLazyFrame {
     #[napi(catch_unwind)]
     pub fn rename(&mut self, existing: Vec<String>, new_names: Vec<String>) -> JsLazyFrame {
         let ldf = self.ldf.clone();
-        ldf.rename(existing, new_names).into()
+        ldf.rename(existing, new_names, true).into()
     }
     #[napi(catch_unwind)]
     pub fn reverse(&self) -> JsLazyFrame {
@@ -479,7 +479,10 @@ impl JsLazyFrame {
     ) -> JsLazyFrame {
         let ldf = self.ldf.clone();
         match maintain_order {
-            true => ldf.unique_stable(subset.map(|x| x.into_iter().map(PlSmallStr::from_string).collect()), keep.0),
+            true => ldf.unique_stable(
+                subset.map(|x| x.into_iter().map(PlSmallStr::from_string).collect()),
+                keep.0,
+            ),
             false => ldf.unique(subset, keep.0),
         }
         .into()
@@ -512,7 +515,7 @@ impl JsLazyFrame {
             on: strings_to_selector(value_vars),
             index: strings_to_selector(id_vars),
             variable_name: variable_name.map(|s| s.into()),
-            value_name: value_name.map(|s| s.into())
+            value_name: value_name.map(|s| s.into()),
         };
         let ldf = self.ldf.clone();
         ldf.unpivot(args).into()
@@ -537,7 +540,8 @@ impl JsLazyFrame {
     #[napi(getter, js_name = "columns", catch_unwind)]
     pub fn columns(&mut self) -> napi::Result<Vec<String>> {
         Ok(self
-            .ldf.collect_schema()
+            .ldf
+            .collect_schema()
             .map_err(JsPolarsErr::from)?
             .iter_names()
             .map(|s| s.as_str().into())
@@ -656,7 +660,13 @@ pub fn scan_csv(path: String, options: ScanCsvOptions) -> napi::Result<JsLazyFra
     let n_rows = options.n_rows.map(|i| i as usize);
     let row_count = options.row_count.map(RowIndex::from);
     let missing_utf8_is_empty_string: bool = options.missing_utf8_is_empty_string.unwrap_or(false);
-    let quote_char = options.quote_char.map_or(None, |q| if q.is_empty() { None } else { Some(q.as_bytes()[0]) } );
+    let quote_char = options.quote_char.map_or(None, |q| {
+        if q.is_empty() {
+            None
+        } else {
+            Some(q.as_bytes()[0])
+        }
+    });
 
     let overwrite_dtype = options.overwrite_dtype.map(|overwrite_dtype| {
         overwrite_dtype
@@ -685,7 +695,11 @@ pub fn scan_csv(path: String, options: ScanCsvOptions) -> napi::Result<JsLazyFra
         .with_dtype_overwrite(overwrite_dtype.map(Arc::new))
         .with_schema(options.schema.map(|schema| Arc::new(schema.0)))
         .with_low_memory(options.low_memory.unwrap_or(false))
-        .with_comment_prefix(options.comment_prefix.map_or(None, |s| Some(PlSmallStr::from_string(s))))
+        .with_comment_prefix(
+            options
+                .comment_prefix
+                .map_or(None, |s| Some(PlSmallStr::from_string(s))),
+        )
         .with_quote_char(quote_char)
         .with_eol_char(options.eol_char.unwrap_or(b'\n'))
         .with_rechunk(options.rechunk.unwrap_or(false))
@@ -714,7 +728,7 @@ pub struct ScanParquetOptions {
     pub hive_schema: Option<Wrap<Schema>>,
     pub try_parse_hive_dates: Option<bool>,
     pub rechunk: Option<bool>,
-    pub schema: Option<SchemaRef>,
+    pub schema: Option<Wrap<Schema>>,
     pub low_memory: Option<bool>,
     pub use_statistics: Option<bool>,
     pub cloud_options: Option<HashMap<String, String>>,
@@ -733,10 +747,10 @@ pub fn scan_parquet(path: String, options: ScanParquetOptions) -> napi::Result<J
     let row_index: Option<RowIndex> = if let Some(idn) = options.row_index_name {
         Some(RowIndex {
             name: idn.into(),
-            offset: options.row_index_offset.unwrap_or(0)
+            offset: options.row_index_offset.unwrap_or(0),
         })
-    } else { 
-        None 
+    } else {
+        None
     };
 
     let rechunk = options.rechunk.unwrap_or(false);
@@ -762,6 +776,7 @@ pub fn scan_parquet(path: String, options: ScanParquetOptions) -> napi::Result<J
     }
 
     let hive_schema = options.hive_schema.map(|s| Arc::new(s.0));
+    let schema = options.schema.map(|s| Arc::new(s.0));
     let hive_options = HiveOptions {
         enabled: options.hive_partitioning,
         hive_start_idx: 0,
@@ -778,7 +793,7 @@ pub fn scan_parquet(path: String, options: ScanParquetOptions) -> napi::Result<J
         parallel: parallel.0,
         rechunk,
         row_index,
-        schema: options.schema,
+        schema,
         low_memory,
         cloud_options,
         use_statistics,
