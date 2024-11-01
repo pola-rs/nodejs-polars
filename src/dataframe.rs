@@ -40,7 +40,7 @@ pub(crate) fn to_series_collection(ps: Array) -> Vec<Column> {
         })
         .collect()
 }
-pub(crate) fn to_jsseries_collection(s: Vec<Column>) -> Vec<JsSeries> {
+pub(crate) fn to_jsseries_collection(s: Vec<Series>) -> Vec<JsSeries> {
     let mut s = std::mem::ManuallyDrop::new(s);
 
     let p = s.as_mut_ptr() as *mut JsSeries;
@@ -652,7 +652,7 @@ impl JsDataFrame {
 
     #[napi(catch_unwind)]
     pub fn get_columns(&self) -> Vec<JsSeries> {
-        let cols = self.df.get_columns();
+        let cols: Vec<Series> = self.df.get_columns().iter().map(Column::as_materialized_series).cloned().collect();
         to_jsseries_collection(cols.to_vec())
     }
 

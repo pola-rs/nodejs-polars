@@ -1647,7 +1647,7 @@ describe("expr.lst", () => {
   test("head", () => {
     const s0 = pl.Series("a", [[3, 5, 6, 7, 8]]);
     let actual = s0.lst.head(1);
-    let expected = pl.Series("a", [3]);
+    let expected = pl.Series("a", [[3]]);
     expect(actual.seriesEqual(expected));
     actual = s0.lst.head();
     expected = pl.Series("a", [3, 5, 6, 7, 8]);
@@ -1656,7 +1656,7 @@ describe("expr.lst", () => {
   test("tail", () => {
     const s0 = pl.Series("a", [[3, 5, 6, 7, 8]]);
     let actual = s0.lst.tail(1);
-    let expected = pl.Series("a", [8]);
+    let expected = pl.Series("a", [[8]]);
     expect(actual.seriesEqual(expected));
     actual = s0.lst.tail();
     expected = pl.Series("a", [3, 5, 6, 7, 8]);
