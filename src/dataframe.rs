@@ -652,7 +652,13 @@ impl JsDataFrame {
 
     #[napi(catch_unwind)]
     pub fn get_columns(&self) -> Vec<JsSeries> {
-        let cols: Vec<Series> = self.df.get_columns().iter().map(Column::as_materialized_series).cloned().collect();
+        let cols: Vec<Series> = self
+            .df
+            .get_columns()
+            .iter()
+            .map(Column::as_materialized_series)
+            .cloned()
+            .collect();
         to_jsseries_collection(cols.to_vec())
     }
 

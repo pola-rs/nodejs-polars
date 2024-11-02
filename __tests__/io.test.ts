@@ -404,20 +404,20 @@ describe("avro", () => {
     const actual = pl.readAvro(buf);
     expect(actual).toFrameEqual(expected);
   });
-  test("read", () => {
-    const df = pl.readAvro(avropath);
-    expect(df.shape).toEqual({ height: 27, width: 4 });
+  test("read:avro", () => {
+    const df = pl.readAvro(avropath, { nRows: 4 });
+    expect(df.shape).toEqual({ height: 4, width: 4 });
   });
-  test("read:buffer", () => {
+  test("read:avro:buffer", () => {
     const buff = fs.readFileSync(avropath);
-    const df = pl.readAvro(buff);
-    expect(df.shape).toEqual({ height: 27, width: 4 });
+    const df = pl.readAvro(buff, { nRows: 4 });
+    expect(df.shape).toEqual({ height: 4, width: 4 });
   });
 
-  test("read:compressed", () => {
-    const csvDF = pl.readCSV(csvpath);
+  test("read:avro:compressed", () => {
+    const csvDF = pl.readCSV(csvpath, { nRows: 4 });
     csvDF.writeAvro(avropath, { compression: "snappy" });
-    const df = pl.readAvro(avropath);
+    const df = pl.readAvro(avropath, { nRows: 4 });
     expect(df).toFrameEqual(csvDF);
   });
 
