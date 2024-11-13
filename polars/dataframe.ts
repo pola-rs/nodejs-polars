@@ -1787,7 +1787,7 @@ export interface DataFrame
     Or combine them:
     - "3d12h4m25s" # 3 days, 12 hours, 4 minutes, and 25 seconds
 
-    By "calendar day", we mean the corresponding time on the next day (which may not be 24 hours, due to daylight savings). 
+    By "calendar day", we mean the corresponding time on the next day (which may not be 24 hours, due to daylight savings).
     Similarly for "calendar week", "calendar month", "calendar quarter", and "calendar year".
 
     Parameters
