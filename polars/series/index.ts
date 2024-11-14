@@ -1872,7 +1872,7 @@ export function _Series(_s: any): Series {
     },
   };
 
-  return new Proxy(series, {
+  return new Proxy(series as unknown as Series, {
     get: (target, prop, receiver) => {
       if (typeof prop !== "symbol" && !Number.isNaN(Number(prop))) {
         return target.get(Number(prop));
