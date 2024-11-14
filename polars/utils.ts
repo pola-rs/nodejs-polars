@@ -77,3 +77,5 @@ export const regexToString = (r: string | RegExp): string => {
 };
 
 export const INSPECT_SYMBOL = Symbol.for("nodejs.util.inspect.custom");
+
+export type Simplify<T> = { [K in keyof T]: T[K] } & {};
