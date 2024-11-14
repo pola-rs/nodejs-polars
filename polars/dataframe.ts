@@ -20,12 +20,13 @@ import type {
   WriteParquetOptions,
 } from "./types";
 
-import { DataType } from "./datatypes";
+import { type DTypeToJs, DataType, type JsToDtype } from "./datatypes";
 
 import {
   type ColumnSelection,
   type ColumnsOrExpr,
   type ExprOrString,
+  type Simplify,
   type ValueOrArray,
   columnOrColumns,
   columnOrColumnsStrict,
@@ -254,10 +255,10 @@ interface WriteMethods {
  * ╰─────┴─────┴─────╯
  * ```
  */
-export interface DataFrame
-  extends Arithmetic<DataFrame>,
-    Sample<DataFrame>,
-    Arithmetic<DataFrame>,
+export interface DataFrame<T extends Record<string, Series> = any>
+  extends Arithmetic<DataFrame<T>>,
+    Sample<DataFrame<T>>,
+    Arithmetic<DataFrame<T>>,
     WriteMethods,
     Serialize,
     GroupByOps<RollingGroupBy> {
@@ -274,7 +275,7 @@ export interface DataFrame
   /**
    * Very cheap deep clone.
    */
-  clone(): DataFrame;
+  clone(): DataFrame<T>;
   /**
    * __Summary statistics for a DataFrame.__
    *
@@ -336,9 +337,12 @@ export interface DataFrame
    * ╰─────┴─────╯
    * ```
    */
-  drop(name: string): DataFrame;
-  drop(names: string[]): DataFrame;
-  drop(name: string, ...names: string[]): DataFrame;
+  drop<U extends string>(name: U): DataFrame<Simplify<Omit<T, U>>>;
+  drop<U extends string[]>(names: U): DataFrame<Simplify<Omit<T, U[number]>>>;
+  drop<U extends string, V extends string[]>(
+    name: U,
+    ...names: V
+  ): DataFrame<Simplify<Omit<T, U | V[number]>>>;
   /**
    * __Return a new DataFrame where the null values are dropped.__
    *
@@ -518,7 +522,7 @@ export interface DataFrame
    * 2
    * ```
    */
-  findIdxByName(name: string): number;
+  findIdxByName(name: keyof T): number;
   /**
    * __Apply a horizontal reduction on a DataFrame.__
    *
@@ -605,11 +609,12 @@ export interface DataFrame
   /**
    * Get a single column as Series by name.
    */
+  getColumn<U extends keyof T>(name: U): T[U];
   getColumn(name: string): Series;
   /**
    * Get the DataFrame as an Array of Series.
    */
-  getColumns(): Array<Series>;
+  getColumns(): T[keyof T][];
   /**
    * Start a groupby operation.
    * ___
@@ -656,7 +661,7 @@ export interface DataFrame
    * ╰─────┴─────┴─────╯
    * ```
    */
-  head(length?: number): DataFrame;
+  head(length?: number): DataFrame<T>;
   /**
    * Return a new DataFrame grown horizontally by stacking multiple Series to it.
    * @param columns - array of Series or DataFrame to stack
@@ -669,7 +674,7 @@ export interface DataFrame
    * ...   "ham": ['a', 'b', 'c']
    * ... });
    * > const x = pl.Series("apple", [10, 20, 30])
-   * > df.hStack([x])
+   * > df.hstack([x])
    * shape: (3, 4)
    * ╭─────┬─────┬─────┬───────╮
    * │ foo ┆ bar ┆ ham ┆ apple │
@@ -684,6 +689,12 @@ export interface DataFrame
    * ╰─────┴─────┴─────┴───────╯
    * ```
    */
+  hstack<U extends Record<string, Series> = any>(
+    columns: DataFrame<U>,
+  ): DataFrame<Simplify<T & U>>;
+  hstack<U extends Series[]>(
+    columns: U,
+  ): DataFrame<Simplify<T & { [K in U[number] as K["name"]]: K }>>;
   hstack(columns: Array<Series> | DataFrame): DataFrame;
   hstack(columns: Array<Series> | DataFrame, inPlace?: boolean): void;
   /**
@@ -1174,6 +1185,9 @@ export interface DataFrame
    * ╰───────┴─────┴─────╯
    * ```
    */
+  rename<const U extends Record<keyof T, string>>(
+    mapping: U,
+  ): DataFrame<{ [K in keyof T as U[K]]: T[K] }>;
   rename(mapping: Record<string, string>): DataFrame;
   /**
    * Replace a column at an index location.
@@ -1223,7 +1237,7 @@ export interface DataFrame
    * Convert columnar data to rows as arrays
    */
   rows(): Array<Array<any>>;
-  get schema(): Record<string, DataType>;
+  get schema(): { [K in keyof T]: T[K]["dtype"] };
   /**
    * Select columns from this DataFrame.
    * ___
@@ -1250,7 +1264,12 @@ export interface DataFrame
    * └─────┘
    * ```
    */
-  select(...columns: ExprOrString[]): DataFrame;
+  select<U extends keyof T>(
+    ...columns: U[]
+  ): DataFrame<{
+    [P in U]: T[P];
+  }>;
+  select(...columns: ExprOrString[]): DataFrame<T>;
   /**
    * Shift the values by a given period and fill the parts that will be empty due to this operation
    * with `Nones`.
@@ -1291,8 +1310,8 @@ export interface DataFrame
    * └──────┴──────┴──────┘
    * ```
    */
-  shift(periods: number): DataFrame;
-  shift({ periods }: { periods: number }): DataFrame;
+  shift(periods: number): DataFrame<T>;
+  shift({ periods }: { periods: number }): DataFrame<T>;
   /**
    * Shift the values by a given period and fill the parts that will be empty due to this operation
    * with the result of the `fill_value` expression.
@@ -1523,7 +1542,9 @@ export interface DataFrame
    * ```
    * @category IO
    */
-  toObject(): Record<string, any[]>;
+  toObject(): {
+    [K in keyof T]: DTypeToJs<T[K]["dtype"]>[];
+  };
 
   /**
    * @deprecated *since 0.4.0* use {@link writeIPC}
@@ -1758,7 +1779,16 @@ export interface DataFrame
    * @param existingName
    * @param newName
    */
+  withColumnRenamed<Existing extends keyof T, New extends string>(
+    existingName: Existing,
+    replacement: New,
+  ): DataFrame<{ [K in keyof T as K extends Existing ? New : K]: T[K] }>;
   withColumnRenamed(existing: string, replacement: string): DataFrame;
+
+  withColumnRenamed<Existing extends keyof T, New extends string>(opts: {
+    existingName: Existing;
+    replacement: New;
+  }): DataFrame<{ [K in keyof T as K extends Existing ? New : K]: T[K] }>;
   withColumnRenamed(opts: { existing: string; replacement: string }): DataFrame;
   /**
    * Add a column at index 0 that counts the rows.
@@ -2697,6 +2727,14 @@ export const _DataFrame = (_df: any): DataFrame => {
   });
 };
 
+interface DataFrameOptions {
+  columns?: any[];
+  orient?: "row" | "col";
+  schema?: Record<string, string | DataType>;
+  schemaOverrides?: Record<string, string | DataType>;
+  inferSchemaLength?: number;
+}
+
 /**
  * DataFrame constructor
  */
@@ -2746,16 +2784,21 @@ export interface DataFrameConstructor extends Deserialize<DataFrame> {
    * ╰─────┴─────╯
    * ```
    */
-  (
-    data: any,
-    options?: {
-      columns?: any[];
-      orient?: "row" | "col";
-      schema?: Record<string, string | DataType>;
-      schemaOverrides?: Record<string, string | DataType>;
-      inferSchemaLength?: number;
-    },
-  ): DataFrame;
+  <T1 extends ArrayLike<Series>>(
+    data: T1,
+    options?: DataFrameOptions,
+  ): DataFrame<{
+    [K in T1[number] as K["name"]]: K;
+  }>;
+  <T2 extends Record<string, ArrayLike<any>>>(
+    data: T2,
+    options?: DataFrameOptions,
+  ): DataFrame<{
+    [K in keyof T2]: K extends string
+      ? Series<JsToDtype<T2[K][number]>, K>
+      : never;
+  }>;
+  (data: any, options?: DataFrameOptions): DataFrame;
   isDataFrame(arg: any): arg is DataFrame;
 }
 
