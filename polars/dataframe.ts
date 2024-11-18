@@ -1191,12 +1191,15 @@ export interface DataFrame<T extends Record<string, Series> = any>
   rename(mapping: Record<string, string>): DataFrame;
   /**
    * Replace a column at an index location.
+   *
+   * @warning typescript cannot encode type mutation,
+   * so the type of the DataFrame will be incorrect. cast the type of dataframe manually.
    * ___
    * @param index - Column index
    * @param newColumn - New column to insert
    * @example
    * ```
-   * > const df = pl.DataFrame({
+   * > const df: pl.DataFrame = pl.DataFrame({
    * ...   "foo": [1, 2, 3],
    * ...   "bar": [6, 7, 8],
    * ...   "ham": ['a', 'b', 'c']

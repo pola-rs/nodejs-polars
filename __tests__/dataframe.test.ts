@@ -756,7 +756,7 @@ describe("dataframe", () => {
     expect(actual.columns).toEqual(["foo_new", "bar_new", "ham_new"]);
   });
   test("replaceAtIdx", () => {
-    const actual = pl.DataFrame({
+    const actual: pl.DataFrame = pl.DataFrame({
       foo: [1, 2, 3],
       bar: [6, 7, 8],
       ham: ["a", "b", "c"],
@@ -1315,101 +1315,109 @@ describe("dataframe", () => {
     expect(actual).toFrameEqual(expected);
   });
   test("pivot", () => {
-    let df = pl.DataFrame({
-      a: pl.Series([1, 2, 3]).cast(pl.Int32),
-      b: pl
-        .Series([
-          [1, 1],
-          [2, 2],
-          [3, 3],
-        ])
-        .cast(pl.List(pl.Int32)),
-    });
-
-    let expected = pl
-      .DataFrame({
+    {
+      const df = pl.DataFrame({
         a: pl.Series([1, 2, 3]).cast(pl.Int32),
-        "1": pl.Series([[1, 1], null, null]).cast(pl.List(pl.Int32)),
-        "2": pl.Series([null, [2, 2], null]).cast(pl.List(pl.Int32)),
-        "3": pl.Series([null, null, [3, 3]]).cast(pl.List(pl.Int32)),
-      })
-      .select("a", "1", "2", "3");
+        b: pl
+          .Series([
+            [1, 1],
+            [2, 2],
+            [3, 3],
+          ])
+          .cast(pl.List(pl.Int32)),
+      });
 
-    let actual = df.pivot("b", {
-      index: "a",
-      on: "a",
-      aggregateFunc: "first",
-      sortColumns: true,
-    });
+      const expected = pl
+        .DataFrame({
+          a: pl.Series([1, 2, 3]).cast(pl.Int32),
+          "1": pl.Series([[1, 1], null, null]).cast(pl.List(pl.Int32)),
+          "2": pl.Series([null, [2, 2], null]).cast(pl.List(pl.Int32)),
+          "3": pl.Series([null, null, [3, 3]]).cast(pl.List(pl.Int32)),
+        })
+        .select("a", "1", "2", "3");
 
-    expect(actual).toFrameEqual(expected, true);
+      const actual = df.pivot("b", {
+        index: "a",
+        on: "a",
+        aggregateFunc: "first",
+        sortColumns: true,
+      });
 
-    df = pl.DataFrame({
-      a: ["beep", "bop"],
-      b: ["a", "b"],
-      c: ["s", "f"],
-      d: [7, 8],
-      e: ["x", "y"],
-    });
-    actual = df.pivot(["a", "e"], {
-      index: "b",
-      on: ["b"],
-      aggregateFunc: "first",
-      separator: "|",
-      maintainOrder: true,
-    });
+      expect(actual).toFrameEqual(expected, true);
+    }
 
-    expected = pl.DataFrame({
-      b: ["a", "b"],
-      "a|a": ["beep", null],
-      "a|b": [null, "bop"],
-      "e|a": ["x", null],
-      "e|b": [null, "y"],
-    });
-    expect(actual).toFrameEqual(expected, true);
+    {
+      const df = pl.DataFrame({
+        a: ["beep", "bop"],
+        b: ["a", "b"],
+        c: ["s", "f"],
+        d: [7, 8],
+        e: ["x", "y"],
+      });
+      const actual = df.pivot(["a", "e"], {
+        index: "b",
+        on: ["b"],
+        aggregateFunc: "first",
+        separator: "|",
+        maintainOrder: true,
+      });
 
-    df = pl.DataFrame({
-      foo: ["A", "A", "B", "B", "C"],
-      N: [1, 2, 2, 4, 2],
-      bar: ["k", "l", "m", "n", "o"],
-    });
-    actual = df.pivot(["N"], {
-      index: "foo",
-      on: "bar",
-      aggregateFunc: "first",
-    });
-    expected = pl.DataFrame({
-      foo: ["A", "B", "C"],
-      k: [1, null, null],
-      l: [2, null, null],
-      m: [null, 2, null],
-      n: [null, 4, null],
-      o: [null, null, 2],
-    });
-    expect(actual).toFrameEqual(expected, true);
+      const expected = pl.DataFrame({
+        b: ["a", "b"],
+        "a|a": ["beep", null],
+        "a|b": [null, "bop"],
+        "e|a": ["x", null],
+        "e|b": [null, "y"],
+      });
+      expect(actual).toFrameEqual(expected, true);
+    }
+    {
+      const df = pl.DataFrame({
+        foo: ["A", "A", "B", "B", "C"],
+        N: [1, 2, 2, 4, 2],
+        bar: ["k", "l", "m", "n", "o"],
+      });
+      const actual = df.pivot(["N"], {
+        index: "foo",
+        on: "bar",
+        aggregateFunc: "first",
+      });
 
-    df = pl.DataFrame({
-      ix: [1, 1, 2, 2, 1, 2],
-      col: ["a", "a", "a", "a", "b", "b"],
-      foo: [0, 1, 2, 2, 7, 1],
-      bar: [0, 2, 0, 0, 9, 4],
-    });
+      const expected = pl.DataFrame({
+        foo: ["A", "B", "C"],
+        k: [1, null, null],
+        l: [2, null, null],
+        m: [null, 2, null],
+        n: [null, 4, null],
+        o: [null, null, 2],
+      });
 
-    actual = df.pivot(["foo", "bar"], {
-      index: "ix",
-      on: "col",
-      aggregateFunc: "sum",
-      separator: "/",
-    });
+      expect(actual).toFrameEqual(expected, true);
+    }
+    {
+      const df = pl.DataFrame({
+        ix: [1, 1, 2, 2, 1, 2],
+        col: ["a", "a", "a", "a", "b", "b"],
+        foo: [0, 1, 2, 2, 7, 1],
+        bar: [0, 2, 0, 0, 9, 4],
+      });
 
-    expected = pl.DataFrame({
-      ix: [1, 2],
-      "foo/a": [1, 4],
-      "foo/b": [7, 1],
-      "bar/a": [2, 0],
-      "bar/b": [9, 4],
-    });
-    expect(actual).toFrameEqual(expected, true);
+      const actual = df.pivot(["foo", "bar"], {
+        index: "ix",
+        on: "col",
+        aggregateFunc: "sum",
+        separator: "/",
+      });
+
+      const expected = pl.DataFrame({
+        ix: [1, 2],
+        "foo/a": [1, 4],
+        "foo/b": [7, 1],
+        "bar/a": [2, 0],
+        "bar/b": [9, 4],
+      });
+      expect(actual).toFrameEqual(expected, true);
+    }
   });
 });
 describe("join", () => {
