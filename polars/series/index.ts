@@ -1909,7 +1909,7 @@ export interface SeriesConstructor extends Deserialize<Series> {
    * ]
    * ```
    */
-  <T extends JsType>(values: ArrayLike<T>): Series<JsToDtype<T>>;
+  <T extends JsType>(values: ArrayLike<T | null>): Series<JsToDtype<T>>;
   (values: any): Series;
   /**
    * Create a new named series
@@ -1929,11 +1929,11 @@ export interface SeriesConstructor extends Deserialize<Series> {
    */
   <T1 extends JsType, Name extends string>(
     name: Name,
-    values: ArrayLike<T1>,
+    values: ArrayLike<T1 | null>,
   ): Series<JsToDtype<T1>, Name>;
   <T2 extends DataType, Name extends string>(
     name: Name,
-    values: ArrayLike<DTypeToJs<T2>>,
+    values: ArrayLike<DTypeToJs<T2 | null>>,
     dtype?: T2,
   ): Series<T2, Name>;
   (name: string, values: any[], dtype?): Series;
