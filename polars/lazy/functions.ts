@@ -232,7 +232,7 @@ export function intRange(
   opts: any,
   end?,
   step = 1 as number | Expr,
-  dtype = DataType.Int64,
+  dtype: DataType = DataType.Int64,
   eager?,
 ): Series | Expr {
   // @deprecated since 0.15.0
