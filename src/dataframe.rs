@@ -31,12 +31,12 @@ impl From<DataFrame> for JsDataFrame {
     }
 }
 
-pub(crate) fn to_series_collection(ps: Array) -> Vec<Series> {
+pub(crate) fn to_series_collection(ps: Array) -> Vec<Column> {
     let len = ps.len();
     (0..len)
         .map(|idx| {
             let item: &JsSeries = ps.get(idx).unwrap().unwrap();
-            item.series.clone()
+            item.series.clone().into()
         })
         .collect()
 }
@@ -67,7 +67,6 @@ pub struct ReadCsvOptions {
     pub num_threads: Option<u32>,
     pub path: Option<String>,
     pub dtypes: Option<HashMap<String, Wrap<DataType>>>,
-    pub sample_size: u32,
     pub chunk_size: u32,
     pub comment_char: Option<String>,
     pub null_values: Option<Wrap<NullValues>>,
@@ -97,7 +96,13 @@ fn mmap_reader_to_df<'a>(
         .projection
         .map(|p: Vec<u32>| p.into_iter().map(|p| p as usize).collect());
 
-    let quote_char = options.quote_char.map_or(None, |q| if q.is_empty() { None } else { Some(q.as_bytes()[0]) } );
+    let quote_char = options.quote_char.map_or(None, |q| {
+        if q.is_empty() {
+            None
+        } else {
+            Some(q.as_bytes()[0])
+        }
+    });
 
     let encoding = match options.encoding.as_ref() {
         "utf8" => CsvEncoding::Utf8,
@@ -124,13 +129,16 @@ fn mmap_reader_to_df<'a>(
         .with_ignore_errors(options.ignore_errors)
         .with_rechunk(options.rechunk)
         .with_chunk_size(options.chunk_size as usize)
-        .with_columns(options.columns.map(|x| x.into_iter().map(PlSmallStr::from_string).collect()))
+        .with_columns(
+            options
+                .columns
+                .map(|x| x.into_iter().map(PlSmallStr::from_string).collect()),
+        )
         .with_n_threads(options.num_threads.map(|i| i as usize))
         .with_schema_overwrite(overwrite_dtype.map(Arc::new))
         .with_schema(options.schema.map(|schema| Arc::new(schema.0)))
         .with_low_memory(options.low_memory)
         .with_row_index(row_count)
-        .with_sample_size(options.sample_size as usize)
         .with_skip_rows_after_header(options.skip_rows_after_header as usize)
         .with_raise_if_empty(options.raise_if_empty)
         .with_parse_options(
@@ -508,10 +516,10 @@ impl JsDataFrame {
     #[napi(constructor)]
     pub fn from_columns(columns: Array) -> napi::Result<JsDataFrame> {
         let len = columns.len();
-        let cols: Vec<Series> = (0..len)
+        let cols: Vec<Column> = (0..len)
             .map(|idx| {
                 let item: &JsSeries = columns.get(idx).unwrap().unwrap();
-                item.series.clone()
+                item.series.clone().into()
             })
             .collect();
 
@@ -628,8 +636,7 @@ impl JsDataFrame {
 
         let df = self
             .df
-            .join
-            (
+            .join(
                 &other.df,
                 left_on,
                 right_on,
@@ -645,7 +652,13 @@ impl JsDataFrame {
 
     #[napi(catch_unwind)]
     pub fn get_columns(&self) -> Vec<JsSeries> {
-        let cols = self.df.get_columns();
+        let cols: Vec<Series> = self
+            .df
+            .get_columns()
+            .iter()
+            .map(Column::as_materialized_series)
+            .cloned()
+            .collect();
         to_jsseries_collection(cols.to_vec())
     }
 
@@ -657,9 +670,7 @@ impl JsDataFrame {
 
     #[napi(setter, js_name = "columns", catch_unwind)]
     pub fn set_columns(&mut self, names: Vec<&str>) -> napi::Result<()> {
-        self.df
-            .set_column_names(names)
-            .map_err(JsPolarsErr::from)?;
+        self.df.set_column_names(names).map_err(JsPolarsErr::from)?;
         Ok(())
     }
 
@@ -728,7 +739,9 @@ impl JsDataFrame {
     #[napi(catch_unwind)]
     pub fn drop_in_place(&mut self, name: String) -> napi::Result<JsSeries> {
         let s = self.df.drop_in_place(&name).map_err(JsPolarsErr::from)?;
-        Ok(JsSeries { series: s })
+        Ok(JsSeries {
+            series: s.take_materialized_series(),
+        })
     }
     #[napi(catch_unwind)]
     pub fn drop_nulls(&self, subset: Option<Vec<String>>) -> napi::Result<JsDataFrame> {
@@ -748,7 +761,7 @@ impl JsDataFrame {
     pub fn select_at_idx(&self, idx: i64) -> Option<JsSeries> {
         self.df
             .select_at_idx(idx as usize)
-            .map(|s| JsSeries::new(s.clone()))
+            .map(|s| JsSeries::new(s.clone().take_materialized_series()))
     }
 
     #[napi(catch_unwind)]
@@ -760,7 +773,7 @@ impl JsDataFrame {
         let series = self
             .df
             .column(&name)
-            .map(|s| JsSeries::new(s.clone()))
+            .map(|s| JsSeries::new(s.clone().take_materialized_series()))
             .map_err(JsPolarsErr::from)?;
         Ok(series)
     }
@@ -958,13 +971,13 @@ impl JsDataFrame {
         id_vars: Vec<String>,
         value_vars: Vec<String>,
         variable_name: Option<String>,
-        value_name: Option<String>
+        value_name: Option<String>,
     ) -> napi::Result<JsDataFrame> {
         let args = UnpivotArgsIR {
             on: strings_to_pl_smallstr(value_vars),
             index: strings_to_pl_smallstr(id_vars),
             variable_name: variable_name.map(|s| s.into()),
-            value_name: value_name.map(|s| s.into())
+            value_name: value_name.map(|s| s.into()),
         };
 
         let df = self.df.unpivot2(args).map_err(JsPolarsErr::from)?;
@@ -1030,13 +1043,13 @@ impl JsDataFrame {
     #[napi(catch_unwind)]
     pub fn hmax(&self) -> napi::Result<Option<JsSeries>> {
         let s = self.df.max_horizontal().map_err(JsPolarsErr::from)?;
-        Ok(s.map(|s| s.into()))
+        Ok(s.map(|s| s.take_materialized_series().into()))
     }
 
     #[napi(catch_unwind)]
     pub fn hmin(&self) -> napi::Result<Option<JsSeries>> {
         let s = self.df.min_horizontal().map_err(JsPolarsErr::from)?;
-        Ok(s.map(|s| s.into()))
+        Ok(s.map(|s| s.take_materialized_series().into()))
     }
 
     #[napi(catch_unwind)]
@@ -1748,13 +1761,13 @@ unsafe fn coerce_js_anyvalue<'a>(val: JsUnknown, dtype: DataType) -> JsResult<An
             AnyValue::Date(n)
         }),
         (ValueType::BigInt | ValueType::Number, Datetime(_, _)) => {
-            i64::from_js(val).map(|d| AnyValue::Datetime(d, TimeUnit::Milliseconds, &None))
+            i64::from_js(val).map(|d| AnyValue::Datetime(d, TimeUnit::Milliseconds, None))
         }
         (ValueType::Object, DataType::Datetime(_, _)) => {
             if val.is_date()? {
                 let d: napi::JsDate = val.cast();
                 let d = d.value_of()?;
-                Ok(AnyValue::Datetime(d as i64, TimeUnit::Milliseconds, &None))
+                Ok(AnyValue::Datetime(d as i64, TimeUnit::Milliseconds, None))
             } else {
                 Ok(AnyValue::Null)
             }

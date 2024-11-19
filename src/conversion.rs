@@ -6,7 +6,6 @@ use polars::frame::NullStrategy;
 use polars::prelude::*;
 use polars_core::series::ops::NullBehavior;
 use polars_io::RowIndex;
-use std::any::Any;
 use std::collections::HashMap;
 
 #[derive(Debug)]
@@ -107,9 +106,7 @@ impl ToNapiValue for Wrap<&Series> {
 impl<'a> ToNapiValue for Wrap<AnyValue<'a>> {
     unsafe fn to_napi_value(env: sys::napi_env, val: Self) -> Result<sys::napi_value> {
         match val.0 {
-            AnyValue::Null => {
-                napi::bindgen_prelude::Null::to_napi_value(env, napi::bindgen_prelude::Null)
-            }
+            AnyValue::Null => napi::bindgen_prelude::Null::to_napi_value(env, napi::bindgen_prelude::Null),
             AnyValue::Boolean(b) => bool::to_napi_value(env, b),
             AnyValue::Int8(n) => i32::to_napi_value(env, n as i32),
             AnyValue::Int16(n) => i32::to_napi_value(env, n as i32),
@@ -156,15 +153,16 @@ impl<'a> ToNapiValue for Wrap<AnyValue<'a>> {
             AnyValue::List(ser) => Wrap::<&Series>::to_napi_value(env, Wrap(&ser)),
             ref av @ AnyValue::Struct(_, _, flds) => struct_dict(env, av._iter_struct_av(), flds),
             AnyValue::Array(ser, _) => Wrap::<&Series>::to_napi_value(env, Wrap(&ser)),
-            AnyValue::Enum(_, _, _) => todo!(),
-            AnyValue::Object(_) => todo!(),
-            AnyValue::ObjectOwned(_) => todo!(),
-            AnyValue::StructOwned(_) => todo!(),
-            AnyValue::Binary(_) => todo!(),
-            AnyValue::BinaryOwned(_) => todo!(),
-            AnyValue::Decimal(_, _) => {
-                Err(napi::Error::from_reason("Decimal is not a supported type in javascript, please convert to string or number before collecting to js"))
-            }
+            AnyValue::Enum(_, _, _) => Err(napi::Error::from_reason("Enum is not a supported, please convert to string or number before collecting to js")),
+            AnyValue::Object(_) => Err(napi::Error::from_reason("Object is not a supported, please convert to string or number before collecting to js")),
+            AnyValue::ObjectOwned(_) => Err(napi::Error::from_reason("ObjectOwned is not a supported, please convert to string or number before collecting to js")),
+            AnyValue::StructOwned(_) => Err(napi::Error::from_reason("StructOwned is not a supported, please convert to string or number before collecting to js")),
+            AnyValue::Binary(_) => Err(napi::Error::from_reason("Binary is not a supported, please convert to string or number before collecting to js")),
+            AnyValue::BinaryOwned(_) => Err(napi::Error::from_reason("BinaryOwned is not a supported, please convert to string or number before collecting to js")),
+            AnyValue::Decimal(_, _) => Err(napi::Error::from_reason("Decimal is not a supported type in javascript, please convert to string or number before collecting to js")),
+            AnyValue::CategoricalOwned(_,_,_) => Err(napi::Error::from_reason("CategoricalOwned is not a supported, please convert to string or number before collecting to js")),
+            AnyValue::DatetimeOwned(_,_,_) => Err(napi::Error::from_reason("DatetimeOwned is not a supported, please convert to string or number before collecting to js")),
+            AnyValue::EnumOwned(_,_,_) => Err(napi::Error::from_reason("EnumOwned is not a supported, please convert to string or number before collecting to js")),
         }
     }
 }
@@ -293,9 +291,9 @@ impl FromNapiValue for Wrap<JsExpr> {
     }
 }
 
-impl TypeName for Wrap<QuantileInterpolOptions> {
+impl TypeName for Wrap<QuantileMethod> {
     fn type_name() -> &'static str {
-        "QuantileInterpolOptions"
+        "QuantileMethod"
     }
 
     fn value_type() -> ValueType {
@@ -303,15 +301,15 @@ impl TypeName for Wrap<QuantileInterpolOptions> {
     }
 }
 
-impl FromNapiValue for Wrap<QuantileInterpolOptions> {
+impl FromNapiValue for Wrap<QuantileMethod> {
     unsafe fn from_napi_value(env: sys::napi_env, napi_val: sys::napi_value) -> JsResult<Self> {
         let interpolation = String::from_napi_value(env, napi_val)?;
         let interpol = match interpolation.as_ref() {
-            "nearest" => QuantileInterpolOptions::Nearest,
-            "lower" => QuantileInterpolOptions::Lower,
-            "higher" => QuantileInterpolOptions::Higher,
-            "midpoint" => QuantileInterpolOptions::Midpoint,
-            "linear" => QuantileInterpolOptions::Linear,
+            "nearest" => QuantileMethod::Nearest,
+            "lower" => QuantileMethod::Lower,
+            "higher" => QuantileMethod::Higher,
+            "midpoint" => QuantileMethod::Midpoint,
+            "linear" => QuantileMethod::Linear,
             _ => return Err(napi::Error::from_reason("not supported".to_owned())),
         };
         Ok(Wrap(interpol))
@@ -524,9 +522,9 @@ impl From<JsRollingOptions> for RollingOptionsFixedWindow {
             weights: o.weights,
             min_periods: o.min_periods as usize,
             center: o.center,
-            fn_params: Some(Arc::new(RollingVarParams {
+            fn_params: Some(RollingFnParams::Var(RollingVarParams {
                 ddof: o.ddof.unwrap_or(1),
-            }) as Arc<dyn Any + Send + Sync>),
+            })),
             ..Default::default()
         }
     }
@@ -800,7 +798,9 @@ impl FromNapiValue for Wrap<SortOptions> {
     unsafe fn from_napi_value(env: sys::napi_env, napi_val: sys::napi_value) -> napi::Result<Self> {
         let obj = Object::from_napi_value(env, napi_val)?;
         let descending = obj.get::<_, bool>("descending")?.unwrap();
-        let nulls_last = obj.get::<_, bool>("nulls_last")?.map_or(obj.get::<_, bool>("nullsLast")?.unwrap_or(false), |n| n);
+        let nulls_last = obj
+            .get::<_, bool>("nulls_last")?
+            .map_or(obj.get::<_, bool>("nullsLast")?.unwrap_or(false), |n| n);
         let multithreaded = obj.get::<_, bool>("multithreaded")?.unwrap();
         let maintain_order: bool = obj.get::<_, bool>("maintain_order")?.unwrap();
         let options = SortOptions {
@@ -1007,9 +1007,14 @@ impl FromNapiValue for Wrap<NullValues> {
         if let Ok(s) = String::from_napi_value(env, napi_val) {
             Ok(Wrap(NullValues::AllColumnsSingle(s.into())))
         } else if let Ok(s) = Vec::<String>::from_napi_value(env, napi_val) {
-            Ok(Wrap(NullValues::AllColumns(s.into_iter().map(PlSmallStr::from_string).collect())))
+            Ok(Wrap(NullValues::AllColumns(
+                s.into_iter().map(PlSmallStr::from_string).collect(),
+            )))
         } else if let Ok(s) = HashMap::<String, String>::from_napi_value(env, napi_val) {
-            let null_values = s.into_iter().map(|a| (PlSmallStr::from_string(a.0), PlSmallStr::from_string(a.1))).collect::<Vec<(PlSmallStr, PlSmallStr)>>();
+            let null_values = s
+                .into_iter()
+                .map(|a| (PlSmallStr::from_string(a.0), PlSmallStr::from_string(a.1)))
+                .collect::<Vec<(PlSmallStr, PlSmallStr)>>();
             Ok(Wrap(NullValues::Named(null_values)))
         } else {
             Err(
@@ -1024,9 +1029,14 @@ impl ToNapiValue for Wrap<NullValues> {
     unsafe fn to_napi_value(env: sys::napi_env, val: Self) -> napi::Result<sys::napi_value> {
         match val.0 {
             NullValues::AllColumnsSingle(s) => String::to_napi_value(env, s.to_string()),
-            NullValues::AllColumns(arr) => Vec::<String>::to_napi_value(env, arr.iter().map(|x| x.to_string()).collect()),
+            NullValues::AllColumns(arr) => {
+                Vec::<String>::to_napi_value(env, arr.iter().map(|x| x.to_string()).collect())
+            }
             NullValues::Named(obj) => {
-                let o: HashMap<String, String> = obj.into_iter().map(|s| (s.0.to_string(), s.1.to_string())).collect::<HashMap<String, String>>();
+                let o: HashMap<String, String> = obj
+                    .into_iter()
+                    .map(|s| (s.0.to_string(), s.1.to_string()))
+                    .collect::<HashMap<String, String>>();
                 HashMap::<String, String>::to_napi_value(env, o)
             }
         }
@@ -1057,7 +1067,7 @@ impl FromJsUnknown for AnyValue<'_> {
                     let d: JsDate = unsafe { val.cast() };
                     let d = d.value_of()?;
                     let d = d as i64;
-                    Ok(AnyValue::Datetime(d, TimeUnit::Milliseconds, &None))
+                    Ok(AnyValue::Datetime(d, TimeUnit::Milliseconds, None))
                 } else {
                     Err(JsPolarsErr::Other("Unsupported Data type".to_owned()).into())
                 }
@@ -1236,7 +1246,10 @@ where
     I: IntoIterator<Item = S>,
     S: AsRef<str>,
 {
-    container.into_iter().map(|s| PlSmallStr::from_str(s.as_ref())).collect()
+    container
+        .into_iter()
+        .map(|s| PlSmallStr::from_str(s.as_ref()))
+        .collect()
 }
 
 pub(crate) fn strings_to_selector<I, S>(container: I) -> Vec<Selector>

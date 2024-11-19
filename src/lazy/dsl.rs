@@ -4,7 +4,6 @@ use crate::utils::reinterpret;
 use polars::lazy::dsl;
 use polars::lazy::dsl::Expr;
 use polars_core::series::ops::NullBehavior;
-use std::any::Any;
 use std::borrow::Cow;
 
 #[napi]
@@ -255,11 +254,7 @@ impl JsExpr {
     }
 
     #[napi(catch_unwind)]
-    pub fn quantile(
-        &self,
-        quantile: &JsExpr,
-        interpolation: Wrap<QuantileInterpolOptions>,
-    ) -> JsExpr {
+    pub fn quantile(&self, quantile: &JsExpr, interpolation: Wrap<QuantileMethod>) -> JsExpr {
         self.clone()
             .inner
             .quantile(quantile.inner.clone(), interpolation.0)
@@ -450,7 +445,7 @@ impl JsExpr {
         self.clone()
             .inner
             .map(
-                move |s: Series| Ok(Some(s.gather_every(n as usize, offset as usize))),
+                move |s: Column| Ok(Some(s.gather_every(n as usize, offset as usize))),
                 GetOutput::same_type(),
             )
             .with_fmt("gather_every")
@@ -674,10 +669,10 @@ impl JsExpr {
 
     #[napi(catch_unwind)]
     pub fn str_strip(&self) -> JsExpr {
-        let function = |s: Series| {
+        let function = |s: Column| {
             let ca = s.str()?;
             Ok(Some(
-                ca.apply(|s| Some(Cow::Borrowed(s?.trim()))).into_series(),
+                ca.apply(|s| Some(Cow::Borrowed(s?.trim()))).into_column(),
             ))
         };
         self.clone()
@@ -689,11 +684,11 @@ impl JsExpr {
 
     #[napi(catch_unwind)]
     pub fn str_rstrip(&self) -> JsExpr {
-        let function = |s: Series| {
+        let function = |s: Column| {
             let ca = s.str()?;
             Ok(Some(
                 ca.apply(|s| Some(Cow::Borrowed(s?.trim_end())))
-                    .into_series(),
+                    .into_column(),
             ))
         };
         self.clone()
@@ -705,11 +700,11 @@ impl JsExpr {
 
     #[napi(catch_unwind)]
     pub fn str_lstrip(&self) -> JsExpr {
-        let function = |s: Series| {
+        let function = |s: Column| {
             let ca = s.str()?;
             Ok(Some(
                 ca.apply(|s| Some(Cow::Borrowed(s?.trim_start())))
-                    .into_series(),
+                    .into_column(),
             ))
         };
         self.clone()
@@ -721,11 +716,11 @@ impl JsExpr {
 
     #[napi(catch_unwind)]
     pub fn str_pad_start(&self, length: i64, fill_char: String) -> JsExpr {
-        let function = move |s: Series| {
+        let function = move |s: Column| {
             let ca = s.str()?;
             Ok(Some(
                 ca.pad_start(length as usize, fill_char.chars().nth(0).unwrap())
-                    .into_series(),
+                    .into_column(),
             ))
         };
 
@@ -738,11 +733,11 @@ impl JsExpr {
 
     #[napi(catch_unwind)]
     pub fn str_pad_end(&self, length: i64, fill_char: String) -> JsExpr {
-        let function = move |s: Series| {
+        let function = move |s: Column| {
             let ca = s.str()?;
             Ok(Some(
                 ca.pad_end(length as usize, fill_char.chars().nth(0).unwrap())
-                    .into_series(),
+                    .into_column(),
             ))
         };
 
@@ -760,9 +755,9 @@ impl JsExpr {
 
     #[napi(catch_unwind)]
     pub fn str_to_uppercase(&self) -> JsExpr {
-        let function = |s: Series| {
+        let function = |s: Column| {
             let ca = s.str()?;
-            Ok(Some(ca.to_uppercase().into_series()))
+            Ok(Some(ca.to_uppercase().into_column()))
         };
         self.clone()
             .inner
@@ -782,9 +777,9 @@ impl JsExpr {
 
     #[napi(catch_unwind)]
     pub fn str_to_lowercase(&self) -> JsExpr {
-        let function = |s: Series| {
+        let function = |s: Column| {
             let ca = s.str()?;
-            Ok(Some(ca.to_lowercase().into_series()))
+            Ok(Some(ca.to_lowercase().into_column()))
         };
         self.clone()
             .inner
@@ -795,9 +790,9 @@ impl JsExpr {
 
     #[napi(catch_unwind)]
     pub fn str_lengths(&self) -> JsExpr {
-        let function = |s: Series| {
+        let function = |s: Column| {
             let ca = s.str()?;
-            Ok(Some(ca.str_len_chars().into_series()))
+            Ok(Some(ca.str_len_chars().into_column()))
         };
         self.clone()
             .inner
@@ -808,10 +803,10 @@ impl JsExpr {
 
     #[napi(catch_unwind)]
     pub fn str_replace(&self, pat: String, val: String) -> JsExpr {
-        let function = move |s: Series| {
+        let function = move |s: Column| {
             let ca = s.str()?;
             match ca.replace(&pat, &val) {
-                Ok(ca) => Ok(Some(ca.into_series())),
+                Ok(ca) => Ok(Some(ca.into_column())),
                 Err(e) => Err(PolarsError::ComputeError(format!("{:?}", e).into())),
             }
         };
@@ -824,10 +819,10 @@ impl JsExpr {
 
     #[napi(catch_unwind)]
     pub fn str_replace_all(&self, pat: String, val: String) -> JsExpr {
-        let function = move |s: Series| {
+        let function = move |s: Column| {
             let ca = s.str()?;
             match ca.replace_all(&pat, &val) {
-                Ok(ca) => Ok(Some(ca.into_series())),
+                Ok(ca) => Ok(Some(ca.into_column())),
                 Err(e) => Err(PolarsError::ComputeError(format!("{:?}", e).into())),
             }
         };
@@ -840,10 +835,10 @@ impl JsExpr {
 
     #[napi(catch_unwind)]
     pub fn str_contains(&self, pat: String, strict: bool) -> JsExpr {
-        let function = move |s: Series| {
+        let function = move |s: Column| {
             let ca = s.str()?;
             match ca.contains(&pat, strict) {
-                Ok(ca) => Ok(Some(ca.into_series())),
+                Ok(ca) => Ok(Some(ca.into_column())),
                 Err(e) => Err(PolarsError::ComputeError(format!("{:?}", e).into())),
             }
         };
@@ -858,7 +853,7 @@ impl JsExpr {
         self.clone()
             .inner
             .map(
-                move |s| s.str().map(|s| Some(s.hex_encode().into_series())),
+                move |s| s.str().map(|s| Some(s.hex_encode().into_column())),
                 GetOutput::same_type(),
             )
             .with_fmt("str.hex_encode")
@@ -869,7 +864,7 @@ impl JsExpr {
         self.clone()
             .inner
             .map(
-                move |s| s.str()?.hex_decode(strict).map(|s| Some(s.into_series())),
+                move |s| s.str()?.hex_decode(strict).map(|s| Some(s.into_column())),
                 GetOutput::same_type(),
             )
             .with_fmt("str.hex_decode")
@@ -880,7 +875,7 @@ impl JsExpr {
         self.clone()
             .inner
             .map(
-                move |s| s.str().map(|s| Some(s.base64_encode().into_series())),
+                move |s| s.str().map(|s| Some(s.base64_encode().into_column())),
                 GetOutput::same_type(),
             )
             .with_fmt("str.base64_encode")
@@ -895,7 +890,7 @@ impl JsExpr {
                 move |s| {
                     s.str()?
                         .base64_decode(strict)
-                        .map(|s| Some(s.into_series()))
+                        .map(|s| Some(s.into_column()))
                 },
                 GetOutput::same_type(),
             )
@@ -918,10 +913,10 @@ impl JsExpr {
     }
     #[napi(catch_unwind)]
     pub fn str_json_path_match(&self, pat: Wrap<ChunkedArray<StringType>>) -> JsExpr {
-        let function = move |s: Series| {
+        let function = move |s: Column| {
             let ca = s.str()?;
             match ca.json_path_match(&pat.0) {
-                Ok(ca) => Ok(Some(ca.into_series())),
+                Ok(ca) => Ok(Some(ca.into_column())),
                 Err(e) => Err(PolarsError::ComputeError(format!("{:?}", e).into())),
             }
         };
@@ -1037,7 +1032,7 @@ impl JsExpr {
         self.inner
             .clone()
             .map(
-                |s| Ok(Some(s.duration()?.days().into_series())),
+                |s| Ok(Some(s.duration()?.days().into_column())),
                 GetOutput::from_type(DataType::Int64),
             )
             .into()
@@ -1047,7 +1042,7 @@ impl JsExpr {
         self.inner
             .clone()
             .map(
-                |s| Ok(Some(s.duration()?.hours().into_series())),
+                |s| Ok(Some(s.duration()?.hours().into_column())),
                 GetOutput::from_type(DataType::Int64),
             )
             .into()
@@ -1057,7 +1052,7 @@ impl JsExpr {
         self.inner
             .clone()
             .map(
-                |s| Ok(Some(s.duration()?.seconds().into_series())),
+                |s| Ok(Some(s.duration()?.seconds().into_column())),
                 GetOutput::from_type(DataType::Int64),
             )
             .into()
@@ -1067,7 +1062,7 @@ impl JsExpr {
         self.inner
             .clone()
             .map(
-                |s| Ok(Some(s.duration()?.nanoseconds().into_series())),
+                |s| Ok(Some(s.duration()?.nanoseconds().into_column())),
                 GetOutput::from_type(DataType::Int64),
             )
             .into()
@@ -1077,7 +1072,7 @@ impl JsExpr {
         self.inner
             .clone()
             .map(
-                |s| Ok(Some(s.duration()?.milliseconds().into_series())),
+                |s| Ok(Some(s.duration()?.milliseconds().into_column())),
                 GetOutput::from_type(DataType::Int64),
             )
             .into()
@@ -1095,9 +1090,10 @@ impl JsExpr {
         self.clone()
             .inner
             .map(
-                |s| {
-                    s.timestamp(TimeUnit::Milliseconds)
-                        .map(|ca| Some((ca / 1000).into_series()))
+                |s: Column| {
+                    s.take_materialized_series()
+                        .timestamp(TimeUnit::Milliseconds)
+                        .map(|ca| Some((ca / 1000).into_column()))
                 },
                 GetOutput::from_type(DataType::Int64),
             )
@@ -1109,9 +1105,9 @@ impl JsExpr {
     }
     #[napi(catch_unwind)]
     pub fn hash(&self, k0: Wrap<u64>, k1: Wrap<u64>, k2: Wrap<u64>, k3: Wrap<u64>) -> JsExpr {
-        let function = move |s: Series| {
+        let function = move |s: Column| {
             let hb = PlRandomState::with_seeds(k0.0, k1.0, k2.0, k3.0);
-            Ok(Some(s.hash(hb).into_series()))
+            Ok(Some(s.as_materialized_series().hash(hb).into_column()))
         };
         self.clone()
             .inner
@@ -1121,7 +1117,7 @@ impl JsExpr {
 
     #[napi(catch_unwind)]
     pub fn reinterpret(&self, signed: bool) -> JsExpr {
-        let function = move |s: Series| reinterpret(&s, signed).map(Some);
+        let function = move |s: Column| reinterpret(&s, signed).map(Some);
         let dt = if signed {
             DataType::Int64
         } else {
@@ -1205,7 +1201,7 @@ impl JsExpr {
     pub fn rolling_quantile(
         &self,
         quantile: f64,
-        interpolation: Wrap<QuantileInterpolOptions>,
+        method: Wrap<QuantileMethod>,
         window_size: i16,
         weights: Option<Vec<f64>>,
         min_periods: i64,
@@ -1216,14 +1212,14 @@ impl JsExpr {
             min_periods: min_periods as usize,
             weights,
             center,
-            fn_params: Some(Arc::new(RollingQuantileParams {
+            fn_params: Some(RollingFnParams::Quantile(RollingQuantileParams {
                 prob: quantile,
-                interpol: interpolation.0,
-            }) as Arc<dyn Any + Send + Sync>),
+                method: method.0,
+            })),
         };
         self.inner
             .clone()
-            .rolling_quantile(interpolation.0, quantile, options)
+            .rolling_quantile(method.0, quantile, options)
             .into()
     }
     #[napi(catch_unwind)]
@@ -1357,7 +1353,12 @@ impl JsExpr {
             .into()
     }
     #[napi(catch_unwind)]
-    pub fn rank(&self, method: Wrap<RankMethod>, descending: bool, seed: Option<Wrap<u64>>) -> JsExpr {
+    pub fn rank(
+        &self,
+        method: Wrap<RankMethod>,
+        descending: bool,
+        seed: Option<Wrap<u64>>,
+    ) -> JsExpr {
         // Safety:
         // Wrap is transparent.
         let seed: Option<u64> = unsafe { std::mem::transmute(seed) };
@@ -1407,7 +1408,7 @@ impl JsExpr {
     }
     #[napi(catch_unwind)]
     pub fn reshape(&self, dims: Vec<i64>) -> JsExpr {
-        self.inner.clone().reshape(&dims, NestedType::Array).into()
+        self.inner.clone().reshape(&dims).into()
     }
     #[napi(catch_unwind)]
     pub fn cum_count(&self, reverse: bool) -> JsExpr {
@@ -1418,7 +1419,7 @@ impl JsExpr {
         self.inner
             .clone()
             .map(
-                |s| Ok(Some(s.to_physical_repr().into_owned())),
+                |s| Ok(Some(s.to_physical_repr().to_owned())),
                 GetOutput::map_dtype(|dt| Ok(dt.to_physical())),
             )
             .with_fmt("to_physical")
@@ -1743,7 +1744,10 @@ pub fn arg_sort_by(by: Vec<&JsExpr>, descending: Vec<bool>) -> JsExpr {
 
 #[napi(catch_unwind)]
 pub fn lit(value: Wrap<AnyValue>) -> JsResult<JsExpr> {
-    let lit: LiteralValue = value.0.try_into().map_err(JsPolarsErr::from)?;
+    let lit: LiteralValue = value
+        .0
+        .try_into()
+        .map_err(|e| napi::Error::from_reason(format!("{e:?}")))?;
     Ok(dsl::lit(lit).into())
 }
 
