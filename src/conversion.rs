@@ -106,9 +106,7 @@ impl ToNapiValue for Wrap<&Series> {
 impl<'a> ToNapiValue for Wrap<AnyValue<'a>> {
     unsafe fn to_napi_value(env: sys::napi_env, val: Self) -> Result<sys::napi_value> {
         match val.0 {
-            AnyValue::Null => {
-                napi::bindgen_prelude::Null::to_napi_value(env, napi::bindgen_prelude::Null)
-            }
+            AnyValue::Null => napi::bindgen_prelude::Null::to_napi_value(env, napi::bindgen_prelude::Null),
             AnyValue::Boolean(b) => bool::to_napi_value(env, b),
             AnyValue::Int8(n) => i32::to_napi_value(env, n as i32),
             AnyValue::Int16(n) => i32::to_napi_value(env, n as i32),
@@ -155,18 +153,16 @@ impl<'a> ToNapiValue for Wrap<AnyValue<'a>> {
             AnyValue::List(ser) => Wrap::<&Series>::to_napi_value(env, Wrap(&ser)),
             ref av @ AnyValue::Struct(_, _, flds) => struct_dict(env, av._iter_struct_av(), flds),
             AnyValue::Array(ser, _) => Wrap::<&Series>::to_napi_value(env, Wrap(&ser)),
-            AnyValue::Enum(_, _, _) => todo!(),
-            AnyValue::Object(_) => todo!(),
-            AnyValue::ObjectOwned(_) => todo!(),
-            AnyValue::StructOwned(_) => todo!(),
-            AnyValue::Binary(_) => todo!(),
-            AnyValue::BinaryOwned(_) => todo!(),
-            AnyValue::Decimal(_, _) => {
-                Err(napi::Error::from_reason("Decimal is not a supported type in javascript, please convert to string or number before collecting to js"))
-            }
-            AnyValue::CategoricalOwned(_,_,_) => todo!(),
-            AnyValue::DatetimeOwned(_,_,_) => todo!(),
-            AnyValue::EnumOwned(_,_,_) => todo!(),
+            AnyValue::Enum(_, _, _) => Err(napi::Error::from_reason("Enum is not a supported, please convert to string or number before collecting to js")),
+            AnyValue::Object(_) => Err(napi::Error::from_reason("Object is not a supported, please convert to string or number before collecting to js")),
+            AnyValue::ObjectOwned(_) => Err(napi::Error::from_reason("ObjectOwned is not a supported, please convert to string or number before collecting to js")),
+            AnyValue::StructOwned(_) => Err(napi::Error::from_reason("StructOwned is not a supported, please convert to string or number before collecting to js")),
+            AnyValue::Binary(_) => Err(napi::Error::from_reason("Binary is not a supported, please convert to string or number before collecting to js")),
+            AnyValue::BinaryOwned(_) => Err(napi::Error::from_reason("BinaryOwned is not a supported, please convert to string or number before collecting to js")),
+            AnyValue::Decimal(_, _) => Err(napi::Error::from_reason("Decimal is not a supported type in javascript, please convert to string or number before collecting to js")),
+            AnyValue::CategoricalOwned(_,_,_) => Err(napi::Error::from_reason("CategoricalOwned is not a supported, please convert to string or number before collecting to js")),
+            AnyValue::DatetimeOwned(_,_,_) => Err(napi::Error::from_reason("DatetimeOwned is not a supported, please convert to string or number before collecting to js")),
+            AnyValue::EnumOwned(_,_,_) => Err(napi::Error::from_reason("EnumOwned is not a supported, please convert to string or number before collecting to js")),
         }
     }
 }
