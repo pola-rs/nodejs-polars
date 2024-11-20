@@ -322,7 +322,18 @@ export interface DataFrame<T extends Record<string, Series> = any>
    * ...    "ham": ['a', 'b', 'c'],
    * ...    "apple": ['a', 'b', 'c']
    * ...  });
-   * >  console.log(df.drop(['ham', 'apple']).toString());
+   *    // df: pl.DataFrame<{
+   *    //     foo: pl.Series<Float64, "foo">;
+   *    //     bar: pl.Series<Float64, "bar">;
+   *    //     ham: pl.Series<Utf8, "ham">;
+   *    //     apple: pl.Series<Utf8, "apple">;
+   *    // }>
+   * >  const df2 = df.drop(['ham', 'apple']);
+   *    // df2: pl.DataFrame<{
+   *    //     foo: pl.Series<Float64, "foo">;
+   *    //     bar: pl.Series<Float64, "bar">;
+   *    // }>
+   * >  console.log(df2.toString());
    * shape: (3, 2)
    * ╭─────┬─────╮
    * │ foo ┆ bar │
@@ -610,11 +621,44 @@ export interface DataFrame<T extends Record<string, Series> = any>
   frameEqual(other: DataFrame, nullEqual: boolean): boolean;
   /**
    * Get a single column as Series by name.
+   *
+   * ---
+   * @example
+   * ```
+   * > const df = pl.DataFrame({
+   * ...     foo: [1, 2, 3],
+   * ...     bar: [6, null, 8],
+   * ...     ham: ["a", "b", "c"],
+   * ... });
+   * // df: pl.DataFrame<{
+   * //     foo: pl.Series<Float64, "foo">;
+   * //     bar: pl.Series<Float64, "bar">;
+   * //     ham: pl.Series<Utf8, "ham">;
+   * // }>
+   * > const column = df.getColumn("foo");
+   * // column: pl.Series<Float64, "foo">
+   * ```
    */
   getColumn<U extends keyof T>(name: U): T[U];
   getColumn(name: string): Series;
   /**
    * Get the DataFrame as an Array of Series.
+   * ---
+   * @example
+   * ```
+   * >  const df = pl.DataFrame({
+   * ...     foo: [1, 2, 3],
+   * ...     bar: [6, null, 8],
+   * ...     ham: ["a", "b", "c"],
+   * ... });
+   * // df: pl.DataFrame<{
+   * //     foo: pl.Series<Float64, "foo">;
+   * //     bar: pl.Series<Float64, "bar">;
+   * //     ham: pl.Series<Utf8, "ham">;
+   * // }>
+   * > const columns = df.getColumns();
+   * // columns: (pl.Series<Float64, "foo"> | pl.Series<Float64, "bar"> | pl.Series<Utf8, "ham">)[]
+   * ```
    */
   getColumns(): T[keyof T][];
   /**
@@ -675,8 +719,20 @@ export interface DataFrame<T extends Record<string, Series> = any>
    * ...   "bar": [6, 7, 8],
    * ...   "ham": ['a', 'b', 'c']
    * ... });
+   * // df: pl.DataFrame<{
+   * //     foo: pl.Series<Float64, "foo">;
+   * //     bar: pl.Series<Float64, "bar">;
+   * //     ham: pl.Series<Utf8, "ham">;
+   * // }>
    * > const x = pl.Series("apple", [10, 20, 30])
+   * // x: pl.Series<Float64, "apple">
    * > df.hstack([x])
+   * // pl.DataFrame<{
+   * //     foo: pl.Series<Float64, "foo">;
+   * //     bar: pl.Series<Float64, "bar">;
+   * //     ham: pl.Series<Utf8, "ham">;
+   * //     apple: pl.Series<Float64, "apple">;
+   * // }>
    * shape: (3, 4)
    * ╭─────┬─────┬─────┬───────╮
    * │ foo ┆ bar ┆ ham ┆ apple │
@@ -1173,6 +1229,11 @@ export interface DataFrame<T extends Record<string, Series> = any>
    * ...   "bar": [6, 7, 8],
    * ...   "ham": ['a', 'b', 'c']
    * ... });
+   * // df: pl.DataFrame<{
+   * //     foo: pl.Series<Float64, "foo">;
+   * //     bar: pl.Series<Float64, "bar">;
+   * //     ham: pl.Series<Utf8, "ham">;
+   * // }>
    * > df.rename({"foo": "apple"});
    * ╭───────┬─────┬─────╮
    * │ apple ┆ bar ┆ ham │
@@ -1206,8 +1267,19 @@ export interface DataFrame<T extends Record<string, Series> = any>
    * ...   "bar": [6, 7, 8],
    * ...   "ham": ['a', 'b', 'c']
    * ... });
+   * // df: pl.DataFrame<{
+   * //     foo: pl.Series<Float64, "foo">;
+   * //     bar: pl.Series<Float64, "bar">;
+   * //     ham: pl.Series<Utf8, "ham">;
+   * // }>
    * > const x = pl.Series("apple", [10, 20, 30]);
+   * // x: pl.Series<Float64, "apple">
    * > df.replaceAtIdx(0, x);
+   * // df: pl.DataFrame<{
+   * //     foo: pl.Series<Float64, "foo">; <- notice how the type is still the same!
+   * //     bar: pl.Series<Float64, "bar">;
+   * //     ham: pl.Series<Utf8, "ham">;
+   * // }>
    * shape: (3, 3)
    * ╭───────┬─────┬─────╮
    * │ apple ┆ bar ┆ ham │
@@ -1242,6 +1314,27 @@ export interface DataFrame<T extends Record<string, Series> = any>
    * Convert columnar data to rows as arrays
    */
   rows(): Array<Array<any>>;
+  /**
+   * @example
+   * ```
+   * > const df: pl.DataFrame = pl.DataFrame({
+   * ...   "foo": [1, 2, 3],
+   * ...   "bar": [6, 7, 8],
+   * ...   "ham": ['a', 'b', 'c']
+   * ... });
+   * // df: pl.DataFrame<{
+   * //     foo: pl.Series<Float64, "foo">;
+   * //     bar: pl.Series<Float64, "bar">;
+   * //     ham: pl.Series<Utf8, "ham">;
+   * // }>
+   * > df.schema
+   * // {
+   * //     foo: Float64;
+   * //     bar: Float64;
+   * //     ham: Utf8;
+   * // }
+   * ```
+   */
   get schema(): { [K in keyof T]: T[K]["dtype"] };
   /**
    * Select columns from this DataFrame.
@@ -1254,7 +1347,15 @@ export interface DataFrame<T extends Record<string, Series> = any>
    * ...     "bar": [6, 7, 8],
    * ...     "ham": ['a', 'b', 'c']
    * ...     });
+   * // df: pl.DataFrame<{
+   * //     foo: pl.Series<Float64, "foo">;
+   * //     bar: pl.Series<Float64, "bar">;
+   * //     ham: pl.Series<Utf8, "ham">;
+   * // }>
    * > df.select('foo');
+   * // pl.DataFrame<{
+   * //     foo: pl.Series<Float64, "foo">;
+   * // }>
    * shape: (3, 1)
    * ┌─────┐
    * │ foo │
