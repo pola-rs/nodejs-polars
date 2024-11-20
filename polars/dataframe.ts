@@ -338,8 +338,10 @@ export interface DataFrame<T extends Record<string, Series> = any>
    * ```
    */
   drop<U extends string>(name: U): DataFrame<Simplify<Omit<T, U>>>;
-  drop<U extends string[]>(names: U): DataFrame<Simplify<Omit<T, U[number]>>>;
-  drop<U extends string, V extends string[]>(
+  drop<const U extends string[]>(
+    names: U,
+  ): DataFrame<Simplify<Omit<T, U[number]>>>;
+  drop<U extends string, const V extends string[]>(
     name: U,
     ...names: V
   ): DataFrame<Simplify<Omit<T, U | V[number]>>>;
@@ -368,9 +370,9 @@ export interface DataFrame<T extends Record<string, Series> = any>
    * └─────┴─────┴─────┘
    * ```
    */
-  dropNulls(column: string): DataFrame;
-  dropNulls(columns: string[]): DataFrame;
-  dropNulls(...columns: string[]): DataFrame;
+  dropNulls(column: keyof T): DataFrame<T>;
+  dropNulls(columns: (keyof T)[]): DataFrame<T>;
+  dropNulls(...columns: (keyof T)[]): DataFrame<T>;
   /**
    * __Explode `DataFrame` to long format by exploding a column with Lists.__
    * ___
@@ -1185,9 +1187,9 @@ export interface DataFrame<T extends Record<string, Series> = any>
    * ╰───────┴─────┴─────╯
    * ```
    */
-  rename<const U extends Record<keyof T, string>>(
+  rename<const U extends Partial<Record<keyof T, string>>>(
     mapping: U,
-  ): DataFrame<{ [K in keyof T as U[K]]: T[K] }>;
+  ): DataFrame<{ [K in keyof T as U[K] extends string ? U[K] : K]: T[K] }>;
   rename(mapping: Record<string, string>): DataFrame;
   /**
    * Replace a column at an index location.
@@ -1267,11 +1269,7 @@ export interface DataFrame<T extends Record<string, Series> = any>
    * └─────┘
    * ```
    */
-  select<U extends keyof T>(
-    ...columns: U[]
-  ): DataFrame<{
-    [P in U]: T[P];
-  }>;
+  select<U extends keyof T>(...columns: U[]): DataFrame<{ [P in U]: T[P] }>;
   select(...columns: ExprOrString[]): DataFrame<T>;
   /**
    * Shift the values by a given period and fill the parts that will be empty due to this operation
@@ -1545,9 +1543,7 @@ export interface DataFrame<T extends Record<string, Series> = any>
    * ```
    * @category IO
    */
-  toObject(): {
-    [K in keyof T]: DTypeToJs<T[K]["dtype"]>[];
-  };
+  toObject(): { [K in keyof T]: DTypeToJs<T[K]["dtype"]>[] };
 
   /**
    * @deprecated *since 0.4.0* use {@link writeIPC}
