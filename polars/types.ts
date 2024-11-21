@@ -156,6 +156,7 @@ export interface ScanParquetOptions {
   cloudOptions?: unknown;
   retries?: number;
   includeFilePaths?: string;
+  allowMissingColumns?: boolean;
 }
 
 /**
