@@ -573,50 +573,62 @@ describe("series", () => {
     expect(() => pl.Series("dt", [null], pl.Date).describe()).toThrow(
       "Invalid operation: describe is not supported for DataType(Date)",
     );
-    let actual = pl.Series([true, false, true]).describe();
-    let expected = pl.DataFrame({
-      statistic: ["sum", "null_count", "count"],
-      value: [false, null, null],
-    });
-
-    expect(actual).toFrameEqual(expected);
-    actual = pl.Series(["a", "b", "c", null]).describe();
-    expected = pl.DataFrame({
-      statistic: ["unique", "null_count", "count"],
-      value: [4, 1, 4],
-    });
-    expect(actual).toFrameEqual(expected);
+    {
+      const actual = pl.Series([true, false, true]).describe();
+      const expected = pl.DataFrame({
+        statistic: ["sum", "null_count", "count"],
+        value: [false, null, null],
+      });
+      expect(actual).toFrameEqual(expected);
+    }
+    {
+      const actual = pl.Series(["a", "b", "c", null]).describe();
+      const expected = pl.DataFrame({
+        statistic: ["unique", "null_count", "count"],
+        value: [4, 1, 4],
+      });
+      expect(actual).toFrameEqual(expected);
+    }
   });
   it("series:valueCounts", () => {
-    let actual = pl.Series("a", [1, 2, 2, 3]).valueCounts(true);
-    let expected = pl.DataFrame({
-      a: [2, 1, 3],
-      count: [2, 1, 1],
-    });
-    expect(actual).toFrameEqual(expected);
-
-    actual = pl
-      .Series("a", [1, 2, 2, 3])
-      .valueCounts(true, true, undefined, true);
-    expected = pl.DataFrame({
-      a: [2, 1, 3],
-      proportion: [0.5, 0.25, 0.25],
-    });
-    expect(actual).toFrameEqual(expected);
-
-    actual = pl.Series("a", [1, 2, 2, 3]).valueCounts(true, true, "foo", false);
-    expected = pl.DataFrame({
-      a: [2, 1, 3],
-      foo: [2, 1, 1],
-    });
-    expect(actual).toFrameEqual(expected);
-
-    actual = pl.Series("a", [1, 2, 2, 3]).valueCounts(true, true, "foo", true);
-    expected = pl.DataFrame({
-      a: [2, 1, 3],
-      foo: [0.5, 0.25, 0.25],
-    });
-    expect(actual).toFrameEqual(expected);
+    {
+      const actual = pl.Series("a", [1, 2, 2, 3]).valueCounts(true);
+      const expected = pl.DataFrame({
+        a: [2, 1, 3],
+        count: [2, 1, 1],
+      });
+      expect(actual).toFrameEqual(expected);
+    }
+    {
+      const actual = pl
+        .Series("a", [1, 2, 2, 3])
+        .valueCounts(true, true, undefined, true);
+      const expected = pl.DataFrame({
+        a: [2, 1, 3],
+        proportion: [0.5, 0.25, 0.25],
+      });
+      expect(actual).toFrameEqual(expected);
+    }
+    {
+      const actual = pl
+        .Series("a", [1, 2, 2, 3])
+        .valueCounts(true, true, "foo", false);
+      const expected = pl.DataFrame({
+        a: [2, 1, 3],
+        foo: [2, 1, 1],
+      });
+      expect(actual).toFrameEqual(expected);
+    }
+    {
+      const actual = pl
+        .Series("a", [1, 2, 2, 3])
+        .valueCounts(true, true, "foo", true);
+      const expected = pl.DataFrame({
+        a: [2, 1, 3],
+        foo: [0.5, 0.25, 0.25],
+      });
+      expect(actual).toFrameEqual(expected);
+    }
   });
   it("set: expected matches actual", () => {
     const expected = pl.Series([99, 2, 3]);
@@ -702,18 +714,22 @@ describe("series", () => {
   });
   test("toDummies", () => {
     const s = pl.Series("a", [1, 2, 3]);
-    let actual = s.toDummies();
-    let expected = pl.DataFrame(
-      { "a_1.0": [1, 0, 0], "a_2.0": [0, 1, 0], "a_3.0": [0, 0, 1] },
-      { schema: { "a_1.0": pl.UInt8, "a_2.0": pl.UInt8, "a_3.0": pl.UInt8 } },
-    );
-    expect(actual).toFrameEqual(expected);
-    actual = s.toDummies(":", true);
-    expected = pl.DataFrame(
-      { "a:2.0": [0, 1, 0], "a:3.0": [0, 0, 1] },
-      { schema: { "a:2.0": pl.UInt8, "a:3.0": pl.UInt8 } },
-    );
-    expect(actual).toFrameEqual(expected);
+    {
+      const actual = s.toDummies();
+      const expected = pl.DataFrame(
+        { "a_1.0": [1, 0, 0], "a_2.0": [0, 1, 0], "a_3.0": [0, 0, 1] },
+        { schema: { "a_1.0": pl.UInt8, "a_2.0": pl.UInt8, "a_3.0": pl.UInt8 } },
+      );
+      expect(actual).toFrameEqual(expected);
+    }
+    {
+      const actual = s.toDummies(":", true);
+      const expected = pl.DataFrame(
+        { "a:2.0": [0, 1, 0], "a:3.0": [0, 0, 1] },
+        { schema: { "a:2.0": pl.UInt8, "a:3.0": pl.UInt8 } },
+      );
+      expect(actual).toFrameEqual(expected);
+    }
   });
 });
 describe("comparators & math", () => {

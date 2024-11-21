@@ -178,8 +178,8 @@ export function lit(value: any): Expr {
  * >   .filter(pl.col("foo").lt(pl.intRange(0, 100)))
  * >   .collect()
  * ```
- * 
- * 
+ *
+ *
  * Generate an index column by using `intRange` in conjunction with :func:`len`.
  * ```
  *  df = pl.DataFrame({"a": [1, 3, 5], "b": [2, 4, 6]})
@@ -232,7 +232,7 @@ export function intRange(
   opts: any,
   end?,
   step = 1 as number | Expr,
-  dtype = DataType.Int64,
+  dtype: DataType = DataType.Int64,
   eager?,
 ): Series | Expr {
   // @deprecated since 0.15.0
@@ -512,7 +512,7 @@ export function head(column: Series | ExprOrString, n?): Series | Expr {
   }
   return exprToLitOrExpr(column, false).head(n);
 }
-/** Return the number of elements in the column.  
+/** Return the number of elements in the column.
   This is similar to `COUNT(*)` in SQL.
 
   @return Expr - Expression of data type :class:`UInt32`.

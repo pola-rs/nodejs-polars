@@ -1103,30 +1103,36 @@ describe("expr.str", () => {
       json: [{ a: 1, b: true }, "null", { a: 2, b: false }],
     });
     expect(actual).toFrameEqual(expected);
-    let s = pl.Series(["[1, 2, 3]", null, "[4, 5, 6]"]);
-    let dtype = pl.List(pl.Int64);
-    const expSeries = pl.Series([[1, 2, 3], null, [4, 5, 6]]);
-    expect(s.str.jsonDecode()).toSeriesEqual(expSeries);
-    expect(s.str.jsonDecode(dtype)).toSeriesEqual(expSeries);
-    dtype = pl.Struct([
-      new pl.Field("a", pl.Int64),
-      new pl.Field("b", pl.Bool),
-    ]);
-    s = pl.Series("json", [
-      '{"a":1, "b": true}',
-      '{"a": null, "b": null }',
-      '{"a":2, "b": false}',
-    ]);
-    expect(s.str.jsonDecode().as("json")).toSeriesEqual(
-      expected.getColumn("json"),
-    );
-    expect(s.str.jsonDecode(dtype).as("json")).toSeriesEqual(
-      expected.getColumn("json"),
-    );
-    s = pl.Series("col_a", [], pl.Utf8);
-    const exp = pl.Series("col_a", []).cast(pl.List(pl.Int64));
-    dtype = pl.List(pl.Int64);
-    expect(s.str.jsonDecode(dtype).as("col_a")).toSeriesEqual(exp);
+    {
+      const s = pl.Series(["[1, 2, 3]", null, "[4, 5, 6]"]);
+      const dtype = pl.List(pl.Int64);
+      const expSeries = pl.Series([[1, 2, 3], null, [4, 5, 6]]);
+      expect(s.str.jsonDecode()).toSeriesEqual(expSeries);
+      expect(s.str.jsonDecode(dtype)).toSeriesEqual(expSeries);
+    }
+    {
+      const dtype = pl.Struct([
+        new pl.Field("a", pl.Int64),
+        new pl.Field("b", pl.Bool),
+      ]);
+      const s = pl.Series("json", [
+        '{"a":1, "b": true}',
+        '{"a": null, "b": null }',
+        '{"a":2, "b": false}',
+      ]);
+      expect(s.str.jsonDecode().as("json")).toSeriesEqual(
+        expected.getColumn("json"),
+      );
+      expect(s.str.jsonDecode(dtype).as("json")).toSeriesEqual(
+        expected.getColumn("json"),
+      );
+    }
+    {
+      const s = pl.Series("col_a", [], pl.Utf8);
+      const exp = pl.Series("col_a", []).cast(pl.List(pl.Int64));
+      const dtype = pl.List(pl.Int64);
+      expect(s.str.jsonDecode(dtype).as("col_a")).toSeriesEqual(exp);
+    }
   });
   test("jsonPathMatch", () => {
     const df = pl.DataFrame({
@@ -1206,68 +1212,82 @@ describe("expr.str", () => {
   });
   test("expr.replace", () => {
     const df = pl.DataFrame({ a: [1, 2, 2, 3], b: ["a", "b", "c", "d"] });
-    let actual = df.withColumns(pl.col("a").replace(2, 100).alias("replaced"));
-    let expected = pl.DataFrame({
-      a: [1, 2, 2, 3],
-      b: ["a", "b", "c", "d"],
-      replaced: [1, 100, 100, 3],
-    });
-    expect(actual).toFrameEqual(expected);
-    actual = df.withColumns(
-      pl
-        .col("a")
-        .replaceStrict([2, 3], [100, 200], -1, pl.Float64)
-        .alias("replaced"),
-    );
-    expected = pl.DataFrame({
-      a: [1, 2, 2, 3],
-      b: ["a", "b", "c", "d"],
-      replaced: [-1, 100, 100, 200],
-    });
-    expect(actual).toFrameEqual(expected);
-    actual = df.withColumns(
-      pl.col("b").replaceStrict("a", "c", "e", pl.Utf8).alias("replaced"),
-    );
-    expected = pl.DataFrame({
-      a: [1, 2, 2, 3],
-      b: ["a", "b", "c", "d"],
-      replaced: ["c", "e", "e", "e"],
-    });
-    expect(actual).toFrameEqual(expected);
-    actual = df.withColumns(
-      pl
-        .col("b")
-        .replaceStrict(["a", "b"], ["c", "d"], "e", pl.Utf8)
-        .alias("replaced"),
-    );
-    expected = pl.DataFrame({
-      a: [1, 2, 2, 3],
-      b: ["a", "b", "c", "d"],
-      replaced: ["c", "d", "e", "e"],
-    });
-    expect(actual).toFrameEqual(expected);
+    {
+      const actual = df.withColumns(
+        pl.col("a").replace(2, 100).alias("replaced"),
+      );
+      const expected = pl.DataFrame({
+        a: [1, 2, 2, 3],
+        b: ["a", "b", "c", "d"],
+        replaced: [1, 100, 100, 3],
+      });
+      expect(actual).toFrameEqual(expected);
+    }
+    {
+      const actual = df.withColumns(
+        pl
+          .col("a")
+          .replaceStrict([2, 3], [100, 200], -1, pl.Float64)
+          .alias("replaced"),
+      );
+      const expected = pl.DataFrame({
+        a: [1, 2, 2, 3],
+        b: ["a", "b", "c", "d"],
+        replaced: [-1, 100, 100, 200],
+      });
+      expect(actual).toFrameEqual(expected);
+    }
+    {
+      const actual = df.withColumns(
+        pl.col("b").replaceStrict("a", "c", "e", pl.Utf8).alias("replaced"),
+      );
+      const expected = pl.DataFrame({
+        a: [1, 2, 2, 3],
+        b: ["a", "b", "c", "d"],
+        replaced: ["c", "e", "e", "e"],
+      });
+      expect(actual).toFrameEqual(expected);
+    }
+    {
+      const actual = df.withColumns(
+        pl
+          .col("b")
+          .replaceStrict(["a", "b"], ["c", "d"], "e", pl.Utf8)
+          .alias("replaced"),
+      );
+      const expected = pl.DataFrame({
+        a: [1, 2, 2, 3],
+        b: ["a", "b", "c", "d"],
+        replaced: ["c", "d", "e", "e"],
+      });
+      expect(actual).toFrameEqual(expected);
+    }
     const mapping = { 2: 100, 3: 200 };
-    actual = df.withColumns(
-      pl
-        .col("a")
-        .replaceStrict({ old: mapping, default_: -1, returnDtype: pl.Int64 })
-        .alias("replaced"),
-    );
-    expected = pl.DataFrame({
-      a: [1, 2, 2, 3],
-      b: ["a", "b", "c", "d"],
-      replaced: [-1, 100, 100, 200],
-    });
-    expect(actual).toFrameEqual(expected);
-    actual = df.withColumns(
-      pl.col("a").replace({ old: mapping }).alias("replaced"),
-    );
-    expected = pl.DataFrame({
-      a: [1, 2, 2, 3],
-      b: ["a", "b", "c", "d"],
-      replaced: [1, 100, 100, 200],
-    });
-    expect(actual).toFrameEqual(expected);
+    {
+      const actual = df.withColumns(
+        pl
+          .col("a")
+          .replaceStrict({ old: mapping, default_: -1, returnDtype: pl.Int64 })
+          .alias("replaced"),
+      );
+      const expected = pl.DataFrame({
+        a: [1, 2, 2, 3],
+        b: ["a", "b", "c", "d"],
+        replaced: [-1, 100, 100, 200],
+      });
+      expect(actual).toFrameEqual(expected);
+    }
+    {
+      const actual = df.withColumns(
+        pl.col("a").replace({ old: mapping }).alias("replaced"),
+      );
+      const expected = pl.DataFrame({
+        a: [1, 2, 2, 3],
+        b: ["a", "b", "c", "d"],
+        replaced: [1, 100, 100, 200],
+      });
+      expect(actual).toFrameEqual(expected);
+    }
   });
   test("slice", () => {
     const df = pl.DataFrame({
@@ -2196,69 +2216,76 @@ describe("Round<T>", () => {
 
 describe("EWM", () => {
   test("ewmMean", () => {
-    let s = pl.Series("s", [2, 5, 3]);
-    let df = pl.DataFrame([s]);
+    const s = pl.Series("s", [2, 5, 3]);
+    const df = pl.DataFrame([s]);
     let expected = pl.DataFrame({ s, ewmMean: [2.0, 4.0, 3.4285714285714284] });
+    {
+      const seriesActual = df.getColumn("s").ewmMean().rename("ewmMean");
+      const actual = df.withColumn(col("s").ewmMean().as("ewmMean"));
 
-    let seriesActual = df.getColumn("s").ewmMean().rename("ewmMean");
-    let actual = df.withColumn(col("s").ewmMean().as("ewmMean"));
-
-    expect(actual).toFrameEqual(expected);
-    expect(seriesActual).toSeriesEqual(expected.getColumn("ewmMean"));
-
-    seriesActual = df
-      .getColumn("s")
-      .ewmMean({ alpha: 0.5, adjust: true, ignoreNulls: true })
-      .rename("ewmMean");
-    actual = df.withColumn(
-      col("s")
+      expect(actual).toFrameEqual(expected);
+      expect(seriesActual).toSeriesEqual(expected.getColumn("ewmMean"));
+    }
+    {
+      const seriesActual = df
+        .getColumn("s")
         .ewmMean({ alpha: 0.5, adjust: true, ignoreNulls: true })
-        .as("ewmMean"),
-    );
+        .rename("ewmMean");
+      const actual = df.withColumn(
+        col("s")
+          .ewmMean({ alpha: 0.5, adjust: true, ignoreNulls: true })
+          .as("ewmMean"),
+      );
 
-    expect(actual).toFrameEqual(expected);
-    expect(seriesActual).toSeriesEqual(expected.getColumn("ewmMean"));
-
-    seriesActual = df
-      .getColumn("s")
-      .ewmMean({ alpha: 0.5, adjust: false, ignoreNulls: true })
-      .rename("ewmMean");
-    actual = df.withColumn(
-      col("s")
+      expect(actual).toFrameEqual(expected);
+      expect(seriesActual).toSeriesEqual(expected.getColumn("ewmMean"));
+    }
+    {
+      const seriesActual = df
+        .getColumn("s")
         .ewmMean({ alpha: 0.5, adjust: false, ignoreNulls: true })
-        .as("ewmMean"),
-    );
+        .rename("ewmMean");
+      const actual = df.withColumn(
+        col("s")
+          .ewmMean({ alpha: 0.5, adjust: false, ignoreNulls: true })
+          .as("ewmMean"),
+      );
 
-    expected = pl.DataFrame({ s, ewmMean: [2.0, 3.5, 3.25] });
-    expect(actual).toFrameEqual(expected);
-    expect(seriesActual).toSeriesEqual(expected.getColumn("ewmMean"));
+      expected = pl.DataFrame({ s, ewmMean: [2.0, 3.5, 3.25] });
+      expect(actual).toFrameEqual(expected);
+      expect(seriesActual).toSeriesEqual(expected.getColumn("ewmMean"));
+    }
+    {
+      const seriesActual = df
+        .getColumn("s")
+        .ewmMean(0.5, false, 1, true)
+        .rename("ewmMean");
+      const actual = df.withColumn(
+        col("s").ewmMean(0.5, false, 1, true).as("ewmMean"),
+      );
 
-    seriesActual = df
-      .getColumn("s")
-      .ewmMean(0.5, false, 1, true)
-      .rename("ewmMean");
-    actual = df.withColumn(col("s").ewmMean(0.5, false, 1, true).as("ewmMean"));
+      expect(actual).toFrameEqual(expected);
+      expect(seriesActual).toSeriesEqual(expected.getColumn("ewmMean"));
+    }
+    {
+      const s = pl.Series("a", [2, 3, 5, 7, 4]);
+      const df = pl.DataFrame([s]);
 
-    expect(actual).toFrameEqual(expected);
-    expect(seriesActual).toSeriesEqual(expected.getColumn("ewmMean"));
-
-    s = pl.Series("a", [2, 3, 5, 7, 4]);
-    df = pl.DataFrame([s]);
-
-    seriesActual = df
-      .getColumn("a")
-      .ewmMean({ adjust: true, minPeriods: 2, ignoreNulls: true })
-      .round(5)
-      .rename("ewmMean");
-    actual = df.withColumn(
-      col("a")
+      const seriesActual = df
+        .getColumn("a")
         .ewmMean({ adjust: true, minPeriods: 2, ignoreNulls: true })
         .round(5)
-        .as("ewmMean"),
-    );
+        .rename("ewmMean");
+      const actual = df.withColumn(
+        col("a")
+          .ewmMean({ adjust: true, minPeriods: 2, ignoreNulls: true })
+          .round(5)
+          .as("ewmMean"),
+      );
 
-    expected = pl.DataFrame({ ewmMean: [null, 2.66667, 4, 5.6, 4.77419], s });
-    expect(seriesActual).toSeriesEqual(expected.getColumn("ewmMean"));
+      expected = pl.DataFrame({ ewmMean: [null, 2.66667, 4, 5.6, 4.77419], s });
+      expect(seriesActual).toSeriesEqual(expected.getColumn("ewmMean"));
+    }
   });
 
   test("ewmStd", () => {

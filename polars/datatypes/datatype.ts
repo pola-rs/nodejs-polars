@@ -1,6 +1,7 @@
 import { Field } from "./field";
 
 export abstract class DataType {
+  declare readonly __dtype: string;
   get variant() {
     return this.constructor.name as DataTypeName;
   }
@@ -17,72 +18,72 @@ export abstract class DataType {
   }
 
   /** Null type */
-  public static get Null(): DataType {
+  public static get Null() {
     return new Null();
   }
   /** `true` and `false`. */
-  public static get Bool(): DataType {
+  public static get Bool() {
     return new Bool();
   }
   /** An `i8` */
-  public static get Int8(): DataType {
+  public static get Int8() {
     return new Int8();
   }
   /** An `i16` */
-  public static get Int16(): DataType {
+  public static get Int16() {
     return new Int16();
   }
   /** An `i32` */
-  public static get Int32(): DataType {
+  public static get Int32() {
     return new Int32();
   }
   /** An `i64` */
-  public static get Int64(): DataType {
+  public static get Int64() {
     return new Int64();
   }
   /** An `u8` */
-  public static get UInt8(): DataType {
+  public static get UInt8() {
     return new UInt8();
   }
   /** An `u16` */
-  public static get UInt16(): DataType {
+  public static get UInt16() {
     return new UInt16();
   }
   /** An `u32` */
-  public static get UInt32(): DataType {
+  public static get UInt32() {
     return new UInt32();
   }
   /** An `u64` */
-  public static get UInt64(): DataType {
+  public static get UInt64() {
     return new UInt64();
   }
 
   /** A `f32` */
-  public static get Float32(): DataType {
+  public static get Float32() {
     return new Float32();
   }
   /** A `f64` */
-  public static get Float64(): DataType {
+  public static get Float64() {
     return new Float64();
   }
-  public static get Date(): DataType {
+  public static get Date() {
     return new Date();
   }
   /** Time of day type */
-  public static get Time(): DataType {
+  public static get Time() {
     return new Time();
   }
   /** Type for wrapping arbitrary JS objects */
-  public static get Object(): DataType {
+  public static get Object() {
     return new Object_();
   }
   /** A categorical encoding of a set of strings  */
-  public static get Categorical(): DataType {
+  public static get Categorical() {
     return new Categorical();
   }
 
   /** Decimal type */
-  public static Decimal(precision?: number, scale?: number): DataType {
+  public static Decimal(precision?: number, scale?: number) {
     return new Decimal(precision, scale);
   }
   /**
@@ -93,7 +94,7 @@ export abstract class DataType {
   public static Datetime(
     timeUnit?: TimeUnit | "ms" | "ns" | "us",
     timeZone: string | null | undefined = null,
-  ): DataType {
+  ) {
     return new Datetime(timeUnit ?? "ms", timeZone);
   }
 
@@ -103,7 +104,7 @@ export abstract class DataType {
    * @param inner The `DataType` of values within the list
    *
    */
-  public static List(inner: DataType): DataType {
+  public static List(inner: DataType) {
     return new List(inner);
   }
 
@@ -112,7 +113,7 @@ export abstract class DataType {
    * This is called `Array` in other polars implementations, but `Array` is widely used in JS, so we use `FixedSizeList` instead.
    *
    */
-  public static FixedSizeList(inner: DataType, listSize: number): DataType {
+  public static FixedSizeList(inner: DataType, listSize: number) {
     return new FixedSizeList(inner, listSize);
   }
   /**
@@ -120,17 +121,15 @@ export abstract class DataType {
    */
   public static Struct(fields: Field[]): DataType;
   public static Struct(fields: { [key: string]: DataType }): DataType;
-  public static Struct(
-    fields: Field[] | { [key: string]: DataType },
-  ): DataType {
+  public static Struct(fields: Field[] | { [key: string]: DataType }) {
     return new Struct(fields);
   }
   /** A variable-length UTF-8 encoded string whose offsets are represented as `i64`. */
-  public static get Utf8(): DataType {
+  public static get Utf8() {
     return new Utf8();
   }
 
-  public static get String(): DataType {
+  public static get String() {
     return new String();
   }
 
@@ -165,29 +164,68 @@ export abstract class DataType {
   }
 }
 
-export class Null extends DataType {}
-export class Bool extends DataType {}
-export class Int8 extends DataType {}
-export class Int16 extends DataType {}
-export class Int32 extends DataType {}
-export class Int64 extends DataType {}
-export class UInt8 extends DataType {}
-export class UInt16 extends DataType {}
-export class UInt32 extends DataType {}
-export class UInt64 extends DataType {}
-export class Float32 extends DataType {}
-export class Float64 extends DataType {}
-// biome-ignore lint/suspicious/noShadowRestrictedNames: <explanation>
-export class Date extends DataType {}
-export class Time extends DataType {}
-export class Object_ extends DataType {}
-export class Utf8 extends DataType {}
-// biome-ignore lint/suspicious/noShadowRestrictedNames: <explanation>
-export class String extends DataType {}
+export class Null extends DataType {
+  declare __dtype: "Null";
+}
 
-export class Categorical extends DataType {}
+export class Bool extends DataType {
+  declare __dtype: "Bool";
+}
+export class Int8 extends DataType {
+  declare __dtype: "Int8";
+}
+export class Int16 extends DataType {
+  declare __dtype: "Int16";
+}
+export class Int32 extends DataType {
+  declare __dtype: "Int32";
+}
+export class Int64 extends DataType {
+  declare __dtype: "Int64";
+}
+export class UInt8 extends DataType {
+  declare __dtype: "UInt8";
+}
+export class UInt16 extends DataType {
+  declare __dtype: "UInt16";
+}
+export class UInt32 extends DataType {
+  declare __dtype: "UInt32";
+}
+export class UInt64 extends DataType {
+  declare __dtype: "UInt64";
+}
+export class Float32 extends DataType {
+  declare __dtype: "Float32";
+}
+export class Float64 extends DataType {
+  declare __dtype: "Float64";
+}
+
+// biome-ignore lint/suspicious/noShadowRestrictedNames: <explanation>
+export class Date extends DataType {
+  declare __dtype: "Date";
+}
+export class Time extends DataType {
+  declare __dtype: "Time";
+}
+export class Object_ extends DataType {
+  declare __dtype: "Object";
+}
+export class Utf8 extends DataType {
+  declare __dtype: "Utf8";
+}
+// biome-ignore lint/suspicious/noShadowRestrictedNames: <explanation>
+export class String extends DataType {
+  declare __dtype: "String";
+}
+
+export class Categorical extends DataType {
+  declare __dtype: "Categorical";
+}
 
 export class Decimal extends DataType {
+  declare __dtype: "Decimal";
   private precision: number | null;
   private scale: number | null;
   constructor(precision?: number, scale?: number) {
@@ -224,6 +262,7 @@ export class Decimal extends DataType {
  * Datetime type
  */
 export class Datetime extends DataType {
+  declare __dtype: "Datetime";
   constructor(
     private timeUnit: TimeUnit | "ms" | "ns" | "us" = "ms",
     private timeZone?: string | null,
@@ -246,6 +285,7 @@ export class Datetime extends DataType {
 }
 
 export class List extends DataType {
+  declare __dtype: "List";
   constructor(protected __inner: DataType) {
     super();
   }
@@ -261,6 +301,7 @@ export class List extends DataType {
 }
 
 export class FixedSizeList extends DataType {
+  declare __dtype: "FixedSizeList";
   constructor(
     protected __inner: DataType,
     protected listSize: number,
@@ -294,6 +335,7 @@ export class FixedSizeList extends DataType {
 }
 
 export class Struct extends DataType {
+  declare __dtype: "Struct";
   private fields: Field[];
 
   constructor(

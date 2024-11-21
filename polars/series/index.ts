@@ -31,7 +31,7 @@ const inspect = Symbol.for("nodejs.util.inspect.custom");
 /**
  * A Series represents a single column in a polars DataFrame.
  */
-export interface Series<T extends DataType = any>
+export interface Series<T extends DataType = any, Name extends string = string>
   extends ArrayLike<T>,
     Rolling<Series<T>>,
     Arithmetic<Series<T>>,
@@ -42,7 +42,7 @@ export interface Series<T extends DataType = any>
     EwmOps<Series<T>>,
     Serialize {
   inner(): any;
-  name: string;
+  name: Name;
   dtype: T;
   str: StringNamespace;
   lst: ListNamespace;
@@ -51,20 +51,20 @@ export interface Series<T extends DataType = any>
   [inspect](): string;
   [Symbol.iterator](): IterableIterator<DTypeToJs<T>>;
   // inner(): JsSeries
-  bitand(other: Series<T>): Series<T>;
-  bitor(other: Series<T>): Series<T>;
-  bitxor(other: Series<T>): Series<T>;
+  bitand(other: Series<T>): Series<T, Name>;
+  bitor(other: Series<T>): Series<T, Name>;
+  bitxor(other: Series<T>): Series<T, Name>;
   /**
    * Take absolute values
    */
-  abs(): Series<T>;
+  abs(): Series<T, Name>;
   /**
    * __Rename this Series.__
    *
    * @param name - new name
    * @see {@link rename}
    */
-  alias(name: string): Series<T>;
+  alias<U extends string>(name: U): Series<T, U>;
   /**
    * __Append a Series to this one.__
    * ___
@@ -119,11 +119,11 @@ export interface Series<T extends DataType = any>
   /**
    * Get index values where Boolean Series evaluate True.
    */
-  argTrue(): Series<T>;
+  argTrue(): Series<T, Name>;
   /**
    * Get unique index as Series.
    */
-  argUnique(): Series<T>;
+  argUnique(): Series<T, Name>;
   /**
    * Get the index values that would sort this Series.
    * ___
@@ -133,27 +133,28 @@ export interface Series<T extends DataType = any>
    * @param nullsLast - Place null values last instead of first.
    * @return {SeriesType} indexes - Indexes that can be used to sort this array.
    */
-  argSort(): Series<T>;
-  argSort(descending?: boolean, nullsLast?: boolean): Series<T>;
+  argSort(): Series<T, Name>;
+  argSort(descending?: boolean, nullsLast?: boolean): Series<T, Name>;
   argSort({
     descending,
     nullsLast,
-  }: { descending?: boolean; nullsLast?: boolean }): Series<T>;
+  }: { descending?: boolean; nullsLast?: boolean }): Series<T, Name>;
   argSort({
     reverse, // deprecated
     nullsLast,
-  }: { reverse?: boolean; nullsLast?: boolean }): Series<T>;
+  }: { reverse?: boolean; nullsLast?: boolean }): Series<T, Name>;
   /**
    * __Rename this Series.__
    *
    * @param name - new name
    * @see {@link rename} {@link alias}
    */
-  as(name: string): Series<T>;
+  as<U extends string>(name: string): Series<T, U>;
   /**
    * Cast between data types.
    */
-  cast<U extends DataType>(dtype: U, strict?: boolean): Series<U>;
+  cast<const U extends DataType>(dtype: U, strict?: boolean): Series<U>;
+  cast(dtype: DataType, strict?: boolean): Series;
   /**
    * Get the length of each individual chunk
    */
@@ -161,8 +162,8 @@ export interface Series<T extends DataType = any>
   /**
    * Cheap deep clones.
    */
-  clone(): Series<T>;
-  concat(other: Series<T>): Series<T>;
+  clone(): Series<T, Name>;
+  concat(other: Series<T>): Series<T, Name>;
 
   /**
    * __Quick summary statistics of a series. __
@@ -216,14 +217,14 @@ export interface Series<T extends DataType = any>
    * @param n - number of slots to shift
    * @param nullBehavior - `'ignore' | 'drop'`
    */
-  diff(n: number, nullBehavior: "ignore" | "drop"): Series<T>;
+  diff(n: number, nullBehavior: "ignore" | "drop"): Series<T, Name>;
   diff({
     n,
     nullBehavior,
   }: {
     n: number;
     nullBehavior: "ignore" | "drop";
-  }): Series<T>;
+  }): Series<T, Name>;
   /**
    * Compute the dot/inner product between two Series
    * ___
@@ -239,7 +240,7 @@ export interface Series<T extends DataType = any>
   /**
    * Create a new Series that copies data from this Series without null values.
    */
-  dropNulls(): Series<T>;
+  dropNulls(): Series<T, Name>;
   /**
    * __Explode a list or utf8 Series.__
    *
@@ -1122,7 +1123,7 @@ export interface Series<T extends DataType = any>
    * ```
    */
   toObject(): {
-    name: string;
+    name: Name;
     datatype: DtypeToJsName<T>;
     values: DTypeToJs<T>[];
   };
@@ -1871,7 +1872,7 @@ export function _Series(_s: any): Series {
     },
   };
 
-  return new Proxy(series, {
+  return new Proxy(series as unknown as Series, {
     get: (target, prop, receiver) => {
       if (typeof prop !== "symbol" && !Number.isNaN(Number(prop))) {
         return target.get(Number(prop));
@@ -1908,7 +1909,7 @@ export interface SeriesConstructor extends Deserialize<Series> {
    * ]
    * ```
    */
-  <T extends JsType>(values: ArrayLike<T>): Series<JsToDtype<T>>;
+  <T extends JsType>(values: ArrayLike<T | null>): Series<JsToDtype<T>>;
   (values: any): Series;
   /**
    * Create a new named series
@@ -1926,15 +1927,15 @@ export interface SeriesConstructor extends Deserialize<Series> {
    * ]
    * ```
    */
-  <T1 extends JsType>(
-    name: string,
-    values: ArrayLike<T1>,
-  ): Series<JsToDtype<T1>>;
-  <T2 extends DataType>(
-    name: string,
-    values: ArrayLike<DTypeToJs<T2>>,
+  <T1 extends JsType, Name extends string>(
+    name: Name,
+    values: ArrayLike<T1 | null>,
+  ): Series<JsToDtype<T1>, Name>;
+  <T2 extends DataType, Name extends string>(
+    name: Name,
+    values: ArrayLike<DTypeToJs<T2 | null>>,
     dtype?: T2,
-  ): Series<T2>;
+  ): Series<T2, Name>;
   (name: string, values: any[], dtype?): Series;
 
   /**
@@ -1943,10 +1944,10 @@ export interface SeriesConstructor extends Deserialize<Series> {
    */
   from<T1 extends JsType>(arrayLike: ArrayLike<T1>): Series<JsToDtype<T1>>;
   from<T1>(arrayLike: ArrayLike<T1>): Series;
-  from<T2 extends JsType>(
-    name: string,
+  from<T2 extends JsType, Name extends string>(
+    name: Name,
     arrayLike: ArrayLike<T2>,
-  ): Series<JsToDtype<T2>>;
+  ): Series<JsToDtype<T2>, Name>;
   from<T2>(name: string, arrayLike: ArrayLike<T2>): Series;
   /**
    * Returns a new Series from a set of elements.

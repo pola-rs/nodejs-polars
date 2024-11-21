@@ -427,13 +427,11 @@ export const ExprStringFunctions = (_expr: any): StringNamespace => {
       dtype: DataType.Date | DataType.Datetime | typeof DataType.Datetime,
       format?: string,
     ) {
-      if (!(dtype instanceof DataType)) {
-        dtype = dtype();
-      }
-      if (dtype.equals(DataType.Date)) {
+      const dt = dtype instanceof DataType ? dtype : dtype();
+      if (dt.equals(DataType.Date)) {
         return wrap("strToDate", format, false, false, false);
       }
-      if (dtype.equals(DataType.Datetime("ms"))) {
+      if (dt.equals(DataType.Datetime("ms"))) {
         return wrap(
           "strToDatetime",
           format,

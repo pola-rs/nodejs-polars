@@ -20,12 +20,13 @@ import type {
   WriteParquetOptions,
 } from "./types";
 
-import { DataType } from "./datatypes";
+import { type DTypeToJs, DataType, type JsToDtype } from "./datatypes";
 
 import {
   type ColumnSelection,
   type ColumnsOrExpr,
   type ExprOrString,
+  type Simplify,
   type ValueOrArray,
   columnOrColumns,
   columnOrColumnsStrict,
@@ -254,10 +255,10 @@ interface WriteMethods {
  * ╰─────┴─────┴─────╯
  * ```
  */
-export interface DataFrame
-  extends Arithmetic<DataFrame>,
-    Sample<DataFrame>,
-    Arithmetic<DataFrame>,
+export interface DataFrame<T extends Record<string, Series> = any>
+  extends Arithmetic<DataFrame<T>>,
+    Sample<DataFrame<T>>,
+    Arithmetic<DataFrame<T>>,
     WriteMethods,
     Serialize,
     GroupByOps<RollingGroupBy> {
@@ -274,7 +275,7 @@ export interface DataFrame
   /**
    * Very cheap deep clone.
    */
-  clone(): DataFrame;
+  clone(): DataFrame<T>;
   /**
    * __Summary statistics for a DataFrame.__
    *
@@ -321,7 +322,18 @@ export interface DataFrame
    * ...    "ham": ['a', 'b', 'c'],
    * ...    "apple": ['a', 'b', 'c']
    * ...  });
-   * >  console.log(df.drop(['ham', 'apple']).toString());
+   *    // df: pl.DataFrame<{
+   *    //     foo: pl.Series<Float64, "foo">;
+   *    //     bar: pl.Series<Float64, "bar">;
+   *    //     ham: pl.Series<Utf8, "ham">;
+   *    //     apple: pl.Series<Utf8, "apple">;
+   *    // }>
+   * >  const df2 = df.drop(['ham', 'apple']);
+   *    // df2: pl.DataFrame<{
+   *    //     foo: pl.Series<Float64, "foo">;
+   *    //     bar: pl.Series<Float64, "bar">;
+   *    // }>
+   * >  console.log(df2.toString());
    * shape: (3, 2)
    * ╭─────┬─────╮
    * │ foo ┆ bar │
@@ -336,9 +348,14 @@ export interface DataFrame
    * ╰─────┴─────╯
    * ```
    */
-  drop(name: string): DataFrame;
-  drop(names: string[]): DataFrame;
-  drop(name: string, ...names: string[]): DataFrame;
+  drop<U extends string>(name: U): DataFrame<Simplify<Omit<T, U>>>;
+  drop<const U extends string[]>(
+    names: U,
+  ): DataFrame<Simplify<Omit<T, U[number]>>>;
+  drop<U extends string, const V extends string[]>(
+    name: U,
+    ...names: V
+  ): DataFrame<Simplify<Omit<T, U | V[number]>>>;
   /**
    * __Return a new DataFrame where the null values are dropped.__
    *
@@ -364,9 +381,9 @@ export interface DataFrame
    * └─────┴─────┴─────┘
    * ```
    */
-  dropNulls(column: string): DataFrame;
-  dropNulls(columns: string[]): DataFrame;
-  dropNulls(...columns: string[]): DataFrame;
+  dropNulls(column: keyof T): DataFrame<T>;
+  dropNulls(columns: (keyof T)[]): DataFrame<T>;
+  dropNulls(...columns: (keyof T)[]): DataFrame<T>;
   /**
    * __Explode `DataFrame` to long format by exploding a column with Lists.__
    * ___
@@ -518,7 +535,7 @@ export interface DataFrame
    * 2
    * ```
    */
-  findIdxByName(name: string): number;
+  findIdxByName(name: keyof T): number;
   /**
    * __Apply a horizontal reduction on a DataFrame.__
    *
@@ -604,12 +621,46 @@ export interface DataFrame
   frameEqual(other: DataFrame, nullEqual: boolean): boolean;
   /**
    * Get a single column as Series by name.
+   *
+   * ---
+   * @example
+   * ```
+   * > const df = pl.DataFrame({
+   * ...     foo: [1, 2, 3],
+   * ...     bar: [6, null, 8],
+   * ...     ham: ["a", "b", "c"],
+   * ... });
+   * // df: pl.DataFrame<{
+   * //     foo: pl.Series<Float64, "foo">;
+   * //     bar: pl.Series<Float64, "bar">;
+   * //     ham: pl.Series<Utf8, "ham">;
+   * // }>
+   * > const column = df.getColumn("foo");
+   * // column: pl.Series<Float64, "foo">
+   * ```
    */
+  getColumn<U extends keyof T>(name: U): T[U];
   getColumn(name: string): Series;
   /**
    * Get the DataFrame as an Array of Series.
+   * ---
+   * @example
+   * ```
+   * >  const df = pl.DataFrame({
+   * ...     foo: [1, 2, 3],
+   * ...     bar: [6, null, 8],
+   * ...     ham: ["a", "b", "c"],
+   * ... });
+   * // df: pl.DataFrame<{
+   * //     foo: pl.Series<Float64, "foo">;
+   * //     bar: pl.Series<Float64, "bar">;
+   * //     ham: pl.Series<Utf8, "ham">;
+   * // }>
+   * > const columns = df.getColumns();
+   * // columns: (pl.Series<Float64, "foo"> | pl.Series<Float64, "bar"> | pl.Series<Utf8, "ham">)[]
+   * ```
    */
-  getColumns(): Array<Series>;
+  getColumns(): T[keyof T][];
   /**
    * Start a groupby operation.
    * ___
@@ -656,7 +707,7 @@ export interface DataFrame
    * ╰─────┴─────┴─────╯
    * ```
    */
-  head(length?: number): DataFrame;
+  head(length?: number): DataFrame<T>;
   /**
    * Return a new DataFrame grown horizontally by stacking multiple Series to it.
    * @param columns - array of Series or DataFrame to stack
@@ -668,8 +719,20 @@ export interface DataFrame
    * ...   "bar": [6, 7, 8],
    * ...   "ham": ['a', 'b', 'c']
    * ... });
+   * // df: pl.DataFrame<{
+   * //     foo: pl.Series<Float64, "foo">;
+   * //     bar: pl.Series<Float64, "bar">;
+   * //     ham: pl.Series<Utf8, "ham">;
+   * // }>
    * > const x = pl.Series("apple", [10, 20, 30])
-   * > df.hStack([x])
+   * // x: pl.Series<Float64, "apple">
+   * > df.hstack([x])
+   * // pl.DataFrame<{
+   * //     foo: pl.Series<Float64, "foo">;
+   * //     bar: pl.Series<Float64, "bar">;
+   * //     ham: pl.Series<Utf8, "ham">;
+   * //     apple: pl.Series<Float64, "apple">;
+   * // }>
    * shape: (3, 4)
    * ╭─────┬─────┬─────┬───────╮
    * │ foo ┆ bar ┆ ham ┆ apple │
@@ -684,6 +747,12 @@ export interface DataFrame
    * ╰─────┴─────┴─────┴───────╯
    * ```
    */
+  hstack<U extends Record<string, Series> = any>(
+    columns: DataFrame<U>,
+  ): DataFrame<Simplify<T & U>>;
+  hstack<U extends Series[]>(
+    columns: U,
+  ): DataFrame<Simplify<T & { [K in U[number] as K["name"]]: K }>>;
   hstack(columns: Array<Series> | DataFrame): DataFrame;
   hstack(columns: Array<Series> | DataFrame, inPlace?: boolean): void;
   /**
@@ -1160,6 +1229,11 @@ export interface DataFrame
    * ...   "bar": [6, 7, 8],
    * ...   "ham": ['a', 'b', 'c']
    * ... });
+   * // df: pl.DataFrame<{
+   * //     foo: pl.Series<Float64, "foo">;
+   * //     bar: pl.Series<Float64, "bar">;
+   * //     ham: pl.Series<Utf8, "ham">;
+   * // }>
    * > df.rename({"foo": "apple"});
    * ╭───────┬─────┬─────╮
    * │ apple ┆ bar ┆ ham │
@@ -1174,21 +1248,38 @@ export interface DataFrame
    * ╰───────┴─────┴─────╯
    * ```
    */
+  rename<const U extends Partial<Record<keyof T, string>>>(
+    mapping: U,
+  ): DataFrame<{ [K in keyof T as U[K] extends string ? U[K] : K]: T[K] }>;
   rename(mapping: Record<string, string>): DataFrame;
   /**
    * Replace a column at an index location.
+   *
+   * @warning typescript cannot encode type mutation,
+   * so the type of the DataFrame will be incorrect. cast the type of dataframe manually.
    * ___
    * @param index - Column index
    * @param newColumn - New column to insert
    * @example
    * ```
-   * > const df = pl.DataFrame({
+   * > const df: pl.DataFrame = pl.DataFrame({
    * ...   "foo": [1, 2, 3],
    * ...   "bar": [6, 7, 8],
    * ...   "ham": ['a', 'b', 'c']
    * ... });
+   * // df: pl.DataFrame<{
+   * //     foo: pl.Series<Float64, "foo">;
+   * //     bar: pl.Series<Float64, "bar">;
+   * //     ham: pl.Series<Utf8, "ham">;
+   * // }>
    * > const x = pl.Series("apple", [10, 20, 30]);
+   * // x: pl.Series<Float64, "apple">
    * > df.replaceAtIdx(0, x);
+   * // df: pl.DataFrame<{
+   * //     foo: pl.Series<Float64, "foo">; <- notice how the type is still the same!
+   * //     bar: pl.Series<Float64, "bar">;
+   * //     ham: pl.Series<Utf8, "ham">;
+   * // }>
    * shape: (3, 3)
    * ╭───────┬─────┬─────╮
    * │ apple ┆ bar ┆ ham │
@@ -1223,7 +1314,28 @@ export interface DataFrame
    * Convert columnar data to rows as arrays
    */
   rows(): Array<Array<any>>;
-  get schema(): Record<string, DataType>;
+  /**
+   * @example
+   * ```
+   * > const df: pl.DataFrame = pl.DataFrame({
+   * ...   "foo": [1, 2, 3],
+   * ...   "bar": [6, 7, 8],
+   * ...   "ham": ['a', 'b', 'c']
+   * ... });
+   * // df: pl.DataFrame<{
+   * //     foo: pl.Series<Float64, "foo">;
+   * //     bar: pl.Series<Float64, "bar">;
+   * //     ham: pl.Series<Utf8, "ham">;
+   * // }>
+   * > df.schema
+   * // {
+   * //     foo: Float64;
+   * //     bar: Float64;
+   * //     ham: Utf8;
+   * // }
+   * ```
+   */
+  get schema(): { [K in keyof T]: T[K]["dtype"] };
   /**
    * Select columns from this DataFrame.
    * ___
@@ -1235,7 +1347,15 @@ export interface DataFrame
    * ...     "bar": [6, 7, 8],
    * ...     "ham": ['a', 'b', 'c']
    * ...     });
+   * // df: pl.DataFrame<{
+   * //     foo: pl.Series<Float64, "foo">;
+   * //     bar: pl.Series<Float64, "bar">;
+   * //     ham: pl.Series<Utf8, "ham">;
+   * // }>
    * > df.select('foo');
+   * // pl.DataFrame<{
+   * //     foo: pl.Series<Float64, "foo">;
+   * // }>
    * shape: (3, 1)
    * ┌─────┐
    * │ foo │
@@ -1250,7 +1370,8 @@ export interface DataFrame
    * └─────┘
    * ```
    */
-  select(...columns: ExprOrString[]): DataFrame;
+  select<U extends keyof T>(...columns: U[]): DataFrame<{ [P in U]: T[P] }>;
+  select(...columns: ExprOrString[]): DataFrame<T>;
   /**
    * Shift the values by a given period and fill the parts that will be empty due to this operation
    * with `Nones`.
@@ -1291,8 +1412,8 @@ export interface DataFrame
    * └──────┴──────┴──────┘
    * ```
    */
-  shift(periods: number): DataFrame;
-  shift({ periods }: { periods: number }): DataFrame;
+  shift(periods: number): DataFrame<T>;
+  shift({ periods }: { periods: number }): DataFrame<T>;
   /**
    * Shift the values by a given period and fill the parts that will be empty due to this operation
    * with the result of the `fill_value` expression.
@@ -1523,7 +1644,7 @@ export interface DataFrame
    * ```
    * @category IO
    */
-  toObject(): Record<string, any[]>;
+  toObject(): { [K in keyof T]: DTypeToJs<T[K]["dtype"]>[] };
 
   /**
    * @deprecated *since 0.4.0* use {@link writeIPC}
@@ -1758,7 +1879,16 @@ export interface DataFrame
    * @param existingName
    * @param newName
    */
+  withColumnRenamed<Existing extends keyof T, New extends string>(
+    existingName: Existing,
+    replacement: New,
+  ): DataFrame<{ [K in keyof T as K extends Existing ? New : K]: T[K] }>;
   withColumnRenamed(existing: string, replacement: string): DataFrame;
+
+  withColumnRenamed<Existing extends keyof T, New extends string>(opts: {
+    existingName: Existing;
+    replacement: New;
+  }): DataFrame<{ [K in keyof T as K extends Existing ? New : K]: T[K] }>;
   withColumnRenamed(opts: { existing: string; replacement: string }): DataFrame;
   /**
    * Add a column at index 0 that counts the rows.
@@ -1787,7 +1917,7 @@ export interface DataFrame
     Or combine them:
     - "3d12h4m25s" # 3 days, 12 hours, 4 minutes, and 25 seconds
 
-    By "calendar day", we mean the corresponding time on the next day (which may not be 24 hours, due to daylight savings). 
+    By "calendar day", we mean the corresponding time on the next day (which may not be 24 hours, due to daylight savings).
     Similarly for "calendar week", "calendar month", "calendar quarter", and "calendar year".
 
     Parameters
@@ -2697,6 +2827,14 @@ export const _DataFrame = (_df: any): DataFrame => {
   });
 };
 
+interface DataFrameOptions {
+  columns?: any[];
+  orient?: "row" | "col";
+  schema?: Record<string, string | DataType>;
+  schemaOverrides?: Record<string, string | DataType>;
+  inferSchemaLength?: number;
+}
+
 /**
  * DataFrame constructor
  */
@@ -2746,16 +2884,21 @@ export interface DataFrameConstructor extends Deserialize<DataFrame> {
    * ╰─────┴─────╯
    * ```
    */
-  (
-    data: any,
-    options?: {
-      columns?: any[];
-      orient?: "row" | "col";
-      schema?: Record<string, string | DataType>;
-      schemaOverrides?: Record<string, string | DataType>;
-      inferSchemaLength?: number;
-    },
-  ): DataFrame;
+  <T1 extends ArrayLike<Series>>(
+    data: T1,
+    options?: DataFrameOptions,
+  ): DataFrame<{
+    [K in T1[number] as K["name"]]: K;
+  }>;
+  <T2 extends Record<string, ArrayLike<any>>>(
+    data: T2,
+    options?: DataFrameOptions,
+  ): DataFrame<{
+    [K in keyof T2]: K extends string
+      ? Series<JsToDtype<T2[K][number]>, K>
+      : never;
+  }>;
+  (data: any, options?: DataFrameOptions): DataFrame;
   isDataFrame(arg: any): arg is DataFrame;
 }
 
