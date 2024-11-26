@@ -2008,6 +2008,16 @@ describe("create", () => {
       string: pl.String,
     });
   });
+  test("from row objects, inferred schema, empty array", () => {
+    const df = pl.readRecords([
+      { a: [], b: 0 },
+      { a: [""], b: 0 },
+    ]);
+    expect(df.schema).toStrictEqual({
+      a: pl.List(pl.String),
+      b: pl.Float64,
+    });
+  });
   test("from row objects, with schema", () => {
     const rows = [
       { num: 1, date: "foo", string: "foo1" },

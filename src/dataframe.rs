@@ -1657,21 +1657,26 @@ fn obj_to_pairs(rows: &Array, len: usize) -> impl '_ + Iterator<Item = Vec<(Stri
                                 if val.is_array().unwrap() {
                                     let arr: napi::JsObject = unsafe { val.cast() };
                                     let len = arr.get_array_length().unwrap();
-                                    // dont compare too many items, as it could be expensive
-                                    let max_take = std::cmp::min(len as usize, 10);
-                                    let mut dtypes: Vec<DataType> =
-                                        Vec::with_capacity(len as usize);
 
-                                    for idx in 0..max_take {
-                                        let item: napi::JsUnknown =
-                                            arr.get_element(idx as u32).unwrap();
-                                        let ty = item.get_type().unwrap();
-                                        let dt: Wrap<DataType> = ty.into();
-                                        dtypes.push(dt.0)
+                                    if len == 0 {
+                                        DataType::List(DataType::Null.into())
+                                    } else {
+                                        // dont compare too many items, as it could be expensive
+                                        let max_take = std::cmp::min(len as usize, 10);
+                                        let mut dtypes: Vec<DataType> =
+                                            Vec::with_capacity(len as usize);
+
+                                        for idx in 0..max_take {
+                                            let item: napi::JsUnknown =
+                                                arr.get_element(idx as u32).unwrap();
+                                            let ty = item.get_type().unwrap();
+                                            let dt: Wrap<DataType> = ty.into();
+                                            dtypes.push(dt.0)
+                                        }
+                                        let dtype = coerce_data_type(&dtypes);
+
+                                        DataType::List(dtype.into())
                                     }
-                                    let dtype = coerce_data_type(&dtypes);
-
-                                    DataType::List(dtype.into())
                                 } else if val.is_date().unwrap() {
                                     DataType::Datetime(TimeUnit::Milliseconds, None)
                                 } else {
