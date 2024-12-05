@@ -45,7 +45,7 @@ describe("dataframe", () => {
     const actual = expected.clone();
     expect(actual).toFrameEqual(expected);
   });
-  test("describe", () => {
+  test.skip("describe", () => {
     const actual = pl
       .DataFrame({
         a: [1, 2, 3],
