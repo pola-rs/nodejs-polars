@@ -1,8 +1,9 @@
 use crate::lazy::dsl::JsExpr;
 use crate::prelude::*;
+use cloud::CloudOptions;
 use napi::bindgen_prelude::*;
 use napi::{JsBigInt, JsBoolean, JsDate, JsNumber, JsObject, JsString, JsUnknown};
-use polars::frame::NullStrategy;
+use polars::prelude::NullStrategy;
 use polars::prelude::*;
 use polars_core::series::ops::NullBehavior;
 use polars_io::RowIndex;
@@ -574,6 +575,8 @@ pub struct SinkCsvOptions {
     pub float_precision: Option<i64>,
     pub null_value: Option<String>,
     pub maintain_order: bool,
+    pub cloud_options: Option<HashMap<String, String>>,
+    pub retries: Option<i64>,
 }
 
 #[napi(object)]
@@ -590,6 +593,29 @@ pub struct SinkParquetOptions {
     pub simplify_expression: Option<bool>,
     pub slice_pushdown: Option<bool>,
     pub no_optimization: Option<bool>,
+    pub cloud_options: Option<HashMap<String, String>>,
+    pub retries: Option<i64>,
+}
+
+#[napi(object)]
+pub struct ScanParquetOptions {
+    pub n_rows: Option<i64>,
+    pub row_index_name: Option<String>,
+    pub row_index_offset: Option<u32>,
+    pub cache: Option<bool>,
+    pub parallel: Wrap<ParallelStrategy>,
+    pub glob: Option<bool>,
+    pub hive_partitioning: Option<bool>,
+    pub hive_schema: Option<Wrap<Schema>>,
+    pub try_parse_hive_dates: Option<bool>,
+    pub rechunk: Option<bool>,
+    pub schema: Option<Wrap<Schema>>,
+    pub low_memory: Option<bool>,
+    pub use_statistics: Option<bool>,
+    pub cloud_options: Option<HashMap<String, String>>,
+    pub retries: Option<i64>,
+    pub include_file_paths: Option<String>,
+    pub allow_missing_columns: Option<bool>,
 }
 
 #[napi(object)]
@@ -803,11 +829,13 @@ impl FromNapiValue for Wrap<SortOptions> {
             .map_or(obj.get::<_, bool>("nullsLast")?.unwrap_or(false), |n| n);
         let multithreaded = obj.get::<_, bool>("multithreaded")?.unwrap();
         let maintain_order: bool = obj.get::<_, bool>("maintain_order")?.unwrap();
+        let limit = obj.get::<_, _>("limit")?.unwrap();
         let options = SortOptions {
             descending,
             nulls_last,
             multithreaded,
             maintain_order,
+            limit,
         };
         Ok(Wrap(options))
     }
@@ -1301,4 +1329,33 @@ pub(crate) fn parse_parquet_compression(
         }
     };
     Ok(parsed)
+}
+
+pub(crate) fn parse_cloud_options(
+    uri: &str,
+    kv: Option<HashMap<String, String>>,
+    retries: Option<i64>,
+) -> Option<CloudOptions> {
+    let mut cloud_options: Option<CloudOptions> = if let Some(o) = kv {
+        let co: Vec<(String, String)> = o.into_iter().map(|kv: (String, String)| kv).collect();
+        Some(
+            CloudOptions::from_untyped_config(&uri, co)
+                .map_err(JsPolarsErr::from)
+                .unwrap(),
+        )
+    } else {
+        None
+    };
+
+    let retries = retries.unwrap_or_else(|| 2) as usize;
+    if retries > 0 {
+        cloud_options =
+            cloud_options
+                .or_else(|| Some(CloudOptions::default()))
+                .map(|mut options| {
+                    options.max_retries = retries;
+                    options
+                });
+    }
+    cloud_options
 }

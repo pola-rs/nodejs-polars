@@ -1705,20 +1705,13 @@ pub fn int_ranges(
 }
 
 #[napi(catch_unwind)]
-pub fn pearson_corr(a: Wrap<Expr>, b: Wrap<Expr>, ddof: Option<u8>) -> JsExpr {
-    let ddof = ddof.unwrap_or(1);
-    polars::lazy::dsl::pearson_corr(a.0, b.0, ddof).into()
+pub fn pearson_corr(a: Wrap<Expr>, b: Wrap<Expr>) -> JsExpr {
+    polars::lazy::dsl::pearson_corr(a.0, b.0).into()
 }
 
 #[napi(catch_unwind)]
-pub fn spearman_rank_corr(
-    a: Wrap<Expr>,
-    b: Wrap<Expr>,
-    ddof: Option<u8>,
-    propagate_nans: bool,
-) -> JsExpr {
-    let ddof = ddof.unwrap_or(1);
-    polars::lazy::dsl::spearman_rank_corr(a.0, b.0, ddof, propagate_nans).into()
+pub fn spearman_rank_corr(a: Wrap<Expr>, b: Wrap<Expr>, propagate_nans: bool) -> JsExpr {
+    polars::lazy::dsl::spearman_rank_corr(a.0, b.0, propagate_nans).into()
 }
 
 #[napi(catch_unwind)]
@@ -1810,9 +1803,9 @@ pub fn max_horizontal(exprs: Vec<&JsExpr>) -> JsExpr {
         .into()
 }
 #[napi(catch_unwind)]
-pub fn sum_horizontal(exprs: Vec<&JsExpr>) -> JsExpr {
+pub fn sum_horizontal(exprs: Vec<&JsExpr>, ignore_nulls: bool) -> JsExpr {
     let exprs = exprs.to_exprs();
-    dsl::sum_horizontal(exprs)
+    dsl::sum_horizontal(exprs, ignore_nulls)
         .map_err(JsPolarsErr::from)
         .unwrap()
         .into()

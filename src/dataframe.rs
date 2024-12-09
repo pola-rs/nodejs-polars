@@ -3,7 +3,6 @@ use crate::prelude::*;
 use crate::series::JsSeries;
 use napi::JsUnknown;
 use polars::frame::row::{infer_schema, Row};
-use polars::frame::NullStrategy;
 use polars_io::mmap::MmapBytesReader;
 use polars_io::RowIndex;
 
@@ -689,7 +688,7 @@ impl JsDataFrame {
     }
     #[napi(catch_unwind)]
     pub fn n_chunks(&self) -> napi::Result<u32> {
-        let n = self.df.n_chunks();
+        let n = self.df.first_col_n_chunks();
         Ok(n as u32)
     }
 
@@ -1038,7 +1037,7 @@ impl JsDataFrame {
             .df
             .mean_horizontal(null_strategy.0)
             .map_err(JsPolarsErr::from)?;
-        Ok(s.map(|s| s.into()))
+        Ok(s.map(|s| s.take_materialized_series().into()))
     }
     #[napi(catch_unwind)]
     pub fn hmax(&self) -> napi::Result<Option<JsSeries>> {
@@ -1058,7 +1057,7 @@ impl JsDataFrame {
             .df
             .sum_horizontal(null_strategy.0)
             .map_err(JsPolarsErr::from)?;
-        Ok(s.map(|s| s.into()))
+        Ok(s.map(|s| s.take_materialized_series().into()))
     }
     #[napi(catch_unwind)]
     pub fn to_dummies(
