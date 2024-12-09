@@ -491,6 +491,20 @@ export type DTypeToJs<T> = T extends DataType.Decimal
           : T extends DataType.Utf8
             ? string
             : never;
+// some objects can be constructed with a looser JS type than they’d return when converted back to JS
+export type DTypeToJsLoose<T> = T extends DataType.Decimal
+  ? number | bigint
+  : T extends DataType.Float64
+    ? number | bigint
+    : T extends DataType.Int64
+      ? number | bigint
+      : T extends DataType.Int32
+        ? number | bigint
+        : T extends DataType.Bool
+          ? boolean
+          : T extends DataType.Utf8
+            ? string
+            : never;
 export type DtypeToJsName<T> = T extends DataType.Decimal
   ? "Decimal"
   : T extends DataType.Float64
