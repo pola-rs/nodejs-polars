@@ -940,7 +940,7 @@ export interface DataFrame<T extends Record<string, Series> = any>
   limit(length?: number): DataFrame<T>;
   map<ReturnT>(
     // TODO: strong types for the mapping function
-    func: (row: any[], i: number, arr: any[][]) => ReturnT
+    func: (row: any[], i: number, arr: any[][]) => ReturnT,
   ): ReturnT[];
 
   /**
@@ -1090,7 +1090,9 @@ export interface DataFrame<T extends Record<string, Series> = any>
    * └─────┴─────┴─────┘
    * ```
    */
-  nullCount(): DataFrame<{ [K in keyof T]: Series<JsToDtype<number>, K & string> }>;
+  nullCount(): DataFrame<{
+    [K in keyof T]: Series<JsToDtype<number>, K & string>;
+  }>;
   partitionBy(
     cols: string | string[],
     stable?: boolean,
@@ -1447,7 +1449,10 @@ export interface DataFrame<T extends Record<string, Series> = any>
    * ```
    */
   shiftAndFill(n: number, fillValue: number): DataFrame<T>;
-  shiftAndFill({ n, fillValue }: { n: number; fillValue: number }): DataFrame<T>;
+  shiftAndFill({
+    n,
+    fillValue,
+  }: { n: number; fillValue: number }): DataFrame<T>;
   /**
    * Shrink memory usage of this DataFrame to fit the exact capacity needed to hold the data.
    */
@@ -1875,8 +1880,10 @@ export interface DataFrame<T extends Record<string, Series> = any>
    * @param column - Series, where the name of the Series refers to the column in the DataFrame.
    */
   withColumn<SeriesTypeT extends DataType, SeriesNameT extends string>(
-    column: Series<SeriesTypeT, SeriesNameT>
-  ): DataFrame<Simplify<T & { [K in SeriesNameT]: Series<SeriesTypeT, SeriesNameT> }>>;
+    column: Series<SeriesTypeT, SeriesNameT>,
+  ): DataFrame<
+    Simplify<T & { [K in SeriesNameT]: Series<SeriesTypeT, SeriesNameT> }>
+  >;
   withColumn(column: Series | Expr): DataFrame;
   withColumns(...columns: (Expr | Series)[]): DataFrame;
   /**
