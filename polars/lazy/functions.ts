@@ -204,8 +204,22 @@ export function intRange(opts: {
   end: number | Expr;
   step?: number | Expr;
   dtype?: DataType;
+  eager?: false;
+}): Expr;
+export function intRange<DT extends DataType = DataType.Int64>(opts: {
+  start: number | Expr;
+  end: number | Expr;
+  step?: number | Expr;
+  dtype?: DT;
+  eager: true;
+}): Series<DT>;
+export function intRange<DT extends DataType = DataType.Int64>(opts: {
+  start: number | Expr;
+  end: number | Expr;
+  step?: number | Expr;
+  dtype?: DT;
   eager?: boolean;
-});
+}): Expr | Series<DT>;
 /** @deprecated *since 0.15.0* use `start` and `end` instead */
 export function intRange(opts: {
   low: number | Expr;
@@ -213,14 +227,7 @@ export function intRange(opts: {
   step?: number | Expr;
   dtype?: DataType;
   eager?: boolean;
-});
-export function intRange(
-  start: number | Expr,
-  end?: number | Expr,
-  step?: number | Expr,
-  dtype?: DataType,
-  eager?: true,
-): Series;
+}): Expr | Series;
 export function intRange(
   start: number | Expr,
   end?: number | Expr,
@@ -228,12 +235,19 @@ export function intRange(
   dtype?: DataType,
   eager?: false,
 ): Expr;
-export function intRange(
+export function intRange<DT extends DataType = DataType.Int64>(
+  start: number | Expr,
+  end?: number | Expr,
+  step?: number | Expr,
+  dtype?: DT,
+  eager?: true,
+): Series<DT>;
+export function intRange<DT extends DataType = DataType.Int64>(
   opts: any,
-  end?,
+  end?: number | Expr,
   step = 1 as number | Expr,
-  dtype: DataType = DataType.Int64,
-  eager?,
+  dtype?: DT,
+  eager?: boolean,
 ): Series | Expr {
   // @deprecated since 0.15.0
   if (typeof opts?.low === "number") {
@@ -256,7 +270,7 @@ export function intRange(
       .select(intRange(start, end, step).alias("intRange") as any)
       .getColumn("intRange") as any;
   }
-  return _Expr(pli.intRange(start, end, step, dtype));
+  return _Expr(pli.intRange(start, end, step, dtype || DataType.Int64));
 }
 /***
  * Generate a range of integers for each row of the input columns.
@@ -554,7 +568,7 @@ export function head(column: Series | ExprOrString, n?): Series | Expr {
   └───────┴──────┴──────┴─────┘
   ```
 */
-export function len(): any {
+export function len(): Expr {
   return _Expr(pli.len());
 }
 /** Get the last value. */
