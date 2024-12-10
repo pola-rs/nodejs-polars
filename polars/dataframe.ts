@@ -1483,7 +1483,6 @@ export interface DataFrame<T extends Record<string, Series> = any>
    * Sort the DataFrame by column.
    * ___
    * @param by - Column(s) to sort by. Accepts expression input, including selectors. Strings are parsed as column names.
-   * @deprecated *since 0.16.0* @use descending
    * @param reverse - Reverse/descending sort.
    * @param descending - Sort in descending order. When sorting by multiple columns, can be specified per column by passing a sequence of booleans.
    * @param nullsLast - Place null values last; can specify a single boolean applying to all columns or a sequence of booleans for per-column control.
@@ -1501,6 +1500,7 @@ export interface DataFrame<T extends Record<string, Series> = any>
     maintainOrder,
   }: {
     by: ColumnsOrExpr;
+    /** @deprecated *since 0.16.0* @use descending */
     reverse?: boolean; // deprecated
     nullsLast?: boolean;
     maintainOrder?: boolean;
