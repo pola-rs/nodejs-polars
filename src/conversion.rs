@@ -1,13 +1,14 @@
 use crate::lazy::dsl::JsExpr;
 use crate::prelude::*;
-use cloud::CloudOptions;
 use napi::bindgen_prelude::*;
 use napi::{JsBigInt, JsBoolean, JsDate, JsNumber, JsObject, JsString, JsUnknown};
 use polars::prelude::NullStrategy;
+use polars_io::cloud::CloudOptions;
 use polars::prelude::*;
 use polars_core::series::ops::NullBehavior;
 use polars_io::RowIndex;
 use std::collections::HashMap;
+use std::num::NonZero;
 
 #[derive(Debug)]
 pub struct Wrap<T: ?Sized>(pub T);
@@ -547,39 +548,6 @@ impl From<JsRowCount> for RowIndex {
 }
 
 #[napi(object)]
-pub struct WriteCsvOptions {
-    pub include_bom: Option<bool>,
-    pub include_header: Option<bool>,
-    pub sep: Option<String>,
-    pub quote: Option<String>,
-    pub line_terminator: Option<String>,
-    pub batch_size: Option<i64>,
-    pub datetime_format: Option<String>,
-    pub date_format: Option<String>,
-    pub time_format: Option<String>,
-    pub float_precision: Option<i64>,
-    pub null_value: Option<String>,
-}
-
-#[napi(object)]
-pub struct SinkCsvOptions {
-    pub include_header: Option<bool>,
-    pub include_bom: Option<bool>,
-    pub separator: Option<String>,
-    pub line_terminator: Option<String>,
-    pub quote_char: Option<String>,
-    pub batch_size: Option<i64>,
-    pub datetime_format: Option<String>,
-    pub date_format: Option<String>,
-    pub time_format: Option<String>,
-    pub float_precision: Option<i64>,
-    pub null_value: Option<String>,
-    pub maintain_order: bool,
-    pub cloud_options: Option<HashMap<String, String>>,
-    pub retries: Option<i64>,
-}
-
-#[napi(object)]
 pub struct SinkParquetOptions {
     pub compression: Option<String>,
     pub compression_level: Option<i32>,
@@ -594,7 +562,7 @@ pub struct SinkParquetOptions {
     pub slice_pushdown: Option<bool>,
     pub no_optimization: Option<bool>,
     pub cloud_options: Option<HashMap<String, String>>,
-    pub retries: Option<i64>,
+    pub retries: Option<u32>,
 }
 
 #[napi(object)]
@@ -613,7 +581,7 @@ pub struct ScanParquetOptions {
     pub low_memory: Option<bool>,
     pub use_statistics: Option<bool>,
     pub cloud_options: Option<HashMap<String, String>>,
-    pub retries: Option<i64>,
+    pub retries: Option<u32>,
     pub include_file_paths: Option<String>,
     pub allow_missing_columns: Option<bool>,
 }
@@ -828,7 +796,7 @@ impl FromNapiValue for Wrap<SortOptions> {
             .get::<_, bool>("nulls_last")?
             .map_or(obj.get::<_, bool>("nullsLast")?.unwrap_or(false), |n| n);
         let multithreaded = obj.get::<_, bool>("multithreaded")?.unwrap();
-        let maintain_order: bool = obj.get::<_, bool>("maintain_order")?.unwrap();
+        let maintain_order: bool = obj.get::<_, bool>("maintainOrder")?.unwrap_or(true);
         let limit = obj.get::<_, _>("limit")?.unwrap();
         let options = SortOptions {
             descending,
@@ -836,6 +804,65 @@ impl FromNapiValue for Wrap<SortOptions> {
             multithreaded,
             maintain_order,
             limit,
+        };
+        Ok(Wrap(options))
+    }
+}
+
+impl FromNapiValue for Wrap<QuoteStyle> {
+    unsafe fn from_napi_value(env: sys::napi_env, napi_val: sys::napi_value) -> napi::Result<Self> {
+        let s = String::from_napi_value(env, napi_val)?;
+
+        let parsed = match s.as_ref() {
+            "always" => QuoteStyle::Always,
+            "necessary" => QuoteStyle::Necessary,
+            "non_numeric" => QuoteStyle::NonNumeric,
+            "never" => QuoteStyle::Never,
+            _ => return Err(Error::new(Status::InvalidArg,
+                    "`quote_style` must be one of {{'always', 'necessary', 'non_numeric', 'never'}}, got {v}",
+                )),
+        };
+        Ok(Wrap(parsed))
+    }
+}
+
+impl FromNapiValue for Wrap<CsvWriterOptions> {
+    unsafe fn from_napi_value(env: sys::napi_env, napi_val: sys::napi_value) -> napi::Result<Self> {
+        let obj = Object::from_napi_value(env, napi_val)?;
+        let include_bom = obj.get::<_, bool>("includeBom")?.unwrap_or(false);
+        let include_header = obj.get::<_, bool>("includeHeader")?.unwrap_or(true);
+        let batch_size = NonZero::new(obj.get::<_, i64>("batchSize")?.unwrap_or(1024) as usize).unwrap();
+        let maintain_order= obj.get::<_, bool>("maintainOrder")?.unwrap_or(true);
+        let date_format = obj.get::<_, String>("dateFormat")?;
+        let time_format = obj.get::<_, String>("timeFormat")?;
+        let datetime_format = obj.get::<_, String>("datetimeFormat")?;
+        let float_scientific = obj.get::<_, bool>("floatScientific")?;
+        let float_precision = obj.get::<_, i32>("floatPrecision")?.map(|x| x as usize);
+        let separator = obj.get::<_, String>("separator")?.unwrap_or(",".to_owned()).as_bytes()[0];
+        let quote_char = obj.get::<_, String>("quoteChar")?.unwrap_or("\"".to_owned()).as_bytes()[0];
+        let null_value = obj.get::<_, String>("nullValue")?.unwrap_or(SerializeOptions::default().null);
+        let line_terminator = obj.get::<_, String>("lineTerminator")?.unwrap_or("\n".to_owned());
+        let quote_style = obj.get::<_, Wrap<QuoteStyle>>("quoteStyle")?.map_or(QuoteStyle::default(), |wrap| wrap.0);
+
+        let serialize_options = SerializeOptions {
+            date_format,
+            time_format,
+            datetime_format,
+            float_scientific,
+            float_precision,
+            separator,
+            quote_char,
+            null: null_value,
+            line_terminator,
+            quote_style,
+        };
+
+        let options = CsvWriterOptions {
+            include_bom,
+            include_header,
+            maintain_order,
+            batch_size,
+            serialize_options,
         };
         Ok(Wrap(options))
     }
@@ -1334,7 +1361,7 @@ pub(crate) fn parse_parquet_compression(
 pub(crate) fn parse_cloud_options(
     uri: &str,
     kv: Option<HashMap<String, String>>,
-    retries: Option<i64>,
+    max_retries: Option<u32>,
 ) -> Option<CloudOptions> {
     let mut cloud_options: Option<CloudOptions> = if let Some(o) = kv {
         let co: Vec<(String, String)> = o.into_iter().map(|kv: (String, String)| kv).collect();
@@ -1347,13 +1374,13 @@ pub(crate) fn parse_cloud_options(
         None
     };
 
-    let retries = retries.unwrap_or_else(|| 2) as usize;
-    if retries > 0 {
+    let max_retries = max_retries.unwrap_or_else(|| 2) as usize;
+    if max_retries > 0 {
         cloud_options =
             cloud_options
                 .or_else(|| Some(CloudOptions::default()))
                 .map(|mut options| {
-                    options.max_retries = retries;
+                    options.max_retries = max_retries;
                     options
                 });
     }

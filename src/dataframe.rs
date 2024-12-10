@@ -5,7 +5,7 @@ use napi::JsUnknown;
 use polars::frame::row::{infer_schema, Row};
 use polars_io::mmap::MmapBytesReader;
 use polars_io::RowIndex;
-
+use polars_io::csv::write::CsvWriterOptions;
 use std::borrow::Borrow;
 use std::collections::HashMap;
 use std::fs::File;
@@ -1336,22 +1336,20 @@ impl JsDataFrame {
     pub fn write_csv(
         &mut self,
         path_or_buffer: JsUnknown,
-        options: WriteCsvOptions,
+        options: Wrap<CsvWriterOptions>,
         env: Env,
     ) -> napi::Result<()> {
-        let include_header = options.include_header.unwrap_or(true);
-        let sep = options.sep.unwrap_or(",".to_owned()).as_bytes()[0];
-        let quote = options.quote.unwrap_or("\"".to_owned()).as_bytes()[0];
-        let include_bom = options.include_bom.unwrap_or(false);
-        let line_terminator = options.line_terminator.unwrap_or("\n".to_owned());
-        let batch_size = NonZeroUsize::new(options.batch_size.unwrap_or(1024) as usize);
-        let date_format = options.date_format;
-        let time_format = options.time_format;
-        let datetime_format = options.datetime_format;
-        let float_precision: Option<usize> = options.float_precision.map(|fp| fp as usize);
-        let null_value = options
-            .null_value
-            .unwrap_or(SerializeOptions::default().null);
+        let include_header = options.0.include_header;
+        let separator = options.0.serialize_options.separator;
+        let quote = options.0.serialize_options.quote_char;
+        let include_bom = options.0.include_bom;
+        let line_terminator = options.0.serialize_options.line_terminator;
+        let batch_size = options.0.batch_size;
+        let date_format = options.0.serialize_options.date_format;
+        let time_format = options.0.serialize_options.time_format;
+        let datetime_format = options.0.serialize_options.datetime_format;
+        let float_precision: Option<usize> = options.0.serialize_options.float_precision;
+        let null_value = options.0.serialize_options.null;
 
         match path_or_buffer.get_type()? {
             ValueType::String => {
@@ -1363,9 +1361,9 @@ impl JsDataFrame {
                 CsvWriter::new(f)
                     .include_bom(include_bom)
                     .include_header(include_header)
-                    .with_separator(sep)
+                    .with_separator(separator)
                     .with_line_terminator(line_terminator)
-                    .with_batch_size(batch_size.unwrap())
+                    .with_batch_size(batch_size)
                     .with_datetime_format(datetime_format)
                     .with_date_format(date_format)
                     .with_time_format(time_format)
@@ -1382,9 +1380,9 @@ impl JsDataFrame {
                 CsvWriter::new(writeable)
                     .include_bom(include_bom)
                     .include_header(include_header)
-                    .with_separator(sep)
+                    .with_separator(separator)
                     .with_line_terminator(line_terminator)
-                    .with_batch_size(batch_size.unwrap())
+                    .with_batch_size(batch_size)
                     .with_datetime_format(datetime_format)
                     .with_date_format(date_format)
                     .with_time_format(time_format)

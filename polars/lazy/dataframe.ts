@@ -5,7 +5,7 @@ import type { Deserialize, GroupByOps, Serialize } from "../shared_traits";
 import type {
   LazyJoinOptions,
   LazyOptions,
-  SinkCsvOptions,
+  CsvWriterOptions,
   SinkParquetOptions,
 } from "../types";
 import {
@@ -541,7 +541,7 @@ export interface LazyDataFrame extends Serialize, GroupByOps<LazyGroupBy> {
     >>> lf.sinkCsv("out.csv")
   */
 
-  sinkCSV(path: string, options?: SinkCsvOptions): void;
+  sinkCSV(path: string, options?: CsvWriterOptions): void;
 
   /***
    *
@@ -1078,7 +1078,7 @@ export const _LazyDataFrame = (_ldf: any): LazyDataFrame => {
     withRowCount(name = "row_nr") {
       return _LazyDataFrame(_ldf.withRowCount(name));
     },
-    sinkCSV(path, options: SinkCsvOptions = {}) {
+    sinkCSV(path, options: CsvWriterOptions = {}) {
       options.maintainOrder = options.maintainOrder ?? false;
       _ldf.sinkCsv(path, options);
     },

@@ -553,50 +553,15 @@ impl JsLazyFrame {
     }
 
     #[napi(catch_unwind)]
-    pub fn sink_csv(&self, path: String, options: SinkCsvOptions) -> napi::Result<()> {
-        let null_value = options
-            .null_value
-            .unwrap_or(SerializeOptions::default().null);
-        let float_precision: Option<usize> = options.float_precision.map(|fp| fp as usize);
-        let separator = options.separator.unwrap_or(",".to_owned()).as_bytes()[0];
-        let line_terminator = options.line_terminator.unwrap_or("\n".to_string());
-        let quote_char = options.quote_char.unwrap_or("\"".to_owned()).as_bytes()[0];
-        let date_format = options.date_format;
-        let time_format = options.time_format;
-        let datetime_format = options.datetime_format;
-
-        let serialize_options = SerializeOptions {
-            date_format,
-            time_format,
-            datetime_format,
-            float_precision,
-            separator,
-            quote_char,
-            null: null_value,
-            line_terminator,
-            ..SerializeOptions::default()
-        };
-
-        let batch_size = options.batch_size.map(|bs| bs).unwrap_or(1024) as usize;
-        let batch_size = NonZeroUsize::new(batch_size).unwrap();
-        let include_bom = options.include_bom.unwrap_or(false);
-        let include_header = options.include_header.unwrap_or(true);
-        let maintain_order = options.maintain_order;
-        let cloud_options = parse_cloud_options(&path, options.cloud_options, options.retries);
-
-        let options = CsvWriterOptions {
-            include_bom,
-            include_header,
-            maintain_order,
-            batch_size,
-            serialize_options,
-        };
-
+    pub fn sink_csv(&self, path: String,
+        options: Wrap<CsvWriterOptions>,
+        cloud_options: Option<HashMap<String, String>>,
+        max_retries: Option<u32>,
+    ) -> napi::Result<()> {
+        let cloud_options = parse_cloud_options(&path, cloud_options, max_retries);
         let path_buf: PathBuf = PathBuf::from(path);
         let ldf = self.ldf.clone().with_comm_subplan_elim(false);
-        let _ = ldf
-            .sink_csv(path_buf, options, cloud_options)
-            .map_err(JsPolarsErr::from);
+        let _ = ldf.sink_csv(path_buf, options.0, cloud_options).map_err(JsPolarsErr::from);
         Ok(())
     }
 
@@ -740,25 +705,6 @@ pub fn scan_parquet(path: String, options: ScanParquetOptions) -> napi::Result<J
     let use_statistics = options.use_statistics.unwrap_or(false);
 
     let cloud_options = parse_cloud_options(&path, options.cloud_options, options.retries);
-
-    // let mut cloud_options: Option<CloudOptions> = if let Some(o) = options.cloud_options {
-    //     let co: Vec<(String, String)> = o.into_iter().map(|kv: (String, String)| kv).collect();
-    //     Some(CloudOptions::from_untyped_config(&path, co).map_err(JsPolarsErr::from)?)
-    // } else {
-    //     None
-    // };
-
-    // let retries = options.retries.unwrap_or_else(|| 2) as usize;
-    // if retries > 0 {
-    //     cloud_options =
-    //         cloud_options
-    //             .or_else(|| Some(CloudOptions::default()))
-    //             .map(|mut options| {
-    //                 options.max_retries = retries;
-    //                 options
-    //             });
-    // }
-
     let hive_schema = options.hive_schema.map(|s| Arc::new(s.0));
     let schema = options.schema.map(|s| Arc::new(s.0));
     let hive_options = HiveOptions {
