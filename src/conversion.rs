@@ -3,9 +3,9 @@ use crate::prelude::*;
 use napi::bindgen_prelude::*;
 use napi::{JsBigInt, JsBoolean, JsDate, JsNumber, JsObject, JsString, JsUnknown};
 use polars::prelude::NullStrategy;
-use polars_io::cloud::CloudOptions;
 use polars::prelude::*;
 use polars_core::series::ops::NullBehavior;
+use polars_io::cloud::CloudOptions;
 use polars_io::RowIndex;
 use std::collections::HashMap;
 use std::num::NonZero;
@@ -831,18 +831,31 @@ impl FromNapiValue for Wrap<CsvWriterOptions> {
         let obj = Object::from_napi_value(env, napi_val)?;
         let include_bom = obj.get::<_, bool>("includeBom")?.unwrap_or(false);
         let include_header = obj.get::<_, bool>("includeHeader")?.unwrap_or(true);
-        let batch_size = NonZero::new(obj.get::<_, i64>("batchSize")?.unwrap_or(1024) as usize).unwrap();
-        let maintain_order= obj.get::<_, bool>("maintainOrder")?.unwrap_or(true);
+        let batch_size =
+            NonZero::new(obj.get::<_, i64>("batchSize")?.unwrap_or(1024) as usize).unwrap();
+        let maintain_order = obj.get::<_, bool>("maintainOrder")?.unwrap_or(true);
         let date_format = obj.get::<_, String>("dateFormat")?;
         let time_format = obj.get::<_, String>("timeFormat")?;
         let datetime_format = obj.get::<_, String>("datetimeFormat")?;
         let float_scientific = obj.get::<_, bool>("floatScientific")?;
         let float_precision = obj.get::<_, i32>("floatPrecision")?.map(|x| x as usize);
-        let separator = obj.get::<_, String>("separator")?.unwrap_or(",".to_owned()).as_bytes()[0];
-        let quote_char = obj.get::<_, String>("quoteChar")?.unwrap_or("\"".to_owned()).as_bytes()[0];
-        let null_value = obj.get::<_, String>("nullValue")?.unwrap_or(SerializeOptions::default().null);
-        let line_terminator = obj.get::<_, String>("lineTerminator")?.unwrap_or("\n".to_owned());
-        let quote_style = obj.get::<_, Wrap<QuoteStyle>>("quoteStyle")?.map_or(QuoteStyle::default(), |wrap| wrap.0);
+        let separator = obj
+            .get::<_, String>("separator")?
+            .unwrap_or(",".to_owned())
+            .as_bytes()[0];
+        let quote_char = obj
+            .get::<_, String>("quoteChar")?
+            .unwrap_or("\"".to_owned())
+            .as_bytes()[0];
+        let null_value = obj
+            .get::<_, String>("nullValue")?
+            .unwrap_or(SerializeOptions::default().null);
+        let line_terminator = obj
+            .get::<_, String>("lineTerminator")?
+            .unwrap_or("\n".to_owned());
+        let quote_style = obj
+            .get::<_, Wrap<QuoteStyle>>("quoteStyle")?
+            .map_or(QuoteStyle::default(), |wrap| wrap.0);
 
         let serialize_options = SerializeOptions {
             date_format,

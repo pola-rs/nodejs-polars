@@ -12,10 +12,10 @@ import { type LazyDataFrame, _LazyDataFrame } from "./lazy/dataframe";
 import { Expr } from "./lazy/expr";
 import { Series, _Series } from "./series";
 import type {
+  CsvWriterOptions,
   FillNullStrategy,
   JoinOptions,
   WriteAvroOptions,
-  CsvWriterOptions,
   WriteIPCOptions,
   WriteParquetOptions,
 } from "./types";

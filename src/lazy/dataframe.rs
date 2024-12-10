@@ -553,7 +553,9 @@ impl JsLazyFrame {
     }
 
     #[napi(catch_unwind)]
-    pub fn sink_csv(&self, path: String,
+    pub fn sink_csv(
+        &self,
+        path: String,
         options: Wrap<CsvWriterOptions>,
         cloud_options: Option<HashMap<String, String>>,
         max_retries: Option<u32>,
@@ -561,7 +563,9 @@ impl JsLazyFrame {
         let cloud_options = parse_cloud_options(&path, cloud_options, max_retries);
         let path_buf: PathBuf = PathBuf::from(path);
         let ldf = self.ldf.clone().with_comm_subplan_elim(false);
-        let _ = ldf.sink_csv(path_buf, options.0, cloud_options).map_err(JsPolarsErr::from);
+        let _ = ldf
+            .sink_csv(path_buf, options.0, cloud_options)
+            .map_err(JsPolarsErr::from);
         Ok(())
     }
 

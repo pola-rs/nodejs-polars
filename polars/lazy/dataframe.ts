@@ -3,9 +3,9 @@ import pli from "../internals/polars_internal";
 import type { Series } from "../series";
 import type { Deserialize, GroupByOps, Serialize } from "../shared_traits";
 import type {
+  CsvWriterOptions,
   LazyJoinOptions,
   LazyOptions,
-  CsvWriterOptions,
   SinkParquetOptions,
 } from "../types";
 import {
