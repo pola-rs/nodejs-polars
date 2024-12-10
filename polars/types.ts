@@ -39,33 +39,16 @@ export interface ConcatOptions {
   how?: "vertical" | "horizontal" | "diagonal";
 }
 /**
- * Options for {@link DataFrame.writeCSV}
- * @category Options
- */
-export interface WriteCsvOptions {
-  includeBom?: boolean;
-  includeHeader?: boolean;
-  sep?: string;
-  quote?: string;
-  lineTerminator?: string;
-  batchSize?: number;
-  datetimeFormat?: string;
-  dateFormat?: string;
-  timeFormat?: string;
-  floatPrecision?: number;
-  nullValue?: string;
-}
-/**
+ * Options for @see {@link DataFrame.writeCSV}
  * Options for @see {@link LazyDataFrame.sinkCSV}
  * @category Options
  */
-export interface SinkCsvOptions {
-  includeHeader?: boolean;
-  quote?: string;
+export interface CsvWriterOptions {
   includeBom?: boolean;
+  includeHeader?: boolean;
   separator?: string;
-  lineTerminator?: string;
   quoteChar?: string;
+  lineTerminator?: string;
   batchSize?: number;
   datetimeFormat?: string;
   dateFormat?: string;
