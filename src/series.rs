@@ -339,26 +339,17 @@ impl JsSeries {
     }
     #[napi(catch_unwind)]
     pub fn bitand(&self, other: &JsSeries) -> napi::Result<JsSeries> {
-        let out = self
-            .series
-            .bitand(&other.series)
-            .map_err(JsPolarsErr::from)?;
+        let out = (&self.series & &other.series).map_err(JsPolarsErr::from)?;
         Ok(out.into())
     }
     #[napi(catch_unwind)]
     pub fn bitor(&self, other: &JsSeries) -> napi::Result<JsSeries> {
-        let out = self
-            .series
-            .bitor(&other.series)
-            .map_err(JsPolarsErr::from)?;
+        let out = (&self.series | &other.series).map_err(JsPolarsErr::from)?;
         Ok(out.into())
     }
     #[napi(catch_unwind)]
     pub fn bitxor(&self, other: &JsSeries) -> napi::Result<JsSeries> {
-        let out = self
-            .series
-            .bitxor(&other.series)
-            .map_err(JsPolarsErr::from)?;
+        let out = (&self.series ^ &other.series).map_err(JsPolarsErr::from)?;
         Ok(out.into())
     }
     #[napi(catch_unwind)]
@@ -542,6 +533,7 @@ impl JsSeries {
                 nulls_last,
                 multithreaded,
                 maintain_order,
+                limit: None,
             })
             .into_series()
             .into()
