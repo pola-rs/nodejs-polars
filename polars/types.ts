@@ -74,6 +74,8 @@ export interface SinkParquetOptions {
   simplifyExpression?: boolean;
   slicePushdown?: boolean;
   noOptimization?: boolean;
+  cloudOptions?: Map<string, string>;
+  retries?: number;
 }
 /**
  * Options for {@link DataFrame.writeJSON}
@@ -136,7 +138,7 @@ export interface ScanParquetOptions {
   rechunk?: boolean;
   lowMemory?: boolean;
   useStatistics?: boolean;
-  cloudOptions?: unknown;
+  cloudOptions?: Map<string, string>;
   retries?: number;
   includeFilePaths?: string;
   allowMissingColumns?: boolean;

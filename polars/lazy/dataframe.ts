@@ -580,6 +580,18 @@ export interface LazyDataFrame extends Serialize, GroupByOps<LazyGroupBy> {
     @param simplifyExpression - Run simplify expressions optimization. Default -> true
     @param slicePushdown - Slice pushdown optimization. Default -> true
     @param noOptimization - Turn off (certain) optimizations. Default -> false
+    @param cloudOptions - Options that indicate how to connect to a cloud provider.
+        If the cloud provider is not supported by Polars, the storage options are passed to `fsspec.open()`.
+
+        The cloud providers currently supported are AWS, GCP, and Azure.
+        See supported keys here:
+
+        * `aws <https://docs.rs/object_store/latest/object_store/aws/enum.AmazonS3ConfigKey.html>`_
+        * `gcp <https://docs.rs/object_store/latest/object_store/gcp/enum.GoogleConfigKey.html>`_
+        * `azure <https://docs.rs/object_store/latest/object_store/azure/enum.AzureConfigKey.html>`_
+
+        If `cloudOptions` is not provided, Polars will try to infer the information from environment variables.
+    @param retries - Number of retries if accessing a cloud instance fails.
 
     Examples
     --------

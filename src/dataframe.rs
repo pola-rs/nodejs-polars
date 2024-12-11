@@ -1339,18 +1339,6 @@ impl JsDataFrame {
         options: Wrap<CsvWriterOptions>,
         env: Env,
     ) -> napi::Result<()> {
-        let include_header = options.0.include_header;
-        let separator = options.0.serialize_options.separator;
-        let quote = options.0.serialize_options.quote_char;
-        let include_bom = options.0.include_bom;
-        let line_terminator = options.0.serialize_options.line_terminator;
-        let batch_size = options.0.batch_size;
-        let date_format = options.0.serialize_options.date_format;
-        let time_format = options.0.serialize_options.time_format;
-        let datetime_format = options.0.serialize_options.datetime_format;
-        let float_precision: Option<usize> = options.0.serialize_options.float_precision;
-        let null_value = options.0.serialize_options.null;
-
         match path_or_buffer.get_type()? {
             ValueType::String => {
                 let path: napi::JsString = unsafe { path_or_buffer.cast() };
@@ -1359,17 +1347,17 @@ impl JsDataFrame {
                 let f = std::fs::File::create(path).unwrap();
                 let f = BufWriter::new(f);
                 CsvWriter::new(f)
-                    .include_bom(include_bom)
-                    .include_header(include_header)
-                    .with_separator(separator)
-                    .with_line_terminator(line_terminator)
-                    .with_batch_size(batch_size)
-                    .with_datetime_format(datetime_format)
-                    .with_date_format(date_format)
-                    .with_time_format(time_format)
-                    .with_float_precision(float_precision)
-                    .with_null_value(null_value)
-                    .with_quote_char(quote)
+                    .include_bom(options.0.include_bom)
+                    .include_header(options.0.include_header)
+                    .with_separator(options.0.serialize_options.separator)
+                    .with_line_terminator(options.0.serialize_options.line_terminator)
+                    .with_batch_size(options.0.batch_size)
+                    .with_datetime_format(options.0.serialize_options.datetime_format)
+                    .with_date_format(options.0.serialize_options.date_format)
+                    .with_time_format(options.0.serialize_options.time_format)
+                    .with_float_precision(options.0.serialize_options.float_precision)
+                    .with_null_value(options.0.serialize_options.null)
+                    .with_quote_char(options.0.serialize_options.quote_char)
                     .finish(&mut self.df)
                     .map_err(JsPolarsErr::from)?;
             }
@@ -1378,17 +1366,17 @@ impl JsDataFrame {
                 let writeable = JsWriteStream { inner, env: &env };
 
                 CsvWriter::new(writeable)
-                    .include_bom(include_bom)
-                    .include_header(include_header)
-                    .with_separator(separator)
-                    .with_line_terminator(line_terminator)
-                    .with_batch_size(batch_size)
-                    .with_datetime_format(datetime_format)
-                    .with_date_format(date_format)
-                    .with_time_format(time_format)
-                    .with_float_precision(float_precision)
-                    .with_null_value(null_value)
-                    .with_quote_char(quote)
+                    .include_bom(options.0.include_bom)
+                    .include_header(options.0.include_header)
+                    .with_separator(options.0.serialize_options.separator)
+                    .with_line_terminator(options.0.serialize_options.line_terminator)
+                    .with_batch_size(options.0.batch_size)
+                    .with_datetime_format(options.0.serialize_options.datetime_format)
+                    .with_date_format(options.0.serialize_options.date_format)
+                    .with_time_format(options.0.serialize_options.time_format)
+                    .with_float_precision(options.0.serialize_options.float_precision)
+                    .with_null_value(options.0.serialize_options.null)
+                    .with_quote_char(options.0.serialize_options.quote_char)
                     .finish(&mut self.df)
                     .map_err(JsPolarsErr::from)?;
             }
@@ -1404,8 +1392,6 @@ impl JsDataFrame {
         compression: Wrap<ParquetCompression>,
         env: Env,
     ) -> napi::Result<()> {
-        let compression = compression.0;
-
         match path_or_buffer.get_type()? {
             ValueType::String => {
                 let path: napi::JsString = unsafe { path_or_buffer.cast() };
@@ -1414,7 +1400,7 @@ impl JsDataFrame {
                 let f = std::fs::File::create(path).unwrap();
                 let f = BufWriter::new(f);
                 ParquetWriter::new(f)
-                    .with_compression(compression)
+                    .with_compression(compression.0)
                     .finish(&mut self.df)
                     .map_err(JsPolarsErr::from)?;
             }
@@ -1423,7 +1409,7 @@ impl JsDataFrame {
                 let writeable = JsWriteStream { inner, env: &env };
 
                 ParquetWriter::new(writeable)
-                    .with_compression(compression)
+                    .with_compression(compression.0)
                     .finish(&mut self.df)
                     .map_err(JsPolarsErr::from)?;
             }
@@ -1438,8 +1424,6 @@ impl JsDataFrame {
         compression: Wrap<Option<IpcCompression>>,
         env: Env,
     ) -> napi::Result<()> {
-        let compression = compression.0;
-
         match path_or_buffer.get_type()? {
             ValueType::String => {
                 let path: napi::JsString = unsafe { path_or_buffer.cast() };
@@ -1447,7 +1431,7 @@ impl JsDataFrame {
                 let f = std::fs::File::create(path).unwrap();
                 let f = BufWriter::new(f);
                 IpcWriter::new(f)
-                    .with_compression(compression)
+                    .with_compression(compression.0)
                     .finish(&mut self.df)
                     .map_err(JsPolarsErr::from)?;
             }
@@ -1455,7 +1439,7 @@ impl JsDataFrame {
                 let inner: napi::JsObject = unsafe { path_or_buffer.cast() };
                 let writeable = JsWriteStream { inner, env: &env };
                 IpcWriter::new(writeable)
-                    .with_compression(compression)
+                    .with_compression(compression.0)
                     .finish(&mut self.df)
                     .map_err(JsPolarsErr::from)?;
             }
@@ -1470,8 +1454,6 @@ impl JsDataFrame {
         compression: Wrap<Option<IpcCompression>>,
         env: Env,
     ) -> napi::Result<()> {
-        let compression = compression.0;
-
         match path_or_buffer.get_type()? {
             ValueType::String => {
                 let path: napi::JsString = unsafe { path_or_buffer.cast() };
@@ -1479,7 +1461,7 @@ impl JsDataFrame {
                 let f = std::fs::File::create(path).unwrap();
                 let f = BufWriter::new(f);
                 IpcStreamWriter::new(f)
-                    .with_compression(compression)
+                    .with_compression(compression.0)
                     .finish(&mut self.df)
                     .map_err(JsPolarsErr::from)?;
             }
@@ -1487,7 +1469,7 @@ impl JsDataFrame {
                 let inner: napi::JsObject = unsafe { path_or_buffer.cast() };
                 let writeable = JsWriteStream { inner, env: &env };
                 IpcStreamWriter::new(writeable)
-                    .with_compression(compression)
+                    .with_compression(compression.0)
                     .finish(&mut self.df)
                     .map_err(JsPolarsErr::from)?;
             }
