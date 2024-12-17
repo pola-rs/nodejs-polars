@@ -525,20 +525,22 @@ describe("expr", () => {
       a: [1, 2, 3, 3, 3],
       b: ["a", "a", "b", "a", "a"],
     });
-    let actual = df.select(pl.len());
-    let expected = pl.DataFrame({ len: [5] });
+    const actual = df.select(pl.len());
+    const expected = pl.DataFrame({ len: [5] });
     expect(actual).toFrameEqual(expected);
 
-    actual = df.withColumn(pl.len());
-    expected = df.withColumn(pl.lit(5).alias("len"));
-    expect(actual).toFrameEqual(expected);
+    const actual2 = df.withColumn(pl.len());
+    const expected2 = df.withColumn(pl.lit(5).alias("len"));
+    expect(actual2).toFrameEqual(expected2);
 
-    actual = df.withColumn(pl.intRange(pl.len()).alias("index"));
-    expected = df.withColumn(pl.Series("index", [0, 1, 2, 3, 4], pl.Int64));
-    expect(actual).toFrameEqual(expected);
+    const actual3 = df.withColumn(pl.intRange(pl.len()).alias("index"));
+    const expected3 = df.withColumn(
+      pl.Series("index", [0, 1, 2, 3, 4], pl.Int64),
+    );
+    expect(actual3).toFrameEqual(expected3);
 
-    actual = df.groupBy("b").agg(pl.len());
-    expect(actual.shape).toEqual({ height: 2, width: 2 });
+    const actual4 = df.groupBy("b").agg(pl.len());
+    expect(actual4.shape).toEqual({ height: 2, width: 2 });
   });
   test("list", () => {
     const df = pl.DataFrame({

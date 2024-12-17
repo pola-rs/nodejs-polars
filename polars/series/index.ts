@@ -2,6 +2,7 @@ import { DataFrame, _DataFrame } from "../dataframe";
 import { DTYPE_TO_FFINAME, DataType, type Optional } from "../datatypes";
 import type {
   DTypeToJs,
+  DTypeToJsLoose,
   DtypeToJsName,
   JsToDtype,
   JsType,
@@ -1933,7 +1934,7 @@ export interface SeriesConstructor extends Deserialize<Series> {
   ): Series<JsToDtype<T1>, Name>;
   <T2 extends DataType, Name extends string>(
     name: Name,
-    values: ArrayLike<DTypeToJs<T2 | null>>,
+    values: ArrayLike<DTypeToJsLoose<T2 | null>>,
     dtype?: T2,
   ): Series<T2, Name>;
   (name: string, values: any[], dtype?): Series;
