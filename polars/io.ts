@@ -503,7 +503,7 @@ export function readAvro(pathOrBody, options = {}) {
    @param options.rechunk - In case of reading multiple files via a glob pattern rechunk the final DataFrame into contiguous memory chunks.
    @param options.lowMemory - Reduce memory pressure at the expense of performance.
    @param options.cache - Cache the result after reading.
-   @param options.storageOptions - Options that indicate how to connect to a cloud provider.
+   @param options.cloudOptions - Options that indicate how to connect to a cloud provider.
         If the cloud provider is not supported by Polars, the storage options are passed to `fsspec.open()`.
 
         The cloud providers currently supported are AWS, GCP, and Azure.
@@ -513,7 +513,7 @@ export function readAvro(pathOrBody, options = {}) {
         * `gcp <https://docs.rs/object_store/latest/object_store/gcp/enum.GoogleConfigKey.html>`_
         * `azure <https://docs.rs/object_store/latest/object_store/azure/enum.AzureConfigKey.html>`_
 
-        If `storage_options` is not provided, Polars will try to infer the information from environment variables.
+        If `cloudOptions` is not provided, Polars will try to infer the information from environment variables.
     @param retries - Number of retries if accessing a cloud instance fails.
     @param includeFilePaths - Include the path of the source file(s) as a column with this name.
  */

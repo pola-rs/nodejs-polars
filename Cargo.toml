@@ -19,15 +19,15 @@ napi = { version = "2.16.13", default-features = false, features = [
     "napi8",
     "serde-json",
 ] }
-napi-derive = { version = "2.16.12", default-features = false }
-polars-core = { git = "https://github.com/pola-rs/polars.git", rev = "2dce3d3b5c80ae7522a3435f844fac8fed9dc9e8", default-features = false }
-polars-io = { git = "https://github.com/pola-rs/polars.git", rev = "2dce3d3b5c80ae7522a3435f844fac8fed9dc9e8", default-features = false }
-polars-lazy = { git = "https://github.com/pola-rs/polars.git", rev = "2dce3d3b5c80ae7522a3435f844fac8fed9dc9e8", default-features = false }
+napi-derive = { version = "2.16.13", default-features = false }
+polars-core = { git = "https://github.com/pola-rs/polars.git", rev = "58a38af21dccaf3326514494a1db118601c8c2ca", default-features = false }
+polars-io = { git = "https://github.com/pola-rs/polars.git", rev = "58a38af21dccaf3326514494a1db118601c8c2ca", default-features = false }
+polars-lazy = { git = "https://github.com/pola-rs/polars.git", rev = "58a38af21dccaf3326514494a1db118601c8c2ca", default-features = false }
 thiserror = "1"
 smartstring = { version = "1" }
 serde_json = { version = "1" }
 either = "1.13.0"
-hashbrown = { version = "0.15.0", features = ["rayon", "serde"] }
+hashbrown = { version = "0.15.2", features = ["rayon", "serde"] }
 
 [dependencies.polars]
 features = [
@@ -162,7 +162,7 @@ features = [
   "azure"
 ]
 git = "https://github.com/pola-rs/polars.git"
-rev = "2dce3d3b5c80ae7522a3435f844fac8fed9dc9e8"
+rev = "58a38af21dccaf3326514494a1db118601c8c2ca"
 
 [build-dependencies]
 napi-build = "2.1.3"
