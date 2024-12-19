@@ -791,11 +791,12 @@ impl FromNapiValue for Wrap<InterpolationMethod> {
 impl FromNapiValue for Wrap<SortOptions> {
     unsafe fn from_napi_value(env: sys::napi_env, napi_val: sys::napi_value) -> napi::Result<Self> {
         let obj = Object::from_napi_value(env, napi_val)?;
-        let descending = obj.get::<_, bool>("descending")?.unwrap();
+        let descending = obj.get::<_, bool>("descending")?.unwrap_or(false);
         let nulls_last = obj
             .get::<_, bool>("nulls_last")?
-            .map_or(obj.get::<_, bool>("nullsLast")?.unwrap_or(false), |n| n);
-        let multithreaded = obj.get::<_, bool>("multithreaded")?.unwrap();
+            .or_else(|| obj.get::<_, bool>("nullsLast").expect("expect nullsLast"))
+            .unwrap_or(false);
+        let multithreaded = obj.get::<_, bool>("multithreaded")?.unwrap_or(false);
         let maintain_order: bool = obj.get::<_, bool>("maintainOrder")?.unwrap_or(true);
         let limit = obj.get::<_, _>("limit")?.unwrap();
         let options = SortOptions {
@@ -808,31 +809,29 @@ impl FromNapiValue for Wrap<SortOptions> {
         Ok(Wrap(options))
     }
 }
-
 impl FromNapiValue for Wrap<QuoteStyle> {
     unsafe fn from_napi_value(env: sys::napi_env, napi_val: sys::napi_value) -> napi::Result<Self> {
-        let s = String::from_napi_value(env, napi_val)?;
+        let quote_style_str = String::from_napi_value(env, napi_val)?;
 
-        let parsed = match s.as_ref() {
+        let parsed = match quote_style_str.as_str() {
             "always" => QuoteStyle::Always,
             "necessary" => QuoteStyle::Necessary,
             "non_numeric" => QuoteStyle::NonNumeric,
             "never" => QuoteStyle::Never,
             _ => return Err(Error::new(Status::InvalidArg,
-                    "`quote_style` must be one of {{'always', 'necessary', 'non_numeric', 'never'}}, got {v}",
+                format!("`quote_style` must be one of {{'always', 'necessary', 'non_numeric', 'never'}}, got '{}'", quote_style_str),
                 )),
         };
         Ok(Wrap(parsed))
     }
 }
-
 impl FromNapiValue for Wrap<CsvWriterOptions> {
     unsafe fn from_napi_value(env: sys::napi_env, napi_val: sys::napi_value) -> napi::Result<Self> {
         let obj = Object::from_napi_value(env, napi_val)?;
         let include_bom = obj.get::<_, bool>("includeBom")?.unwrap_or(false);
         let include_header = obj.get::<_, bool>("includeHeader")?.unwrap_or(true);
         let batch_size =
-            NonZero::new(obj.get::<_, i64>("batchSize")?.unwrap_or(1024) as usize).unwrap();
+            NonZero::new(obj.get::<_, i64>("batchSize")?.unwrap_or(1024) as usize).ok_or_else(|| napi::Error::from_reason("Invalid batch size"))?;
         let maintain_order = obj.get::<_, bool>("maintainOrder")?.unwrap_or(true);
         let date_format = obj.get::<_, String>("dateFormat")?;
         let time_format = obj.get::<_, String>("timeFormat")?;
