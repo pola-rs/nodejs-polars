@@ -1620,7 +1620,6 @@ fn obj_to_pairs(rows: &Array, len: usize) -> impl '_ + Iterator<Item = Vec<(Stri
     let len = std::cmp::min(len, rows.len() as usize);
     (0..len).map(move |idx| {
         let obj = rows.get::<Object>(idx as u32).unwrap().unwrap();
-
         let keys = Object::keys(&obj).unwrap();
         keys.iter()
             .map(|key| {
@@ -1631,12 +1630,12 @@ fn obj_to_pairs(rows: &Array, len: usize) -> impl '_ + Iterator<Item = Vec<(Stri
                         match ty {
                             ValueType::Boolean => DataType::Boolean,
                             ValueType::Number => DataType::Float64,
+                            ValueType::BigInt => DataType::UInt64,
                             ValueType::String => DataType::String,
                             ValueType::Object => {
                                 if val.is_array().unwrap() {
                                     let arr: napi::JsObject = unsafe { val.cast() };
                                     let len = arr.get_array_length().unwrap();
-
                                     if len == 0 {
                                         DataType::List(DataType::Null.into())
                                     } else {
@@ -1659,14 +1658,31 @@ fn obj_to_pairs(rows: &Array, len: usize) -> impl '_ + Iterator<Item = Vec<(Stri
                                 } else if val.is_date().unwrap() {
                                     DataType::Datetime(TimeUnit::Milliseconds, None)
                                 } else {
-                                    DataType::Struct(vec![])
+                                    let inner_val: napi::JsObject = unsafe { val.cast() };
+                                    let inner_keys = Object::keys(&inner_val).unwrap();
+                                    let mut fldvec: Vec<Field> = Vec::with_capacity(inner_keys.len() as usize);
+
+                                    inner_keys.iter().for_each(|key| {
+                                        let inner_val = &inner_val.get::<_, napi::JsUnknown>(&key).unwrap();
+                                        let dtype = match inner_val.as_ref().unwrap().get_type().unwrap() {
+                                            ValueType::Boolean => DataType::Boolean,
+                                            ValueType::Number => DataType::Float64,
+                                            ValueType::BigInt => DataType::UInt64,
+                                            ValueType::String => DataType::String,
+                                            ValueType::Object => DataType::Struct(vec![]),
+                                            _ => DataType::Null
+                                        };
+                        
+                                        let fld = Field::new(key.into(), dtype);
+                                        fldvec.push(fld);
+                                    });
+                                    DataType::Struct(fldvec)
                                 }
                             }
-                            ValueType::BigInt => DataType::UInt64,
                             _ => DataType::Null,
                         }
                     }
-                    None => DataType::Null,
+                    None => DataType::Null
                 };
                 (key.to_owned(), dtype)
             })
@@ -1759,6 +1775,9 @@ unsafe fn coerce_js_anyvalue<'a>(val: JsUnknown, dtype: DataType) -> JsResult<An
         (ValueType::Object, DataType::List(_)) => {
             let s = val.to_series();
             Ok(AnyValue::List(s))
+        }
+        (ValueType::Object, DataType::Struct(_)) => {
+            Ok(AnyValue::Null)
         }
         _ => Ok(AnyValue::Null),
     }
