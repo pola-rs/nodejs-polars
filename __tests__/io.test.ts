@@ -52,6 +52,21 @@ describe("read:csv", () => {
       csvString.slice(0, 22),
     );
   });
+  it("can read from a csv buffer with newline in the header", () => {
+    const csvBuffer = Buffer.from(
+      '"name\na","height\nb"\n"John",172.23\n"Anna",1653.34',
+    );
+    const df = pl.readCSV(csvBuffer, {
+      quoteChar: '"',
+      sep: ",",
+      hasHeader: false,
+      skipRows: 1,
+    });
+    expect(df.toRecords()).toEqual([
+      { column_1: "John", column_2: 172.23 },
+      { column_1: "Anna", column_2: 1653.34 },
+    ]);
+  });
   it("can read from a csv buffer", () => {
     const csvBuffer = Buffer.from("foo,bar,baz\n1,2,3\n4,5,6\n", "utf-8");
     const df = pl.readCSV(csvBuffer);

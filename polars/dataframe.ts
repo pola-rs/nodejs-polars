@@ -12,10 +12,10 @@ import { type LazyDataFrame, _LazyDataFrame } from "./lazy/dataframe";
 import { Expr } from "./lazy/expr";
 import { Series, _Series } from "./series";
 import type {
+  CsvWriterOptions,
   FillNullStrategy,
   JoinOptions,
   WriteAvroOptions,
-  WriteCsvOptions,
   WriteIPCOptions,
   WriteParquetOptions,
 } from "./types";
@@ -61,8 +61,8 @@ interface WriteMethods {
    * @param options.includeBom - Whether to include UTF-8 BOM in the CSV output.
    * @param options.lineTerminator - String used to end each row.
    * @param options.includeHeader - Whether or not to include header in the CSV output.
-   * @param options.sep - Separate CSV fields with this symbol. _defaults to `,`
-   * @param options.quote - Character to use for quoting. Default: \" Note: it will note be used when sep is used
+   * @param options.separator - Separate CSV fields with this symbol. _defaults to `,`
+   * @param options.quoteChar - Character to use for quoting. Default: \" Note: it will note be used when sep is used
    * @param options.batchSize - Number of rows that will be processed per thread.
    * @param options.datetimeFormat - A format string, with the specifiers defined by the
    *    `chrono <https://docs.rs/chrono/latest/chrono/format/strftime/index.html>`_
@@ -109,8 +109,8 @@ interface WriteMethods {
    * @category IO
    */
   writeCSV(): Buffer;
-  writeCSV(options: WriteCsvOptions): Buffer;
-  writeCSV(dest: string | Writable, options?: WriteCsvOptions): void;
+  writeCSV(options: CsvWriterOptions): Buffer;
+  writeCSV(dest: string | Writable, options?: CsvWriterOptions): void;
   /**
    * Write Dataframe to JSON string, file, or write stream
    * @param destination file or write stream

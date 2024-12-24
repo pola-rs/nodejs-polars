@@ -650,7 +650,7 @@ export function spearmanRankCorr(a: ExprOrString, b: ExprOrString): Expr {
   a = exprToLitOrExpr(a, false);
   b = exprToLitOrExpr(b, false);
 
-  return _Expr(pli.spearmanRankCorr(a, b, null, false));
+  return _Expr(pli.spearmanRankCorr(a, b, false));
 }
 
 /** Get the last n rows of an Expression. */
@@ -964,7 +964,7 @@ export function sumHorizontal(exprs: ExprOrString | ExprOrString[]): Expr {
 
   exprs = selectionToExprList(exprs);
 
-  return _Expr(pli.sumHorizontal(exprs));
+  return _Expr(pli.sumHorizontal(exprs, true));
 }
 
 // // export function collect_all() {}
