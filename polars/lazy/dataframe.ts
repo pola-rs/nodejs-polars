@@ -75,24 +75,6 @@ export interface LazyDataFrame extends Serialize, GroupByOps<LazyGroupBy> {
   drop(names: string[]): LazyDataFrame;
   drop(name: string, ...names: string[]): LazyDataFrame;
   /**
-   * Drop duplicate rows from this DataFrame.
-   * Note that this fails if there is a column of type `List` in the DataFrame.
-   * @param maintainOrder
-   * @param subset - subset to drop duplicates for
-   * @param keep "first" | "last"
-   * @deprecated @since 0.4.0 @use {@link unique}
-   */
-  distinct(
-    maintainOrder?: boolean,
-    subset?: ColumnSelection,
-    keep?: "first" | "last",
-  ): LazyDataFrame;
-  distinct(opts: {
-    maintainOrder?: boolean;
-    subset?: ColumnSelection;
-    keep?: "first" | "last";
-  }): LazyDataFrame;
-  /**
    * Drop rows with null values from this DataFrame.
    * This method only drops nulls row-wise if any single value of the row is null.
    */
@@ -370,9 +352,7 @@ export interface LazyDataFrame extends Serialize, GroupByOps<LazyGroupBy> {
   median(): LazyDataFrame;
   /**
    * @see {@link DataFrame.unpivot}
-   * @deprecated *since 0.13.0* use {@link unpivot}
    */
-  melt(idVars: ColumnSelection, valueVars: ColumnSelection): LazyDataFrame;
   unpivot(idVars: ColumnSelection, valueVars: ColumnSelection): LazyDataFrame;
   /**
    * @see {@link DataFrame.min}
@@ -687,9 +667,6 @@ export const _LazyDataFrame = (_ldf: any): LazyDataFrame => {
     drop(...cols) {
       return _LazyDataFrame(_ldf.dropColumns(cols.flat(2)));
     },
-    distinct(...args: any[]) {
-      return _LazyDataFrame((_ldf.unique as any)(...args));
-    },
     unique(opts: any = false, subset?, keep = "first") {
       const defaultOptions = {
         maintainOrder: false,
@@ -992,11 +969,6 @@ export const _LazyDataFrame = (_ldf: any): LazyDataFrame => {
     },
     median() {
       return _LazyDataFrame(_ldf.median());
-    },
-    melt(ids, values) {
-      return _LazyDataFrame(
-        _ldf.unpivot(columnOrColumnsStrict(ids), columnOrColumnsStrict(values)),
-      );
     },
     unpivot(ids, values) {
       return _LazyDataFrame(

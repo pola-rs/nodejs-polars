@@ -308,8 +308,6 @@ export interface DataFrame<T extends Record<string, Series> = any>
    * ```
    */
   describe(): DataFrame;
-  /** @deprecated *since 0.4.0* use {@link unique} */
-  distinct(maintainOrder?, subset?, keep?): DataFrame;
   /**
    * __Remove column from DataFrame and return as new.__
    * ___
@@ -1003,11 +1001,6 @@ export interface DataFrame<T extends Record<string, Series> = any>
   median(): DataFrame<T>;
   /**
    * Unpivot a DataFrame from wide to long format.
-   * @deprecated *since 0.13.0* use {@link unpivot}
-   */
-  melt(idVars: ColumnSelection, valueVars: ColumnSelection): DataFrame;
-  /**
-   * Unpivot a DataFrame from wide to long format.
    * ___
    *
    * @param idVars - Columns to use as identifier variables.
@@ -1605,11 +1598,6 @@ export interface DataFrame<T extends Record<string, Series> = any>
    */
   tail(length?: number): DataFrame<T>;
   /**
-   * @deprecated *since 0.4.0* use {@link writeCSV}
-   * @category Deprecated
-   */
-  toCSV(destOrOptions?, options?);
-  /**
    * Converts dataframe object into row oriented javascript objects
    * @example
    * ```
@@ -1653,17 +1641,6 @@ export interface DataFrame<T extends Record<string, Series> = any>
    * @category IO
    */
   toObject(): { [K in keyof T]: DTypeToJs<T[K]["dtype"] | null>[] };
-
-  /**
-   * @deprecated *since 0.4.0* use {@link writeIPC}
-   * @category IO Deprecated
-   */
-  toIPC(destination?, options?);
-  /**
-   * @deprecated *since 0.4.0* use {@link writeParquet}
-   * @category IO Deprecated
-   */
-  toParquet(destination?, options?);
   toSeries(index?: number): T[keyof T];
   toString(): string;
   /**
@@ -2166,9 +2143,6 @@ export const _DataFrame = (_df: any): DataFrame => {
       }
       return wrap("dropNulls");
     },
-    distinct(opts: any = false, subset?, keep = "first") {
-      return this.unique(opts, subset);
-    },
     unique(opts: any = false, subset?, keep = "first") {
       const defaultOptions = {
         maintainOrder: false,
@@ -2351,9 +2325,6 @@ export const _DataFrame = (_df: any): DataFrame => {
     },
     median() {
       return this.lazy().median().collectSync();
-    },
-    melt(ids, values) {
-      return wrap("unpivot", columnOrColumns(ids), columnOrColumns(values));
     },
     unpivot(ids, values) {
       return wrap("unpivot", columnOrColumns(ids), columnOrColumns(values));
@@ -2546,9 +2517,6 @@ export const _DataFrame = (_df: any): DataFrame => {
     serialize(format) {
       return _df.serialize(format);
     },
-    toCSV(...args) {
-      return this.writeCSV(...args);
-    },
     writeCSV(dest?, options = {}) {
       if (dest instanceof Writable || typeof dest === "string") {
         return _df.writeCsv(dest, options) as any;
@@ -2632,9 +2600,6 @@ export const _DataFrame = (_df: any): DataFrame => {
 
       return Buffer.concat(buffers);
     },
-    toParquet(dest?, options?) {
-      return this.writeParquet(dest, options);
-    },
     writeParquet(dest?, options = { compression: "uncompressed" }) {
       if (dest instanceof Writable || typeof dest === "string") {
         return _df.writeParquet(dest, options.compression) as any;
@@ -2668,9 +2633,6 @@ export const _DataFrame = (_df: any): DataFrame => {
       writeStream.end("");
 
       return Buffer.concat(buffers);
-    },
-    toIPC(dest?, options?) {
-      return this.writeIPC(dest, options);
     },
     writeIPC(dest?, options = { compression: "uncompressed" }) {
       if (dest instanceof Writable || typeof dest === "string") {
