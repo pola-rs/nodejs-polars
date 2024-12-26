@@ -330,7 +330,6 @@ describe("series", () => {
     ${numSeries()}  | ${"isNotNaN"}        | ${[]}
     ${numSeries()}  | ${"isNumeric"}       | ${[]}
     ${numSeries()}  | ${"isUnique"}        | ${[]}
-    ${numSeries()}  | ${"isUtf8"}          | ${[]}
     ${numSeries()}  | ${"kurtosis"}        | ${[]}
     ${numSeries()}  | ${"kurtosis"}        | ${[{ fisher: true, bias: true }]}
     ${numSeries()}  | ${"kurtosis"}        | ${[{ bias: false }]}

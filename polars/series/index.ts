@@ -527,12 +527,6 @@ export interface Series<T extends DataType = any, Name extends string = string>
    */
   isUnique(): Series;
   /**
-   * Checks if this Series datatype is a Utf8.
-   * @deprecated *since 0.8.4*
-   * @see Use `Series.dtype.equals(pl.String)` instead.
-   */
-  isUtf8(): boolean;
-  /**
    * Checks if this Series datatype is a String.
    */
   isString(): boolean;
@@ -805,13 +799,6 @@ export interface Series<T extends DataType = any, Name extends string = string>
     nullEqual?: boolean,
     strict?: boolean,
   ): boolean;
-  /**
-   * __Set masked values__
-   * @param filter Boolean mask
-   * @param value value to replace masked values with
-   * @deprecated @since 0.8.4 @use {@link scatter}
-   */
-  setAtIdx(indices: number[] | Series, value: any): void;
   /**
    * __Set masked values__
    * @param filter Boolean mask
@@ -1526,9 +1513,6 @@ export function _Series(_s: any): Series {
     isString() {
       return this.dtype.equals(DataType.String);
     },
-    isUtf8() {
-      return this.dtype.equals(DataType.Utf8);
-    },
     kurtosis(fisher: any = true, bias = true) {
       if (typeof fisher === "boolean") {
         return _s.kurtosis(fisher, bias);
@@ -1714,9 +1698,6 @@ export function _Series(_s: any): Series {
     },
     clip(...args) {
       return expr_op("clip", ...args);
-    },
-    setAtIdx(indices, value) {
-      _s.scatter(indices, value);
     },
     scatter(indices, value) {
       indices = Series.isSeries(indices)

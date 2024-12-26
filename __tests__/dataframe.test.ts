@@ -655,14 +655,18 @@ describe("dataframe", () => {
       .median();
     expect(actual.row(0)).toEqual([2, 7, null]);
   });
-  test("melt", () => {
+  test("unpivot", () => {
     const df = pl.DataFrame({
       id: [1],
       asset_key_1: ["123"],
       asset_key_2: ["456"],
       asset_key_3: ["abc"],
     });
-    const actual = df.melt("id", ["asset_key_1", "asset_key_2", "asset_key_3"]);
+    const actual = df.unpivot("id", [
+      "asset_key_1",
+      "asset_key_2",
+      "asset_key_3",
+    ]);
     const expected = pl.DataFrame({
       id: [1, 1, 1],
       variable: ["asset_key_1", "asset_key_2", "asset_key_3"],

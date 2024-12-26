@@ -45,11 +45,6 @@ export interface GroupBy {
   agg(...columns: Expr[]): DataFrame;
   agg(columns: Record<string, keyof Expr | (keyof Expr)[]>): DataFrame;
   /**
-   * Count the number of values in each group.
-   * @deprecated @since 0.10.0 @use {@link len}
-   */
-  count(): DataFrame;
-  /**
    * Return the number of rows in each group.
    */
   len(): DataFrame;
@@ -164,9 +159,8 @@ export interface GroupBy {
 
 export type PivotOps = Pick<
   GroupBy,
-  "count" | "first" | "max" | "mean" | "median" | "min" | "sum"
+  "len" | "first" | "max" | "mean" | "median" | "min" | "sum"
 > & { [inspect](): string };
-
 /** @ignore */
 export function _GroupBy(df: any, by: string[], maintainOrder = false) {
   const customInspect = () =>
@@ -212,9 +206,6 @@ export function _GroupBy(df: any, by: string[], maintainOrder = false) {
     agg,
     pivot,
     aggList: () => agg(exclude(by as any)),
-    count() {
-      return _DataFrame(df.groupby([by].flat(), by, "count"));
-    },
     len() {
       return _DataFrame(df.groupby([by].flat(), by, "count"));
     },
@@ -254,7 +245,7 @@ function PivotOps(
     min: pivot("min"),
     max: pivot("max"),
     mean: pivot("mean"),
-    count: pivot("count"),
+    len: pivot("len"),
     median: pivot("median"),
   };
 }
