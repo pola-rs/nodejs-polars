@@ -8,6 +8,27 @@ describe("dataframe", () => {
     pl.Series("bar", [6, 2, 8], pl.Int16),
   ]);
 
+  test("df from JSON with struct", () => {
+    const rows = [
+      {id: 1, name: 'one', attributes: {x: 700, colour: 'black'}},
+      {id: 2, name: 'two', attributes: {x: 800, colour: 'blue'}},
+      {id: 3, name: 'three', attributes: {x: 100, colour: 'red'}}
+    ];
+
+    const df = pl.DataFrame(rows);
+    expect(df.schema).toStrictEqual(
+    {
+      id: {DataType:"Float64"},
+      name:{DataType:"String"},
+      attributes:{
+        DataType:{Struct:[
+          {name:"x",dtype:{DataType:"Float64"}},
+          {name:"colour",dtype:{DataType:"String"}}
+        ]}}
+    }
+    );
+  });
+
   test("dtypes", () => {
     const expected = [pl.Float64, pl.String];
     const actual = pl.DataFrame({ a: [1, 2, 3], b: ["a", "b", "c"] }).dtypes;

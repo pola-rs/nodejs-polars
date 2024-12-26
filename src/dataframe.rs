@@ -3,6 +3,8 @@ use crate::prelude::*;
 use crate::series::JsSeries;
 use napi::JsUnknown;
 use polars::frame::row::{infer_schema, Row};
+use polars_core::utils::arrow::array::{ PrimitiveArray, Utf8ViewArray, NullArray, BooleanArray };
+use polars_core::utils::arrow::array::Array as ArrowArray;
 use polars_io::csv::write::CsvWriterOptions;
 use polars_io::mmap::MmapBytesReader;
 use polars_io::RowIndex;
@@ -453,16 +455,18 @@ pub fn from_rows(
             Row(schema
                 .iter_fields()
                 .map(|fld| {
-                    let dtype = fld.dtype().clone();
+                    let dtype = fld.dtype();
                     let key = fld.name();
                     if let Ok(unknown) = obj.get(key) {
-                        let av = match unknown {
+                        let _av = match unknown {
                             Some(unknown) => unsafe {
-                                coerce_js_anyvalue(unknown, dtype).unwrap_or(AnyValue::Null)
+                                coerce_js_anyvalue(unknown, &dtype).unwrap_or(AnyValue::Null)
                             },
                             None => AnyValue::Null,
                         };
-                        av
+                        // todo: return av instead of null
+                        // av
+                        AnyValue::Null
                     } else {
                         AnyValue::Null
                     }
@@ -1690,7 +1694,7 @@ fn obj_to_pairs(rows: &Array, len: usize) -> impl '_ + Iterator<Item = Vec<(Stri
     })
 }
 
-unsafe fn coerce_js_anyvalue<'a>(val: JsUnknown, dtype: DataType) -> JsResult<AnyValue<'a>> {
+unsafe fn coerce_js_anyvalue<'a>(val: JsUnknown, dtype: &'a DataType) -> JsResult<AnyValue<'a>> {
     use DataType::*;
     let vtype = val.get_type().unwrap();
     match (vtype, dtype) {
@@ -1776,8 +1780,49 @@ unsafe fn coerce_js_anyvalue<'a>(val: JsUnknown, dtype: DataType) -> JsResult<An
             let s = val.to_series();
             Ok(AnyValue::List(s))
         }
-        (ValueType::Object, DataType::Struct(_)) => {
-            Ok(AnyValue::Null)
+        (ValueType::Object, DataType::Struct(fields)) => {
+            let number_of_fields: i8 = fields.len().try_into().map_err(
+                |e| napi::Error::from_reason(format!("the number of `fields` cannot be larger than i8::MAX {e:?}"))
+            )?;
+
+            let inner_val: napi::JsObject = val.cast();
+            let arrow_dtype = dtype.to_physical().to_arrow(CompatLevel::newest());
+
+            let mut val_vec = Vec::with_capacity(number_of_fields as usize);
+            fields.iter().for_each(|fld| {
+                let single_val = inner_val.get::<_, napi::JsUnknown>(&fld.name).unwrap().unwrap();
+                let vv = match fld.dtype {
+                    DataType::Boolean =>
+                    {
+                        let bl = single_val.coerce_to_bool().unwrap().get_value().unwrap();
+                        BooleanArray::from_slice([bl]).boxed()
+                    },
+                    DataType::String =>
+                    {
+                        let ut = single_val.coerce_to_string().unwrap().into_utf8().unwrap();
+                        let s = ut.as_str().unwrap();
+                        Utf8ViewArray::from_slice_values([s]).boxed()
+                    },
+                    DataType::Int32 => {
+                        let js_num = single_val.coerce_to_number().unwrap().get_int32().unwrap();
+                        PrimitiveArray::<i32>::from(vec![Some(js_num)]).boxed()
+                    },
+                    DataType::Int64 => {
+                        let js_num = single_val.coerce_to_number().unwrap().get_int64().unwrap();
+                        PrimitiveArray::<i64>::from(vec![Some(js_num)]).boxed()
+                    },
+                    DataType::Float64 => {
+                        let js_num = single_val.coerce_to_number().unwrap().get_double().unwrap();
+                        PrimitiveArray::<f64>::from(vec![Some(js_num)]).boxed()
+                    },
+                    _ => NullArray::new(ArrowDataType::Null, 1).boxed()
+                };
+                val_vec.push(vv);
+            });
+
+            let array = StructArray::new(arrow_dtype.clone(),1,val_vec,None);
+            let array = &*(&array as *const dyn ArrowArray as *const StructArray);
+            Ok(AnyValue::Struct(number_of_fields as usize, &array, &fields))
         }
         _ => Ok(AnyValue::Null),
     }
