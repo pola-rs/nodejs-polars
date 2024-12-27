@@ -452,26 +452,26 @@ pub fn from_rows(
                 .get::<Object>(idx as u32)
                 .unwrap_or(None)
                 .unwrap_or_else(|| env.create_object().unwrap());
-            Row(schema
-                .iter_fields()
-                .map(|fld| {
-                    let dtype = fld.dtype();
-                    let key = fld.name();
-                    if let Ok(unknown) = obj.get(key) {
-                        let _av = match unknown {
+
+            // let mut val_vec: Vec<AnyValue> = Vec::with_capacity(schema.len() as usize);
+
+            Row(
+            schema
+                .iter_fields().map(|fld| {
+                    let dtype: &DataType = unsafe { std::mem::transmute( fld.dtype() ) };
+                    let key: &PlSmallStr = fld.name();
+                    if let Ok(unknown) = obj.get::<&polars::prelude::PlSmallStr, JsUnknown>(key) {
+                        match unknown {
                             Some(unknown) => unsafe {
-                                coerce_js_anyvalue(unknown, &dtype).unwrap_or(AnyValue::Null)
+                                coerce_js_anyvalue(unknown, dtype).unwrap_or(AnyValue::Null)
                             },
-                            None => AnyValue::Null,
-                        };
-                        // todo: return av instead of null
-                        // av
-                        AnyValue::Null
+                            _ => AnyValue::Null,
+                        }
                     } else {
                         AnyValue::Null
                     }
-                })
-                .collect())
+                }).collect()
+            )
         })
         .collect();
     let df = DataFrame::from_rows_and_schema(&it, &schema).map_err(JsPolarsErr::from)?;
