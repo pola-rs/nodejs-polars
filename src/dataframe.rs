@@ -3,8 +3,6 @@ use crate::prelude::*;
 use crate::series::JsSeries;
 use napi::JsUnknown;
 use polars::frame::row::{infer_schema, Row};
-use polars_core::utils::arrow::array::{ PrimitiveArray, Utf8ViewArray, NullArray, BooleanArray };
-use polars_core::utils::arrow::array::Array as ArrowArray;
 use polars_io::csv::write::CsvWriterOptions;
 use polars_io::mmap::MmapBytesReader;
 use polars_io::RowIndex;
@@ -444,8 +442,7 @@ pub fn from_rows(
             infer_schema(pairs, infer_schema_length)
         }
     };
-    let len = rows.len();
-    let it: Vec<Row> = (0..len)
+    let it: Vec<Row> = (0..rows.len())
         .into_iter()
         .map(|idx| {
             let obj = rows
@@ -453,25 +450,21 @@ pub fn from_rows(
                 .unwrap_or(None)
                 .unwrap_or_else(|| env.create_object().unwrap());
 
-            // let mut val_vec: Vec<AnyValue> = Vec::with_capacity(schema.len() as usize);
-
-            Row(
-            schema
+            Row(schema
                 .iter_fields().map(|fld| {
-                    let dtype: &DataType = unsafe { std::mem::transmute( fld.dtype() ) };
+                    let dtype: &DataType = fld.dtype();
                     let key: &PlSmallStr = fld.name();
                     if let Ok(unknown) = obj.get::<&polars::prelude::PlSmallStr, JsUnknown>(key) {
                         match unknown {
                             Some(unknown) => unsafe {
-                                coerce_js_anyvalue(unknown, dtype).unwrap_or(AnyValue::Null)
+                                coerce_js_anyvalue(unknown, dtype.clone()).unwrap_or(AnyValue::Null)
                             },
                             _ => AnyValue::Null,
                         }
                     } else {
                         AnyValue::Null
                     }
-                }).collect()
-            )
+                }).collect())
         })
         .collect();
     let df = DataFrame::from_rows_and_schema(&it, &schema).map_err(JsPolarsErr::from)?;
@@ -1694,7 +1687,7 @@ fn obj_to_pairs(rows: &Array, len: usize) -> impl '_ + Iterator<Item = Vec<(Stri
     })
 }
 
-unsafe fn coerce_js_anyvalue<'a>(val: JsUnknown, dtype: &'a DataType) -> JsResult<AnyValue<'a>> {
+unsafe fn coerce_js_anyvalue<'a>(val: JsUnknown, dtype: DataType) -> JsResult<AnyValue<'a>> {
     use DataType::*;
     let vtype = val.get_type().unwrap();
     match (vtype, dtype) {
@@ -1786,43 +1779,21 @@ unsafe fn coerce_js_anyvalue<'a>(val: JsUnknown, dtype: &'a DataType) -> JsResul
             )?;
 
             let inner_val: napi::JsObject = val.cast();
-            let arrow_dtype = dtype.to_physical().to_arrow(CompatLevel::newest());
-
-            let mut val_vec = Vec::with_capacity(number_of_fields as usize);
+            let mut val_vec: Vec<polars::prelude::AnyValue<'_>> = Vec::with_capacity(number_of_fields as usize);
             fields.iter().for_each(|fld| {
                 let single_val = inner_val.get::<_, napi::JsUnknown>(&fld.name).unwrap().unwrap();
                 let vv = match fld.dtype {
-                    DataType::Boolean =>
-                    {
-                        let bl = single_val.coerce_to_bool().unwrap().get_value().unwrap();
-                        BooleanArray::from_slice([bl]).boxed()
-                    },
-                    DataType::String =>
-                    {
-                        let ut = single_val.coerce_to_string().unwrap().into_utf8().unwrap();
-                        let s = ut.as_str().unwrap();
-                        Utf8ViewArray::from_slice_values([s]).boxed()
-                    },
-                    DataType::Int32 => {
-                        let js_num = single_val.coerce_to_number().unwrap().get_int32().unwrap();
-                        PrimitiveArray::<i32>::from(vec![Some(js_num)]).boxed()
-                    },
-                    DataType::Int64 => {
-                        let js_num = single_val.coerce_to_number().unwrap().get_int64().unwrap();
-                        PrimitiveArray::<i64>::from(vec![Some(js_num)]).boxed()
-                    },
-                    DataType::Float64 => {
-                        let js_num = single_val.coerce_to_number().unwrap().get_double().unwrap();
-                        PrimitiveArray::<f64>::from(vec![Some(js_num)]).boxed()
-                    },
-                    _ => NullArray::new(ArrowDataType::Null, 1).boxed()
+                    DataType::Boolean => AnyValue::Boolean(single_val.coerce_to_bool().unwrap().get_value().unwrap()),
+                    DataType::String => AnyValue::from_js(single_val).expect("Expecting string"),
+                    DataType::Int32 => AnyValue::Int32(single_val.coerce_to_number().unwrap().get_int32().unwrap()),
+                    DataType::Int64 => AnyValue::Int64(single_val.coerce_to_number().unwrap().get_int64().unwrap()),
+                    DataType::Float64 => AnyValue::Float64(single_val.coerce_to_number().unwrap().get_double().unwrap()),
+                    _ => AnyValue::Null
                 };
                 val_vec.push(vv);
             });
 
-            let array = StructArray::new(arrow_dtype.clone(),1,val_vec,None);
-            let array = &*(&array as *const dyn ArrowArray as *const StructArray);
-            Ok(AnyValue::Struct(number_of_fields as usize, &array, &fields))
+            Ok(AnyValue::StructOwned(Box::new((val_vec, fields))))
         }
         _ => Ok(AnyValue::Null),
     }
