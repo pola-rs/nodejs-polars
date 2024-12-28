@@ -830,8 +830,8 @@ impl FromNapiValue for Wrap<CsvWriterOptions> {
         let obj = Object::from_napi_value(env, napi_val)?;
         let include_bom = obj.get::<_, bool>("includeBom")?.unwrap_or(false);
         let include_header = obj.get::<_, bool>("includeHeader")?.unwrap_or(true);
-        let batch_size =
-            NonZero::new(obj.get::<_, i64>("batchSize")?.unwrap_or(1024) as usize).ok_or_else(|| napi::Error::from_reason("Invalid batch size"))?;
+        let batch_size = NonZero::new(obj.get::<_, i64>("batchSize")?.unwrap_or(1024) as usize)
+            .ok_or_else(|| napi::Error::from_reason("Invalid batch size"))?;
         let maintain_order = obj.get::<_, bool>("maintainOrder")?.unwrap_or(true);
         let date_format = obj.get::<_, String>("dateFormat")?;
         let time_format = obj.get::<_, String>("timeFormat")?;
