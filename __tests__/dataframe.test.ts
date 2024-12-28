@@ -73,8 +73,12 @@ describe("dataframe", () => {
 │ 3   ┆ three ┆ {false,true,"three",3} │
 └─────┴───────┴────────────────────────┘`;
     expect(actual.toString()).toStrictEqual(expected);
-    expect(actual.getColumn('name').toArray()).toEqual(rows.map(e=>e['name']));
-    expect(actual.getColumn('attributes').toArray()).toMatchObject(rows.map(e=>e['attributes']));
+    expect(actual.getColumn("name").toArray()).toEqual(
+      rows.map((e) => e["name"]),
+    );
+    expect(actual.getColumn("attributes").toArray()).toMatchObject(
+      rows.map((e) => e["attributes"]),
+    );
   });
   test("dtypes", () => {
     const expected = [pl.Float64, pl.String];
