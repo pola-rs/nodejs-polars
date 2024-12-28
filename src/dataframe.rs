@@ -1623,73 +1623,72 @@ fn obj_to_pairs(rows: &Array, len: usize) -> impl '_ + Iterator<Item = Vec<(Stri
         keys.iter()
             .map(|key| {
                 let value = obj.get::<_, napi::JsUnknown>(&key).unwrap_or(None);
-                let dtype = match value {
-                    Some(val) => {
-                        let ty = val.get_type().unwrap();
-                        match ty {
-                            ValueType::Boolean => DataType::Boolean,
-                            ValueType::Number => DataType::Float64,
-                            ValueType::BigInt => DataType::UInt64,
-                            ValueType::String => DataType::String,
-                            ValueType::Object => {
-                                if val.is_array().unwrap() {
-                                    let arr: napi::JsObject = unsafe { val.cast() };
-                                    let len = arr.get_array_length().unwrap();
-                                    if len == 0 {
-                                        DataType::List(DataType::Null.into())
-                                    } else {
-                                        // dont compare too many items, as it could be expensive
-                                        let max_take = std::cmp::min(len as usize, 10);
-                                        let mut dtypes: Vec<DataType> =
-                                            Vec::with_capacity(len as usize);
-
-                                        for idx in 0..max_take {
-                                            let item: napi::JsUnknown =
-                                                arr.get_element(idx as u32).unwrap();
-                                            let ty = item.get_type().unwrap();
-                                            let dt: Wrap<DataType> = ty.into();
-                                            dtypes.push(dt.0)
-                                        }
-                                        let dtype = coerce_data_type(&dtypes);
-
-                                        DataType::List(dtype.into())
-                                    }
-                                } else if val.is_date().unwrap() {
-                                    DataType::Datetime(TimeUnit::Milliseconds, None)
-                                } else {
-                                    let inner_val: napi::JsObject = unsafe { val.cast() };
-                                    let inner_keys = Object::keys(&inner_val).unwrap();
-                                    let mut fldvec: Vec<Field> =
-                                        Vec::with_capacity(inner_keys.len() as usize);
-
-                                    inner_keys.iter().for_each(|key| {
-                                        let inner_val =
-                                            &inner_val.get::<_, napi::JsUnknown>(&key).unwrap();
-                                        let dtype =
-                                            match inner_val.as_ref().unwrap().get_type().unwrap() {
-                                                ValueType::Boolean => DataType::Boolean,
-                                                ValueType::Number => DataType::Float64,
-                                                ValueType::BigInt => DataType::UInt64,
-                                                ValueType::String => DataType::String,
-                                                ValueType::Object => DataType::Struct(vec![]),
-                                                _ => DataType::Null,
-                                            };
-
-                                        let fld = Field::new(key.into(), dtype);
-                                        fldvec.push(fld);
-                                    });
-                                    DataType::Struct(fldvec)
-                                }
-                            }
-                            _ => DataType::Null,
-                        }
-                    }
-                    None => DataType::Null,
-                };
-                (key.to_owned(), dtype)
+                (key.to_owned(), obj_to_type(value))
             })
             .collect()
     })
+}
+
+fn obj_to_type(value: Option<JsUnknown>) -> DataType {
+    match value {
+        Some(val) => {
+            let ty = val.get_type().unwrap();
+            match ty {
+                ValueType::Boolean => DataType::Boolean,
+                ValueType::Number => DataType::Float64,
+                ValueType::BigInt => DataType::UInt64,
+                ValueType::String => DataType::String,
+                ValueType::Object => {
+                    if val.is_array().unwrap() {
+                        let arr: napi::JsObject = unsafe { val.cast() };
+                        let len = arr.get_array_length().unwrap();
+                        if len == 0 {
+                            DataType::List(DataType::Null.into())
+                        } else {
+                            // dont compare too many items, as it could be expensive
+                            let max_take = std::cmp::min(len as usize, 10);
+                            let mut dtypes: Vec<DataType> = Vec::with_capacity(len as usize);
+
+                            for idx in 0..max_take {
+                                let item: napi::JsUnknown = arr.get_element(idx as u32).unwrap();
+                                let ty = item.get_type().unwrap();
+                                let dt: Wrap<DataType> = ty.into();
+                                dtypes.push(dt.0)
+                            }
+                            let dtype = coerce_data_type(&dtypes);
+
+                            DataType::List(dtype.into())
+                        }
+                    } else if val.is_date().unwrap() {
+                        DataType::Datetime(TimeUnit::Milliseconds, None)
+                    } else {
+                        let inner_val: napi::JsObject = unsafe { val.cast() };
+                        let inner_keys = Object::keys(&inner_val).unwrap();
+                        let mut fldvec: Vec<Field> = Vec::with_capacity(inner_keys.len() as usize);
+
+                        inner_keys.iter().for_each(|key| {
+                            let inner_val = inner_val.get::<_, napi::JsUnknown>(&key).unwrap();
+                            let dtype = match inner_val.as_ref().unwrap().get_type().unwrap() {
+                                ValueType::Boolean => DataType::Boolean,
+                                ValueType::Number => DataType::Float64,
+                                ValueType::BigInt => DataType::UInt64,
+                                ValueType::String => DataType::String,
+                                // determine struct type using a recursive func
+                                ValueType::Object => obj_to_type(inner_val),
+                                _ => DataType::Null,
+                            };
+
+                            let fld = Field::new(key.into(), dtype);
+                            fldvec.push(fld);
+                        });
+                        DataType::Struct(fldvec)
+                    }
+                }
+                _ => DataType::Null,
+            }
+        }
+        None => DataType::Null,
+    }
 }
 
 fn coerce_js_anyvalue<'a>(val: JsUnknown, dtype: DataType) -> JsResult<AnyValue<'a>> {
