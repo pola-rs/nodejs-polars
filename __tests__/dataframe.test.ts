@@ -10,25 +10,72 @@ describe("dataframe", () => {
 
   test("df from JSON with struct", () => {
     const rows = [
-      {id: 1, name: 'one', attributes: {x: 700, colour: 'black'}},
-      {id: 2, name: 'two', attributes: {x: 800, colour: 'blue'}},
-      {id: 3, name: 'three', attributes: {x: 100, colour: 'red'}}
+      {
+        id: 1,
+        name: "one",
+        attributes: { b: false, bb: true, s: "one", x: 1 },
+      },
+      {
+        id: 2,
+        name: "two",
+        attributes: { b: false, bb: true, s: "two", x: 2 },
+      },
+      {
+        id: 3,
+        name: "three",
+        attributes: { b: false, bb: true, s: "three", x: 3 },
+      },
     ];
 
-    const df = pl.DataFrame(rows);
-    expect(df.schema).toStrictEqual(
-    {
-      id: {DataType:"Float64"},
-      name:{DataType:"String"},
-      attributes:{
-        DataType:{Struct:[
-          {name:"x",dtype:{DataType:"Float64"}},
-          {name:"colour",dtype:{DataType:"String"}}
-        ]}}
-    }
-    );
-  });
+    let actual = pl.DataFrame(rows);
+    expect(actual.schema).toStrictEqual({
+      id: pl.Float64,
+      name: pl.String,
+      attributes: pl.Struct([
+        new pl.Field("b", pl.Bool),
+        new pl.Field("bb", pl.Bool),
+        new pl.Field("s", pl.String),
+        new pl.Field("x", pl.Float64),
+      ]),
+    });
 
+    let expected = `shape: (3, 3)
+┌─────┬───────┬──────────────────────────┐
+│ id  ┆ name  ┆ attributes               │
+│ --- ┆ ---   ┆ ---                      │
+│ f64 ┆ str   ┆ struct[4]                │
+╞═════╪═══════╪══════════════════════════╡
+│ 1.0 ┆ one   ┆ {false,true,"one",1.0}   │
+│ 2.0 ┆ two   ┆ {false,true,"two",2.0}   │
+│ 3.0 ┆ three ┆ {false,true,"three",3.0} │
+└─────┴───────┴──────────────────────────┘`;
+    expect(actual.toString()).toStrictEqual(expected);
+
+    const schema = {
+      id: pl.Int32,
+      name: pl.String,
+      attributes: pl.Struct([
+        new pl.Field("b", pl.Bool),
+        new pl.Field("bb", pl.Bool),
+        new pl.Field("s", pl.String),
+        new pl.Field("x", pl.Int16),
+      ]),
+    };
+    actual = pl.DataFrame(rows, { schema: schema });
+    expected = `shape: (3, 3)
+┌─────┬───────┬────────────────────────┐
+│ id  ┆ name  ┆ attributes             │
+│ --- ┆ ---   ┆ ---                    │
+│ i32 ┆ str   ┆ struct[4]              │
+╞═════╪═══════╪════════════════════════╡
+│ 1   ┆ one   ┆ {false,true,"one",1}   │
+│ 2   ┆ two   ┆ {false,true,"two",2}   │
+│ 3   ┆ three ┆ {false,true,"three",3} │
+└─────┴───────┴────────────────────────┘`;
+    expect(actual.toString()).toStrictEqual(expected);
+    expect(actual.getColumn('name').toArray()).toEqual(rows.map(e=>e['name']));
+    expect(actual.getColumn('attributes').toArray()).toMatchObject(rows.map(e=>e['attributes']));
+  });
   test("dtypes", () => {
     const expected = [pl.Float64, pl.String];
     const actual = pl.DataFrame({ a: [1, 2, 3], b: ["a", "b", "c"] }).dtypes;

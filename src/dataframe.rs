@@ -451,20 +451,22 @@ pub fn from_rows(
                 .unwrap_or_else(|| env.create_object().unwrap());
 
             Row(schema
-                .iter_fields().map(|fld| {
+                .iter_fields()
+                .map(|fld| {
                     let dtype: &DataType = fld.dtype();
                     let key: &PlSmallStr = fld.name();
                     if let Ok(unknown) = obj.get::<&polars::prelude::PlSmallStr, JsUnknown>(key) {
                         match unknown {
-                            Some(unknown) => unsafe {
+                            Some(unknown) => {
                                 coerce_js_anyvalue(unknown, dtype.clone()).unwrap_or(AnyValue::Null)
-                            },
+                            }
                             _ => AnyValue::Null,
                         }
                     } else {
                         AnyValue::Null
                     }
-                }).collect())
+                })
+                .collect())
         })
         .collect();
     let df = DataFrame::from_rows_and_schema(&it, &schema).map_err(JsPolarsErr::from)?;
@@ -1657,19 +1659,22 @@ fn obj_to_pairs(rows: &Array, len: usize) -> impl '_ + Iterator<Item = Vec<(Stri
                                 } else {
                                     let inner_val: napi::JsObject = unsafe { val.cast() };
                                     let inner_keys = Object::keys(&inner_val).unwrap();
-                                    let mut fldvec: Vec<Field> = Vec::with_capacity(inner_keys.len() as usize);
+                                    let mut fldvec: Vec<Field> =
+                                        Vec::with_capacity(inner_keys.len() as usize);
 
                                     inner_keys.iter().for_each(|key| {
-                                        let inner_val = &inner_val.get::<_, napi::JsUnknown>(&key).unwrap();
-                                        let dtype = match inner_val.as_ref().unwrap().get_type().unwrap() {
-                                            ValueType::Boolean => DataType::Boolean,
-                                            ValueType::Number => DataType::Float64,
-                                            ValueType::BigInt => DataType::UInt64,
-                                            ValueType::String => DataType::String,
-                                            ValueType::Object => DataType::Struct(vec![]),
-                                            _ => DataType::Null
-                                        };
-                        
+                                        let inner_val =
+                                            &inner_val.get::<_, napi::JsUnknown>(&key).unwrap();
+                                        let dtype =
+                                            match inner_val.as_ref().unwrap().get_type().unwrap() {
+                                                ValueType::Boolean => DataType::Boolean,
+                                                ValueType::Number => DataType::Float64,
+                                                ValueType::BigInt => DataType::UInt64,
+                                                ValueType::String => DataType::String,
+                                                ValueType::Object => DataType::Struct(vec![]),
+                                                _ => DataType::Null,
+                                            };
+
                                         let fld = Field::new(key.into(), dtype);
                                         fldvec.push(fld);
                                     });
@@ -1679,7 +1684,7 @@ fn obj_to_pairs(rows: &Array, len: usize) -> impl '_ + Iterator<Item = Vec<(Stri
                             _ => DataType::Null,
                         }
                     }
-                    None => DataType::Null
+                    None => DataType::Null,
                 };
                 (key.to_owned(), dtype)
             })
@@ -1687,7 +1692,7 @@ fn obj_to_pairs(rows: &Array, len: usize) -> impl '_ + Iterator<Item = Vec<(Stri
     })
 }
 
-unsafe fn coerce_js_anyvalue<'a>(val: JsUnknown, dtype: DataType) -> JsResult<AnyValue<'a>> {
+fn coerce_js_anyvalue<'a>(val: JsUnknown, dtype: DataType) -> JsResult<AnyValue<'a>> {
     use DataType::*;
     let vtype = val.get_type().unwrap();
     match (vtype, dtype) {
@@ -1762,7 +1767,7 @@ unsafe fn coerce_js_anyvalue<'a>(val: JsUnknown, dtype: DataType) -> JsResult<An
         }
         (ValueType::Object, DataType::Datetime(_, _)) => {
             if val.is_date()? {
-                let d: napi::JsDate = val.cast();
+                let d: napi::JsDate = unsafe { val.cast() };
                 let d = d.value_of()?;
                 Ok(AnyValue::Datetime(d as i64, TimeUnit::Milliseconds, None))
             } else {
@@ -1770,25 +1775,45 @@ unsafe fn coerce_js_anyvalue<'a>(val: JsUnknown, dtype: DataType) -> JsResult<An
             }
         }
         (ValueType::Object, DataType::List(_)) => {
-            let s = val.to_series();
+            let s = unsafe { val.to_series() };
             Ok(AnyValue::List(s))
         }
         (ValueType::Object, DataType::Struct(fields)) => {
-            let number_of_fields: i8 = fields.len().try_into().map_err(
-                |e| napi::Error::from_reason(format!("the number of `fields` cannot be larger than i8::MAX {e:?}"))
-            )?;
+            let number_of_fields: i8 = fields.len().try_into().map_err(|e| {
+                napi::Error::from_reason(format!(
+                    "the number of `fields` cannot be larger than i8::MAX {e:?}"
+                ))
+            })?;
 
-            let inner_val: napi::JsObject = val.cast();
-            let mut val_vec: Vec<polars::prelude::AnyValue<'_>> = Vec::with_capacity(number_of_fields as usize);
+            let inner_val: napi::JsObject = unsafe { val.cast() };
+            let mut val_vec: Vec<polars::prelude::AnyValue<'_>> =
+                Vec::with_capacity(number_of_fields as usize);
             fields.iter().for_each(|fld| {
-                let single_val = inner_val.get::<_, napi::JsUnknown>(&fld.name).unwrap().unwrap();
-                let vv = match fld.dtype {
-                    DataType::Boolean => AnyValue::Boolean(single_val.coerce_to_bool().unwrap().get_value().unwrap()),
+                let single_val = inner_val
+                    .get::<_, napi::JsUnknown>(&fld.name)
+                    .unwrap()
+                    .unwrap();
+                let vv = match &fld.dtype {
+                    DataType::Boolean => {
+                        AnyValue::Boolean(single_val.coerce_to_bool().unwrap().get_value().unwrap())
+                    }
                     DataType::String => AnyValue::from_js(single_val).expect("Expecting string"),
-                    DataType::Int32 => AnyValue::Int32(single_val.coerce_to_number().unwrap().get_int32().unwrap()),
-                    DataType::Int64 => AnyValue::Int64(single_val.coerce_to_number().unwrap().get_int64().unwrap()),
-                    DataType::Float64 => AnyValue::Float64(single_val.coerce_to_number().unwrap().get_double().unwrap()),
-                    _ => AnyValue::Null
+                    DataType::Int16 => AnyValue::Int16(
+                        single_val.coerce_to_number().unwrap().get_int32().unwrap() as i16,
+                    ),
+                    DataType::Int32 => {
+                        AnyValue::Int32(single_val.coerce_to_number().unwrap().get_int32().unwrap())
+                    }
+                    DataType::Int64 => {
+                        AnyValue::Int64(single_val.coerce_to_number().unwrap().get_int64().unwrap())
+                    }
+                    DataType::Float64 => AnyValue::Float64(
+                        single_val.coerce_to_number().unwrap().get_double().unwrap(),
+                    ),
+                    DataType::Struct(_) => {
+                        coerce_js_anyvalue(single_val, fld.dtype.clone()).unwrap()
+                    }
+                    _ => AnyValue::Null,
                 };
                 val_vec.push(vv);
             });
