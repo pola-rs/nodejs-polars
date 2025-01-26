@@ -1,5 +1,6 @@
 export * from "./datatype";
 export { Field } from "./field";
+export * from "./conversion";
 
 import pli from "../internals/polars_internal";
 // biome-ignore lint/style/useImportType: <explanation>
