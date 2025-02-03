@@ -442,27 +442,26 @@ pub fn from_rows(
             infer_schema(pairs, infer_schema_length)
         }
     };
-    let len = rows.len();
-    let it: Vec<Row> = (0..len)
+    let it: Vec<Row> = (0..rows.len())
         .into_iter()
         .map(|idx| {
             let obj = rows
                 .get::<Object>(idx as u32)
                 .unwrap_or(None)
                 .unwrap_or_else(|| env.create_object().unwrap());
+
             Row(schema
                 .iter_fields()
                 .map(|fld| {
-                    let dtype = fld.dtype().clone();
-                    let key = fld.name();
-                    if let Ok(unknown) = obj.get(key) {
-                        let av = match unknown {
-                            Some(unknown) => unsafe {
-                                coerce_js_anyvalue(unknown, dtype).unwrap_or(AnyValue::Null)
-                            },
-                            None => AnyValue::Null,
-                        };
-                        av
+                    let dtype: &DataType = fld.dtype();
+                    let key: &PlSmallStr = fld.name();
+                    if let Ok(unknown) = obj.get::<&polars::prelude::PlSmallStr, JsUnknown>(key) {
+                        match unknown {
+                            Some(unknown) => {
+                                coerce_js_anyvalue(unknown, dtype.clone()).unwrap_or(AnyValue::Null)
+                            }
+                            _ => AnyValue::Null,
+                        }
                     } else {
                         AnyValue::Null
                     }
@@ -1620,61 +1619,79 @@ fn obj_to_pairs(rows: &Array, len: usize) -> impl '_ + Iterator<Item = Vec<(Stri
     let len = std::cmp::min(len, rows.len() as usize);
     (0..len).map(move |idx| {
         let obj = rows.get::<Object>(idx as u32).unwrap().unwrap();
-
         let keys = Object::keys(&obj).unwrap();
         keys.iter()
             .map(|key| {
                 let value = obj.get::<_, napi::JsUnknown>(&key).unwrap_or(None);
-                let dtype = match value {
-                    Some(val) => {
-                        let ty = val.get_type().unwrap();
-                        match ty {
-                            ValueType::Boolean => DataType::Boolean,
-                            ValueType::Number => DataType::Float64,
-                            ValueType::String => DataType::String,
-                            ValueType::Object => {
-                                if val.is_array().unwrap() {
-                                    let arr: napi::JsObject = unsafe { val.cast() };
-                                    let len = arr.get_array_length().unwrap();
-
-                                    if len == 0 {
-                                        DataType::List(DataType::Null.into())
-                                    } else {
-                                        // dont compare too many items, as it could be expensive
-                                        let max_take = std::cmp::min(len as usize, 10);
-                                        let mut dtypes: Vec<DataType> =
-                                            Vec::with_capacity(len as usize);
-
-                                        for idx in 0..max_take {
-                                            let item: napi::JsUnknown =
-                                                arr.get_element(idx as u32).unwrap();
-                                            let ty = item.get_type().unwrap();
-                                            let dt: Wrap<DataType> = ty.into();
-                                            dtypes.push(dt.0)
-                                        }
-                                        let dtype = coerce_data_type(&dtypes);
-
-                                        DataType::List(dtype.into())
-                                    }
-                                } else if val.is_date().unwrap() {
-                                    DataType::Datetime(TimeUnit::Milliseconds, None)
-                                } else {
-                                    DataType::Struct(vec![])
-                                }
-                            }
-                            ValueType::BigInt => DataType::UInt64,
-                            _ => DataType::Null,
-                        }
-                    }
-                    None => DataType::Null,
-                };
-                (key.to_owned(), dtype)
+                (key.to_owned(), obj_to_type(value))
             })
             .collect()
     })
 }
 
-unsafe fn coerce_js_anyvalue<'a>(val: JsUnknown, dtype: DataType) -> JsResult<AnyValue<'a>> {
+fn obj_to_type(value: Option<JsUnknown>) -> DataType {
+    match value {
+        Some(val) => {
+            let ty = val.get_type().unwrap();
+            match ty {
+                ValueType::Boolean => DataType::Boolean,
+                ValueType::Number => DataType::Float64,
+                ValueType::BigInt => DataType::UInt64,
+                ValueType::String => DataType::String,
+                ValueType::Object => {
+                    if val.is_array().unwrap() {
+                        let arr: napi::JsObject = unsafe { val.cast() };
+                        let len = arr.get_array_length().unwrap();
+                        if len == 0 {
+                            DataType::List(DataType::Null.into())
+                        } else {
+                            // dont compare too many items, as it could be expensive
+                            let max_take = std::cmp::min(len as usize, 10);
+                            let mut dtypes: Vec<DataType> = Vec::with_capacity(len as usize);
+
+                            for idx in 0..max_take {
+                                let item: napi::JsUnknown = arr.get_element(idx as u32).unwrap();
+                                let ty = item.get_type().unwrap();
+                                let dt: Wrap<DataType> = ty.into();
+                                dtypes.push(dt.0)
+                            }
+                            let dtype = coerce_data_type(&dtypes);
+
+                            DataType::List(dtype.into())
+                        }
+                    } else if val.is_date().unwrap() {
+                        DataType::Datetime(TimeUnit::Milliseconds, None)
+                    } else {
+                        let inner_val: napi::JsObject = unsafe { val.cast() };
+                        let inner_keys = Object::keys(&inner_val).unwrap();
+                        let mut fldvec: Vec<Field> = Vec::with_capacity(inner_keys.len() as usize);
+
+                        inner_keys.iter().for_each(|key| {
+                            let inner_val = inner_val.get::<_, napi::JsUnknown>(&key).unwrap();
+                            let dtype = match inner_val.as_ref().unwrap().get_type().unwrap() {
+                                ValueType::Boolean => DataType::Boolean,
+                                ValueType::Number => DataType::Float64,
+                                ValueType::BigInt => DataType::UInt64,
+                                ValueType::String => DataType::String,
+                                // determine struct type using a recursive func
+                                ValueType::Object => obj_to_type(inner_val),
+                                _ => DataType::Null,
+                            };
+
+                            let fld = Field::new(key.into(), dtype);
+                            fldvec.push(fld);
+                        });
+                        DataType::Struct(fldvec)
+                    }
+                }
+                _ => DataType::Null,
+            }
+        }
+        None => DataType::Null,
+    }
+}
+
+fn coerce_js_anyvalue<'a>(val: JsUnknown, dtype: DataType) -> JsResult<AnyValue<'a>> {
     use DataType::*;
     let vtype = val.get_type().unwrap();
     match (vtype, dtype) {
@@ -1749,7 +1766,7 @@ unsafe fn coerce_js_anyvalue<'a>(val: JsUnknown, dtype: DataType) -> JsResult<An
         }
         (ValueType::Object, DataType::Datetime(_, _)) => {
             if val.is_date()? {
-                let d: napi::JsDate = val.cast();
+                let d: napi::JsDate = unsafe { val.cast() };
                 let d = d.value_of()?;
                 Ok(AnyValue::Datetime(d as i64, TimeUnit::Milliseconds, None))
             } else {
@@ -1757,8 +1774,50 @@ unsafe fn coerce_js_anyvalue<'a>(val: JsUnknown, dtype: DataType) -> JsResult<An
             }
         }
         (ValueType::Object, DataType::List(_)) => {
-            let s = val.to_series();
+            let s = unsafe { val.to_series() };
             Ok(AnyValue::List(s))
+        }
+        (ValueType::Object, DataType::Struct(fields)) => {
+            let number_of_fields: i8 = fields.len().try_into().map_err(|e| {
+                napi::Error::from_reason(format!(
+                    "the number of `fields` cannot be larger than i8::MAX {e:?}"
+                ))
+            })?;
+
+            let inner_val: napi::JsObject = unsafe { val.cast() };
+            let mut val_vec: Vec<polars::prelude::AnyValue<'_>> =
+                Vec::with_capacity(number_of_fields as usize);
+            fields.iter().for_each(|fld| {
+                let single_val = inner_val
+                    .get::<_, napi::JsUnknown>(&fld.name)
+                    .unwrap()
+                    .unwrap();
+                let vv = match &fld.dtype {
+                    DataType::Boolean => {
+                        AnyValue::Boolean(single_val.coerce_to_bool().unwrap().get_value().unwrap())
+                    }
+                    DataType::String => AnyValue::from_js(single_val).expect("Expecting string"),
+                    DataType::Int16 => AnyValue::Int16(
+                        single_val.coerce_to_number().unwrap().get_int32().unwrap() as i16,
+                    ),
+                    DataType::Int32 => {
+                        AnyValue::Int32(single_val.coerce_to_number().unwrap().get_int32().unwrap())
+                    }
+                    DataType::Int64 => {
+                        AnyValue::Int64(single_val.coerce_to_number().unwrap().get_int64().unwrap())
+                    }
+                    DataType::Float64 => AnyValue::Float64(
+                        single_val.coerce_to_number().unwrap().get_double().unwrap(),
+                    ),
+                    DataType::Struct(_) => {
+                        coerce_js_anyvalue(single_val, fld.dtype.clone()).unwrap()
+                    }
+                    _ => AnyValue::Null,
+                };
+                val_vec.push(vv);
+            });
+
+            Ok(AnyValue::StructOwned(Box::new((val_vec, fields))))
         }
         _ => Ok(AnyValue::Null),
     }
