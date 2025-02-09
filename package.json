@@ -1,6 +1,6 @@
 {
   "name": "nodejs-polars",
-  "version": "0.17.0",
+  "version": "0.18.0",
   "repository": "https://github.com/pola-rs/nodejs-polars.git",
   "license": "MIT",
   "main": "bin/index.js",
@@ -58,14 +58,14 @@
     "@napi-rs/cli": "^2.18.4",
     "@types/chance": "^1.1.6",
     "@types/jest": "^29.5.14",
-    "@types/node": "^22.10.1",
+    "@types/node": "^22.13.1",
     "chance": "^1.1.12",
     "jest": "^29.7.0",
     "source-map-support": "^0.5.21",
     "ts-jest": "^29.2.5",
     "ts-node": "^10.9.2",
-    "typedoc": "^0.27.3",
-    "typescript": "5.7.2"
+    "typedoc": "^0.27.7",
+    "typescript": "5.7.3"
   },
   "packageManager": "yarn@4.5.3",
   "workspaces": [

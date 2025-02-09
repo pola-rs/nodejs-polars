@@ -1067,12 +1067,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/node@npm:^22.10.1":
-  version: 22.10.1
-  resolution: "@types/node@npm:22.10.1"
+"@types/node@npm:^22.13.1":
+  version: 22.13.1
+  resolution: "@types/node@npm:22.13.1"
   dependencies:
     undici-types: "npm:~6.20.0"
-  checksum: 10/c802a526da2f3fa3ccefd00a71244e7cb825329951719e79e8fec62b1dbc2855388c830489770611584665ce10be23c05ed585982038b24924e1ba2c2cce03fd
+  checksum: 10/d8ba7068b0445643c0fa6e4917cdb7a90e8756a9daff8c8a332689cd5b2eaa01e4cd07de42e3cd7e6a6f465eeda803d5a1363d00b5ab3f6cea7950350a159497
   languageName: node
   linkType: hard
 
@@ -3134,14 +3134,14 @@ __metadata:
     "@napi-rs/cli": "npm:^2.18.4"
     "@types/chance": "npm:^1.1.6"
     "@types/jest": "npm:^29.5.14"
-    "@types/node": "npm:^22.10.1"
+    "@types/node": "npm:^22.13.1"
     chance: "npm:^1.1.12"
     jest: "npm:^29.7.0"
     source-map-support: "npm:^0.5.21"
     ts-jest: "npm:^29.2.5"
     ts-node: "npm:^10.9.2"
-    typedoc: "npm:^0.27.3"
-    typescript: "npm:5.7.2"
+    typedoc: "npm:^0.27.7"
+    typescript: "npm:5.7.3"
   languageName: unknown
   linkType: soft
 
@@ -3856,9 +3856,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"typedoc@npm:^0.27.3":
-  version: 0.27.3
-  resolution: "typedoc@npm:0.27.3"
+"typedoc@npm:^0.27.7":
+  version: 0.27.7
+  resolution: "typedoc@npm:0.27.7"
   dependencies:
     "@gerrit0/mini-shiki": "npm:^1.24.0"
     lunr: "npm:^2.3.9"
@@ -3869,27 +3869,27 @@ __metadata:
     typescript: 5.0.x || 5.1.x || 5.2.x || 5.3.x || 5.4.x || 5.5.x || 5.6.x || 5.7.x
   bin:
     typedoc: bin/typedoc
-  checksum: 10/f62eeb0f3f37b9a09e137e5d6e2042b374c670cb8fbdfc6f1427a1b1bb449a30755bdd6be2c503676c66150207aa3c49c4d850f0154b20f8e2ca49b1e522cc76
+  checksum: 10/9636b8d5472614463425326c23e824a970cd20a08081756b9eedd37d238307279ad256df02bce90f14e2c2cef0417f0dc011a8dd735d65d167f0e2e95c78ecef
   languageName: node
   linkType: hard
 
-"typescript@npm:5.7.2":
-  version: 5.7.2
-  resolution: "typescript@npm:5.7.2"
+"typescript@npm:5.7.3":
+  version: 5.7.3
+  resolution: "typescript@npm:5.7.3"
   bin:
     tsc: bin/tsc
     tsserver: bin/tsserver
-  checksum: 10/4caa3904df69db9d4a8bedc31bafc1e19ffb7b24fbde2997a1633ae1398d0de5bdbf8daf602ccf3b23faddf1aeeb9b795223a2ed9c9a4fdcaf07bfde114a401a
+  checksum: 10/6a7e556de91db3d34dc51cd2600e8e91f4c312acd8e52792f243c7818dfadb27bae677175fad6947f9c81efb6c57eb6b2d0c736f196a6ee2f1f7d57b74fc92fa
   languageName: node
   linkType: hard
 
-"typescript@patch:typescript@npm%3A5.7.2#optional!builtin<compat/typescript>":
-  version: 5.7.2
-  resolution: "typescript@patch:typescript@npm%3A5.7.2#optional!builtin<compat/typescript>::version=5.7.2&hash=5786d5"
+"typescript@patch:typescript@npm%3A5.7.3#optional!builtin<compat/typescript>":
+  version: 5.7.3
+  resolution: "typescript@patch:typescript@npm%3A5.7.3#optional!builtin<compat/typescript>::version=5.7.3&hash=5786d5"
   bin:
     tsc: bin/tsc
     tsserver: bin/tsserver
-  checksum: 10/d75ca10141afc64fd3474b41a8b082b640555bed388d237558aed64e5827ddadb48f90932c7f4205883f18f5bcab8b6a739a2cfac95855604b0dfeb34bc2f3eb
+  checksum: 10/dc58d777eb4c01973f7fbf1fd808aad49a0efdf545528dab9b07d94fdcb65b8751742804c3057e9619a4627f2d9cc85547fdd49d9f4326992ad0181b49e61d81
   languageName: node
   linkType: hard
 

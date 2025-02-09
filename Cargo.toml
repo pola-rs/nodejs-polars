@@ -1,6 +1,6 @@
 [package]
 name = "nodejs-polars"
-version = "0.17.0"
+version = "0.18.0"
 authors = ["Cory Grinstead"]
 documentation = "https://pola-rs.github.io/polars-book/"
 edition = "2021"
@@ -15,14 +15,14 @@ crate-type = ["cdylib", "lib"]
 [dependencies]
 ahash = "0.8.11"
 bincode = "1.3.3"
-napi = { version = "2.16.13", default-features = false, features = [
+napi = { version = "2.16.15", default-features = false, features = [
     "napi8",
     "serde-json",
 ] }
 napi-derive = { version = "2.16.13", default-features = false }
-polars-core = { git = "https://github.com/pola-rs/polars.git", rev = "58a38af21dccaf3326514494a1db118601c8c2ca", default-features = false }
-polars-io = { git = "https://github.com/pola-rs/polars.git", rev = "58a38af21dccaf3326514494a1db118601c8c2ca", default-features = false }
-polars-lazy = { git = "https://github.com/pola-rs/polars.git", rev = "58a38af21dccaf3326514494a1db118601c8c2ca", default-features = false }
+polars-core = { git = "https://github.com/pola-rs/polars.git", rev = "f298ace880b238fb5793eaf0cdeb6b418e2ba583", default-features = false }
+polars-io = { git = "https://github.com/pola-rs/polars.git", rev = "f298ace880b238fb5793eaf0cdeb6b418e2ba583", default-features = false }
+polars-lazy = { git = "https://github.com/pola-rs/polars.git", rev = "f298ace880b238fb5793eaf0cdeb6b418e2ba583", default-features = false }
 thiserror = "1"
 smartstring = { version = "1" }
 serde_json = { version = "1" }
@@ -162,10 +162,10 @@ features = [
   "azure"
 ]
 git = "https://github.com/pola-rs/polars.git"
-rev = "58a38af21dccaf3326514494a1db118601c8c2ca"
+rev = "f298ace880b238fb5793eaf0cdeb6b418e2ba583"
 
 [build-dependencies]
-napi-build = "2.1.3"
+napi-build = "2.1.4"
 
 [profile.release]
 codegen-units = 1
