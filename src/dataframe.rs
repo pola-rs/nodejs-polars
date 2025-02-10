@@ -627,6 +627,8 @@ impl JsDataFrame {
                 right_by: None,
                 tolerance: None,
                 tolerance_str: None,
+                allow_eq: true,
+                check_sortedness: true,
             }),
             "cross" => JoinType::Cross,
             _ => panic!("not supported"),
@@ -643,6 +645,7 @@ impl JsDataFrame {
                     suffix: suffix.map_or(None, |s| Some(PlSmallStr::from_string(s))),
                     ..Default::default()
                 },
+                None,
             )
             .map_err(JsPolarsErr::from)?;
         Ok(JsDataFrame::new(df))
@@ -705,7 +708,7 @@ impl JsDataFrame {
     }
     #[napi(getter, catch_unwind)]
     pub fn schema(&self) -> Wrap<Schema> {
-        self.df.schema().into()
+        Schema::from_iter(self.df.schema().iter_fields().collect::<Vec<_>>()).into()
     }
     #[napi(catch_unwind)]
     pub fn hstack_mut(&mut self, columns: Array) -> napi::Result<()> {
