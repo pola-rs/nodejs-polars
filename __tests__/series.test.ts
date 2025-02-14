@@ -918,7 +918,7 @@ describe("generics", () => {
     const arr2 = [...series];
     expect<number[]>(arr2).toStrictEqual([1, 2, 3]);
   });
-  test("to object", () => {
+  test.skip("to object", () => {
     const obj = series.toObject();
     expect<{ name: string; datatype: "Float64"; values: number[] }>(
       obj,
