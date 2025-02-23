@@ -850,8 +850,34 @@ export interface StringFunctions<T> {
    * ```
    */
   concat(delimiter: string, ignoreNulls?: boolean): T;
-  /** Check if strings in Series contain regex pattern. */
-  contains(pat: string | RegExp): T;
+  /**
+   * Check if strings in Series contain a substring that matches a pattern.
+   * @param pat A valid regular expression pattern, compatible with the `regex crate
+   * @param literal Treat `pattern` as a literal string, not as a regular expression.
+   * @param strict Raise an error if the underlying pattern is not a valid regex, otherwise mask out with a null value.
+   * @returns Boolean mask
+   * @example
+   * ```
+   * const df = pl.DataFrame({"txt": ["Crab", "cat and dog", "rab$bit", null]})
+   * df.select(
+   * ...     pl.col("txt"),
+   * ...     pl.col("txt").str.contains("cat|bit").alias("regex"),
+   * ...     pl.col("txt").str.contains("rab$", true).alias("literal"),
+   * ... )
+   * shape: (4, 3)
+   * ┌─────────────┬───────┬─────────┐
+   * │ txt         ┆ regex ┆ literal │
+   * │ ---         ┆ ---   ┆ ---     │
+   * │ str         ┆ bool  ┆ bool    │
+   * ╞═════════════╪═══════╪═════════╡
+   * │ Crab        ┆ false ┆ false   │
+   * │ cat and dog ┆ true  ┆ false   │
+   * │ rab$bit     ┆ true  ┆ true    │
+   * │ null        ┆ null  ┆ null    │
+   * └─────────────┴───────┴─────────┘
+   * ```
+   */
+  contains(pat: string | RegExp | Expr, literal: boolean, strict: boolean): T;
   /**
    * Decodes a value using the provided encoding
    * @param encoding - hex | base64
