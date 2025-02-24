@@ -834,19 +834,21 @@ impl JsExpr {
     }
 
     #[napi(catch_unwind)]
-    pub fn str_contains(&self, pat: String, strict: bool) -> JsExpr {
-        let function = move |s: Column| {
-            let ca = s.str()?;
-            match ca.contains(&pat, strict) {
-                Ok(ca) => Ok(Some(ca.into_column())),
-                Err(e) => Err(PolarsError::ComputeError(format!("{:?}", e).into())),
-            }
-        };
-        self.clone()
-            .inner
-            .map(function, GetOutput::from_type(DataType::Boolean))
-            .with_fmt("str.contains")
-            .into()
+    pub fn str_contains(&self, pat: &JsExpr, literal: bool, strict: bool) -> JsExpr {
+        match literal {
+            true => self
+                .inner
+                .clone()
+                .str()
+                .contains_literal(pat.inner.clone())
+                .into(),
+            _ => self
+                .inner
+                .clone()
+                .str()
+                .contains(pat.inner.clone(), strict)
+                .into(),
+        }
     }
     #[napi(catch_unwind)]
     pub fn str_hex_encode(&self) -> JsExpr {

@@ -3,7 +3,7 @@ import type { DataType } from "../datatypes";
 import { col } from "../lazy/functions";
 import type { StringFunctions } from "../shared_traits";
 import { regexToString } from "../utils";
-import type { Expr } from "./../lazy/expr/index";
+import { type Expr, exprToLitOrExpr } from "./../lazy/expr/index";
 
 /**
  * namespace containing series string functions
@@ -19,11 +19,37 @@ export interface StringNamespace extends StringFunctions<Series> {
    */
   concat(delimiter: string, ignoreNulls?: boolean): Series;
   /**
-   * Check if strings in Series contain regex pattern.
-   * @param pattern A valid regex pattern
+   * Check if strings in Series contain a substring that matches a pattern.
+   * @param pat A valid regular expression pattern, compatible with the `regex crate
+   * @param literal Treat `pattern` as a literal string, not as a regular expression.
+   * @param strict Raise an error if the underlying pattern is not a valid regex, otherwise mask out with a null value.
    * @returns Boolean mask
+   * @example
+   * ```
+   * const df = pl.DataFrame({"txt": ["Crab", "cat and dog", "rab$bit", null]})
+   * df.select(
+   * ...     pl.col("txt"),
+   * ...     pl.col("txt").str.contains("cat|bit").alias("regex"),
+   * ...     pl.col("txt").str.contains("rab$", true).alias("literal"),
+   * ... )
+   * shape: (4, 3)
+   * ┌─────────────┬───────┬─────────┐
+   * │ txt         ┆ regex ┆ literal │
+   * │ ---         ┆ ---   ┆ ---     │
+   * │ str         ┆ bool  ┆ bool    │
+   * ╞═════════════╪═══════╪═════════╡
+   * │ Crab        ┆ false ┆ false   │
+   * │ cat and dog ┆ true  ┆ false   │
+   * │ rab$bit     ┆ true  ┆ true    │
+   * │ null        ┆ null  ┆ null    │
+   * └─────────────┴───────┴─────────┘
+   * ```
    */
-  contains(pattern: string | RegExp): Series;
+  contains(
+    pat: string | RegExp | Expr,
+    literal?: boolean,
+    strict?: boolean,
+  ): Series;
   /**
    * Decodes a value using the provided encoding
    * @param encoding - hex | base64
@@ -279,8 +305,8 @@ export const SeriesStringFunctions = (_s: any): StringNamespace => {
         .select(col(_s.name).str.concat(delimiter, ignoreNulls).as(_s.name))
         .getColumn(_s.name);
     },
-    contains(pat: string | RegExp) {
-      return wrap("strContains", regexToString(pat), false);
+    contains(pat: string | RegExp | Expr, literal = false, strict = true) {
+      return wrap("strContains", regexToString(pat as RegExp), literal, strict);
     },
     decode(arg, strict = false) {
       if (typeof arg === "string") {

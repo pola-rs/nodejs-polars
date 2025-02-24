@@ -26,8 +26,38 @@ export interface StringNamespace extends StringFunctions<Expr> {
    * ```
    */
   concat(delimiter: string, ignoreNulls?: boolean): Expr;
-  /** Check if strings in Series contain regex pattern. */
-  contains(pat: string | RegExp): Expr;
+  /**
+   * Check if strings in Series contain a substring that matches a pattern.
+   * @param pat A valid regular expression pattern, compatible with the `regex crate
+   * @param literal Treat `pattern` as a literal string, not as a regular expression.
+   * @param strict Raise an error if the underlying pattern is not a valid regex, otherwise mask out with a null value.
+   * @returns Boolean mask
+   * @example
+   * ```
+   * const df = pl.DataFrame({"txt": ["Crab", "cat and dog", "rab$bit", null]})
+   * df.select(
+   * ...     pl.col("txt"),
+   * ...     pl.col("txt").str.contains("cat|bit").alias("regex"),
+   * ...     pl.col("txt").str.contains("rab$", true).alias("literal"),
+   * ... )
+   * shape: (4, 3)
+   * ┌─────────────┬───────┬─────────┐
+   * │ txt         ┆ regex ┆ literal │
+   * │ ---         ┆ ---   ┆ ---     │
+   * │ str         ┆ bool  ┆ bool    │
+   * ╞═════════════╪═══════╪═════════╡
+   * │ Crab        ┆ false ┆ false   │
+   * │ cat and dog ┆ true  ┆ false   │
+   * │ rab$bit     ┆ true  ┆ true    │
+   * │ null        ┆ null  ┆ null    │
+   * └─────────────┴───────┴─────────┘
+   * ```
+   */
+  contains(
+    pat: string | RegExp | Expr,
+    literal?: boolean,
+    strict?: boolean,
+  ): Expr;
   /**
    * Decodes a value using the provided encoding
    * @param encoding - hex | base64
@@ -321,8 +351,8 @@ export const ExprStringFunctions = (_expr: any): StringNamespace => {
     concat(delimiter: string, ignoreNulls = true) {
       return wrap("strConcat", delimiter, ignoreNulls);
     },
-    contains(pat: string | RegExp) {
-      return wrap("strContains", regexToString(pat), false);
+    contains(pat: string | Expr, literal = false, strict = true) {
+      return wrap("strContains", exprToLitOrExpr(pat)._expr, literal, strict);
     },
     decode(arg, strict = false) {
       if (typeof arg === "string") {

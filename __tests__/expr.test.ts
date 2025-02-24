@@ -1034,7 +1034,19 @@ describe("expr.str", () => {
     expect(actual).toFrameEqual(expected);
     expect(seriesActual).toSeriesEqual(expected.getColumn("isLinux"));
   });
-
+  test("contains:expr", () => {
+    const df = pl.DataFrame({
+      os: ["linux-kali", "linux-debian", "windows-vista"],
+      name: ["kali", "debian", "macos"],
+    });
+    const expected = df.withColumn(
+      pl.Series("isLinux", [true, true, false], pl.Bool),
+    );
+    const actual = df.withColumn(
+      col("os").str.contains(pl.col("name")).as("isLinux"),
+    );
+    expect(actual).toFrameEqual(expected);
+  });
   test("contains:regex", () => {
     const df = pl.DataFrame({
       a: ["Foo", "foo", "FoO"],
@@ -1050,7 +1062,19 @@ describe("expr.str", () => {
     expect(actual).toFrameEqual(expected);
     expect(seriesActual).toSeriesEqual(expected.getColumn("contains"));
   });
-
+  test("contains:regex2", () => {
+    const df = pl.DataFrame({ txt: ["Crab", "cat and dog", "rab$bit", null] });
+    const actual = df.select(
+      pl.col("txt"),
+      pl.col("txt").str.contains("cat|bit").alias("regex"),
+      pl.col("txt").str.contains("rab$", true).alias("literal"),
+    );
+    const expected = df.withColumns(
+      pl.Series("regex", [false, true, true, null], pl.Bool),
+      pl.Series("literal", [false, false, true, null], pl.Bool),
+    );
+    expect(actual).toFrameEqual(expected);
+  });
   test("split", () => {
     const df = pl.DataFrame({ a: ["ab,cd", "e,fg", "h"] });
     const expected = pl.DataFrame({
