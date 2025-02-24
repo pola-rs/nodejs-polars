@@ -325,6 +325,8 @@ impl JsLazyFrame {
                 right_by: right_by.map(strings_to_pl_smallstr),
                 tolerance: tolerance.map(|t| t.0.into_static()),
                 tolerance_str: tolerance_str.map(|s| s.into()),
+                allow_eq: true,
+                check_sortedness: true,
             }))
             .suffix(suffix)
             .finish()

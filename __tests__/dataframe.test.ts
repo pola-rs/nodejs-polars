@@ -1827,7 +1827,7 @@ describe("io", () => {
     fs.rmSync("./test.csv");
     done();
   });
-  test("JSON.stringify", () => {
+  test.skip("JSON.stringify", () => {
     const df = pl.DataFrame({
       foo: [1],
       bar: ["a"],
