@@ -1067,12 +1067,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/node@npm:^22.13.4":
-  version: 22.13.4
-  resolution: "@types/node@npm:22.13.4"
+"@types/node@npm:^22.13.8":
+  version: 22.13.8
+  resolution: "@types/node@npm:22.13.8"
   dependencies:
     undici-types: "npm:~6.20.0"
-  checksum: 10/716e05b1b84d9da3b2cbba9f642d7294549a89c85d27148b48815f321e0081d0546366e97d11c7710a3280160828512eb945f4e9361dda980f708473758ac0a7
+  checksum: 10/b69de3caab80336747bf41b5063478d23b196b9594c6f2eb819791380cc571676087dceb0fde9531ef7a1293f3eae12a9aaf79d8de349378c29a17c5e657bc78
   languageName: node
   linkType: hard
 
@@ -3134,14 +3134,14 @@ __metadata:
     "@napi-rs/cli": "npm:^2.18.4"
     "@types/chance": "npm:^1.1.6"
     "@types/jest": "npm:^29.5.14"
-    "@types/node": "npm:^22.13.4"
+    "@types/node": "npm:^22.13.8"
     chance: "npm:^1.1.12"
     jest: "npm:^29.7.0"
     source-map-support: "npm:^0.5.21"
-    ts-jest: "npm:^29.2.5"
+    ts-jest: "npm:^29.2.6"
     ts-node: "npm:^10.9.2"
-    typedoc: "npm:^0.27.7"
-    typescript: "npm:5.7.3"
+    typedoc: "npm:^0.27.9"
+    typescript: "npm:5.8.2"
   languageName: unknown
   linkType: soft
 
@@ -3474,12 +3474,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"semver@npm:^7.6.3":
-  version: 7.6.3
-  resolution: "semver@npm:7.6.3"
+"semver@npm:^7.7.1":
+  version: 7.7.1
+  resolution: "semver@npm:7.7.1"
   bin:
     semver: bin/semver.js
-  checksum: 10/36b1fbe1a2b6f873559cd57b238f1094a053dbfd997ceeb8757d79d1d2089c56d1321b9f1069ce263dc64cfa922fa1d2ad566b39426fe1ac6c723c1487589e10
+  checksum: 10/4cfa1eb91ef3751e20fc52e47a935a0118d56d6f15a837ab814da0c150778ba2ca4f1a4d9068b33070ea4273629e615066664c2cfcd7c272caf7a8a0f6518b2c
   languageName: node
   linkType: hard
 
@@ -3767,9 +3767,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ts-jest@npm:^29.2.5":
-  version: 29.2.5
-  resolution: "ts-jest@npm:29.2.5"
+"ts-jest@npm:^29.2.6":
+  version: 29.2.6
+  resolution: "ts-jest@npm:29.2.6"
   dependencies:
     bs-logger: "npm:^0.2.6"
     ejs: "npm:^3.1.10"
@@ -3778,7 +3778,7 @@ __metadata:
     json5: "npm:^2.2.3"
     lodash.memoize: "npm:^4.1.2"
     make-error: "npm:^1.3.6"
-    semver: "npm:^7.6.3"
+    semver: "npm:^7.7.1"
     yargs-parser: "npm:^21.1.1"
   peerDependencies:
     "@babel/core": ">=7.0.0-beta.0 <8"
@@ -3800,7 +3800,7 @@ __metadata:
       optional: true
   bin:
     ts-jest: cli.js
-  checksum: 10/f89e562816861ec4510840a6b439be6145f688b999679328de8080dc8e66481325fc5879519b662163e33b7578f35243071c38beb761af34e5fe58e3e326a958
+  checksum: 10/9cb6804266be7c9384cecace346f65d2ab5a685d252c5275b53b5958f6545951328a5c4d48c49c5f92d1e04187ca31e348e5a3540d20cb365c33d1eb89371e22
   languageName: node
   linkType: hard
 
@@ -3856,9 +3856,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"typedoc@npm:^0.27.7":
-  version: 0.27.7
-  resolution: "typedoc@npm:0.27.7"
+"typedoc@npm:^0.27.9":
+  version: 0.27.9
+  resolution: "typedoc@npm:0.27.9"
   dependencies:
     "@gerrit0/mini-shiki": "npm:^1.24.0"
     lunr: "npm:^2.3.9"
@@ -3866,30 +3866,30 @@ __metadata:
     minimatch: "npm:^9.0.5"
     yaml: "npm:^2.6.1"
   peerDependencies:
-    typescript: 5.0.x || 5.1.x || 5.2.x || 5.3.x || 5.4.x || 5.5.x || 5.6.x || 5.7.x
+    typescript: 5.0.x || 5.1.x || 5.2.x || 5.3.x || 5.4.x || 5.5.x || 5.6.x || 5.7.x || 5.8.x
   bin:
     typedoc: bin/typedoc
-  checksum: 10/9636b8d5472614463425326c23e824a970cd20a08081756b9eedd37d238307279ad256df02bce90f14e2c2cef0417f0dc011a8dd735d65d167f0e2e95c78ecef
+  checksum: 10/fb1e4b54849cad1628543fb24863358320b737aabba83194562360cfbcaac8684b2b18824fd623bb27a9e8dbbc0e01c0b88fedd9a642d78e7a3c108387e44d25
   languageName: node
   linkType: hard
 
-"typescript@npm:5.7.3":
-  version: 5.7.3
-  resolution: "typescript@npm:5.7.3"
+"typescript@npm:5.8.2":
+  version: 5.8.2
+  resolution: "typescript@npm:5.8.2"
   bin:
     tsc: bin/tsc
     tsserver: bin/tsserver
-  checksum: 10/6a7e556de91db3d34dc51cd2600e8e91f4c312acd8e52792f243c7818dfadb27bae677175fad6947f9c81efb6c57eb6b2d0c736f196a6ee2f1f7d57b74fc92fa
+  checksum: 10/dbc2168a55d56771f4d581997be52bab5cbc09734fec976cfbaabd787e61fb4c6cf9125fd48c6f98054ce549c77ecedefc7f64252a830dd8e9c3381f61fbeb78
   languageName: node
   linkType: hard
 
-"typescript@patch:typescript@npm%3A5.7.3#optional!builtin<compat/typescript>":
-  version: 5.7.3
-  resolution: "typescript@patch:typescript@npm%3A5.7.3#optional!builtin<compat/typescript>::version=5.7.3&hash=5786d5"
+"typescript@patch:typescript@npm%3A5.8.2#optional!builtin<compat/typescript>":
+  version: 5.8.2
+  resolution: "typescript@patch:typescript@npm%3A5.8.2#optional!builtin<compat/typescript>::version=5.8.2&hash=5786d5"
   bin:
     tsc: bin/tsc
     tsserver: bin/tsserver
-  checksum: 10/dc58d777eb4c01973f7fbf1fd808aad49a0efdf545528dab9b07d94fdcb65b8751742804c3057e9619a4627f2d9cc85547fdd49d9f4326992ad0181b49e61d81
+  checksum: 10/97920a082ffc57583b1cb6bc4faa502acc156358e03f54c7fc7fdf0b61c439a717f4c9070c449ee9ee683d4cfc3bb203127c2b9794b2950f66d9d307a4ff262c
   languageName: node
   linkType: hard
 
