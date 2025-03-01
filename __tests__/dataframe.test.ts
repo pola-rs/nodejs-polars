@@ -44,7 +44,7 @@ describe("dataframe", () => {
     const actual = expected.clone();
     expect(actual).toFrameEqual(expected);
   });
-  test.skip("describe", () => {
+  test("describe", () => {
     const actual = pl
       .DataFrame({
         a: [1, 2, 3],
@@ -1827,28 +1827,14 @@ describe("io", () => {
     fs.rmSync("./test.csv");
     done();
   });
-  test.skip("JSON.stringify", () => {
+  test("JSON.stringify", () => {
     const df = pl.DataFrame({
-      foo: [1],
-      bar: ["a"],
+      foo: [1, 2, 3],
+      bar: ["a", "b", "c"],
     });
-    const expected = JSON.stringify({
-      columns: [
-        {
-          name: "foo",
-          datatype: "Float64",
-          bit_settings: "",
-          values: [1.0],
-        },
-        {
-          name: "bar",
-          datatype: "String",
-          bit_settings: "",
-          values: ["a"],
-        },
-      ],
-    });
-    const actual = JSON.stringify(df);
+    const expected =
+      '[{"foo":1.0,"bar":"a"},{"foo":2.0,"bar":"b"},{"foo":3.0,"bar":"c"}]';
+    const actual = df.toJSON();
     expect(actual).toEqual(expected);
   });
   test("toRecords", () => {

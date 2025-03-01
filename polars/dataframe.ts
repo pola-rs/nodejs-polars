@@ -2536,13 +2536,8 @@ export const _DataFrame = (_df: any): DataFrame => {
     toRecords() {
       return _df.toObjects();
     },
-    toJSON(...args: any[]) {
-      // this is passed by `JSON.stringify` when calling `toJSON()`
-      if (args[0] === "") {
-        return _df.toJs();
-      }
-
-      return _df.serialize("json").toString();
+    toJSON() {
+      return _df.toJson().toString();
     },
     toHTML(): string {
       let htmlTable = "<table>";

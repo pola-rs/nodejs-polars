@@ -481,6 +481,20 @@ impl JsDataFrame {
     }
 
     #[napi(catch_unwind)]
+    pub fn to_json(&self) -> napi::Result<Buffer> {
+        let mut file_like = BufWriter::new(Vec::new());
+
+        JsonWriter::new(&mut file_like)
+            .with_json_format(JsonFormat::Json)
+            .finish(&mut self.df.clone())
+            .map_err(|err| napi::Error::from_reason(format!("{:?}", err)))?;
+
+        Ok(Buffer::from(
+            String::from_utf8(file_like.into_inner().unwrap()).unwrap(),
+        ))
+    }
+
+    #[napi(catch_unwind)]
     pub fn serialize(&self, format: String) -> napi::Result<Buffer> {
         let buf = match format.as_ref() {
             "bincode" => bincode::serialize(&self.df)
