@@ -1,3 +1,6 @@
+import { LazyDataFrame } from "./lazy/dataframe";
+import { DataFrame } from ".";
+
 /**
  * Downsample rules
  */

@@ -1484,7 +1484,7 @@ export interface DataFrame<T extends Record<string, Series> = any>
    * Sort the DataFrame by column.
    * ___
    * @param by - Column(s) to sort by. Accepts expression input, including selectors. Strings are parsed as column names.
-   * @param reverse - Reverse/descending sort.
+   * @param @deprecated reverse - Reverse/descending sort. Use {@link param.descending} instead
    * @param descending - Sort in descending order. When sorting by multiple columns, can be specified per column by passing a sequence of booleans.
    * @param nullsLast - Place null values last; can specify a single boolean applying to all columns or a sequence of booleans for per-column control.
    * @param maintainOrder - Whether the order should be maintained if elements are equal.
@@ -2022,9 +2022,7 @@ function mapPolarsTypeToJSONSchema(colType: DataType): string {
   return typeMapping[dataType] || "string";
 }
 
-/**
- * @ignore
- */
+/** @ignore */
 export const _DataFrame = (_df: any): DataFrame => {
   const unwrap = (method: string, ...args: any[]) => {
     return _df[method as any](...args);

@@ -128,8 +128,7 @@ export interface Series<T extends DataType = any, Name extends string = string>
   /**
    * Get the index values that would sort this Series.
    * ___
-   * @deprecated *since 0.16.0* Use {@link descending} instead
-   * @param reverse - Reverse/descending sort.
+   * @param @deprecated reverse - Reverse/descending sort. Use {@link param.descending} instead
    * @param descending - Sort in descending order.
    * @param nullsLast - Place null values last instead of first.
    * @return {SeriesType} indexes - Indexes that can be used to sort this array.
@@ -717,9 +716,8 @@ export interface Series<T extends DataType = any, Name extends string = string>
   quantile(quantile: number, interpolation?: string): number;
   /**
    * Assign ranks to data, dealing with ties appropriately.
-   * @param method
    * The method used to assign ranks to tied elements.
-   * @param method: {'average', 'min', 'max', 'dense', 'ordinal', 'random'}
+   * @param method {'average', 'min', 'max', 'dense', 'ordinal', 'random'}
    * The following methods are available: _default is 'average'_
    *
    *  *   __'average'__: The average of the ranks that would have been assigned to
@@ -872,10 +870,9 @@ export interface Series<T extends DataType = any, Name extends string = string>
   slice(start: number, length?: number): Series;
   /**
    * __Sort this Series.__
-   * @deprecated *since 0.16.0* Use {@link descending} instead
-   * @param reverse - Reverse/descending sort.
-   * @param descending - Sort in descending order.
-   * @param nullsLast - Place nulls at the end.
+   * @param @deprecated options.reverse - Reverse/descending sort. Use {@link param.descending} instead
+   * @param options.descending - Sort in descending order.
+   * @param options.nullsLast - Place nulls at the end.
    * @example
    * ```
    * s = pl.Series("a", [1, 3, 4, 2])
@@ -1121,7 +1118,7 @@ export interface Series<T extends DataType = any, Name extends string = string>
   /** Returns an iterator over the values */
   values(): IterableIterator<any>;
 }
-
+/** @ignore */
 export function _Series(_s: any): Series {
   const unwrap = (method: keyof any, ...args: any[]) => {
     return _s[method as any](...args);

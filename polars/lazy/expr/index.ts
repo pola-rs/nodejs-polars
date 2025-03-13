@@ -1137,7 +1137,7 @@ export interface Expr
   /** Alias for filter: @see {@link filter} */
   where(predicate: Expr): Expr;
 }
-
+/** @ignore */
 export const _Expr = (_expr: any): Expr => {
   const unwrap = (method: string, ...args: any[]) => {
     return _expr[method as any](...args);
