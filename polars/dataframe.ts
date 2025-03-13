@@ -1253,7 +1253,7 @@ export interface DataFrame<T extends Record<string, Series> = any>
   /**
    * Replace a column at an index location.
    *
-   * @warning typescript cannot encode type mutation,
+   * Warning: typescript cannot encode type mutation,
    * so the type of the DataFrame will be incorrect. cast the type of dataframe manually.
    * ___
    * @param index - Column index
@@ -1501,7 +1501,7 @@ export interface DataFrame<T extends Record<string, Series> = any>
     maintainOrder,
   }: {
     by: ColumnsOrExpr;
-    /** @deprecated *since 0.16.0* @use descending */
+    /** @deprecated *since 0.16.0* Use {@link descending} instead */
     reverse?: boolean; // deprecated
     nullsLast?: boolean;
     maintainOrder?: boolean;

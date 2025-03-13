@@ -121,13 +121,14 @@ Install the latest polars version with:
 ```sh
 $ yarn add nodejs-polars # yarn
 $ npm i -s nodejs-polars # npm
+$ bun i -D nodejs-polars # Bun
 ```
 
 Releases happen quite often (weekly / every few days) at the moment, so updating polars regularly to get the latest bugfixes / features might not be a bad idea.
 
 ### Minimum Requirements
 - Node version `>=18`
-- Rust version `>=1.59` - *Only needed for development*
+- Rust version `>=1.86` - *Only needed for development*
 
 
 ## Deno
@@ -142,7 +143,7 @@ With Deno 1.37, you can use the `display` function to display a `DataFrame` in t
 
 ```typescript
 import pl from "npm:nodejs-polars";
-import { display } from "https://deno.land/x/display@v1.1.1/mod.ts";
+import { display } from "https://deno.land/x/display@v1.1.2/mod.ts";
 
 let response = await fetch(
   "https://cdn.jsdelivr.net/npm/world-atlas@1/world/110m.tsv",
@@ -171,24 +172,22 @@ ___
 
 ## Documentation
 
-Want to know about all the features Polars supports? Read the docs!
+Want to know about all the features Polars supports? Read the [docs](https://docs.pola.rs)!
 
 #### Python
 
 - Installation guide: `$ pip3 install polars`
 - [Python documentation](https://pola-rs.github.io/polars/py-polars/html/reference/index.html)
-- [User guide](https://pola-rs.github.io/polars-book/)
+- [User guide](https://docs.pola.rs)
 
 #### Rust
 
-- [Rust documentation (master branch)](https://pola-rs.github.io/polars/polars/index.html)
-- [User guide](https://pola-rs.github.io/polars-book/)
+- [Rust documentation](https://docs.rs/polars/latest/polars/)
 
 #### Node
 
   * Installation guide: `$ yarn install nodejs-polars`
   * [Node documentation](https://pola-rs.github.io/nodejs-polars/)
-  * [User guide](https://pola-rs.github.io/polars-book/)
 
 ## Contribution
 

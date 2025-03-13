@@ -714,7 +714,7 @@ export interface ListFunctions<T> {
   slice(offset: number, length: number): T;
   /**
    * Sort the sublists.
-   * @deprecated *since 0.16.0* @use descending
+   * @deprecated *since 0.16.0* Use {@link descending} instead
    * @param reverse - Reverse/descending sort.
    * @param descending - Sort in reverse order.
    * @category List
@@ -1216,7 +1216,7 @@ export interface EwmOps<T> {
    *       - When ``ignoreNulls: false`` (default), weights are based on absolute positions.
    *       - When ``ignoreNulls: true``, weights are based on relative positions.
    * @returns Expr that evaluates to a float 64 Series.
-   * @examples
+   * @example
    * ```
    * > const df = pl.DataFrame({a: [1, 2, 3]});
    * > df.select(pl.col("a").ewmMean())
@@ -1261,7 +1261,7 @@ export interface EwmOps<T> {
    *         For example, the weights of :math:`x_0` and :math:`x_2` used in calculating the final weighted average of
    *       - When ``ignoreNulls: true``, weights are based on relative positions.
    * @returns Expr that evaluates to a float 64 Series.
-   * @examples
+   * @example
    * ```
    * > const df = pl.DataFrame({a: [1, 2, 3]});
    * > df.select(pl.col("a").ewmStd())
@@ -1305,7 +1305,7 @@ export interface EwmOps<T> {
    *       - When ``ignoreNulls: false`` (default), weights are based on absolute positions.
    *       - When ``ignoreNulls=true``, weights are based on relative positions.
    * @returns Expr that evaluates to a float 64 Series.
-   * @examples
+   * @example
    * ```
    * > const df = pl.DataFrame({a: [1, 2, 3]});
    * > df.select(pl.col("a").ewmVar())

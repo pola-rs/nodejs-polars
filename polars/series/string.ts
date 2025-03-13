@@ -149,7 +149,7 @@ export interface StringNamespace extends StringFunctions<Series> {
    * If string is longer or equal to given length no modifications will be done
    * @param {number} length  - of the final string
    * @param {string} fillChar  - that will fill the string.
-   * @note If a string longer than 1 character is provided only the first character will be used
+   * If a string longer than 1 character is provided only the first character will be used
    * @example
    * ```
    * > df = pl.DataFrame({

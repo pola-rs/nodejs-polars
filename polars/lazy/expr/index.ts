@@ -257,8 +257,6 @@ export interface Expr
   argMin(): Expr;
   /**
    * Get the index values that would sort this column.
-   * @deprecated *since 0.16.0* @use descending
-   * @param reverse - Reverse/descending sort.
    * @param descending
    *     - false -> order from small to large.
    *     - true -> order from large to small.
@@ -738,8 +736,8 @@ export interface Expr
   quantile(quantile: number | Expr): Expr;
   /**
    * Assign ranks to data, dealing with ties appropriately.
-   * @param - method : {'average', 'min', 'max', 'dense', 'ordinal', 'random'}
-   * @param - descending - Rank in descending order.
+   * @param method : {'average', 'min', 'max', 'dense', 'ordinal', 'random'}
+   * @param descending - Rank in descending order.
    * */
   rank(method?: RankMethod, descending?: boolean): Expr;
   rank({ method, descending }: { method: string; descending: boolean }): Expr;
@@ -1040,8 +1038,6 @@ export interface Expr
   }: { offset: number | Expr; length: number | Expr }): Expr;
   /**
    * Sort this column. In projection/ selection context the whole column is sorted.
-   * @deprecated *since 0.16.0* @use descending
-   * @param reverse - Reverse/descending sort.
    * @param descending
    * * false -> order from small to large.
    * * true -> order from large to small.
@@ -1064,8 +1060,6 @@ export interface Expr
       Parameters
       ----------
       @param by The column(s) used for sorting.
-      @deprecated *since 0.16.0* @use descending
-      @param reverse - Reverse/descending sort.
       @param descending
           false -> order from small to large.
           true -> order from large to small.
@@ -1088,7 +1082,6 @@ export interface Expr
   suffix(suffix: string): Expr;
   /**
    * Get sum value.
-   * @note
    * Dtypes in {Int8, UInt8, Int16, UInt16} are cast to Int64 before summing to prevent overflow issues.
    */
   sum(): Expr;

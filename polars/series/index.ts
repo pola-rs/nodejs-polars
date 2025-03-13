@@ -128,7 +128,7 @@ export interface Series<T extends DataType = any, Name extends string = string>
   /**
    * Get the index values that would sort this Series.
    * ___
-   * @deprecated *since 0.16.0* @use descending
+   * @deprecated *since 0.16.0* Use {@link descending} instead
    * @param reverse - Reverse/descending sort.
    * @param descending - Sort in descending order.
    * @param nullsLast - Place null values last instead of first.
@@ -872,7 +872,7 @@ export interface Series<T extends DataType = any, Name extends string = string>
   slice(start: number, length?: number): Series;
   /**
    * __Sort this Series.__
-   * @deprecated *since 0.16.0* @use descending
+   * @deprecated *since 0.16.0* Use {@link descending} instead
    * @param reverse - Reverse/descending sort.
    * @param descending - Sort in descending order.
    * @param nullsLast - Place nulls at the end.
