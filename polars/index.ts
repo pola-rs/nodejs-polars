@@ -146,9 +146,8 @@ export namespace pl {
   /**
    * Run SQL queries against DataFrame/LazyFrame data.
    *
-   * @warning This functionality is considered **unstable**, although it is close to being
-   * considered stable. It may be changed at any point without it being considered
-   * a breaking change.
+   * @experimental This functionality is considered **unstable**, although it is close to being
+   * considered stable. It may be changed at any point without it being considered a breaking change.
    */
   export function SQLContext(
     frames?: Record<string, DataFrame | LazyDataFrame>,
@@ -290,9 +289,8 @@ export const Decimal = DataType.Decimal;
 /**
  * Run SQL queries against DataFrame/LazyFrame data.
  *
- * @warning This functionality is considered **unstable**, although it is close to being
- * considered stable. It may be changed at any point without it being considered
- * a breaking change.
+ * @experimental This functionality is considered **unstable**, although it is close to being
+ * considered stable. It may be changed at any point without it being considered a breaking change.
  */
 export function SQLContext(
   frames?: Record<string, DataFrame | LazyDataFrame>,

@@ -141,7 +141,6 @@ export interface StringNamespace extends StringFunctions<Expr> {
   /**
   * Parse string values as JSON.
   * Throw errors if encounter invalid JSON strings.
-  * @params Not implemented ATM
   * @returns DF with struct
   * @example
 
@@ -214,7 +213,7 @@ export interface StringNamespace extends StringFunctions<Expr> {
    * If string is longer or equal to given length no modifications will be done
    * @param {number} length  - of the final string
    * @param {string} fillChar  - that will fill the string.
-   * @note If a string longer than 1 character is provided only the first character will be used
+   * If a string longer than 1 character is provided only the first character will be used
    * @example
    * ```
    * > df = pl.DataFrame({
@@ -279,7 +278,7 @@ export interface StringNamespace extends StringFunctions<Expr> {
    * If string is longer or equal to given length no modifications will be done
    * @param {number} length  - of the final string
    * @param {string} fillChar  - that will fill the string.
-   * @note If a string longer than 1 character is provided only the first character will be used
+   * If a string longer than 1 character is provided only the first character will be used
    *    * @example
    * ```
    * > df = pl.DataFrame({
