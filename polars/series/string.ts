@@ -6,9 +6,9 @@ import { regexToString } from "../utils";
 import { type Expr, exprToLitOrExpr } from "./../lazy/expr/index";
 
 /**
- * namespace containing series string functions
+ * String functions for Series
  */
-export interface StringNamespace extends StringFunctions<Series> {
+export interface SeriesStringFunctions extends StringFunctions<Series> {
   /**
    * Vertically concat the values in the Series to a single string value.
    * @example
@@ -26,32 +26,20 @@ export interface StringNamespace extends StringFunctions<Series> {
    * @returns Boolean mask
    * @example
    * ```
-   * const df = pl.DataFrame({"txt": ["Crab", "cat and dog", "rab$bit", null]})
-   * df.select(
-   * ...     pl.col("txt"),
-   * ...     pl.col("txt").str.contains("cat|bit").alias("regex"),
-   * ...     pl.col("txt").str.contains("rab$", true).alias("literal"),
-   * ... )
-   * shape: (4, 3)
-   * ┌─────────────┬───────┬─────────┐
-   * │ txt         ┆ regex ┆ literal │
-   * │ ---         ┆ ---   ┆ ---     │
-   * │ str         ┆ bool  ┆ bool    │
-   * ╞═════════════╪═══════╪═════════╡
-   * │ Crab        ┆ false ┆ false   │
-   * │ cat and dog ┆ true  ┆ false   │
-   * │ rab$bit     ┆ true  ┆ true    │
-   * │ null        ┆ null  ┆ null    │
-   * └─────────────┴───────┴─────────┘
+   * > pl.Series(["Crab", "cat and dog", "rab$bit", null]).str.contains("cat|bit")
+   * shape: (4,)
+   * Series: '' [bool]
+   * [
+        false
+        true
+        true
+        null
+   * ]
    * ```
    */
-  contains(
-    pat: string | RegExp | Expr,
-    literal?: boolean,
-    strict?: boolean,
-  ): Series;
+  contains(pat: string | RegExp, literal?: boolean, strict?: boolean): Series;
   /**
-   * Decodes a value using the provided encoding
+   * Decodes a value in Series using the provided encoding
    * @param encoding - hex | base64
    * @param strict - how to handle invalid inputs
    *
@@ -73,7 +61,7 @@ export interface StringNamespace extends StringFunctions<Series> {
   decode(encoding: "hex" | "base64", strict?: boolean): Series;
   decode(options: { encoding: "hex" | "base64"; strict?: boolean }): Series;
   /**
-   * Encodes a value using the provided encoding
+   * Encodes a value in Series using the provided encoding
    * @param encoding - hex | base64
    * @example
    * ```
@@ -119,9 +107,9 @@ export interface StringNamespace extends StringFunctions<Series> {
    * └─────────┘
    * ```
    */
-  extract(pattern: any, groupIndex: number): Series;
+  extract(pattern: string | RegExp, groupIndex: number): Series;
   /***
-   * Parse string values as JSON.
+   * Parse string values in Series as JSON.
    * @returns Utf8 array. Contain null if original value is null or the `jsonPath` return nothing.
    * @example
    * s = pl.Series("json", ['{"a":1, "b": true}', null, '{"a":2, "b": false}']);
@@ -136,7 +124,7 @@ export interface StringNamespace extends StringFunctions<Series> {
    */
   jsonDecode(dtype?: DataType, inferSchemaLength?: number): Series;
   /**
-   * Extract the first match of json string with provided JSONPath expression.
+   * Extract the first match of json string in Series with provided JSONPath expression.
    * Throw errors if encounter invalid json strings.
    * All return value will be casted to Utf8 regardless of the original value.
    * @see https://goessner.net/articles/JsonPath/
@@ -166,12 +154,23 @@ export interface StringNamespace extends StringFunctions<Series> {
    * ```
    */
   jsonPathMatch(jsonPath: string): Series;
-  /**  Get length of the string values in the Series. */
+  /**  Get number of chars of the string values in Series.
+   * df = pl.Series(["Café", "345", "東京", null])
+   *    .str.lengths().alias("n_chars")
+   * shape: (4,)
+   * Series: 'n_chars' [u32]
+   * [
+   *      4
+   *      3
+   *      2
+   *      null
+   * ]
+   */
   lengths(): Series;
-  /** Remove leading whitespace. */
+  /** Remove leading whitespace of the string values in Series. */
   lstrip(): Series;
   /**
-   *  Add a leading fillChar to a string until string length is reached.
+   *  Add a leading fillChar to a string in Series until string length is reached.
    * If string is longer or equal to given length no modifications will be done
    * @param {number} length  - of the final string
    * @param {string} fillChar  - that will fill the string.
@@ -237,16 +236,35 @@ export interface StringNamespace extends StringFunctions<Series> {
   /** Add trailing zeros */
   padEnd(length: number, fillChar: string): Series;
   /**
-   * Replace first regex match with a string value.
-   * @param pattern A valid regex pattern
+   * Replace first regex match with a string value in Series.
+   * @param pattern A valid regex pattern or string
    * @param value Substring to replace.
+   * @example
+   * ```
+   * df = pl.Series(["#12.34", "#56.78"]).str.replace(/#(\d+)/, "$$$1")
+   * shape: (2,)
+   * Series: '' [str]
+   * [
+   *        "$12.34"
+   *        "$56.78"
+   * ]
+   * ```
    */
   replace(pattern: string | RegExp, value: string): Series;
-
   /**
-   * Replace all regex matches with a string value.
-   * @param pattern - A valid regex pattern
+   * Replace all regex matches with a string value in Series.
+   * @param pattern - A valid regex pattern or string
    * @param value Substring to replace.
+   * @example
+   * ```
+   * df = pl.Series(["abcabc", "123a123"]).str.replaceAll("a", "-");
+   * shape: (2,)
+   * Series: '' [str]
+   * [
+   *         "-bc-bc"
+   *         "123-123"
+   * ]
+   * ```
    */
   replaceAll(pattern: string | RegExp, value: string): Series;
   /** Modify the strings to their lowercase equivalent. */
@@ -280,7 +298,7 @@ export interface StringNamespace extends StringFunctions<Series> {
   strptime(datatype: typeof DataType.Datetime, fmt?: string): Series;
 }
 
-export const SeriesStringFunctions = (_s: any): StringNamespace => {
+export const SeriesStringFunctions = (_s: any): SeriesStringFunctions => {
   const wrap = (method, ...args): any => {
     const ret = _s[method](...args);
 
@@ -305,7 +323,7 @@ export const SeriesStringFunctions = (_s: any): StringNamespace => {
         .select(col(_s.name).str.concat(delimiter, ignoreNulls).as(_s.name))
         .getColumn(_s.name);
     },
-    contains(pat: string | RegExp | Expr, literal = false, strict = true) {
+    contains(pat: string | RegExp, literal = false, strict = true) {
       return wrap("strContains", regexToString(pat as RegExp), literal, strict);
     },
     decode(arg, strict = false) {
@@ -356,11 +374,11 @@ export const SeriesStringFunctions = (_s: any): StringNamespace => {
     padEnd(length: number, fillChar: string) {
       return wrap("strPadEnd", length, fillChar);
     },
-    replace(pat: RegExp, val: string) {
-      return wrap("strReplace", regexToString(pat), val);
+    replace(pat: string | RegExp, val: string) {
+      return wrap("strReplace", regexToString(pat as RegExp), val);
     },
-    replaceAll(pat: RegExp, val: string) {
-      return wrap("strReplaceAll", regexToString(pat), val);
+    replaceAll(pat: string | RegExp, val: string) {
+      return wrap("strReplaceAll", regexToString(pat as RegExp), val);
     },
     rstrip() {
       return wrap("strReplace", /[ \t]+$/.source, "");
