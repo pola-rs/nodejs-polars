@@ -2,7 +2,7 @@ import * as dt from "./datetime";
 import * as lst from "./list";
 import * as str from "./string";
 import * as struct from "./struct";
-export type { StringNamespace } from "./string";
+export type { ExprString as StringNamespace } from "./string";
 export type { ExprList as ListNamespace } from "./list";
 export type { ExprDateTime as DatetimeNamespace } from "./datetime";
 export type { ExprStruct as StructNamespace } from "./struct";
@@ -53,7 +53,7 @@ export interface Expr
   /**
    * String namespace
    */
-  get str(): str.StringNamespace;
+  get str(): str.ExprString;
   /**
    * List namespace
    */
@@ -471,6 +471,7 @@ export interface Expr
   /** Take the first n values.  */
   head(length?: number): Expr;
   head({ length }: { length: number }): Expr;
+  implode(): Expr;
   inner(): any;
   /** Interpolate intermediate values. The interpolation method is linear. */
   interpolate(): Expr;
@@ -1527,6 +1528,9 @@ export const _Expr = (_expr: any): Expr => {
       }
 
       return wrap("head", length.length);
+    },
+    implode() {
+      return _Expr(_expr.implode());
     },
     interpolate(method: InterpolationMethod = "linear") {
       return _Expr(_expr.interpolate(method));
