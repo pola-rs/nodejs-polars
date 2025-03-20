@@ -5,9 +5,11 @@ import { Expr, _Expr, exprToLitOrExpr } from "../expr";
 import { concatList } from "../functions";
 
 /**
- * namespace containing expr list functions
+ * List functions for Lazy dataframes
  */
-export type ExprList = ListFunctions<Expr>;
+export interface ExprList extends ListFunctions<Expr> {}
+// export interface ListNamespace extends ListFunctions<Expr> {}
+
 export const ExprListFunctions = (_expr: any): ExprList => {
   const wrap = (method, ...args: any[]): Expr => {
     return _Expr(_expr[method](...args));

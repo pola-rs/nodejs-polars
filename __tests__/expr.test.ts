@@ -261,6 +261,18 @@ describe("expr", () => {
     const actual = df.select(col("nrs").explode());
     expect(actual).toFrameEqual(expected);
   });
+  test("implode", () => {
+    const df = pl.DataFrame({
+      nrs: [1, 2, 1, 3],
+      strs: ["a", "b", null, "d"],
+    });
+    const expected = pl.DataFrame({
+      nrs: [[1, 2, 1, 3]],
+      strs: [["a", "b", null, "d"]],
+    });
+    const actual = df.select(col("nrs").implode(), col("strs").implode());
+    expect(actual).toFrameEqual(expected);
+  });
   test("extend", () => {
     const df = pl.DataFrame({
       a: [1, 2, 3, 4, 5],
@@ -1075,6 +1087,56 @@ describe("expr.str", () => {
     );
     expect(actual).toFrameEqual(expected);
   });
+  test("endsWith", () => {
+    const df = pl.DataFrame({
+      fruits: ["apple", "mango", null],
+    });
+    const expected = df.withColumn(
+      pl.Series("has_suffix", [false, true, null], pl.Bool),
+    );
+    const actual = df.withColumn(
+      col("fruits").str.endsWith("go").as("has_suffix"),
+    );
+    expect(actual).toFrameEqual(expected);
+  });
+  test("endsWith:expr", () => {
+    const df = pl.DataFrame({
+      fruits: ["apple", "mango", "banana"],
+      suffix: ["le", "go", "nu"],
+    });
+    const expected = df.withColumn(
+      pl.Series("has_suffix", [true, true, false], pl.Bool),
+    );
+    const actual = df.withColumn(
+      col("fruits").str.endsWith(pl.col("suffix")).as("has_suffix"),
+    );
+    expect(actual).toFrameEqual(expected);
+  });
+  test("startsWith", () => {
+    const df = pl.DataFrame({
+      fruits: ["apple", "mango", null],
+    });
+    const expected = df.withColumn(
+      pl.Series("has_prefix", [true, false, null], pl.Bool),
+    );
+    const actual = df.withColumn(
+      col("fruits").str.startsWith("app").as("has_prefix"),
+    );
+    expect(actual).toFrameEqual(expected);
+  });
+  test("startsWith:expr", () => {
+    const df = pl.DataFrame({
+      fruits: ["apple", "mango", "banana"],
+      prefix: ["app", "na", "ba"],
+    });
+    const expected = df.withColumn(
+      pl.Series("has_prefix", [true, false, true], pl.Bool),
+    );
+    const actual = df.withColumn(
+      col("fruits").str.startsWith(pl.col("prefix")).as("has_prefix"),
+    );
+    expect(actual).toFrameEqual(expected);
+  });
   test("split", () => {
     const df = pl.DataFrame({ a: ["ab,cd", "e,fg", "h"] });
     const expected = pl.DataFrame({
@@ -1196,10 +1258,10 @@ describe("expr.str", () => {
   });
   test("str.replace", () => {
     const df = pl.DataFrame({
-      os: ["kali-linux", "debian-linux", "ubuntu-linux", "mac-sierra"],
+      os: ["kali-linux", "debian-linux", null, "mac-sierra"],
     });
     const expected = pl.DataFrame({
-      os: ["kali:linux", "debian:linux", "ubuntu:linux", "mac:sierra"],
+      os: ["kali:linux", "debian:linux", null, "mac:sierra"],
     });
     const seriesActual = df
       .getColumn("os")
@@ -1210,6 +1272,48 @@ describe("expr.str", () => {
     expect(actual).toFrameEqual(expected);
     expect(seriesActual).toFrameEqual(expected);
   });
+  test("str.replace:Expr1", () => {
+    const df = pl.DataFrame({
+      os: ["kali-linux", "debian-linux", null, "mac-sierra"],
+      val: ["windows", "acorn", "atari", null],
+    });
+    const expected = pl.DataFrame({
+      os: ["kali-windows", "debian-acorn", null, null],
+    });
+    const actual = df.select(
+      col("os").str.replace("linux", col("val")).as("os"),
+    );
+    expect(actual).toFrameEqual(expected);
+  });
+  test("str.replace:Expr2", () => {
+    const df = pl.DataFrame({
+      cost: ["#12.34", "#56.78"],
+      text: ["123abc", "abc456"],
+    });
+    const expected = pl.DataFrame({
+      expr: ["123#12.34", "#56.78456"],
+    });
+    const actual = df.select(
+      col("text").str.replace("abc", pl.col("cost")).alias("expr"),
+    );
+    expect(actual).toFrameEqual(expected);
+  });
+  // TODO: Remove skip when polars-plan will support for "dynamic pattern length in 'str.replace' expressions"
+  test.skip("str.replace:Expr3", () => {
+    const df = pl.DataFrame({
+      os: ["kali-linux", "debian-linux", "ubuntu-linux", "mac-sierra"],
+      pat: ["linux", "linux", "linux", "mac"],
+      val: ["windows", "acorn", "atari", "arm"],
+    });
+    const expected = pl.DataFrame({
+      os: ["kali-windows", "debian-acorn", "ubuntu-atari", "arm-sierra"],
+    });
+    const actual = df.select(
+      col("os").str.replace(col("pat"), col("val")).as("os"),
+    );
+    expect(actual).toFrameEqual(expected);
+  });
+
   test("str.replaceAll", () => {
     const df = pl.DataFrame({
       os: [
@@ -1235,6 +1339,108 @@ describe("expr.str", () => {
     const actual = df.select(col("os").str.replaceAll("-", ":").as("os"));
     expect(actual).toFrameEqual(expected);
     expect(seriesActual).toFrameEqual(expected);
+  });
+  test("str.replaceAll:Expr", () => {
+    const df = pl.DataFrame({
+      os: [
+        "kali-linux-2021.3a",
+        null,
+        "ubuntu-linux-16.04",
+        "mac-sierra-10.12.1",
+      ],
+      val: [":", ":", null, "_"],
+    });
+    const expected = pl.DataFrame({
+      os: ["kali:linux:2021.3a", null, null, "mac_sierra_10.12.1"],
+    });
+    const actual = df.select(
+      col("os").str.replaceAll("-", col("val")).as("os"),
+    );
+    expect(actual).toFrameEqual(expected);
+  });
+  // TODO: Remove skip when polars-plan will support for "dynamic pattern length in 'str.replace' expressions"
+  test.skip("str.replaceAll:Expr2", () => {
+    const df = pl.DataFrame({
+      os: [
+        "kali-linux-2021.3a",
+        null,
+        "ubuntu-linux-16.04",
+        "mac-sierra-10.12.1",
+      ],
+      pat: ["-", "-", "-", "."],
+      val: [":", ":", null, "_"],
+    });
+    const expected = pl.DataFrame({
+      os: ["kali:linux:2021.3a", null, null, "mac-sierra-10_12_1"],
+    });
+    const actual = df.select(
+      col("os").str.replaceAll(col("pat"), col("val")).as("os"),
+    );
+    expect(actual).toFrameEqual(expected);
+  });
+  test("struct:field", () => {
+    const df = pl.DataFrame({
+      objs: [
+        { a: 1, b: 2.0, c: "abc" },
+        { a: 10, b: 20.0, c: "def" },
+      ],
+    });
+    const expected = pl.DataFrame({
+      b: [2.0, 20.0],
+      last: ["abc", "def"],
+    });
+    const actual = df.select(
+      col("objs").struct.field("b"),
+      col("objs").struct.field("c").as("last"),
+    );
+    expect(actual).toFrameStrictEqual(expected);
+  });
+  test("struct:nth", () => {
+    const df = pl.DataFrame({
+      objs: [
+        { a: 1, b: 2.0, c: "abc" },
+        { a: 10, b: 20.0, c: "def" },
+      ],
+    });
+    const expected = pl.DataFrame({
+      b: [2.0, 20.0],
+      last: ["abc", "def"],
+    });
+    const actual = df.select(
+      col("objs").struct.nth(1),
+      col("objs").struct.nth(2).as("last"),
+    );
+    expect(actual).toFrameStrictEqual(expected);
+  });
+  test("struct:withFields", () => {
+    const df = pl.DataFrame({
+      objs: [
+        { a: 1, b: 2.0, c: "abc" },
+        { a: 10, b: 20.0, c: "def" },
+      ],
+      more: ["text1", "text2"],
+      final: [100, null],
+    });
+    const expected = pl.DataFrame({
+      objs: [
+        { a: 1, b: 2.0, c: "abc", d: null, e: "text" },
+        { a: 10, b: 20.0, c: "def", d: null, e: "text" },
+      ],
+      new: [
+        { a: 1, b: 2.0, c: "abc", more: "text1", final: 100 },
+        { a: 10, b: 20.0, c: "def", more: "text2", final: null },
+      ],
+    });
+    const actual = df.select(
+      col("objs").struct.withFields([
+        pl.lit(null).alias("d"),
+        pl.lit("text").alias("e"),
+      ]),
+      col("objs")
+        .struct.withFields([col("more"), col("final")])
+        .alias("new"),
+    );
+    expect(actual).toFrameStrictEqual(expected);
   });
   test("expr.replace", () => {
     const df = pl.DataFrame({ a: [1, 2, 2, 3], b: ["a", "b", "c", "d"] });
@@ -1443,6 +1649,63 @@ describe("expr.str", () => {
     expect(actual).toFrameEqual(expected);
     expect(seriesActual).toFrameEqual(expected);
   });
+
+  test("stripChars:Expr", () => {
+    const df = pl.DataFrame({
+      os: [
+        "#Kali-Linux###",
+        "$$$Debian-Linux$",
+        null,
+        "Ubuntu-Linux    ",
+        "  Mac-Sierra",
+      ],
+      chars: ["#", "$", " ", " ", null],
+    });
+    const expected = pl.DataFrame({
+      os: ["Kali-Linux", "Debian-Linux", null, "Ubuntu-Linux", "Mac-Sierra"],
+    });
+    const actual = df.select(col("os").str.stripChars(col("chars")).as("os"));
+    expect(actual).toFrameEqual(expected);
+  });
+  test("stripCharsStart:Expr", () => {
+    const df = pl.DataFrame({
+      os: [
+        "#Kali-Linux###",
+        "$$$Debian-Linux$",
+        null,
+        " Ubuntu-Linux ",
+        "Mac-Sierra",
+      ],
+      chars: ["#", "$", " ", null, "Mac-"],
+    });
+    const expected = pl.DataFrame({
+      os: ["Kali-Linux###", "Debian-Linux$", null, "Ubuntu-Linux ", "Sierra"],
+    });
+    const actual = df.select(
+      col("os").str.stripCharsStart(col("chars")).as("os"),
+    );
+    expect(actual).toFrameEqual(expected);
+  });
+  test("stripCharsEnd:Expr", () => {
+    const df = pl.DataFrame({
+      os: [
+        "#Kali-Linux###",
+        "$$$Debian-Linux$",
+        null,
+        "Ubuntu-Linux    ",
+        "  Mac-Sierra",
+      ],
+      chars: ["#", "$", " ", null, "-Sierra"],
+    });
+    const expected = pl.DataFrame({
+      os: ["#Kali-Linux", "$$$Debian-Linux", null, "Ubuntu-Linux", "  Mac"],
+    });
+    const actual = df.select(
+      col("os").str.stripCharsEnd(col("chars")).as("os"),
+    );
+    expect(actual).toFrameEqual(expected);
+  });
+
   test("padStart", () => {
     const df = pl.DataFrame({
       foo: ["a", "b", "cow", "longer"],

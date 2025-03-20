@@ -871,6 +871,12 @@ describe("StringFunctions", () => {
     const serString = s.toString();
     expect(actualInspect).toStrictEqual(serString);
   });
+  test("str contains", () => {
+    const s = pl.Series(["linux-kali", "linux-debian", "windows-vista"]);
+    const expected = pl.Series([true, true, false]);
+    const encoded = s.str.contains("linux");
+    expect(encoded).toSeriesEqual(expected);
+  });
 });
 describe("series struct", () => {
   test("struct:fields", () => {
@@ -902,6 +908,16 @@ describe("series struct", () => {
       .Series(expected)
       .struct.renameFields(["foo", "bar", "ham"])
       .toArray();
+    expect(actual).toEqual(expected);
+  });
+  test("struct:nth", () => {
+    const arr = [
+      { foo: 1, bar: 2, ham: "c" },
+      { foo: null, bar: 10, ham: null },
+      { foo: 2, bar: 0, ham: "z" },
+    ];
+    const expected = [1, null, 2];
+    const actual = pl.Series(arr).struct.nth(0).toArray();
     expect(actual).toEqual(expected);
   });
 });
