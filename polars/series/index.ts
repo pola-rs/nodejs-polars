@@ -24,9 +24,15 @@ import type {
 } from "../shared_traits";
 import type { InterpolationMethod, RankMethod } from "../types";
 import { SeriesDateFunctions } from "./datetime";
-import { type ListNamespace, SeriesListFunctions } from "./list";
-import { SeriesStringFunctions, type StringNamespace } from "./string";
+import { SeriesListFunctions } from "./list";
+import { SeriesStringFunctions } from "./string";
 import { SeriesStructFunctions } from "./struct";
+
+// For documentation
+export type { SeriesDateFunctions as DatetimeSeries } from "./datetime";
+export type { SeriesStringFunctions as StringSeries } from "./string";
+export type { SeriesListFunctions as ListSeries } from "./list";
+export type { SeriesStructFunctions as StructSeries } from "./struct";
 
 const inspect = Symbol.for("nodejs.util.inspect.custom");
 /**
@@ -45,8 +51,8 @@ export interface Series<T extends DataType = any, Name extends string = string>
   inner(): any;
   name: Name;
   dtype: T;
-  str: StringNamespace;
-  lst: ListNamespace;
+  str: SeriesStringFunctions;
+  lst: SeriesListFunctions;
   struct: SeriesStructFunctions;
   date: SeriesDateFunctions;
   [inspect](): string;

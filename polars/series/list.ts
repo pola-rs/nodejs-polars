@@ -3,9 +3,14 @@ import { exprToLitOrExpr } from "..";
 import { col } from "../lazy/functions";
 import type { ListFunctions } from "../shared_traits";
 
-export type ListNamespace = ListFunctions<Series>;
+// export type ListNamespace = ListFunctions<Series>;
 
-export const SeriesListFunctions = (_s): ListFunctions<Series> => {
+/**
+ * List functions for Series
+ */
+export interface SeriesListFunctions extends ListFunctions<Series> {}
+
+export const SeriesListFunctions = (_s): SeriesListFunctions => {
   const wrap = (method, ...args) => {
     const s = _Series(_s);
 
