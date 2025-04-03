@@ -481,6 +481,20 @@ impl JsDataFrame {
     }
 
     #[napi(catch_unwind)]
+    pub fn to_json(&self) -> napi::Result<Buffer> {
+        let mut file_like = BufWriter::new(Vec::new());
+
+        JsonWriter::new(&mut file_like)
+            .with_json_format(JsonFormat::Json)
+            .finish(&mut self.df.clone())
+            .map_err(|err| napi::Error::from_reason(format!("{:?}", err)))?;
+
+        Ok(Buffer::from(
+            String::from_utf8(file_like.into_inner().unwrap()).unwrap(),
+        ))
+    }
+
+    #[napi(catch_unwind)]
     pub fn serialize(&self, format: String) -> napi::Result<Buffer> {
         let buf = match format.as_ref() {
             "bincode" => bincode::serialize(&self.df)
@@ -627,6 +641,8 @@ impl JsDataFrame {
                 right_by: None,
                 tolerance: None,
                 tolerance_str: None,
+                allow_eq: true,
+                check_sortedness: true,
             }),
             "cross" => JoinType::Cross,
             _ => panic!("not supported"),
@@ -643,6 +659,7 @@ impl JsDataFrame {
                     suffix: suffix.map_or(None, |s| Some(PlSmallStr::from_string(s))),
                     ..Default::default()
                 },
+                None,
             )
             .map_err(JsPolarsErr::from)?;
         Ok(JsDataFrame::new(df))
@@ -705,7 +722,7 @@ impl JsDataFrame {
     }
     #[napi(getter, catch_unwind)]
     pub fn schema(&self) -> Wrap<Schema> {
-        self.df.schema().into()
+        Schema::from_iter(self.df.schema().iter_fields().collect::<Vec<_>>()).into()
     }
     #[napi(catch_unwind)]
     pub fn hstack_mut(&mut self, columns: Array) -> napi::Result<()> {
