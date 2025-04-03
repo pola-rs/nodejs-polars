@@ -2346,6 +2346,9 @@ export const _DataFrame = (_df: any): DataFrame => {
         .map((d) => mapFn(_DataFrame(d)));
     },
     pivot(values, options?) {
+      if (values && !options) {
+        options = values;
+      }
       let {
         values: values_,
         index,

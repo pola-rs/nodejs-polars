@@ -2,9 +2,9 @@ import type { DateFunctions } from "../../shared_traits";
 import { type Expr, _Expr } from "../expr";
 
 /**
- * DateTime functions
+ * DateTime functions for Lazy dataframes
  */
-export type ExprDateTime = DateFunctions<Expr>;
+export interface ExprDateTime extends DateFunctions<Expr> {}
 
 export const ExprDateTimeFunctions = (_expr: any): ExprDateTime => {
   const wrap = (method, ...args: any[]): Expr => {

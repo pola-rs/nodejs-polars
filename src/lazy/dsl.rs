@@ -441,6 +441,10 @@ impl JsExpr {
         self.clone().inner.explode().into()
     }
     #[napi(catch_unwind)]
+    pub fn implode(&self) -> JsExpr {
+        self.clone().inner.implode().into()
+    }
+    #[napi(catch_unwind)]
     pub fn gather_every(&self, n: i64, offset: i64) -> JsExpr {
         self.clone()
             .inner
@@ -683,6 +687,31 @@ impl JsExpr {
     }
 
     #[napi(catch_unwind)]
+    pub fn str_strip_chars(&self, pattern: &JsExpr, start: bool, end: bool) -> JsExpr {
+        match (start, end) {
+            (false, true) => self
+                .inner
+                .clone()
+                .str()
+                .strip_chars_end(pattern.inner.clone())
+                .into(),
+            (true, false) => self
+                .inner
+                .clone()
+                .str()
+                .strip_chars_start(pattern.inner.clone())
+                .into(),
+            (true, true) => self
+                .inner
+                .clone()
+                .str()
+                .strip_chars(pattern.inner.clone())
+                .into(),
+            _ => self.inner.clone().into(),
+        }
+    }
+
+    #[napi(catch_unwind)]
     pub fn str_rstrip(&self) -> JsExpr {
         let function = |s: Column| {
             let ca = s.str()?;
@@ -723,7 +752,6 @@ impl JsExpr {
                     .into_column(),
             ))
         };
-
         self.clone()
             .inner
             .map(function, GetOutput::from_type(DataType::String))
@@ -776,6 +804,20 @@ impl JsExpr {
     }
 
     #[napi(catch_unwind)]
+    pub fn str_starts_with(&self, sub: &JsExpr) -> JsExpr {
+        self.inner
+            .clone()
+            .str()
+            .starts_with(sub.inner.clone())
+            .into()
+    }
+
+    #[napi(catch_unwind)]
+    pub fn str_ends_with(&self, sub: &JsExpr) -> JsExpr {
+        self.inner.clone().str().ends_with(sub.inner.clone()).into()
+    }
+
+    #[napi(catch_unwind)]
     pub fn str_to_lowercase(&self) -> JsExpr {
         let function = |s: Column| {
             let ca = s.str()?;
@@ -802,51 +844,48 @@ impl JsExpr {
     }
 
     #[napi(catch_unwind)]
-    pub fn str_replace(&self, pat: String, val: String) -> JsExpr {
-        let function = move |s: Column| {
-            let ca = s.str()?;
-            match ca.replace(&pat, &val) {
-                Ok(ca) => Ok(Some(ca.into_column())),
-                Err(e) => Err(PolarsError::ComputeError(format!("{:?}", e).into())),
-            }
-        };
-        self.clone()
-            .inner
-            .map(function, GetOutput::same_type())
-            .with_fmt("str.replace")
+    pub fn str_replace(&self, pat: &JsExpr, val: &JsExpr, literal: bool, n: i64) -> JsExpr {
+        match literal {
+            true => self
+                .inner
+                .clone()
+                .str()
+                .replace_n(pat.inner.clone(), val.inner.clone(), literal, n)
+                .into(),
+            _ => self
+                .inner
+                .clone()
+                .str()
+                .replace(pat.inner.clone(), val.inner.clone(), false)
+                .into(),
+        }
+    }
+
+    #[napi(catch_unwind)]
+    pub fn str_replace_all(&self, pat: &JsExpr, val: &JsExpr, literal: bool) -> JsExpr {
+        self.inner
+            .clone()
+            .str()
+            .replace_all(pat.inner.clone(), val.inner.clone(), literal)
             .into()
     }
 
     #[napi(catch_unwind)]
-    pub fn str_replace_all(&self, pat: String, val: String) -> JsExpr {
-        let function = move |s: Column| {
-            let ca = s.str()?;
-            match ca.replace_all(&pat, &val) {
-                Ok(ca) => Ok(Some(ca.into_column())),
-                Err(e) => Err(PolarsError::ComputeError(format!("{:?}", e).into())),
-            }
-        };
-        self.clone()
-            .inner
-            .map(function, GetOutput::same_type())
-            .with_fmt("str.replace_all")
-            .into()
-    }
-
-    #[napi(catch_unwind)]
-    pub fn str_contains(&self, pat: String, strict: bool) -> JsExpr {
-        let function = move |s: Column| {
-            let ca = s.str()?;
-            match ca.contains(&pat, strict) {
-                Ok(ca) => Ok(Some(ca.into_column())),
-                Err(e) => Err(PolarsError::ComputeError(format!("{:?}", e).into())),
-            }
-        };
-        self.clone()
-            .inner
-            .map(function, GetOutput::from_type(DataType::Boolean))
-            .with_fmt("str.contains")
-            .into()
+    pub fn str_contains(&self, pat: &JsExpr, literal: bool, strict: bool) -> JsExpr {
+        match literal {
+            true => self
+                .inner
+                .clone()
+                .str()
+                .contains_literal(pat.inner.clone())
+                .into(),
+            _ => self
+                .inner
+                .clone()
+                .str()
+                .contains(pat.inner.clone(), strict)
+                .into(),
+        }
     }
     #[napi(catch_unwind)]
     pub fn str_hex_encode(&self) -> JsExpr {
@@ -1520,12 +1559,26 @@ impl JsExpr {
         self.inner.clone().all(drop_nulls).into()
     }
     #[napi(catch_unwind)]
+    pub fn struct_field_by_index(&self, index: i64) -> JsExpr {
+        self.inner.clone().struct_().field_by_index(index).into()
+    }
+    #[napi(catch_unwind)]
     pub fn struct_field_by_name(&self, name: String) -> JsExpr {
         self.inner.clone().struct_().field_by_name(&name).into()
     }
     #[napi(catch_unwind)]
     pub fn struct_rename_fields(&self, names: Vec<String>) -> JsExpr {
         self.inner.clone().struct_().rename_fields(names).into()
+    }
+    #[napi(catch_unwind)]
+    pub fn struct_with_fields(&self, fields: Vec<&JsExpr>) -> JsExpr {
+        self.inner
+            .clone()
+            .struct_()
+            .with_fields(fields.to_exprs())
+            .map_err(JsPolarsErr::from)
+            .unwrap()
+            .into()
     }
     #[napi(catch_unwind)]
     pub fn log(&self, base: f64) -> JsExpr {

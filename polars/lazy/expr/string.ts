@@ -1,15 +1,15 @@
 import { DataType } from "../../datatypes";
 import type { StringFunctions } from "../../shared_traits";
-import { regexToString } from "../../utils";
+import { ExprOrString, regexToString } from "../../utils";
 import { Expr, _Expr, exprToLitOrExpr } from "../expr";
 import { lit } from "../functions";
 
 /**
- * namespace containing expr string functions
+ * String functions for Lazy dataframes
  */
-export interface StringNamespace extends StringFunctions<Expr> {
+export interface ExprString extends StringFunctions<Expr> {
   /**
-   * Vertically concat the values in the Series to a single string value.
+   * Vertically concat the values in the Expression to a single string value.
    * @example
    * ```
    * >>> df = pl.DataFrame({"foo": [1, null, 2]})
@@ -26,10 +26,40 @@ export interface StringNamespace extends StringFunctions<Expr> {
    * ```
    */
   concat(delimiter: string, ignoreNulls?: boolean): Expr;
-  /** Check if strings in Series contain regex pattern. */
-  contains(pat: string | RegExp): Expr;
   /**
-   * Decodes a value using the provided encoding
+   * Check if strings in Expression contain a substring that matches a pattern.
+   * @param pat A valid regular expression pattern, compatible with the `regex crate
+   * @param literal Treat `pattern` as a literal string, not as a regular expression.
+   * @param strict Raise an error if the underlying pattern is not a valid regex, otherwise mask out with a null value.
+   * @returns Boolean mask
+   * @example
+   * ```
+   * const df = pl.DataFrame({"txt": ["Crab", "cat and dog", "rab$bit", null]})
+   * df.select(
+   * ...     pl.col("txt"),
+   * ...     pl.col("txt").str.contains("cat|bit").alias("regex"),
+   * ...     pl.col("txt").str.contains("rab$", true).alias("literal"),
+   * ... )
+   * shape: (4, 3)
+   * ┌─────────────┬───────┬─────────┐
+   * │ txt         ┆ regex ┆ literal │
+   * │ ---         ┆ ---   ┆ ---     │
+   * │ str         ┆ bool  ┆ bool    │
+   * ╞═════════════╪═══════╪═════════╡
+   * │ Crab        ┆ false ┆ false   │
+   * │ cat and dog ┆ true  ┆ false   │
+   * │ rab$bit     ┆ true  ┆ true    │
+   * │ null        ┆ null  ┆ null    │
+   * └─────────────┴───────┴─────────┘
+   * ```
+   */
+  contains(
+    pat: string | RegExp | Expr,
+    literal?: boolean,
+    strict?: boolean,
+  ): Expr;
+  /**
+   * Decodes a value in Expression using the provided encoding
    * @param encoding - hex | base64
    * @param strict - how to handle invalid inputs
    *
@@ -56,7 +86,7 @@ export interface StringNamespace extends StringFunctions<Expr> {
   decode(encoding: "hex" | "base64", strict?: boolean): Expr;
   decode(options: { encoding: "hex" | "base64"; strict?: boolean }): Expr;
   /**
-   * Encodes a value using the provided encoding
+   * Encodes a value in Expression using the provided encoding
    * @param encoding - hex | base64
    * @example
    * ```
@@ -77,6 +107,56 @@ export interface StringNamespace extends StringFunctions<Expr> {
    * ```
    */
   encode(encoding: "hex" | "base64"): Expr;
+  /** Check if string values in Expression ends with a substring.
+   * @param suffix - Suffix substring or expression
+   * @example
+   * ```
+   * >>> df = pl.DataFrame({"fruits": ["apple", "mango", None]})
+   * >>> df.withColumns(
+   * ...     pl.col("fruits").str.endsWith("go").alias("has_suffix"),
+   * ... )
+   * shape: (3, 2)
+   * ┌────────┬────────────┐
+   * │ fruits ┆ has_suffix │
+   * │ ---    ┆ ---        │
+   * │ str    ┆ bool       │
+   * ╞════════╪════════════╡
+   * │ apple  ┆ false      │
+   * │ mango  ┆ true       │
+   * │ null   ┆ null       │
+   * └────────┴────────────┘
+   *
+   * >>> df = pl.DataFrame(
+   * ...     {"fruits": ["apple", "mango", "banana"], "suffix": ["le", "go", "nu"]}
+   * ... )
+   * >>> df.withColumns(
+   * ...     pl.col("fruits").str.endsWith(pl.col("suffix")).alias("has_suffix"),
+   * ... )
+   * shape: (3, 3)
+   * ┌────────┬────────┬────────────┐
+   * │ fruits ┆ suffix ┆ has_suffix │
+   * │ ---    ┆ ---    ┆ ---        │
+   * │ str    ┆ str    ┆ bool       │
+   * ╞════════╪════════╪════════════╡
+   * │ apple  ┆ le     ┆ true       │
+   * │ mango  ┆ go     ┆ true       │
+   * │ banana ┆ nu     ┆ false      │
+   * └────────┴────────┴────────────┘
+   *
+   *    Using `ends_with` as a filter condition:
+   *
+   * >>> df.filter(pl.col("fruits").str.endsWith("go"))
+   * shape: (1, 2)
+   * ┌────────┬────────┐
+   * │ fruits ┆ suffix │
+   * │ ---    ┆ ---    │
+   * │ str    ┆ str    │
+   * ╞════════╪════════╡
+   * │ mango  ┆ go     │
+   * └────────┴────────┘
+   * ```
+   */
+  endsWith(suffix: string | Expr): Expr;
   /**
    * Extract the target capture group from provided patterns.
    * @param pattern A valid regex pattern
@@ -107,32 +187,33 @@ export interface StringNamespace extends StringFunctions<Expr> {
    * └─────────┘
    * ```
    */
-  extract(pat: any, groupIndex: number): Expr;
+  extract(pattern: string | RegExp | Expr, groupIndex: number): Expr;
   /**
-  * Parse string values as JSON.
-  * Throw errors if encounter invalid JSON strings.
-  * @returns DF with struct
-  * @example
-
-  * >>> df = pl.DataFrame( {json: ['{"a":1, "b": true}', null, '{"a":2, "b": false}']} )
-  * >>> df.select(pl.col("json").str.jsonDecode())
-  * shape: (3, 1)
-  * ┌─────────────┐
-  * │ json        │
-  * │ ---         │
-  * │ struct[2]   │
-  * ╞═════════════╡
-  * │ {1,true}    │
-  * │ {null,null} │
-  * │ {2,false}   │
-  * └─────────────┘
-  * See Also
-  * ----------
-  * jsonPathMatch : Extract the first match of json string with provided JSONPath expression.
-  */
+   * Parse string values in Expression as JSON.
+   * Throw errors if encounter invalid JSON strings.
+   * @params Not implemented ATM
+   * @returns DF with struct
+   * @example
+   * ```
+   * >>> df = pl.DataFrame( {json: ['{"a":1, "b": true}', null, '{"a":2, "b": false}']} )
+   * >>> df.select(pl.col("json").str.jsonDecode())
+   * shape: (3, 1)
+   * ┌─────────────┐
+   * │ json        │
+   * │ ---         │
+   * │ struct[2]   │
+   * ╞═════════════╡
+   * │ {1,true}    │
+   * │ {null,null} │
+   * │ {2,false}   │
+   * └─────────────┘
+   * See Also
+   * ----------
+   * jsonPathMatch : Extract the first match of json string with provided JSONPath expression.
+   */
   jsonDecode(dtype?: DataType, inferSchemaLength?: number): Expr;
   /**
-   * Extract the first match of json string with provided JSONPath expression.
+   * Extract the first match of json string in Expression with provided JSONPath expression.
    * Throw errors if encounter invalid json strings.
    * All return value will be casted to Utf8 regardless of the original value.
    * @see https://goessner.net/articles/JsonPath/
@@ -152,34 +233,111 @@ export interface StringNamespace extends StringFunctions<Expr> {
    * ...   ]
    * ... })
    * >>> df.select(pl.col('json_val').str.jsonPathMatch('$.a')
-   * shape: (5,)
-   * Series: 'json_val' [str]
-   * [
-   *     "1"
-   *     null
-   *     "2"
-   *     "2.1"
-   *     "true"
-   * ]
+   * shape: (5, 1)
+   *┌──────────┐
+   *│ json_val │
+   *│ ---      │
+   *│ str      │
+   *╞══════════╡
+   *│ 1        │
+   *│ null     │
+   *│ 2        │
+   *│ 2.1      │
+   *│ true     │
+   *└──────────┘
    * ```
    */
   jsonPathMatch(pat: string): Expr;
-  /**  Get length of the string values in the Series. */
+  /**  Get number of chars of the string values in Expression.
+   * ```
+   * df = pl.DataFrame({"a": ["Café", "345", "東京", null]})
+   * df.withColumns(
+   *    pl.col("a").str.lengths().alias("n_chars"),
+   * )
+   * shape: (4, 3)
+   * ┌──────┬─────────┬─────────┐
+   * │ a    ┆ n_chars ┆ n_bytes │
+   * │ ---  ┆ ---     ┆ ---     │
+   * │ str  ┆ u32     ┆ u32     │
+   * ╞══════╪═════════╪═════════╡
+   * │ Café ┆ 4       ┆ 5       │
+   * │ 345  ┆ 3       ┆ 3       │
+   * │ 東京 ┆ 2       ┆ 6       │
+   * │ null ┆ null    ┆ null    │
+   * └──────┴─────────┴─────────┘
+   * ```
+   */
   lengths(): Expr;
-  /** Remove leading whitespace. */
+  /** Remove leading whitespace of the string values in Expression. */
   lstrip(): Expr;
-  /** Replace first regex match with a string value. */
-  replace(pat: string | RegExp, val: string): Expr;
-  /** Replace all regex matches with a string value. */
-  replaceAll(pat: string | RegExp, val: string): Expr;
-  /** Modify the strings to their lowercase equivalent. */
+  /** Replace first match with a string value in Expression.
+   * @param pattern - A valid regex pattern, string or expression
+   * @param value Substring or expression to replace.
+   * @param literal Treat pattern as a literal string.
+   * @note pattern as expression is not yet supported by polars
+   * @example
+   * ```
+   * df = pl.DataFrame({"cost": ["#12.34", "#56.78"], "text": ["123abc", "abc456"]})
+   * df = df.withColumns(
+   *     pl.col("cost").str.replace(/#(\d+)/, "$$$1"),
+   *     pl.col("text").str.replace("ab", "-")
+   *     pl.col("text").str.replace("abc", pl.col("cost")).alias("expr")
+   * );
+   * shape: (2, 2)
+   * ┌────────┬───────┬───────────┐
+   * │ cost   ┆ text  │ expr      │
+   * │ ---    ┆ ---   │ ---       │
+   * │ str    ┆ str   │ str       │
+   * ╞════════╪═══════╪═══════════╡
+   * │ $12.34 ┆ 123-c │ 123#12.34 │
+   * │ $56.78 ┆ -c456 │ #56.78456 │
+   * └────────┴───────┴───────────┘
+   * ```
+   */
+  replace(
+    pattern: string | RegExp | Expr,
+    value: string | Expr,
+    literal?: boolean,
+    n?: number,
+  ): Expr;
+  /** Replace all regex matches with a string value in Expression.
+   * @param pattern - A valid regex pattern, string or expression
+   * @param value Substring or expression to replace.
+   * @param literal Treat pattern as a literal string.
+   * @note pattern as expression is not yet supported by polars
+   * @example
+   * ```
+   * df = df = pl.DataFrame({"weather": ["Rainy", "Sunny", "Cloudy", "Snowy"], "text": ["abcabc", "123a123", null, null]})
+   * df = df.withColumns(
+   *     pl.col("weather").str.replaceAll(/foggy|rainy/i, "Sunny"),
+   *     pl.col("text").str.replaceAll("a", "-")
+   * )
+   * shape: (4, 2)
+   * ┌─────────┬─────────┐
+   * │ weather ┆ text    │
+   * │ ---     ┆ ---     │
+   * │ str     ┆ str     │
+   * ╞═════════╪═════════╡
+   * │ Sunny   ┆ -bc-bc  │
+   * │ Sunny   ┆ 123-123 │
+   * │ Cloudy  ┆ null    │
+   * │ Snowy   ┆ null    │
+   * └─────────┴─────────┘
+   * ```
+   */
+  replaceAll(
+    pattern: string | RegExp | Expr,
+    value: string | Expr,
+    literal?: boolean,
+  ): Expr;
+  /** Modify the string in Expression to their lowercase equivalent. */
   toLowerCase(): Expr;
-  /** Modify the strings to their uppercase equivalent. */
+  /** Modify the string in Expression to their uppercase equivalent. */
   toUpperCase(): Expr;
   /** Remove trailing whitespace. */
   rstrip(): Expr;
   /**
-   *  Add a leading fillChar to a string until string length is reached.
+   *  Add a leading fillChar to a string in Expression until string length is reached.
    * If string is longer or equal to given length no modifications will be done
    * @param {number} length  - of the final string
    * @param {string} fillChar  - that will fill the string.
@@ -216,7 +374,7 @@ export interface StringNamespace extends StringFunctions<Expr> {
    * If string is longer or equal to given length no modifications will be done
    * @param {number} length  - of the final string
    * @see {@link padStart}
-   *    * @example
+   * @example
    * ```
    * > df = pl.DataFrame({
    * ...   'foo': [
@@ -248,8 +406,8 @@ export interface StringNamespace extends StringFunctions<Expr> {
    * If string is longer or equal to given length no modifications will be done
    * @param {number} length  - of the final string
    * @param {string} fillChar  - that will fill the string.
-   * If a string longer than 1 character is provided only the first character will be used
-   *    * @example
+   * @note If a string longer than 1 character is provided only the first character will be used
+   * @example
    * ```
    * > df = pl.DataFrame({
    * ...   'foo': [
@@ -288,6 +446,56 @@ export interface StringNamespace extends StringFunctions<Expr> {
    * @param inclusive Include the split character/string in the results
    */
   split(by: string, options?: { inclusive?: boolean } | boolean): Expr;
+  /** Check if string values start with a substring.
+   * @param prefix - Prefix substring or expression
+   * @example
+   * ```
+   * >>> df = pl.DataFrame({"fruits": ["apple", "mango", None]})
+   * >>> df.withColumns(
+   * ...     pl.col("fruits").str.startsWith("app").alias("has_prefix"),
+   * ... )
+   * shape: (3, 2)
+   * ┌────────┬────────────┐
+   * │ fruits ┆ has_prefix │
+   * │ ---    ┆ ---        │
+   * │ str    ┆ bool       │
+   * ╞════════╪════════════╡
+   * │ apple  ┆ true       │
+   * │ mango  ┆ false      │
+   * │ null   ┆ null       │
+   * └────────┴────────────┘
+   *
+   * >>> df = pl.DataFrame(
+   * ...     {"fruits": ["apple", "mango", "banana"], "prefix": ["app", "na", "ba"]}
+   * ... )
+   * >>> df.withColumns(
+   * ...     pl.col("fruits").str.startsWith(pl.col("prefix")).alias("has_prefix"),
+   * ... )
+   * shape: (3, 3)
+   * ┌────────┬────────┬────────────┐
+   * │ fruits ┆ prefix ┆ has_prefix │
+   * │ ---    ┆ ---    ┆ ---        │
+   * │ str    ┆ str    ┆ bool       │
+   * ╞════════╪════════╪════════════╡
+   * │ apple  ┆ app    ┆ true       │
+   * │ mango  ┆ na     ┆ false      │
+   * │ banana ┆ ba     ┆ true       │
+   * └────────┴────────┴────────────┘
+   *
+   *    Using `starts_with` as a filter condition:
+   *
+   * >>> df.filter(pl.col("fruits").str.startsWith("app"))
+   * shape: (1, 2)
+   * ┌────────┬────────┐
+   * │ fruits ┆ prefix │
+   * │ ---    ┆ ---    │
+   * │ str    ┆ str    │
+   * ╞════════╪════════╡
+   * │ apple  ┆ app    │
+   * └────────┴────────┘
+   * ```
+   */
+  startsWith(prefix: string | Expr): Expr;
   /** Remove leading and trailing whitespace. */
   strip(): Expr;
   /**
@@ -298,9 +506,50 @@ export interface StringNamespace extends StringFunctions<Expr> {
   strptime(datatype: DataType.Date, fmt?: string): Expr;
   strptime(datatype: DataType.Datetime, fmt?: string): Expr;
   strptime(datatype: typeof DataType.Datetime, fmt?: string): Expr;
+
+  /** Remove leading and trailing whitespace.
+   * @param prefix - Prefix substring or expression (null means whitespace)
+   * @example
+   * ```
+   * >>> df = pl.DataFrame({
+   *         os: [
+   *           "#Kali-Linux###",
+   *           "$$$Debian-Linux$",
+   *           null,
+   *           "Ubuntu-Linux    ",
+   *           "  Mac-Sierra",
+   *         ],
+   *         chars: ["#", "$", " ", " ", null],
+   *       })
+   * >>> df.select(col("os").str.stripChars(col("chars")).as("os"))
+   * shape: (5, 1)
+   *      ┌──────────────┐
+   *      │ os           │
+   *      │ ---          │
+   *      │ str          │
+   *      ╞══════════════╡
+   *      │ Kali-Linux   │
+   *      │ Debian-Linux │
+   *      │ null         │
+   *      │ Ubuntu-Linux │
+   *      │ Mac-Sierra   │
+   *      └──────────────┘
+   * ```
+   */
+  stripChars(prefix: string | Expr): Expr;
+  /** Remove trailing characters.
+   * @param prefix - Prefix substring or expression (null means whitespace)
+   * @see stripChars
+   */
+  stripCharsEnd(prefix: string | Expr): Expr;
+  /** Remove leading characters.
+   * @param prefix - Prefix substring or expression (null means whitespace)
+   * @see stripChars
+   */
+  stripCharsStart(prefix: string | Expr): Expr;
 }
 
-export const ExprStringFunctions = (_expr: any): StringNamespace => {
+export const ExprStringFunctions = (_expr: any): ExprString => {
   const wrap = (method, ...args: any[]): Expr => {
     return _Expr(_expr[method](...args));
   };
@@ -320,8 +569,8 @@ export const ExprStringFunctions = (_expr: any): StringNamespace => {
     concat(delimiter: string, ignoreNulls = true) {
       return wrap("strConcat", delimiter, ignoreNulls);
     },
-    contains(pat: string | RegExp) {
-      return wrap("strContains", regexToString(pat), false);
+    contains(pat: string | RegExp | Expr, literal = false, strict = true) {
+      return wrap("strContains", exprToLitOrExpr(pat)._expr, literal, strict);
     },
     decode(arg, strict = false) {
       if (typeof arg === "string") {
@@ -340,8 +589,15 @@ export const ExprStringFunctions = (_expr: any): StringNamespace => {
           throw new RangeError("supported encodings are 'hex' and 'base64'");
       }
     },
-    extract(pat: any, groupIndex: number) {
-      return wrap("strExtract", exprToLitOrExpr(pat, true)._expr, groupIndex);
+    endsWith(suffix: string | Expr) {
+      return wrap("strEndsWith", exprToLitOrExpr(suffix)._expr);
+    },
+    extract(pattern: RegExp | Expr, groupIndex: number) {
+      return wrap(
+        "strExtract",
+        exprToLitOrExpr(pattern, true)._expr,
+        groupIndex,
+      );
     },
     jsonDecode(dtype?: DataType, inferSchemaLength?: number) {
       return wrap("strJsonDecode", dtype, inferSchemaLength);
@@ -355,11 +611,31 @@ export const ExprStringFunctions = (_expr: any): StringNamespace => {
     lstrip() {
       return wrap("strLstrip");
     },
-    replace(pat: RegExp, val: string) {
-      return wrap("strReplace", regexToString(pat), val);
+    replace(
+      pat: string | RegExp | Expr,
+      val: string | Expr,
+      literal = false,
+      n = 1,
+    ) {
+      return wrap(
+        "strReplace",
+        exprToLitOrExpr(pat)._expr,
+        exprToLitOrExpr(val)._expr,
+        literal,
+        n,
+      );
     },
-    replaceAll(pat: RegExp, val: string) {
-      return wrap("strReplaceAll", regexToString(pat), val);
+    replaceAll(
+      pat: string | RegExp | Expr,
+      val: string | Expr,
+      literal = false,
+    ) {
+      return wrap(
+        "strReplaceAll",
+        exprToLitOrExpr(pat)._expr,
+        exprToLitOrExpr(val)._expr,
+        literal,
+      );
     },
     rstrip() {
       return wrap("strRstrip");
@@ -391,8 +667,20 @@ export const ExprStringFunctions = (_expr: any): StringNamespace => {
         typeof options === "boolean" ? options : options?.inclusive;
       return wrap("strSplit", exprToLitOrExpr(by)._expr, inclusive);
     },
+    startsWith(prefix: string | Expr) {
+      return wrap("strStartsWith", exprToLitOrExpr(prefix)._expr);
+    },
     strip() {
       return wrap("strStrip");
+    },
+    stripChars(pattern: string | Expr) {
+      return wrap("strStripChars", exprToLitOrExpr(pattern)._expr, true, true);
+    },
+    stripCharsEnd(pattern: string | Expr) {
+      return wrap("strStripChars", exprToLitOrExpr(pattern)._expr, false, true);
+    },
+    stripCharsStart(pattern: string | Expr) {
+      return wrap("strStripChars", exprToLitOrExpr(pattern)._expr, true, false);
     },
     strptime(
       dtype: DataType.Date | DataType.Datetime | typeof DataType.Datetime,
@@ -411,6 +699,7 @@ export const ExprStringFunctions = (_expr: any): StringNamespace => {
           false,
           false,
           false,
+          undefined,
         );
       }
       throw new Error(
