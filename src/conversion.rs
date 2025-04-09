@@ -114,6 +114,7 @@ impl<'a> ToNapiValue for Wrap<AnyValue<'a>> {
             AnyValue::Int16(n) => i32::to_napi_value(env, n as i32),
             AnyValue::Int32(n) => i32::to_napi_value(env, n),
             AnyValue::Int64(n) => i64::to_napi_value(env, n),
+            AnyValue::Int128(n) => i128::to_napi_value(env, n),
             AnyValue::UInt8(n) => u32::to_napi_value(env, n as u32),
             AnyValue::UInt16(n) => u32::to_napi_value(env, n as u32),
             AnyValue::UInt32(n) => u32::to_napi_value(env, n),
