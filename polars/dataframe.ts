@@ -1611,13 +1611,6 @@ export interface DataFrame<T extends Record<string, Series> = any>
    * @category IO
    */
   toRecords(): { [K in keyof T]: DTypeToJs<T[K]["dtype"]> | null }[];
-
-  /**
-   * compat with `JSON.stringify`
-   * @category IO
-   */
-  toJSON(): string;
-
   /**
    * Converts dataframe object into a {@link TabularDataResource}
    */
@@ -2536,9 +2529,6 @@ export const _DataFrame = (_df: any): DataFrame => {
     },
     toRecords() {
       return _df.toObjects();
-    },
-    toJSON() {
-      return _df.toJson().toString();
     },
     toHTML(): string {
       let htmlTable = "<table>";

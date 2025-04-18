@@ -1936,16 +1936,6 @@ describe("io", () => {
     fs.rmSync("./test.csv");
     done();
   });
-  test("JSON.stringify", () => {
-    const df = pl.DataFrame({
-      foo: [1, 2, 3],
-      bar: ["a", "b", "c"],
-    });
-    const expected =
-      '[{"foo":1.0,"bar":"a"},{"foo":2.0,"bar":"b"},{"foo":3.0,"bar":"c"}]';
-    const actual = df.toJSON();
-    expect(actual).toEqual(expected);
-  });
   test("toRecords", () => {
     const df = pl.DataFrame({
       foo: [1],
