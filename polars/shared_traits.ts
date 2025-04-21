@@ -1200,6 +1200,7 @@ export interface GroupByOps<T> {
   @param every interval of the window
   @param period length of the window, if None it is equal to 'every'
   @param offset offset of the window if None and period is None it will be equal to negative `every`
+  @param label Define which label to use for the window: Any if {'left', 'right', 'datapoint'}
   @param truncate truncate the time value to the window lower bound
   @param includeBoundaries add the lower and upper bound of the window to the "_lower_bound" and "_upper_bound" columns. This will impact performance because it's harder to parallelize
   @param closed Defines if the window interval is closed or not.
@@ -1217,11 +1218,11 @@ export interface GroupByOps<T> {
     every: string;
     period?: string;
     offset?: string;
+    label?: string;
     includeBoundaries?: boolean;
     closed?: "left" | "right" | "both" | "none";
     by?: ColumnsOrExpr;
-    start_by: StartBy;
-    check_sorted?: boolean;
+    startBy?: StartBy;
   }): T;
 }
 

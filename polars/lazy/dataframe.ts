@@ -798,30 +798,28 @@ export const _LazyDataFrame = (_ldf: any): LazyDataFrame => {
       offset,
       includeBoundaries,
       closed,
+      label,
       by,
-      start_by,
-      check_sorted,
+      startBy,
     }) {
       period = period ?? every;
-      offset = offset ?? `-${period}`;
-      closed = closed ?? "right";
+      offset = offset ?? "0ns";
+      closed = closed ?? "left";
+      label = label ?? "left";
       by = prepareGroupbyInputs(by);
       includeBoundaries = includeBoundaries ?? false;
-      start_by = start_by ?? "monday";
-      check_sorted = check_sorted ?? false;
-
+      startBy = startBy ?? "monday";
       const lgb = _ldf.groupbyDynamic(
         pli.col(indexColumn),
         every,
         period,
         offset,
+        label,
         includeBoundaries,
         closed,
         by,
-        start_by,
-        check_sorted,
+        startBy,
       );
-
       return _LazyGroupBy(lgb);
     },
     head(len = 5) {
