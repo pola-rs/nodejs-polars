@@ -2204,9 +2204,11 @@ export const _DataFrame = (_df: any): DataFrame => {
       every,
       period,
       offset,
+      label,
       includeBoundaries,
       closed,
       by,
+      startBy,
     }) {
       return DynamicGroupBy(
         _DataFrame(_df) as any,
@@ -2214,9 +2216,11 @@ export const _DataFrame = (_df: any): DataFrame => {
         every,
         period,
         offset,
+        label,
         includeBoundaries,
         closed,
         by,
+        startBy,
       );
     },
     upsample(opts, every?, by?, maintainOrder?) {

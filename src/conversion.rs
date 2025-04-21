@@ -336,6 +336,23 @@ impl FromNapiValue for Wrap<StartBy> {
     }
 }
 
+impl FromNapiValue for Wrap<Label> {
+    unsafe fn from_napi_value(env: sys::napi_env, napi_val: sys::napi_value) -> JsResult<Self> {
+        let start = String::from_napi_value(env, napi_val)?;
+        let parsed = match start.as_ref() {
+            "left" => Label::Left,
+            "right" => Label::Right,
+            "datapoint" => Label::DataPoint,
+            v => {
+                return Err(napi::Error::from_reason(format!(
+                    "`label` must be one of {{'left', 'right', 'datapoint'}}, got {v}",
+                )));
+            },
+        };
+        Ok(Wrap(parsed))
+    }
+}
+
 impl FromNapiValue for Wrap<ClosedWindow> {
     unsafe fn from_napi_value(env: sys::napi_env, napi_val: sys::napi_value) -> JsResult<Self> {
         let s = String::from_napi_value(env, napi_val)?;
