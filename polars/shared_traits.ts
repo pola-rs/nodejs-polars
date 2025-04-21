@@ -714,7 +714,7 @@ export interface ListFunctions<T> {
   slice(offset: number, length: number): T;
   /**
    * Sort the sublists.
-   * @deprecated *since 0.16.0* @use descending
+   * @deprecated *since 0.16.0* Use {@link descending} instead
    * @param reverse - Reverse/descending sort.
    * @param descending - Sort in reverse order.
    * @category List
@@ -1200,6 +1200,7 @@ export interface GroupByOps<T> {
   @param every interval of the window
   @param period length of the window, if None it is equal to 'every'
   @param offset offset of the window if None and period is None it will be equal to negative `every`
+  @param label Define which label to use for the window: Any if {'left', 'right', 'datapoint'}
   @param truncate truncate the time value to the window lower bound
   @param includeBoundaries add the lower and upper bound of the window to the "_lower_bound" and "_upper_bound" columns. This will impact performance because it's harder to parallelize
   @param closed Defines if the window interval is closed or not.
@@ -1217,11 +1218,11 @@ export interface GroupByOps<T> {
     every: string;
     period?: string;
     offset?: string;
+    label?: string;
     includeBoundaries?: boolean;
     closed?: "left" | "right" | "both" | "none";
     by?: ColumnsOrExpr;
-    start_by: StartBy;
-    check_sorted?: boolean;
+    startBy?: StartBy;
   }): T;
 }
 
@@ -1242,7 +1243,7 @@ export interface EwmOps<T> {
    *       - When ``ignoreNulls: false`` (default), weights are based on absolute positions.
    *       - When ``ignoreNulls: true``, weights are based on relative positions.
    * @returns Expr that evaluates to a float 64 Series.
-   * @examples
+   * @example
    * ```
    * > const df = pl.DataFrame({a: [1, 2, 3]});
    * > df.select(pl.col("a").ewmMean())
@@ -1287,7 +1288,7 @@ export interface EwmOps<T> {
    *         For example, the weights of :math:`x_0` and :math:`x_2` used in calculating the final weighted average of
    *       - When ``ignoreNulls: true``, weights are based on relative positions.
    * @returns Expr that evaluates to a float 64 Series.
-   * @examples
+   * @example
    * ```
    * > const df = pl.DataFrame({a: [1, 2, 3]});
    * > df.select(pl.col("a").ewmStd())
@@ -1331,7 +1332,7 @@ export interface EwmOps<T> {
    *       - When ``ignoreNulls: false`` (default), weights are based on absolute positions.
    *       - When ``ignoreNulls=true``, weights are based on relative positions.
    * @returns Expr that evaluates to a float 64 Series.
-   * @examples
+   * @example
    * ```
    * > const df = pl.DataFrame({a: [1, 2, 3]});
    * > df.select(pl.col("a").ewmVar())

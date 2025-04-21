@@ -254,7 +254,6 @@ impl JsLazyFrame {
         JsLazyGroupBy { lgb: Some(lazy_gb) }
     }
 
-    #[allow(clippy::too_many_arguments)]
     #[napi(catch_unwind)]
     pub fn groupby_dynamic(
         &mut self,
@@ -262,22 +261,23 @@ impl JsLazyFrame {
         every: String,
         period: String,
         offset: String,
+        label: Wrap<Label>,
         include_boundaries: bool,
         closed: Wrap<ClosedWindow>,
         by: Vec<&JsExpr>,
         start_by: Wrap<StartBy>,
-    ) -> JsLazyGroupBy {
+    ) -> Result<JsLazyGroupBy> {
         let closed_window = closed.0;
         let by = by.to_exprs();
         let ldf = self.ldf.clone();
-        let lazy_gb = ldf.group_by_dynamic(
+        let lazy_gb: LazyGroupBy = ldf.group_by_dynamic(
             index_column.inner.clone(),
             by,
             DynamicGroupOptions {
-                every: Duration::parse(&every),
-                period: Duration::parse(&period),
-                offset: Duration::parse(&offset),
-                label: Label::DataPoint,
+                every: Duration::try_parse(&every).map_err(JsPolarsErr::from)?,
+                period: Duration::try_parse(&period).map_err(JsPolarsErr::from)?,
+                offset: Duration::try_parse(&offset).map_err(JsPolarsErr::from)?,
+                label: label.0,
                 include_boundaries,
                 closed_window,
                 start_by: start_by.0,
@@ -285,7 +285,7 @@ impl JsLazyFrame {
             },
         );
 
-        JsLazyGroupBy { lgb: Some(lazy_gb) }
+        Ok(JsLazyGroupBy { lgb: Some(lazy_gb) })
     }
     #[allow(clippy::too_many_arguments)]
     #[napi(catch_unwind)]
@@ -325,6 +325,8 @@ impl JsLazyFrame {
                 right_by: right_by.map(strings_to_pl_smallstr),
                 tolerance: tolerance.map(|t| t.0.into_static()),
                 tolerance_str: tolerance_str.map(|s| s.into()),
+                allow_eq: true,
+                check_sortedness: true,
             }))
             .suffix(suffix)
             .finish()

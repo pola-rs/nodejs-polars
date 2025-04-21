@@ -191,7 +191,8 @@ describe("groupby ops", () => {
         by: ["admin", "five_type", "actor"],
         indexColumn: "event_date",
         every: "1mo",
-        start_by: "datapoint",
+        startBy: "datapoint",
+        label: "datapoint",
       })
       .agg(pl.col("adm1_code").unique(), pl.col("fatalities").gt(0).sum());
     const expected = [
@@ -220,7 +221,8 @@ describe("groupby ops", () => {
         indexColumn: "event_date",
         every: "1mo",
         by: ["admin", "five_type", "actor"],
-        start_by: "datapoint",
+        label: "datapoint",
+        startBy: "datapoint",
       })
       .agg(pl.col("adm1_code").unique(), pl.col("fatalities").gt(0).sum());
     const expected = [
@@ -229,6 +231,24 @@ describe("groupby ops", () => {
       new Date("2021-04-29"),
     ];
     const actual = out.getColumn("event_date").toArray();
+    expect(actual).toEqual(expected);
+  });
+  test("dynamic-int", () => {
+    const out = pl
+      .DataFrame({
+        a: pl.Series("", [1, 2, 3], pl.Int64),
+      })
+      .groupByDynamic({
+        indexColumn: "a",
+        label: "right",
+        every: "1i",
+        period: "2i",
+        closed: "right",
+        startBy: "datapoint",
+      })
+      .agg(pl.col("a").list().alias("lst"));
+    const actual = out.getColumn("lst").toArray();
+    const expected = [[2, 3], [3]];
     expect(actual).toEqual(expected);
   });
   test("default negative every offset dynamic groupby", () => {
@@ -243,14 +263,12 @@ describe("groupby ops", () => {
         dt: dates,
         idx: Array.from({ length: dates.length }, (_v, k) => k),
       })
-      .sort("dt");
+      .sort({ by: "dt" });
     const actual = df
       .groupByDynamic({
         indexColumn: "dt",
         every: "1mo",
-        closed: "right",
-        start_by: "datapoint",
-        check_sorted: true,
+        startBy: "datapoint",
       })
       .agg(pl.col("idx"));
     const expected = pl.DataFrame({

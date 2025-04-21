@@ -1253,7 +1253,7 @@ export interface DataFrame<T extends Record<string, Series> = any>
   /**
    * Replace a column at an index location.
    *
-   * @warning typescript cannot encode type mutation,
+   * Warning: typescript cannot encode type mutation,
    * so the type of the DataFrame will be incorrect. cast the type of dataframe manually.
    * ___
    * @param index - Column index
@@ -1484,7 +1484,7 @@ export interface DataFrame<T extends Record<string, Series> = any>
    * Sort the DataFrame by column.
    * ___
    * @param by - Column(s) to sort by. Accepts expression input, including selectors. Strings are parsed as column names.
-   * @param reverse - Reverse/descending sort.
+   * @param @deprecated reverse - Reverse/descending sort. Use {@link param.descending} instead
    * @param descending - Sort in descending order. When sorting by multiple columns, can be specified per column by passing a sequence of booleans.
    * @param nullsLast - Place null values last; can specify a single boolean applying to all columns or a sequence of booleans for per-column control.
    * @param maintainOrder - Whether the order should be maintained if elements are equal.
@@ -1501,7 +1501,7 @@ export interface DataFrame<T extends Record<string, Series> = any>
     maintainOrder,
   }: {
     by: ColumnsOrExpr;
-    /** @deprecated *since 0.16.0* @use descending */
+    /** @deprecated *since 0.16.0* Use {@link descending} instead */
     reverse?: boolean; // deprecated
     nullsLast?: boolean;
     maintainOrder?: boolean;
@@ -1611,13 +1611,6 @@ export interface DataFrame<T extends Record<string, Series> = any>
    * @category IO
    */
   toRecords(): { [K in keyof T]: DTypeToJs<T[K]["dtype"]> | null }[];
-
-  /**
-   * compat with `JSON.stringify`
-   * @category IO
-   */
-  toJSON(): string;
-
   /**
    * Converts dataframe object into a {@link TabularDataResource}
    */
@@ -2022,9 +2015,7 @@ function mapPolarsTypeToJSONSchema(colType: DataType): string {
   return typeMapping[dataType] || "string";
 }
 
-/**
- * @ignore
- */
+/** @ignore */
 export const _DataFrame = (_df: any): DataFrame => {
   const unwrap = (method: string, ...args: any[]) => {
     return _df[method as any](...args);
@@ -2213,9 +2204,11 @@ export const _DataFrame = (_df: any): DataFrame => {
       every,
       period,
       offset,
+      label,
       includeBoundaries,
       closed,
       by,
+      startBy,
     }) {
       return DynamicGroupBy(
         _DataFrame(_df) as any,
@@ -2223,9 +2216,11 @@ export const _DataFrame = (_df: any): DataFrame => {
         every,
         period,
         offset,
+        label,
         includeBoundaries,
         closed,
         by,
+        startBy,
       );
     },
     upsample(opts, every?, by?, maintainOrder?) {
@@ -2538,14 +2533,6 @@ export const _DataFrame = (_df: any): DataFrame => {
     },
     toRecords() {
       return _df.toObjects();
-    },
-    toJSON(...args: any[]) {
-      // this is passed by `JSON.stringify` when calling `toJSON()`
-      if (args[0] === "") {
-        return _df.toJs();
-      }
-
-      return _df.serialize("json").toString();
     },
     toHTML(): string {
       let htmlTable = "<table>";

@@ -15,7 +15,19 @@ export type ColumnsOrExpr = ColumnSelection | ExpressionSelection;
 /** @ignore */
 export type ExprOrString = Expr | string;
 
-export type StartBy = "window" | "datapoint" | "monday";
+/**
+ * @typeParam StartBy - The strategy to determine the start of the first window by.
+ */
+export type StartBy =
+  | "window"
+  | "datapoint"
+  | "monday"
+  | "tuesday"
+  | "wednesday"
+  | "thursday"
+  | "friday"
+  | "saturday"
+  | "sunday";
 
 /** @ignore */
 export function columnOrColumns(

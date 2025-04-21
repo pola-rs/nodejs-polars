@@ -1,5 +1,5 @@
-use polars::export::arrow::array::Array;
 use polars::prelude::*;
+use polars_arrow::array::Array;
 
 pub(crate) fn scatter(mut s: Series, idx: &Series, values: &Series) -> PolarsResult<Series> {
     let logical_dtype = s.dtype().clone();

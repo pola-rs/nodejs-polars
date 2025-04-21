@@ -298,11 +298,11 @@ export function DynamicGroupBy(
   every: string,
   period?: string,
   offset?: string,
+  label?: string,
   includeBoundaries?: boolean,
   closed?: string,
   by?: ColumnsOrExpr,
-  start_by?: StartBy,
-  check_sorted?: boolean,
+  startBy?: StartBy,
 ): DynamicGroupBy {
   return {
     agg(column: ColumnsOrExpr, ...columns: ColumnsOrExpr[]) {
@@ -313,11 +313,11 @@ export function DynamicGroupBy(
           every,
           period,
           offset,
+          label,
           includeBoundaries,
           closed,
           by,
-          start_by,
-          check_sorted,
+          startBy,
         } as any)
         .agg(column as any, ...columns)
         .collectSync({ noOptimizations: true });

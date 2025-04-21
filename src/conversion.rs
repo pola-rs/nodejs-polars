@@ -114,6 +114,7 @@ impl<'a> ToNapiValue for Wrap<AnyValue<'a>> {
             AnyValue::Int16(n) => i32::to_napi_value(env, n as i32),
             AnyValue::Int32(n) => i32::to_napi_value(env, n),
             AnyValue::Int64(n) => i64::to_napi_value(env, n),
+            AnyValue::Int128(n) => i128::to_napi_value(env, n),
             AnyValue::UInt8(n) => u32::to_napi_value(env, n as u32),
             AnyValue::UInt16(n) => u32::to_napi_value(env, n as u32),
             AnyValue::UInt32(n) => u32::to_napi_value(env, n),
@@ -330,6 +331,23 @@ impl FromNapiValue for Wrap<StartBy> {
                     "closed must be one of {{'window', 'datapoint', 'monday'}}, got {v}",
                 )))
             }
+        };
+        Ok(Wrap(parsed))
+    }
+}
+
+impl FromNapiValue for Wrap<Label> {
+    unsafe fn from_napi_value(env: sys::napi_env, napi_val: sys::napi_value) -> JsResult<Self> {
+        let start = String::from_napi_value(env, napi_val)?;
+        let parsed = match start.as_ref() {
+            "left" => Label::Left,
+            "right" => Label::Right,
+            "datapoint" => Label::DataPoint,
+            v => {
+                return Err(napi::Error::from_reason(format!(
+                    "`label` must be one of {{'left', 'right', 'datapoint'}}, got {v}",
+                )));
+            },
         };
         Ok(Wrap(parsed))
     }
