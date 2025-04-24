@@ -4,7 +4,7 @@ import type { DataType } from "./datatypes";
 import { concat } from "./functions";
 import pli from "./internals/polars_internal";
 import { type LazyDataFrame, _LazyDataFrame } from "./lazy/dataframe";
-import type { RowCount, ScanParquetOptions, ReadParquetOptions } from "./types";
+import type { ReadParquetOptions, RowCount, ScanParquetOptions } from "./types";
 import { isPath } from "./utils";
 
 export interface ReadCsvOptions {
