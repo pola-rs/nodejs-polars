@@ -928,7 +928,7 @@ export interface StringFunctions<T> {
   encode(encoding: "hex" | "base64"): T;
   /**
    * Extract the target capture group from provided patterns.
-   * @param pattern A valid regex pattern
+   * @param pat A valid regex pattern
    * @param groupIndex Index of the targeted capture group.
    * Group 0 mean the whole pattern, first group begin at index 1
    * Default to the first capture group

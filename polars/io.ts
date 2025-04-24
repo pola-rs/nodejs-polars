@@ -4,7 +4,7 @@ import type { DataType } from "./datatypes";
 import { concat } from "./functions";
 import pli from "./internals/polars_internal";
 import { type LazyDataFrame, _LazyDataFrame } from "./lazy/dataframe";
-import type { RowCount, ScanParquetOptions } from "./types";
+import type { RowCount, ScanParquetOptions, ReadParquetOptions } from "./types";
 import { isPath } from "./utils";
 
 export interface ReadCsvOptions {
@@ -392,13 +392,6 @@ export function scanJson(path: string, options?: Partial<ScanJsonOptions>) {
   // Handle If set to `null` case
   options.inferSchemaLength = options.inferSchemaLength ?? 0;
   return _LazyDataFrame(pli.scanJson(path, options));
-}
-
-interface ReadParquetOptions {
-  columns: string[] | number[];
-  numRows: number;
-  parallel: "auto" | "columns" | "row_groups" | "none";
-  rowCount: RowCount;
 }
 
 /**
