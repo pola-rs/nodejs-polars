@@ -108,13 +108,12 @@ interface WriteMethods {
    * ```
    * @category IO
    */
+  writeCSV(dest: string | Writable, options?: CsvWriterOptions): void;
   writeCSV(): Buffer;
   writeCSV(options: CsvWriterOptions): Buffer;
-  writeCSV(dest: string | Writable, options?: CsvWriterOptions): void;
   /**
    * Write Dataframe to JSON string, file, or write stream
    * @param destination file or write stream
-   * @param options
    * @param options.format - json | lines
    * @example
    * ```
@@ -136,52 +135,49 @@ interface WriteMethods {
    * ```
    * @category IO
    */
-  writeJSON(options?: { format: "lines" | "json" }): Buffer;
   writeJSON(
     destination: string | Writable,
     options?: { format: "lines" | "json" },
   ): void;
+  writeJSON(options?: { format: "lines" | "json" }): Buffer;
   /**
    * Write to Arrow IPC feather file, either to a file path or to a write stream.
    * @param destination File path to which the file should be written, or writable.
    * @param options.compression Compression method *defaults to "uncompressed"*
    * @category IO
    */
-  writeIPC(options?: WriteIPCOptions): Buffer;
   writeIPC(destination: string | Writable, options?: WriteIPCOptions): void;
-
+  writeIPC(options?: WriteIPCOptions): Buffer;
   /**
    * Write to Arrow IPC stream file, either to a file path or to a write stream.
    * @param destination File path to which the file should be written, or writable.
    * @param options.compression Compression method *defaults to "uncompressed"*
    * @category IO
    */
-  writeIPCStream(options?: WriteIPCOptions): Buffer;
   writeIPCStream(
     destination: string | Writable,
     options?: WriteIPCOptions,
   ): void;
-
+  writeIPCStream(options?: WriteIPCOptions): Buffer;
   /**
    * Write the DataFrame disk in parquet format.
    * @param destination File path to which the file should be written, or writable.
    * @param options.compression Compression method *defaults to "uncompressed"*
    * @category IO
    */
-  writeParquet(options?: WriteParquetOptions): Buffer;
   writeParquet(
     destination: string | Writable,
     options?: WriteParquetOptions,
   ): void;
-
+  writeParquet(options?: WriteParquetOptions): Buffer;
   /**
    * Write the DataFrame disk in avro format.
    * @param destination File path to which the file should be written, or writable.
    * @param options.compression Compression method *defaults to "uncompressed"*
    * @category IO
    */
-  writeAvro(options?: WriteAvroOptions): Buffer;
   writeAvro(destination: string | Writable, options?: WriteAvroOptions): void;
+  writeAvro(options?: WriteAvroOptions): Buffer;
 }
 
 /**
@@ -440,8 +436,8 @@ export interface DataFrame<T extends Record<string, Series> = any>
    * ╰─────────┴─────╯
    * ```
    */
-  explode(column: ExprOrString): DataFrame;
   explode(columns: ExprOrString[]): DataFrame;
+  explode(column: ExprOrString): DataFrame;
   explode(column: ExprOrString, ...columns: ExprOrString[]): DataFrame;
   /**
    *
@@ -594,9 +590,8 @@ export interface DataFrame<T extends Record<string, Series> = any>
   /**
    * Check if DataFrame is equal to other.
    * ___
-   * @param options
-   * @param options.other - DataFrame to compare.
-   * @param options.nullEqual Consider null values as equal.
+   * @param other DataFrame to compare.
+   * @param nullEqual Consider null values as equal.
    * @example
    * ```
    * > const df1 = pl.DataFrame({
@@ -615,8 +610,8 @@ export interface DataFrame<T extends Record<string, Series> = any>
    * false
    * ```
    */
-  frameEqual(other: DataFrame): boolean;
   frameEqual(other: DataFrame, nullEqual: boolean): boolean;
+  frameEqual(other: DataFrame): boolean;
   /**
    * Get a single column as Series by name.
    *
@@ -745,6 +740,7 @@ export interface DataFrame<T extends Record<string, Series> = any>
    * ╰─────┴─────┴─────┴───────╯
    * ```
    */
+  hstack(columns: Array<Series> | DataFrame, inPlace?: boolean): void;
   hstack<U extends Record<string, Series> = any>(
     columns: DataFrame<U>,
   ): DataFrame<Simplify<T & U>>;
@@ -752,7 +748,6 @@ export interface DataFrame<T extends Record<string, Series> = any>
     columns: U,
   ): DataFrame<Simplify<T & { [K in U[number] as K["name"]]: K }>>;
   hstack(columns: Array<Series> | DataFrame): DataFrame;
-  hstack(columns: Array<Series> | DataFrame, inPlace?: boolean): void;
   /**
    * Insert a Series at a certain column index. This operation is in place.
    * @param index - Column position to insert the new `Series` column.
@@ -777,7 +772,7 @@ export interface DataFrame<T extends Record<string, Series> = any>
   isUnique(): Series;
   /**
    *  __SQL like joins.__
-   * @param df - DataFrame to join with.
+   * @param other - DataFrame to join with.
    * @param options
    * @param options.leftOn - Name(s) of the left join column(s).
    * @param options.rightOn - Name(s) of the right join column(s).
@@ -963,9 +958,9 @@ export interface DataFrame<T extends Record<string, Series> = any>
    * ╰─────┴─────┴──────╯
    * ```
    */
-  max(): DataFrame<T>;
   max(axis: 0): DataFrame<T>;
   max(axis: 1): Series;
+  max(): DataFrame<T>;
   /**
    * Aggregate the columns of this DataFrame to their mean value.
    * ___
@@ -973,10 +968,10 @@ export interface DataFrame<T extends Record<string, Series> = any>
    * @param axis - either 0 or 1
    * @param nullStrategy - this argument is only used if axis == 1
    */
+  mean(axis: 1, nullStrategy?: "ignore" | "propagate"): Series;
   mean(): DataFrame<T>;
   mean(axis: 0): DataFrame<T>;
   mean(axis: 1): Series;
-  mean(axis: 1, nullStrategy?: "ignore" | "propagate"): Series;
   /**
    * Aggregate the columns of this DataFrame to their median value.
    * ___
@@ -1005,10 +1000,6 @@ export interface DataFrame<T extends Record<string, Series> = any>
    *
    * @param idVars - Columns to use as identifier variables.
    * @param valueVars - Values to use as value variables.
-   * @param variableName - Name to give to the `variable` column. Defaults to "variable"
-   * @param valueName - Name to give to the `value` column. Defaults to "value"
-   * @param streamable - Allow this node to run in the streaming engine.
-                         If this runs in streaming, the output of the unpivot operation will not have a stable ordering.
    * @example
    * ```
    * > const df1 = pl.DataFrame({
@@ -1055,9 +1046,9 @@ export interface DataFrame<T extends Record<string, Series> = any>
    * ╰─────┴─────┴──────╯
    * ```
    */
-  min(): DataFrame<T>;
   min(axis: 0): DataFrame<T>;
   min(axis: 1): Series;
+  min(): DataFrame<T>;
   /**
    * Get number of chunks used by the ChunkedArrays of this DataFrame.
    */
@@ -1416,9 +1407,8 @@ export interface DataFrame<T extends Record<string, Series> = any>
    * Shift the values by a given period and fill the parts that will be empty due to this operation
    * with the result of the `fill_value` expression.
    * ___
-   * @param opts
-   * @param opts.n - Number of places to shift (may be negative).
-   * @param opts.fillValue - fill null values with this value.
+   * @param n - Number of places to shift (may be negative).
+   * @param fillValue - fill null values with this value.
    * @example
    * ```
    * > const df = pl.DataFrame({
@@ -1484,7 +1474,6 @@ export interface DataFrame<T extends Record<string, Series> = any>
    * Sort the DataFrame by column.
    * ___
    * @param by - Column(s) to sort by. Accepts expression input, including selectors. Strings are parsed as column names.
-   * @param @deprecated reverse - Reverse/descending sort. Use {@link param.descending} instead
    * @param descending - Sort in descending order. When sorting by multiple columns, can be specified per column by passing a sequence of booleans.
    * @param nullsLast - Place null values last; can specify a single boolean applying to all columns or a sequence of booleans for per-column control.
    * @param maintainOrder - Whether the order should be maintained if elements are equal.
@@ -1501,7 +1490,7 @@ export interface DataFrame<T extends Record<string, Series> = any>
     maintainOrder,
   }: {
     by: ColumnsOrExpr;
-    /** @deprecated *since 0.16.0* Use {@link descending} instead */
+    /** @param @deprecated *since 0.16.0* Use descending instead */
     reverse?: boolean; // deprecated
     nullsLast?: boolean;
     maintainOrder?: boolean;
@@ -1545,10 +1534,10 @@ export interface DataFrame<T extends Record<string, Series> = any>
    * @param axis - either 0 or 1
    * @param nullStrategy - this argument is only used if axis == 1
    */
+  sum(axis: 1, nullStrategy?: "ignore" | "propagate"): Series;
   sum(): DataFrame<T>;
   sum(axis: 0): DataFrame<T>;
   sum(axis: 1): Series;
-  sum(axis: 1, nullStrategy?: "ignore" | "propagate"): Series;
   /**
    * @example
    * ```
@@ -1859,7 +1848,7 @@ export interface DataFrame<T extends Record<string, Series> = any>
   /**
    * Return a new DataFrame with the column renamed.
    * @param existingName
-   * @param newName
+   * @param replacement
    */
   withColumnRenamed<Existing extends keyof T, New extends string>(
     existingName: Existing,
@@ -2196,7 +2185,6 @@ export const _DataFrame = (_df: any): DataFrame => {
         opts.offset,
         opts.closed,
         opts.by,
-        opts.check_sorted,
       );
     },
     groupByDynamic({

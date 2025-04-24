@@ -80,10 +80,9 @@ export interface SQLContext {
    * // └────────┴─────────────┴─────────┘
    * ```
    */
-  execute(query: string): LazyDataFrame;
   execute(query: string, { eager }: { eager: true }): DataFrame;
   execute(query: string, { eager }: { eager: false }): LazyDataFrame;
-
+  execute(query: string): LazyDataFrame;
   /**
    * Register a single frame as a table, using the given name.
    *
