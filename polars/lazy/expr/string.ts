@@ -191,7 +191,8 @@ export interface ExprString extends StringFunctions<Expr> {
   /**
    * Parse string values in Expression as JSON.
    * Throw errors if encounter invalid JSON strings.
-   * @params Not implemented ATM
+   * @param dtype The dtype to cast the extracted value to. If None, the dtype will be inferred from the JSON value.
+   * @param inferSchemaLength The maximum number of rows to scan for schema inference.
    * @returns DF with struct
    * @example
    * ```
@@ -217,9 +218,7 @@ export interface ExprString extends StringFunctions<Expr> {
    * Throw errors if encounter invalid json strings.
    * All return value will be casted to Utf8 regardless of the original value.
    * @see https://goessner.net/articles/JsonPath/
-   * @param jsonPath - A valid JSON path query string
-   * @param dtype - The dtype to cast the extracted value to. If None, the dtype will be inferred from the JSON value.
-   * @param inferSchemaLength - How many rows to parse to determine the schema. If `null` all rows are used.
+   * @param pat - A valid JSON path query string
    * @returns Utf8 array. Contain null if original value is null or the `jsonPath` return nothing.
    * @example
    * ```
@@ -274,7 +273,7 @@ export interface ExprString extends StringFunctions<Expr> {
    * @param pattern - A valid regex pattern, string or expression
    * @param value Substring or expression to replace.
    * @param literal Treat pattern as a literal string.
-   * @note pattern as expression is not yet supported by polars
+   * Note: pattern as expression is not yet supported by polars
    * @example
    * ```
    * df = pl.DataFrame({"cost": ["#12.34", "#56.78"], "text": ["123abc", "abc456"]})
@@ -304,7 +303,7 @@ export interface ExprString extends StringFunctions<Expr> {
    * @param pattern - A valid regex pattern, string or expression
    * @param value Substring or expression to replace.
    * @param literal Treat pattern as a literal string.
-   * @note pattern as expression is not yet supported by polars
+   * Note: pattern as expression is not yet supported by polars
    * @example
    * ```
    * df = df = pl.DataFrame({"weather": ["Rainy", "Sunny", "Cloudy", "Snowy"], "text": ["abcabc", "123a123", null, null]})
@@ -406,7 +405,7 @@ export interface ExprString extends StringFunctions<Expr> {
    * If string is longer or equal to given length no modifications will be done
    * @param {number} length  - of the final string
    * @param {string} fillChar  - that will fill the string.
-   * @note If a string longer than 1 character is provided only the first character will be used
+   * Note: If a string longer than 1 character is provided only the first character will be used
    * @example
    * ```
    * > df = pl.DataFrame({
@@ -442,8 +441,8 @@ export interface ExprString extends StringFunctions<Expr> {
   slice(start: number | Expr, length?: number | Expr): Expr;
   /**
    * Split a string into substrings using the specified separator and return them as a Series.
-   * @param separator — A string that identifies character or characters to use in separating the string.
-   * @param inclusive Include the split character/string in the results
+   * @param by — A string that identifies character or characters to use in separating the string.
+   * @param options.inclusive Include the split character/string in the results
    */
   split(by: string, options?: { inclusive?: boolean } | boolean): Expr;
   /** Check if string values start with a substring.

@@ -134,21 +134,21 @@ export interface Series<T extends DataType = any, Name extends string = string>
   /**
    * Get the index values that would sort this Series.
    * ___
-   * @param @deprecated reverse - Reverse/descending sort. Use {@link param.descending} instead
    * @param descending - Sort in descending order.
    * @param nullsLast - Place null values last instead of first.
    * @return {SeriesType} indexes - Indexes that can be used to sort this array.
    */
-  argSort(): Series<T, Name>;
   argSort(descending?: boolean, nullsLast?: boolean): Series<T, Name>;
   argSort({
     descending,
     nullsLast,
   }: { descending?: boolean; nullsLast?: boolean }): Series<T, Name>;
+  /* @deprecated Use descending instead */
   argSort({
     reverse, // deprecated
     nullsLast,
   }: { reverse?: boolean; nullsLast?: boolean }): Series<T, Name>;
+  argSort(): Series<T, Name>;
   /**
    * __Rename this Series.__
    *
@@ -547,8 +547,8 @@ export interface Series<T extends DataType = any, Name extends string = string>
    * @param fisher -
    * - If True, Fisher's definition is used (normal ==> 0.0).
    * - If False, Pearson's definition is used (normal ==> 3.0)
+   * @param bias : bool, optional If False, the calculations are corrected for statistical bias.
    */
-  kurtosis(): Optional<number>;
   kurtosis(fisher: boolean, bias?: boolean): Optional<number>;
   kurtosis({
     fisher,
@@ -557,6 +557,7 @@ export interface Series<T extends DataType = any, Name extends string = string>
     fisher?: boolean;
     bias?: boolean;
   }): Optional<number>;
+  kurtosis(): Optional<number>;
   /**
    * __Length of this Series.__
    * ___
@@ -778,8 +779,8 @@ export interface Series<T extends DataType = any, Name extends string = string>
    * ]
    * ```
    */
-  rename(name: string): Series;
   rename(name: string, inPlace: boolean): void;
+  rename(name: string): Series;
   rename({ name, inPlace }: { name: string; inPlace?: boolean }): void;
   rename({ name, inPlace }: { name: string; inPlace: true }): void;
 
@@ -853,8 +854,8 @@ export interface Series<T extends DataType = any, Name extends string = string>
    * __Shrink memory usage of this Series to fit the exact capacity needed to hold the data.__
    * @param inPlace - Modify the Series in-place.
    */
-  shrinkToFit(): Series;
   shrinkToFit(inPlace: true): void;
+  shrinkToFit(): Series;
   /**
    * __Compute the sample skewness of a data set.__
    *
@@ -870,13 +871,12 @@ export interface Series<T extends DataType = any, Name extends string = string>
   /**
    * Create subslices of the Series.
    *
-   * @param offset - Start of the slice (negative indexing may be used).
+   * @param start - Start of the slice (negative indexing may be used).
    * @param length - length of the slice.
    */
   slice(start: number, length?: number): Series;
   /**
    * __Sort this Series.__
-   * @param @deprecated options.reverse - Reverse/descending sort. Use {@link param.descending} instead
    * @param options.descending - Sort in descending order.
    * @param options.nullsLast - Place nulls at the end.
    * @example
@@ -902,9 +902,10 @@ export interface Series<T extends DataType = any, Name extends string = string>
    * ]
    * ```
    */
-  sort(): Series;
   sort(options: { descending?: boolean; nullsLast?: boolean }): Series;
+  /* @deprecated Use descending instead */
   sort(options: { reverse?: boolean; nullsLast?: boolean }): Series;
+  sort(): Series;
   /**
    * Reduce this Series to the sum value.
    * @example
@@ -1066,8 +1067,8 @@ export interface Series<T extends DataType = any, Name extends string = string>
 
   /**
    * Get dummy/indicator variables.
-   * @param separator: str = "_",
-   * @param dropFirst: bool = False
+   * @param separator str = "_",
+   * @param dropFirst bool = False
    *
    * @example
    * const s = pl.Series("a", [1, 2, 3])

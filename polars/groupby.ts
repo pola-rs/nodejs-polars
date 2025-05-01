@@ -140,11 +140,11 @@ export interface GroupBy {
    * @param valuesCol - Column that will be aggregated.
    *
    */
+  pivot(pivotCol: string, valuesCol: string): PivotOps;
   pivot({
     pivotCol,
     valuesCol,
   }: { pivotCol: string; valuesCol: string }): PivotOps;
-  pivot(pivotCol: string, valuesCol: string): PivotOps;
   /**
    * Compute the quantile per group.
    */
@@ -265,7 +265,6 @@ export function RollingGroupBy(
   offset?: string,
   closed?,
   by?: ColumnsOrExpr,
-  check_sorted?: boolean,
 ): RollingGroupBy {
   return {
     agg(column: ColumnsOrExpr, ...columns: ColumnsOrExpr[]) {
@@ -277,7 +276,6 @@ export function RollingGroupBy(
           offset,
           closed,
           by,
-          check_sorted,
         } as any)
         .agg(column as any, ...columns)
         .collectSync();

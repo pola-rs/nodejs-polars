@@ -199,13 +199,13 @@ export function lit(value: any): Expr {
     └───────┴─────┴─────┘
  * ```
  */
-export function intRange(opts: {
-  start: number | Expr;
-  end: number | Expr;
-  step?: number | Expr;
-  dtype?: DataType;
-  eager?: false;
-}): Expr;
+export function intRange(
+  start: number | Expr,
+  end?: number | Expr,
+  step?: number | Expr,
+  dtype?: DataType,
+  eager?: false,
+): Expr;
 export function intRange<DT extends DataType = DataType.Int64>(opts: {
   start: number | Expr;
   end: number | Expr;
@@ -213,6 +213,13 @@ export function intRange<DT extends DataType = DataType.Int64>(opts: {
   dtype?: DT;
   eager: true;
 }): Series<DT>;
+export function intRange(opts: {
+  start: number | Expr;
+  end: number | Expr;
+  step?: number | Expr;
+  dtype?: DataType;
+  eager?: false;
+}): Expr;
 export function intRange<DT extends DataType = DataType.Int64>(opts: {
   start: number | Expr;
   end: number | Expr;
@@ -228,13 +235,6 @@ export function intRange(opts: {
   dtype?: DataType;
   eager?: boolean;
 }): Expr | Series;
-export function intRange(
-  start: number | Expr,
-  end?: number | Expr,
-  step?: number | Expr,
-  dtype?: DataType,
-  eager?: false,
-): Expr;
 export function intRange<DT extends DataType = DataType.Int64>(
   start: number | Expr,
   end?: number | Expr,
@@ -329,7 +329,6 @@ export function all(): Expr {
 /**
  * Return the row indices that would sort the columns.
  * @param exprs Column(s) to arg sort by. Accepts expression input.
- * @param *more_exprs Additional columns to arg sort by, specified as positional arguments.
  * @param descending Sort in descending order. When sorting by multiple columns, can be specified per column by passing a sequence of booleans.
  * @example
  * ```
@@ -672,11 +671,7 @@ export function list(column: ExprOrString): Expr {
     Collect several columns into a Series of dtype Struct
     Parameters
     ----------
-    @param exprs
-        Columns/Expressions to collect into a Struct
-    @param eager
-        Evaluate immediately
-
+    @param exprs Columns/Expressions to collect into a Struct
     Examples
     --------
     ```
@@ -789,7 +784,7 @@ export function element(): Expr {
 
 /**
  * Compute the bitwise AND horizontally across columns.
- * @param *exprs
+ * @param exprs
  *         Column(s) to use in the aggregation. Accepts expression input. Strings are
  *         parsed as column names, other non-expression inputs are parsed as literals.
  *
@@ -827,7 +822,7 @@ export function allHorizontal(exprs: ExprOrString | ExprOrString[]): Expr {
 
 /**
  * Compute the bitwise OR horizontally across columns.
- * @param *exprs
+ * @param exprs
  *       Column(s) to use in the aggregation. Accepts expression input. Strings are
  *       parsed as column names, other non-expression inputs are parsed as literals.
  * @example
@@ -864,7 +859,7 @@ export function anyHorizontal(exprs: ExprOrString | ExprOrString[]): Expr {
 
 /**
  * Get the maximum value horizontally across columns.
- * @param *exprs
+ * @param exprs
  *       Column(s) to use in the aggregation. Accepts expression input. Strings are
  *       parsed as column names, other non-expression inputs are parsed as literals.
  * @example
@@ -898,9 +893,8 @@ export function maxHorizontal(exprs: ExprOrString | ExprOrString[]): Expr {
 }
 /**
  * Get the minimum value horizontally across columns.
- * @param *exprs
- *       Column(s) to use in the aggregation. Accepts expression input. Strings are
- *       parsed as column names, other non-expression inputs are parsed as literals.
+ * @param exprs Column(s) to use in the aggregation. Accepts expression input. Strings are
+ *              parsed as column names, other non-expression inputs are parsed as literals.
  * @example
  * ```
  *  >>> const df = pl.DataFrame(
@@ -934,7 +928,7 @@ export function minHorizontal(exprs: ExprOrString | ExprOrString[]): Expr {
 
 /**
  * Sum all values horizontally across columns.
- * @param *exprs
+ * @param exprs
  *       Column(s) to use in the aggregation. Accepts expression input. Strings are
  *       parsed as column names, other non-expression inputs are parsed as literals.
  * @example

@@ -4,7 +4,7 @@ import type { DataType } from "./datatypes";
 import { concat } from "./functions";
 import pli from "./internals/polars_internal";
 import { type LazyDataFrame, _LazyDataFrame } from "./lazy/dataframe";
-import type { RowCount, ScanParquetOptions } from "./types";
+import type { ReadParquetOptions, RowCount, ScanParquetOptions } from "./types";
 import { isPath } from "./utils";
 
 export interface ReadCsvOptions {
@@ -394,16 +394,9 @@ export function scanJson(path: string, options?: Partial<ScanJsonOptions>) {
   return _LazyDataFrame(pli.scanJson(path, options));
 }
 
-interface ReadParquetOptions {
-  columns: string[] | number[];
-  numRows: number;
-  parallel: "auto" | "columns" | "row_groups" | "none";
-  rowCount: RowCount;
-}
-
 /**
    * Read into a DataFrame from a parquet file.
-   * @param pathOrBuffer
+   * @param pathOrBody
    * Path to a file, list of files, or a file like object. If the path is a directory, that directory will be used
    * as partition aware scan.
    * @param options.columns Columns to select. Accepts a list of column indices (starting at zero) or a list of column names.
@@ -454,7 +447,7 @@ export interface ReadAvroOptions {
 
 /**
  * Read into a DataFrame from an avro file.
- * @param pathOrBuffer
+ * @param pathOrBody
  * Path to a file, list of files, or a file like object. If the path is a directory, that directory will be used
  * as partition aware scan.
  * @param options.columns Columns to select. Accepts a list of column names.
@@ -514,8 +507,8 @@ export function readAvro(pathOrBody, options = {}) {
         * `azure <https://docs.rs/object_store/latest/object_store/azure/enum.AzureConfigKey.html>`_
 
         If `cloudOptions` is not provided, Polars will try to infer the information from environment variables.
-    @param retries - Number of retries if accessing a cloud instance fails.
-    @param includeFilePaths - Include the path of the source file(s) as a column with this name.
+    @param options.retries - Number of retries if accessing a cloud instance fails.
+    @param options.includeFilePaths - Include the path of the source file(s) as a column with this name.
  */
 export function scanParquet(source: string, options: ScanParquetOptions = {}) {
   const defaultOptions = { parallel: "auto" };

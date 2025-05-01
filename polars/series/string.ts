@@ -129,8 +129,6 @@ export interface SeriesStringFunctions extends StringFunctions<Series> {
    * All return value will be casted to Utf8 regardless of the original value.
    * @see https://goessner.net/articles/JsonPath/
    * @param jsonPath - A valid JSON path query string
-   * @param dtype - The dtype to cast the extracted value to. If None, the dtype will be inferred from the JSON value.
-   * @param inferSchemaLength - How many rows to parse to determine the schema. If ``null`` all rows are used.
    * @returns Utf8 array. Contain null if original value is null or the `jsonPath` return nothing.
    * @example
    * ```
@@ -285,7 +283,7 @@ export interface SeriesStringFunctions extends StringFunctions<Series> {
    * Split a string into substrings using the specified separator.
    * The return type will by of type List<Utf8>
    * @param separator — A string that identifies character or characters to use in separating the string.
-   * @param inclusive Include the split character/string in the results
+   * @param options.inclusive Include the split character/string in the results
    */
   split(separator: string, options?: { inclusive?: boolean } | boolean): Series;
   /**

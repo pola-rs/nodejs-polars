@@ -22,7 +22,7 @@ export interface ExprStruct {
   renameFields(names: string[]): Expr;
   /**
    * Add/replace fields in a struct
-   * @param exprs - array of expressions for new fields
+   * @param fields - array of expressions for new fields
    */
   withFields(fields: Expr[]): Expr;
 }
