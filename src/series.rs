@@ -1024,12 +1024,12 @@ impl JsSeries {
     #[napi(catch_unwind)]
     pub fn to_dummies(
         &self,
-        separator: Option<&str>,
+        separator: Option<String>,
         drop_first: bool,
     ) -> napi::Result<JsDataFrame> {
         let df = self
             .series
-            .to_dummies(separator, drop_first)
+            .to_dummies(separator.as_deref(), drop_first)
             .map_err(JsPolarsErr::from)?;
         Ok(df.into())
     }
@@ -1313,7 +1313,21 @@ macro_rules! impl_set_with_mask {
     };
 }
 
-impl_set_with_mask!(series_set_with_mask_str, &str, str);
+#[napi(catch_unwind)]
+pub fn series_set_with_mask_str(
+    series: &JsSeries,
+    mask: &JsSeries,
+    value: Option<String>,
+) -> napi::Result<JsSeries> {
+    let mask = mask.series.bool().map_err(JsPolarsErr::from)?;
+    let ca = series.series.str().map_err(JsPolarsErr::from)?;
+    let new = ca
+        .set(mask, value.as_deref())
+        .map_err(JsPolarsErr::from)?
+        .into_series();
+    Ok(new.into())
+}
+
 impl_set_with_mask!(series_set_with_mask_f64, f64, f64);
 impl_set_with_mask_wrap!(series_set_with_mask_f32, f32, f32);
 impl_set_with_mask_wrap!(series_set_with_mask_u8, u8, u8);

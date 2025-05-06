@@ -5,7 +5,6 @@ use polars::prelude::{col, lit, ClosedWindow, JoinType};
 use polars_io::{HiveOptions, RowIndex};
 use std::collections::HashMap;
 use std::num::NonZeroUsize;
-use std::path::PathBuf;
 
 #[napi]
 #[repr(transparent)]
@@ -299,8 +298,8 @@ impl JsLazyFrame {
         other: &JsLazyFrame,
         left_on: &JsExpr,
         right_on: &JsExpr,
-        left_by: Option<Vec<&str>>,
-        right_by: Option<Vec<&str>>,
+        left_by: Option<Vec<String>>,
+        right_by: Option<Vec<String>>,
         allow_parallel: bool,
         force_parallel: bool,
         suffix: String,
@@ -512,10 +511,10 @@ impl JsLazyFrame {
     #[napi(catch_unwind)]
     pub fn unpivot(
         &self,
-        id_vars: Vec<&str>,
-        value_vars: Vec<&str>,
-        variable_name: Option<&str>,
-        value_name: Option<&str>,
+        id_vars: Vec<String>,
+        value_vars: Vec<String>,
+        variable_name: Option<String>,
+        value_name: Option<String>,
     ) -> JsLazyFrame {
         let args = UnpivotArgsDSL {
             on: strings_to_selector(value_vars),

@@ -460,7 +460,7 @@ pub fn from_rows(
                 .map(|fld| {
                     let dtype: &DataType = fld.dtype();
                     let key: &PlSmallStr = fld.name();
-                    if let Ok(unknown) = obj.get::<&polars::prelude::PlSmallStr, JsUnknown>(key) {
+                    if let Ok(unknown) = obj.get::<JsUnknown>(key) {
                         match unknown {
                             Some(unknown) => {
                                 coerce_js_anyvalue(unknown, dtype.clone()).unwrap_or(AnyValue::Null)
@@ -615,8 +615,8 @@ impl JsDataFrame {
     pub fn join(
         &self,
         other: &JsDataFrame,
-        left_on: Vec<&str>,
-        right_on: Vec<&str>,
+        left_on: Vec<String>,
+        right_on: Vec<String>,
         how: String,
         suffix: Option<String>,
     ) -> napi::Result<JsDataFrame> {
@@ -675,7 +675,7 @@ impl JsDataFrame {
     }
 
     #[napi(setter, js_name = "columns", catch_unwind)]
-    pub fn set_columns(&mut self, names: Vec<&str>) -> napi::Result<()> {
+    pub fn set_columns(&mut self, names: Vec<String>) -> napi::Result<()> {
         self.df.set_column_names(names).map_err(JsPolarsErr::from)?;
         Ok(())
     }
@@ -784,7 +784,7 @@ impl JsDataFrame {
         Ok(series)
     }
     #[napi(catch_unwind)]
-    pub fn select(&self, selection: Vec<&str>) -> napi::Result<JsDataFrame> {
+    pub fn select(&self, selection: Vec<String>) -> napi::Result<JsDataFrame> {
         let df = self.df.select(selection).map_err(JsPolarsErr::from)?;
         Ok(JsDataFrame::new(df))
     }
@@ -928,7 +928,7 @@ impl JsDataFrame {
     #[napi(catch_unwind)]
     pub fn groupby(
         &self,
-        by: Vec<&str>,
+        by: Vec<String>,
         select: Option<Vec<String>>,
         agg: String,
     ) -> napi::Result<JsDataFrame> {
@@ -949,7 +949,7 @@ impl JsDataFrame {
         aggregate_expr: Option<Wrap<polars::prelude::Expr>>,
         maintain_order: bool,
         sort_columns: bool,
-        separator: Option<&str>,
+        separator: Option<String>,
     ) -> napi::Result<JsDataFrame> {
         let fun = match maintain_order {
             true => polars::prelude::pivot::pivot_stable,
@@ -962,7 +962,7 @@ impl JsDataFrame {
             Some(values),
             sort_columns,
             aggregate_expr.map(|e| e.0 as Expr),
-            separator,
+            separator.as_deref(),
         )
         .map(|df| df.into())
         .map_err(|e| napi::Error::from_reason(format!("Could not pivot: {}", e)))
@@ -1069,12 +1069,12 @@ impl JsDataFrame {
     #[napi(catch_unwind)]
     pub fn to_dummies(
         &self,
-        separator: Option<&str>,
+        separator: Option<String>,
         drop_first: bool,
     ) -> napi::Result<JsDataFrame> {
         let df = self
             .df
-            .to_dummies(separator, drop_first)
+            .to_dummies(separator.as_deref(), drop_first)
             .map_err(JsPolarsErr::from)?;
         Ok(df.into())
     }
@@ -1631,7 +1631,7 @@ fn obj_to_pairs(rows: &Array, len: usize) -> impl '_ + Iterator<Item = Vec<(Stri
         let keys = Object::keys(&obj).unwrap();
         keys.iter()
             .map(|key| {
-                let value = obj.get::<_, napi::JsUnknown>(&key).unwrap_or(None);
+                let value = obj.get::<napi::JsUnknown>(&key).unwrap_or(None);
                 (key.to_owned(), obj_to_type(value))
             })
             .collect()
@@ -1676,7 +1676,7 @@ fn obj_to_type(value: Option<JsUnknown>) -> DataType {
                         let mut fldvec: Vec<Field> = Vec::with_capacity(inner_keys.len() as usize);
 
                         inner_keys.iter().for_each(|key| {
-                            let inner_val = inner_val.get::<_, napi::JsUnknown>(&key).unwrap();
+                            let inner_val = inner_val.get::<napi::JsUnknown>(&key).unwrap();
                             let dtype = match inner_val.as_ref().unwrap().get_type().unwrap() {
                                 ValueType::Boolean => DataType::Boolean,
                                 ValueType::Number => DataType::Float64,
@@ -1798,7 +1798,7 @@ fn coerce_js_anyvalue<'a>(val: JsUnknown, dtype: DataType) -> JsResult<AnyValue<
                 Vec::with_capacity(number_of_fields as usize);
             fields.iter().for_each(|fld| {
                 let single_val = inner_val
-                    .get::<_, napi::JsUnknown>(&fld.name)
+                    .get::<napi::JsUnknown>(&fld.name)
                     .unwrap()
                     .unwrap();
                 let vv = match &fld.dtype {

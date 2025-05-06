@@ -26,12 +26,13 @@ impl<'a> JsWriteStream<'a> {
     }
 }
 pub struct ThreadsafeWriteable {
-    pub inner: ThreadsafeFunction<Either<Buffer, Null>, ErrorStrategy::CalleeHandled>,
+    pub inner: ThreadsafeFunction<Either<Buffer, Null>>,
 }
 
 impl Write for ThreadsafeWriteable {
     fn write(&mut self, buf: &[u8]) -> Result<usize, io::Error> {
-        let tsfn = self.inner.clone();
+        // let tsfn = self.inner.clone(); // TODO: Check
+        let tsfn = &self.inner;
         tsfn.call(
             Ok(Either::A(buf.into())),
             ThreadsafeFunctionCallMode::Blocking,

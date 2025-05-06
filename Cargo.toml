@@ -15,28 +15,14 @@ crate-type = ["cdylib", "lib"]
 [dependencies]
 ahash = "0.8.11"
 bincode = "1.3.3"
-napi = { version = "2.16.16", default-features = false, features = [
+napi = { version = "3.0.0-alpha.29", default-features = false, features = [
   "napi8",
   "serde-json",
 ] }
-napi-derive = { version = "2.16.13", default-features = false }
-polars-core = { version = "0.47.0", default-features = false, features = [
-  # "serde",
-  # "dtype-array",
-  # "diagonal_concat",
-  # "algorithm_group_by",
-  # "approx_unique",
-  # "array_arithmetic",
-  # "avx512",
-  # "bitwise",
-  # "checked_arithmetic",
-  # "dataframe_arithmetic",
-] }
+napi-derive = { version = "3.0.0-alpha.29", default-features = false }
+polars-core = { version = "0.47.0", default-features = false, features = [] }
 polars-io = { version = "0.47.0", default-features = false }
-polars-lazy = { version = "0.47.0", default-features = false, features = [
-  "cumulative_eval",
-  "list_eval",
-] }
+polars-lazy = { version = "0.47.0", default-features = false, features = [] }
 polars-ops = { version = "0.47.0", default-features = false }
 polars-arrow = { version = "0.47.0", default-features = false }
 polars-plan = { version = "0.47.0", default-features = false }
