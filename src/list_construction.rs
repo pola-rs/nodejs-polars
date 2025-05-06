@@ -174,10 +174,12 @@ pub fn js_arr_to_list(name: &str, arr: &Array, dtype: &DataType) -> napi::Result
                 (len as usize) * 5,
             );
             for idx in 0..len {
-                let values: Either<Vec<Option<&str>>, Null> = arr.get(idx)?.unwrap();
+                let values: Either<Vec<Option<String>>, Null> = arr.get(idx)?.unwrap();
 
                 match values {
-                    Either::A(inner_arr) => builder.append_trusted_len_iter(inner_arr.into_iter()),
+                    Either::A(inner_arr) => {
+                        builder.append_trusted_len_iter(inner_arr.iter().map(|opt| opt.as_deref()))
+                    }
                     Either::B(_) => builder.append_null(),
                 }
             }
