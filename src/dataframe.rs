@@ -1091,12 +1091,13 @@ impl JsDataFrame {
     #[napi(catch_unwind)]
     pub fn hash_rows(
         &mut self,
-        k0: Wrap<u64>,
-        k1: Wrap<u64>,
-        k2: Wrap<u64>,
-        k3: Wrap<u64>,
+        _k0: Wrap<u64>,
+        _k1: Wrap<u64>,
+        _k2: Wrap<u64>,
+        _k3: Wrap<u64>,
     ) -> napi::Result<JsSeries> {
-        let hb = PlRandomState::with_seeds(k0.0, k1.0, k2.0, k3.0);
+        let hb = PlSeedableRandomStateQuality::random();
+        // let hb = PlRandomState::with_seeds(k0.0, k1.0, k2.0, k3.0);
         let hash = self.df.hash_rows(Some(hb)).map_err(JsPolarsErr::from)?;
         Ok(hash.into_series().into())
     }

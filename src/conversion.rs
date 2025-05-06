@@ -6,6 +6,7 @@ use polars::prelude::NullStrategy;
 use polars::prelude::*;
 use polars_core::series::ops::NullBehavior;
 use polars_io::cloud::CloudOptions;
+use polars_io::utils::sync_on_close::SyncOnCloseType;
 use polars_io::RowIndex;
 use std::collections::HashMap;
 use std::num::NonZero;
@@ -319,6 +320,59 @@ impl FromNapiValue for Wrap<QuantileMethod> {
     }
 }
 
+impl FromNapiValue for Wrap<SyncOnCloseType> {
+    unsafe fn from_napi_value(env: sys::napi_env, napi_val: sys::napi_value) -> JsResult<Self> {
+        let soct = String::from_napi_value(env, napi_val)?;
+        let soct = match soct.as_ref() {
+            "none" => SyncOnCloseType::None,
+            "data" => SyncOnCloseType::Data,
+            "allt" => SyncOnCloseType::All,
+            _ => return Err(napi::Error::from_reason("not supported".to_owned())),
+        };
+        Ok(Wrap(soct))
+    }
+}
+impl ToNapiValue for Wrap<SyncOnCloseType> {
+    unsafe fn to_napi_value(env: sys::napi_env, val: Self) -> Result<sys::napi_value> {
+        let s = match val.0 {
+            SyncOnCloseType::None => "none",
+            SyncOnCloseType::Data => "data",
+            SyncOnCloseType::All => "all",
+        };
+        String::to_napi_value(env, s.to_owned())
+    }
+}
+
+#[napi(object)]
+pub struct JsSinkOptions {
+    /// Call sync when closing the file.
+    pub sync_on_close: Wrap<SyncOnCloseType>,
+
+    /// The output file needs to maintain order of the data that comes in.
+    pub maintain_order: bool,
+
+    /// Recursively create all the directories in the path.
+    pub mkdir: bool,
+}
+impl From<JsSinkOptions> for SinkOptions {
+    fn from(o: JsSinkOptions) -> Self {
+        SinkOptions {
+            sync_on_close: o.sync_on_close.0,
+            maintain_order: o.maintain_order,
+            mkdir: o.mkdir,
+        }
+    }
+}
+impl From<SinkOptions> for JsSinkOptions {
+    fn from(o: SinkOptions) -> Self {
+        JsSinkOptions {
+            sync_on_close: Wrap(o.sync_on_close),
+            maintain_order: o.maintain_order,
+            mkdir: o.mkdir,
+        }
+    }
+}
+
 impl FromNapiValue for Wrap<StartBy> {
     unsafe fn from_napi_value(env: sys::napi_env, napi_val: sys::napi_value) -> JsResult<Self> {
         let start = String::from_napi_value(env, napi_val)?;
@@ -347,7 +401,7 @@ impl FromNapiValue for Wrap<Label> {
                 return Err(napi::Error::from_reason(format!(
                     "`label` must be one of {{'left', 'right', 'datapoint'}}, got {v}",
                 )));
-            },
+            }
         };
         Ok(Wrap(parsed))
     }
@@ -488,6 +542,23 @@ impl FromNapiValue for Wrap<FillNullStrategy> {
     }
 }
 
+// TODO: Check casing
+impl FromNapiValue for Wrap<RoundMode> {
+    unsafe fn from_napi_value(env: sys::napi_env, napi_val: sys::napi_value) -> JsResult<Self> {
+        let method = String::from_napi_value(env, napi_val)?;
+        let method = match method.as_ref() {
+            "halftoeven" => RoundMode::HalfToEven,
+            "halfawayfromzero" => RoundMode::HalfAwayFromZero,
+            _ => {
+                return Err(napi::Error::from_reason(
+                    "use one of {'halftoeven', 'halfawayfromzero'}".to_owned(),
+                ))
+            }
+        };
+        Ok(Wrap(method))
+    }
+}
+
 impl FromNapiValue for Wrap<u8> {
     unsafe fn from_napi_value(env: sys::napi_env, napi_val: sys::napi_value) -> JsResult<Self> {
         let n = u32::from_napi_value(env, napi_val)?;
@@ -572,7 +643,6 @@ pub struct SinkParquetOptions {
     pub statistics: Option<bool>,
     pub row_group_size: Option<i16>,
     pub data_pagesize_limit: Option<i64>,
-    pub maintain_order: Option<bool>,
     pub type_coercion: Option<bool>,
     pub predicate_pushdown: Option<bool>,
     pub projection_pushdown: Option<bool>,
@@ -581,6 +651,7 @@ pub struct SinkParquetOptions {
     pub no_optimization: Option<bool>,
     pub cloud_options: Option<HashMap<String, String>>,
     pub retries: Option<u32>,
+    pub sink_options: JsSinkOptions,
 }
 
 #[napi(object)]
@@ -681,7 +752,7 @@ impl FromNapiValue for Wrap<DataType> {
                         DataType::Datetime(tu.0, None)
                     }
                     "Time" => DataType::Time,
-                    "Object" => DataType::Object("object", None),
+                    "Object" => DataType::Object("object"),
                     "Categorical" => DataType::Categorical(None, Default::default()),
                     "Struct" => {
                         let inner = obj.get::<_, Array>("fields")?.unwrap();
@@ -850,7 +921,6 @@ impl FromNapiValue for Wrap<CsvWriterOptions> {
         let include_header = obj.get::<_, bool>("includeHeader")?.unwrap_or(true);
         let batch_size = NonZero::new(obj.get::<_, i64>("batchSize")?.unwrap_or(1024) as usize)
             .ok_or_else(|| napi::Error::from_reason("Invalid batch size"))?;
-        let maintain_order = obj.get::<_, bool>("maintainOrder")?.unwrap_or(true);
         let date_format = obj.get::<_, String>("dateFormat")?;
         let time_format = obj.get::<_, String>("timeFormat")?;
         let datetime_format = obj.get::<_, String>("datetimeFormat")?;
@@ -890,7 +960,6 @@ impl FromNapiValue for Wrap<CsvWriterOptions> {
         let options = CsvWriterOptions {
             include_bom,
             include_header,
-            maintain_order,
             batch_size,
             serialize_options,
         };

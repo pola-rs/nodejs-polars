@@ -58,7 +58,6 @@ export interface CsvWriterOptions {
   timeFormat?: string;
   floatPrecision?: number;
   nullValue?: string;
-  maintainOrder?: boolean;
 }
 /**
  * Options for @see {@link LazyDataFrame.sinkParquet}

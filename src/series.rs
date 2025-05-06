@@ -681,13 +681,17 @@ impl JsSeries {
     }
     #[napi(catch_unwind)]
     pub fn explode(&self) -> napi::Result<JsSeries> {
-        let s = self.series.explode().map_err(JsPolarsErr::from)?;
+        // TODO: Consider adding parameter here
+        let s = self.series.explode(false).map_err(JsPolarsErr::from)?;
         Ok(s.into())
     }
     #[napi(catch_unwind)]
-    pub fn gather_every(&self, n: i64, offset: i64) -> JsSeries {
-        let s = self.series.gather_every(n as usize, offset as usize);
-        s.into()
+    pub fn gather_every(&self, n: i64, offset: i64) -> napi::Result<JsSeries> {
+        let s = self
+            .series
+            .gather_every(n as usize, offset as usize)
+            .map_err(JsPolarsErr::from)?; // TODO: Check if mapping is correct
+        Ok(s.into())
     }
     #[napi(catch_unwind)]
     pub fn series_equal(&self, other: &JsSeries, null_equal: bool, strict: bool) -> bool {
@@ -829,8 +833,9 @@ impl JsSeries {
     }
 
     #[napi(catch_unwind)]
-    pub fn is_in(&self, other: &JsSeries) -> napi::Result<JsSeries> {
-        let series = is_in(&self.series, &other.series)
+    pub fn is_in(&self, other: &JsSeries, nulls_equal: bool) -> napi::Result<JsSeries> {
+        // TODO: Should the default go with option?
+        let series = is_in(&self.series, &other.series, nulls_equal)
             .map(|ca| ca.into_series())
             .map_err(JsPolarsErr::from)?;
 
@@ -1109,8 +1114,12 @@ impl JsSeries {
     }
 
     #[napi(catch_unwind)]
-    pub fn round(&self, decimals: u32) -> napi::Result<JsSeries> {
-        let s = self.series.round(decimals).map_err(JsPolarsErr::from)?;
+    pub fn round(&self, decimals: u32, mode: Wrap<RoundMode>) -> napi::Result<JsSeries> {
+        // TODO: Should it be turned into an option?
+        let s = self
+            .series
+            .round(decimals, mode.0)
+            .map_err(JsPolarsErr::from)?;
         Ok(s.into())
     }
 
@@ -1137,8 +1146,9 @@ impl JsSeries {
     }
 
     #[napi(catch_unwind)]
-    pub fn hash(&self, k0: Wrap<u64>, k1: Wrap<u64>, k2: Wrap<u64>, k3: Wrap<u64>) -> JsSeries {
-        let hb = PlRandomState::with_seeds(k0.0, k1.0, k2.0, k3.0);
+    pub fn hash(&self, _k0: Wrap<u64>, _k1: Wrap<u64>, _k2: Wrap<u64>, _k3: Wrap<u64>) -> JsSeries {
+        let hb = PlSeedableRandomStateQuality::random();
+        // let hb = PlRandomState::with_seeds(k0.0, k1.0, k2.0, k3.0); // TODO: Fix after changing API
         self.series.hash(hb).into_series().into()
     }
     #[napi(catch_unwind)]
