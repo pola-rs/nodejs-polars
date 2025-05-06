@@ -29,6 +29,11 @@ impl From<DataFrame> for JsDataFrame {
         JsDataFrame::new(s)
     }
 }
+impl From<JsDataFrame> for DataFrame {
+    fn from(val: JsDataFrame) -> Self {
+        val.df
+    }
+}
 
 pub(crate) fn to_series_collection(ps: Array) -> Vec<Column> {
     let len = ps.len();

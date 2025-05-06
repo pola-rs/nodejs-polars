@@ -25,6 +25,11 @@ impl From<LazyFrame> for JsLazyFrame {
         JsLazyFrame { ldf }
     }
 }
+impl From<JsLazyFrame> for LazyFrame {
+    fn from(val: JsLazyFrame) -> Self {
+        val.ldf
+    }
+}
 
 #[napi]
 impl JsLazyGroupBy {
