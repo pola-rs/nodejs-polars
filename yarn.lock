@@ -1068,12 +1068,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/node@npm:^22.15.3":
-  version: 22.15.3
-  resolution: "@types/node@npm:22.15.3"
+"@types/node@npm:^22.15.17":
+  version: 22.15.17
+  resolution: "@types/node@npm:22.15.17"
   dependencies:
     undici-types: "npm:~6.21.0"
-  checksum: 10/6b4ff03c36598432b419980f828281aa16383e2de6eb61f73275495ef8d2cbf8cb5607659b4cae5ff8b2b2ff69913ea07ffcc0be029e4280b6e8bc138dc6629b
+  checksum: 10/3f5870ec1ac16b1dd8e5817de81164df9b69e4cf19cce692cb7c9b1af1deaecfd98b591b56155fcc4aa582f7189a4fc0c8d7d3226fa0387403db615a12dd8cb6
   languageName: node
   linkType: hard
 
@@ -3049,13 +3049,13 @@ __metadata:
     "@napi-rs/cli": "npm:^2.18.4"
     "@types/chance": "npm:^1.1.6"
     "@types/jest": "npm:^29.5.14"
-    "@types/node": "npm:^22.15.3"
+    "@types/node": "npm:^22.15.17"
     chance: "npm:^1.1.12"
     jest: "npm:^29.7.0"
     source-map-support: "npm:^0.5.21"
     ts-jest: "npm:^29.3.2"
     ts-node: "npm:^10.9.2"
-    typedoc: "npm:^0.28.3"
+    typedoc: "npm:^0.28.4"
     typedoc-plugin-missing-exports: "npm:^4.0.0"
     typescript: "npm:5.8.3"
   languageName: unknown
@@ -3779,9 +3779,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"typedoc@npm:^0.28.3":
-  version: 0.28.3
-  resolution: "typedoc@npm:0.28.3"
+"typedoc@npm:^0.28.4":
+  version: 0.28.4
+  resolution: "typedoc@npm:0.28.4"
   dependencies:
     "@gerrit0/mini-shiki": "npm:^3.2.2"
     lunr: "npm:^2.3.9"
@@ -3792,7 +3792,7 @@ __metadata:
     typescript: 5.0.x || 5.1.x || 5.2.x || 5.3.x || 5.4.x || 5.5.x || 5.6.x || 5.7.x || 5.8.x
   bin:
     typedoc: bin/typedoc
-  checksum: 10/12319b69d57709e4e0d68c30ac31772d2df688b0951408930406a781dd938317ba0c172081c9cac88fb8ceb39d7634966a662729e2d985d08c9aef7275c76129
+  checksum: 10/0ccab46519e4be1aa9bd4defd55e920cbefe8825e0ba7ca93b8d6fd3867300e8b60260d2182033b46121f9040251366f6a496a3500da458c3031b224d7bdadd7
   languageName: node
   linkType: hard
 
