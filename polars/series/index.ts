@@ -1692,11 +1692,12 @@ export function _Series(_s: any): Series {
       return wrap("ceil");
     },
     round(opt): any {
+      const mode = "halftoeven";
       if (this.isNumeric()) {
         if (typeof opt === "number") {
-          return wrap("round", opt);
+          return wrap("round", opt, mode);
         }
-        return wrap("round", opt.decimals);
+        return wrap("round", opt.decimals, mode);
       }
       throw new InvalidOperationError("round", this.dtype);
     },

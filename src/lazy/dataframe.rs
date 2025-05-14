@@ -5,7 +5,6 @@ use polars::prelude::{col, lit, ClosedWindow, JoinType};
 use polars_io::{HiveOptions, RowIndex};
 use std::collections::HashMap;
 use std::num::NonZeroUsize;
-use std::path::PathBuf;
 
 #[napi]
 #[repr(transparent)]
@@ -561,12 +560,13 @@ impl JsLazyFrame {
         options: Wrap<CsvWriterOptions>,
         cloud_options: Option<HashMap<String, String>>,
         max_retries: Option<u32>,
+        sink_options: JsSinkOptions,
     ) -> napi::Result<()> {
         let cloud_options = parse_cloud_options(&path, cloud_options, max_retries);
-        let path_buf: PathBuf = PathBuf::from(path);
+        let sink_target = SinkTarget::Path(Arc::new(path.into()));
         let ldf = self.ldf.clone().with_comm_subplan_elim(false);
         let _ = ldf
-            .sink_csv(path_buf, options.0, cloud_options)
+            .sink_csv(sink_target, options.0, cloud_options, sink_options.into())
             .map_err(JsPolarsErr::from);
         Ok(())
     }
@@ -582,21 +582,20 @@ impl JsLazyFrame {
         };
         let row_group_size = options.row_group_size.map(|i| i as usize);
         let data_page_size = options.data_pagesize_limit.map(|i| i as usize);
-        let maintain_order = options.maintain_order.unwrap_or(true);
         let cloud_options = parse_cloud_options(&path, options.cloud_options, options.retries);
 
+        let sink_options = options.sink_options.into();
         let options = ParquetWriteOptions {
             compression,
             statistics,
             row_group_size,
             data_page_size,
-            maintain_order,
         };
 
-        let path_buf: PathBuf = PathBuf::from(path);
+        let sink_target = SinkTarget::Path(Arc::new(path.into()));
         let ldf = self.ldf.clone().with_comm_subplan_elim(false);
         let _ = ldf
-            .sink_parquet(&path_buf, options, cloud_options)
+            .sink_parquet(sink_target, options, cloud_options, sink_options)
             .map_err(JsPolarsErr::from);
         Ok(())
     }

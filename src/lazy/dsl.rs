@@ -3,8 +3,11 @@ use crate::prelude::*;
 use crate::utils::reinterpret;
 use polars::lazy::dsl;
 use polars::lazy::dsl::Expr;
+use polars_compute::rolling::RollingQuantileParams;
 use polars_core::series::ops::NullBehavior;
+use polars_utils::aliases::PlFixedStateQuality;
 use std::borrow::Cow;
+use std::hash::BuildHasher;
 
 #[napi]
 #[repr(transparent)]
@@ -348,11 +351,18 @@ impl JsExpr {
     }
     #[napi(catch_unwind)]
     pub fn backward_fill(&self) -> JsExpr {
-        self.clone().inner.backward_fill(None).into()
+        self.clone()
+            .inner
+            .fill_null_with_strategy(FillNullStrategy::Backward(None))
+            .into()
     }
+
     #[napi(catch_unwind)]
     pub fn forward_fill(&self) -> JsExpr {
-        self.clone().inner.forward_fill(None).into()
+        self.clone()
+            .inner
+            .fill_null_with_strategy(FillNullStrategy::Forward(None))
+            .into()
     }
 
     #[napi(catch_unwind)]
@@ -449,7 +459,11 @@ impl JsExpr {
         self.clone()
             .inner
             .map(
-                move |s: Column| Ok(Some(s.gather_every(n as usize, offset as usize))),
+                move |s: Column| {
+                    Ok(Some(
+                        s.gather_every(n as usize, offset as usize).expect("REASON"),
+                    ))
+                },
                 GetOutput::same_type(),
             )
             .with_fmt("gather_every")
@@ -477,8 +491,8 @@ impl JsExpr {
             .into()
     }
     #[napi(catch_unwind)]
-    pub fn round(&self, decimals: u32) -> JsExpr {
-        self.clone().inner.round(decimals).into()
+    pub fn round(&self, decimals: u32, mode: Wrap<RoundMode>) -> JsExpr {
+        self.clone().inner.round(decimals, mode.0).into()
     }
 
     #[napi(catch_unwind)]
@@ -591,8 +605,11 @@ impl JsExpr {
         self.clone().inner.or(expr.inner.clone()).into()
     }
     #[napi(catch_unwind)]
-    pub fn is_in(&self, expr: &JsExpr) -> JsExpr {
-        self.clone().inner.is_in(expr.inner.clone()).into()
+    pub fn is_in(&self, expr: &JsExpr, nulls_equal: bool) -> JsExpr {
+        self.clone()
+            .inner
+            .is_in(expr.inner.clone(), nulls_equal)
+            .into()
     }
     #[napi(catch_unwind)]
     pub fn repeat_by(&self, by: &JsExpr) -> JsExpr {
@@ -1145,7 +1162,8 @@ impl JsExpr {
     #[napi(catch_unwind)]
     pub fn hash(&self, k0: Wrap<u64>, k1: Wrap<u64>, k2: Wrap<u64>, k3: Wrap<u64>) -> JsExpr {
         let function = move |s: Column| {
-            let hb = PlRandomState::with_seeds(k0.0, k1.0, k2.0, k3.0);
+            let seed = PlFixedStateQuality::default().hash_one((k0.0, k1.0, k2.0, k3.0));
+            let hb = PlSeedableRandomStateQuality::seed_from_u64(seed);
             Ok(Some(s.as_materialized_series().hash(hb).into_column()))
         };
         self.clone()
@@ -1409,7 +1427,10 @@ impl JsExpr {
     }
     #[napi(catch_unwind)]
     pub fn diff(&self, n: i64, null_behavior: Wrap<NullBehavior>) -> JsExpr {
-        self.inner.clone().diff(n, null_behavior.0).into()
+        self.inner
+            .clone()
+            .diff(polars::prelude::Expr::Nth(n), null_behavior.0)
+            .into()
     }
     #[napi(catch_unwind)]
     pub fn pct_change(&self, n: Wrap<Expr>) -> JsExpr {

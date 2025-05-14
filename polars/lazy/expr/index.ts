@@ -1741,7 +1741,7 @@ export const _Expr = (_expr: any): Expr => {
       return wrap("rollingSkew", val.windowSize, val.bias ?? bias);
     },
     round(decimals) {
-      return _Expr(_expr.round(decimals?.decimals ?? decimals));
+      return _Expr(_expr.round(decimals?.decimals ?? decimals, "halftoeven"));
     },
     sample(opts?, frac?, withReplacement = false, seed?) {
       if (opts?.n !== undefined || opts?.frac !== undefined) {

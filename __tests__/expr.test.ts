@@ -25,14 +25,8 @@ const df = () => {
 describe("expr", () => {
   test("abs", () => {
     const expected = pl.Series("abs", [1, 2, 3]);
-    const actual = pl
-      .select(
-        pl
-          .lit(pl.Series([1, -2, -3]))
-          .abs()
-          .as("abs"),
-      )
-      .getColumn("abs");
+    const df = pl.DataFrame({ a: [1, -2, -3] });
+    const actual = df.select(col("a").as("abs").abs()).getColumn("abs");
     expect(actual).toSeriesEqual(expected);
   });
   test("alias", () => {
@@ -1869,15 +1863,11 @@ describe("expr.lst", () => {
   test("concat", () => {
     const s0 = pl.Series("a", [[1, 2]]);
     const s1 = pl.Series("b", [[3, 4, 5]]);
-    const expected = pl.Series("a", [[1, 2, 3, 4, 5]]);
-
-    let out = s0.lst.concat([s1]);
+    let expected = pl.Series("a", [[1, 2], [3, 4, 5]]);
+    const out = s0.concat(s1);
     expect(out.seriesEqual(expected)).toBeTruthy();
-
-    out = s0.lst.concat(s1);
-    expect(out.seriesEqual(expected)).toBeTruthy();
-
     const df = pl.DataFrame([s0, s1]);
+    expected = pl.Series("a", [[1, 2, 3, 4, 5]]);
     expect(
       df
         .select(pl.concatList(["a", "b"]).alias("a"))
@@ -2244,7 +2234,7 @@ describe("expr.dt", () => {
 describe("expr metadata", () => {
   test("inspect & toString", () => {
     const expr = lit("foo");
-    const expected = "String(foo)";
+    const expected = '"foo"';
     const actualInspect = expr[Symbol.for("nodejs.util.inspect.custom")]();
     const exprString = expr.toString();
     expect(actualInspect).toStrictEqual(expected);
