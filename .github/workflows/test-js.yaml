@@ -56,12 +56,8 @@ jobs:
         run: bun install
       - name: Bun Build Binary
         run: bun run build:debug
-      - name: Setup Biome CLI
-        uses: biomejs/setup-biome@v2
-        with:
-          version: 1.9.4
       - name: Bun Run Linting
-        run: bun lint:ts
+        run: bun -bun lint:ts
       - name: Bun Run Tests
         run: bun run test
       - name: Bun Build JS
