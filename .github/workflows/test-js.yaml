@@ -60,8 +60,6 @@ jobs:
         uses: biomejs/setup-biome@v2
         with:
           version: 1.9.4
-      - name: Run Biome
-        run: biome ci
       - name: Bun Run Linting
         run: bun lint:ts
       - name: Bun Run Tests
