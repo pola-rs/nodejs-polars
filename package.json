@@ -71,5 +71,6 @@
   "packageManager": "yarn@4.9.1",
   "workspaces": [
     "benches"
-  ]
+  ],
+  "trustedDependencies": ["@biomejs/biome"]
 }

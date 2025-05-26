@@ -49,7 +49,7 @@ jobs:
           toolchain: nightly-2025-01-05
           components: rustfmt, clippy
       - name: Bun version
-        uses: oven-sh/setup-bun@v1
+        uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
       - name: Bun Install Dependencies
