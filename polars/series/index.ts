@@ -273,16 +273,9 @@ export interface Series<T extends DataType = any, Name extends string = string>
    * Extend the Series with given number of values.
    * @param value The value to extend the Series with. This value may be null to fill with nulls.
    * @param n The number of values to extend.
-   * @deprecated
-   * @see {@link extendConstant}
-   */
-  extend(value: any, n: number): Series;
-  /**
-   * Extend the Series with given number of values.
-   * @param value The value to extend the Series with. This value may be null to fill with nulls.
-   * @param n The number of values to extend.
    */
   extendConstant(value: any, n: number): Series;
+  extendConstant(opt: { value: any; n: number }): Series;
   /**
    * __Fill null values with a filling strategy.__
    * ___
@@ -1369,11 +1362,11 @@ export function _Series(_s: any): Series {
     explode() {
       return wrap("explode");
     },
-    extend(value, n) {
-      return wrap("extendConstant", value, n);
-    },
-    extendConstant(value, n) {
-      return wrap("extendConstant", value, n);
+    extendConstant(o, n?) {
+      if (n !== null && typeof n === "number") 
+        return wrap("extendConstant", o, n);
+      else
+        return wrap("extendConstant", o.value, o.n);
     },
     fillNull(strategy) {
       return typeof strategy === "string"

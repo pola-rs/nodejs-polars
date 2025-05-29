@@ -278,7 +278,7 @@ describe("expr", () => {
       b: [2, 3, 4, 5, 6],
       c: ["a", "b", "c", null, null],
     });
-    const actual = df.withColumn(lit(other).extend({ value: null, n: 2 }));
+    const actual = df.withColumn(other.extendConstant({ value: null, n: 2 }));
     expect(actual).toFrameEqual(expected);
   });
   test("extend:positional", () => {
@@ -292,7 +292,7 @@ describe("expr", () => {
       b: [2, 3, 4, 5, 6],
       c: ["a", "b", "c", "foo", "foo"],
     });
-    const actual = df.withColumn(lit(other).extend("foo", 2));
+    const actual = df.withColumn(other.extendConstant("foo", 2));
     expect(actual).toFrameEqual(expected);
   });
   test.each`
@@ -385,8 +385,8 @@ describe("expr", () => {
   });
   test.each`
     args                   | hashValue
-    ${[0]}                 | ${7355865757046787768n}
-    ${[{ k0: 1n, k1: 1 }]} | ${2179653058507248884n}
+    ${[0]}                 | ${3464615199868688860n}
+    ${[{ k0: 1n, k1: 1 }]} | ${9891435580050628982n}
   `("$# hash", ({ args, hashValue }) => {
     const df = pl.DataFrame({ a: [1] });
     const expected = pl.DataFrame({ hash: [hashValue] });

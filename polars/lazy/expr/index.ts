@@ -420,15 +420,6 @@ export interface Expr
    * Extend the Series with given number of values.
    * @param value The value to extend the Series with. This value may be null to fill with nulls.
    * @param n The number of values to extend.
-   * @deprecated
-   * @see {@link extendConstant}
-   */
-  extend(value: any, n: number): Expr;
-  extend(opt: { value: any; n: number }): Expr;
-  /**
-   * Extend the Series with given number of values.
-   * @param value The value to extend the Series with. This value may be null to fill with nulls.
-   * @param n The number of values to extend.
    */
   extendConstant(value: any, n: number): Expr;
   extendConstant(opt: { value: any; n: number }): Expr;
@@ -483,6 +474,7 @@ export interface Expr
    * Check if elements of this Series are in the right Series, or List values of the right Series.
    *
    * @param other Series of primitive type or List type.
+   * @param nullsEquals default False, If True, treat null as a distinct value. Null values will not propagate.
    * @returns Expr that evaluates to a Boolean Series.
    * @example
    * ```
@@ -507,7 +499,7 @@ export interface Expr
    * └──────────┘
    * ```
    */
-  isIn(other): Expr;
+  isIn(other, nullsEquals?: boolean): Expr;
   /** Create a boolean expression returning `true` where the expression values are infinite. */
   isInfinite(): Expr;
   /** Create a boolean expression returning `true` where the expression values are NaN (Not A Number). */
@@ -1440,13 +1432,6 @@ export const _Expr = (_expr: any): Expr => {
     exp() {
       return _Expr(_expr.exp());
     },
-    extend(o, n?) {
-      if (n !== null && typeof n === "number") {
-        return _Expr(_expr.extendConstant(o, n));
-      }
-
-      return _Expr(_expr.extendConstant(o.value, o.n));
-    },
     extendConstant(o, n?) {
       if (n !== null && typeof n === "number") {
         return _Expr(_expr.extendConstant(o, n));
@@ -1554,14 +1539,13 @@ export const _Expr = (_expr: any): Expr => {
     isUnique() {
       return _Expr(_expr.isUnique());
     },
-    isIn(other) {
+    isIn(other, nullsEquals = false) {
       if (Array.isArray(other)) {
         other = pli.lit(Series(other).inner());
       } else {
         other = exprToLitOrExpr(other, false).inner();
       }
-
-      return wrap("isIn", other);
+      return wrap("isIn", other, nullsEquals);
     },
     keepName() {
       return _Expr(_expr.keepName());
