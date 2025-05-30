@@ -1426,10 +1426,10 @@ impl JsExpr {
         self.inner.clone().rank(options, seed).into()
     }
     #[napi(catch_unwind)]
-    pub fn diff(&self, n: i64, null_behavior: Wrap<NullBehavior>) -> JsExpr {
+    pub fn diff(&self, n: Wrap<Expr>, null_behavior: Wrap<NullBehavior>) -> JsExpr {
         self.inner
             .clone()
-            .diff(polars::prelude::Expr::Nth(n), null_behavior.0)
+            .diff(n.0, null_behavior.0)
             .into()
     }
     #[napi(catch_unwind)]

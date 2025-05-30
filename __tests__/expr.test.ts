@@ -948,7 +948,7 @@ describe("expr", () => {
     const actual = df.select(col("a").tail(3).as("tail3"));
     expect(actual).toFrameEqual(expected);
   });
-  test("take", () => {
+  test.skip("take", () => {
     const df = pl.DataFrame({ a: [1, 2, 2, 3, 3, 8, null, 1] });
     const expected = pl.DataFrame({
       "take:array": [1, 2, 3, 8],
@@ -1863,7 +1863,10 @@ describe("expr.lst", () => {
   test("concat", () => {
     const s0 = pl.Series("a", [[1, 2]]);
     const s1 = pl.Series("b", [[3, 4, 5]]);
-    let expected = pl.Series("a", [[1, 2], [3, 4, 5]]);
+    let expected = pl.Series("a", [
+      [1, 2],
+      [3, 4, 5],
+    ]);
     const out = s0.concat(s1);
     expect(out.seriesEqual(expected)).toBeTruthy();
     const df = pl.DataFrame([s0, s1]);

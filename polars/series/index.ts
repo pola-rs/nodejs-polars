@@ -1363,10 +1363,10 @@ export function _Series(_s: any): Series {
       return wrap("explode");
     },
     extendConstant(o, n?) {
-      if (n !== null && typeof n === "number") 
+      if (n !== null && typeof n === "number")
         return wrap("extendConstant", o, n);
-      else
-        return wrap("extendConstant", o.value, o.n);
+
+      return wrap("extendConstant", o.value, o.n);
     },
     fillNull(strategy) {
       return typeof strategy === "string"

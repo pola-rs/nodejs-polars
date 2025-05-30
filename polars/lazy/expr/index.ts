@@ -335,10 +335,52 @@ export interface Expr
   cot(): Expr;
   /** Count the number of values in this expression */
   count(): Expr;
-  /** Calculate the n-th discrete difference.
-   *
+  /** Calculate the first discrete difference between shifted items.
    * @param n number of slots to shift
-   * @param nullBehavior ignore or drop
+   * @param nullBehavior How to handle null values. ignore or drop
+   * @example
+   * ```
+   * const df = pl.DataFrame({"int": [20, 10, 30, 25, 35]})
+   * df.withColumns(pl.col("int").diff())
+    shape: (5, 2)
+    ┌─────┬────────┐
+    │ int ┆ change │
+    │ --- ┆ ---    │
+    │ i64 ┆ i64    │
+    ╞═════╪════════╡
+    │ 20  ┆ null   │
+    │ 10  ┆ -10    │
+    │ 30  ┆ 20     │
+    │ 25  ┆ -5     │
+    │ 35  ┆ 10     │
+    └─────┴────────┘
+
+    >>> df.withColumns(pl.col("int").diff(n=2))
+    shape: (5, 2)
+    ┌─────┬────────┐
+    │ int ┆ change │
+    │ --- ┆ ---    │
+    │ i64 ┆ i64    │
+    ╞═════╪════════╡
+    │ 20  ┆ null   │
+    │ 10  ┆ null   │
+    │ 30  ┆ 10     │
+    │ 25  ┆ 15     │
+    │ 35  ┆ 5      │
+    └─────┴────────┘
+
+    >>> df.select(pl.col("int").diff(2,"drop").alias("diff"))
+    shape: (3, 1)
+    ┌──────┐
+    │ diff │
+    │ ---  │
+    │ i64  │
+    ╞══════╡
+    │ 10   │
+    │ 15   │
+    │ 5    │
+    └──────┘
+   * ```
    */
   diff(n: number, nullBehavior: "ignore" | "drop"): Expr;
   diff(o: { n: number; nullBehavior: "ignore" | "drop" }): Expr;
@@ -1309,9 +1351,9 @@ export const _Expr = (_expr: any): Expr => {
     },
     diff(n, nullBehavior = "ignore") {
       if (typeof n === "number") {
-        return _Expr(_expr.diff(n, nullBehavior));
+        return _Expr(_expr.diff(exprToLitOrExpr(n, false), nullBehavior));
       }
-      return _Expr(_expr.diff(n.n, n.nullBehavior));
+      return _Expr(_expr.diff(exprToLitOrExpr(n.n, false), n.nullBehavior));
     },
     dot(other) {
       const expr = (exprToLitOrExpr(other, false) as any).inner();
