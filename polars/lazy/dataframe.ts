@@ -1041,11 +1041,20 @@ export const _LazyDataFrame = (_ldf: any): LazyDataFrame => {
     },
     sinkCSV(path, options: CsvWriterOptions = {}) {
       options.maintainOrder = options.maintainOrder ?? false;
-      _ldf.sinkCsv(path, options);
+      _ldf.sinkCsv(path, options, {
+        syncOnClose: "all",
+        maintainOrder: false,
+        mkdir: true,
+      });
     },
     sinkParquet(path: string, options: SinkParquetOptions = {}) {
       options.compression = options.compression ?? "zstd";
       options.statistics = options.statistics ?? false;
+      options.sinkOptions = options.sinkOptions ?? {
+        syncOnClose: "all",
+        maintainOrder: false,
+        mkdir: true,
+      };
       _ldf.sinkParquet(path, options);
     },
   };

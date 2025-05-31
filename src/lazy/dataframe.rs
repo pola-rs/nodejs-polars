@@ -558,9 +558,9 @@ impl JsLazyFrame {
         &self,
         path: String,
         options: Wrap<CsvWriterOptions>,
+        sink_options: JsSinkOptions,
         cloud_options: Option<HashMap<String, String>>,
         max_retries: Option<u32>,
-        sink_options: JsSinkOptions,
     ) -> napi::Result<()> {
         let cloud_options = parse_cloud_options(&path, cloud_options, max_retries);
         let sink_target = SinkTarget::Path(Arc::new(path.into()));

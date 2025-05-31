@@ -573,7 +573,7 @@ impl FromNapiValue for Wrap<SyncOnCloseType> {
         let soct = match soct.as_ref() {
             "none" => SyncOnCloseType::None,
             "data" => SyncOnCloseType::Data,
-            "allt" => SyncOnCloseType::All,
+            "all" => SyncOnCloseType::All,
             _ => return Err(napi::Error::from_reason("not supported".to_owned())),
         };
         Ok(Wrap(soct))
