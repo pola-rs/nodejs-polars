@@ -321,6 +321,7 @@ describe("series", () => {
     ${fltSeries()}  | ${"isFinite"}        | ${[]}
     ${numSeries()}  | ${"isFirstDistinct"} | ${[]}
     ${numSeries()}  | ${"isFloat"}         | ${[]}
+    ${numSeries()}  | ${"isIn"}            | ${[other()]}
     ${fltSeries()}  | ${"isInfinite"}      | ${[]}
     ${numSeries()}  | ${"isNotNull"}       | ${[]}
     ${numSeries()}  | ${"isNull"}          | ${[]}

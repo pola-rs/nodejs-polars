@@ -835,7 +835,7 @@ impl JsSeries {
 
     #[napi(catch_unwind)]
     pub fn is_in(&self, other: &JsSeries, nulls_equal: bool) -> napi::Result<JsSeries> {
-        let series = is_in(&self.series, &other.series, nulls_equal)
+        let series = is_in(&self.series, &other.series.implode().unwrap().into_series(), nulls_equal)
             .map(|ca| ca.into_series())
             .map_err(JsPolarsErr::from)?;
 
