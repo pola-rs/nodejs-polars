@@ -1457,10 +1457,10 @@ export function _Series(_s: any): Series {
         dtype.variant,
       );
     },
-    isIn(other) {
+    isIn(other, nullsEquals = false) {
       return Series.isSeries(other)
-        ? wrap("isIn", (other as any)._s)
-        : wrap("isIn", (Series("", other) as any)._s);
+        ? wrap("isIn", (other as any)._s, nullsEquals)
+        : wrap("isIn", (Series("", other) as any)._s, nullsEquals);
     },
     isInfinite() {
       const dtype = this.dtype;

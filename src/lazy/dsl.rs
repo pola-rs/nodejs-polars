@@ -1836,7 +1836,7 @@ pub fn concat_str(s: Vec<&JsExpr>, separator: String, ignore_nulls: bool) -> JsE
 #[napi(catch_unwind)]
 pub fn as_struct(exprs: Vec<&JsExpr>) -> JsExpr {
     let exprs = exprs.to_exprs();
-    polars::lazy::dsl::as_struct(exprs).into()
+    dsl::as_struct(exprs).into()
 }
 
 #[napi(catch_unwind)]

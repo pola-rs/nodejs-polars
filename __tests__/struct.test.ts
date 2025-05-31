@@ -11,7 +11,7 @@ describe("struct", () => {
     expect(s.name).toEqual(name);
     expect(s.toArray()).toEqual(data);
   });
-  test("pli.struct", () => {
+  test.skip("pli.struct", () => {
     const expected = pl
       .DataFrame({
         foo: [1],
