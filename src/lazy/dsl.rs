@@ -1427,10 +1427,7 @@ impl JsExpr {
     }
     #[napi(catch_unwind)]
     pub fn diff(&self, n: Wrap<Expr>, null_behavior: Wrap<NullBehavior>) -> JsExpr {
-        self.inner
-            .clone()
-            .diff(n.0, null_behavior.0)
-            .into()
+        self.inner.clone().diff(n.0, null_behavior.0).into()
     }
     #[napi(catch_unwind)]
     pub fn pct_change(&self, n: Wrap<Expr>) -> JsExpr {

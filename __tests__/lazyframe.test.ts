@@ -1278,7 +1278,7 @@ describe("lazyframe", () => {
         pl.Series("bar", ["a", "b", "c"]),
       ])
       .lazy();
-    ldf.sinkCSV("./test.csv");
+    await ldf.sinkCSV("./test.csv").collect();
     const newDF: pl.DataFrame = pl.readCSV("./test.csv");
     const actualDf: pl.DataFrame = await ldf.collect({ streaming: true });
     expect(newDF.sort("foo")).toFrameEqual(actualDf);
@@ -1291,7 +1291,7 @@ describe("lazyframe", () => {
         pl.Series("column_2", ["a", "b", "c"]),
       ])
       .lazy();
-    ldf.sinkCSV("./test.csv", { includeHeader: false });
+    await ldf.sinkCSV("./test.csv", { includeHeader: false }).collect();
     const newDF: pl.DataFrame = pl.readCSV("./test.csv", { hasHeader: false });
     const actualDf: pl.DataFrame = await ldf.collect();
     expect(newDF.sort("column_1")).toFrameEqual(actualDf);
@@ -1304,7 +1304,7 @@ describe("lazyframe", () => {
         pl.Series("bar", ["a", "b", "c"]),
       ])
       .lazy();
-    ldf.sinkCSV("./test.csv", { separator: "|" });
+    await ldf.sinkCSV("./test.csv", { separator: "|" }).collect();
     const newDF: pl.DataFrame = pl.readCSV("./test.csv", { sep: "|" });
     const actualDf: pl.DataFrame = await ldf.collect();
     expect(newDF.sort("foo")).toFrameEqual(actualDf);
@@ -1317,7 +1317,7 @@ describe("lazyframe", () => {
         pl.Series("bar", ["a", "b", null]),
       ])
       .lazy();
-    ldf.sinkCSV("./test.csv", { nullValue: "BOOM" });
+    await ldf.sinkCSV("./test.csv", { nullValue: "BOOM" }).collect();
     const newDF: pl.DataFrame = pl.readCSV("./test.csv", { sep: "," });
     const actualDf: pl.DataFrame = await (await ldf.collect()).withColumn(
       pl.col("bar").fillNull("BOOM"),
@@ -1332,7 +1332,7 @@ describe("lazyframe", () => {
         pl.Series("bar", ["a", "b", "c"]),
       ])
       .lazy();
-    ldf.sinkParquet("./test.parquet");
+    await ldf.sinkParquet("./test.parquet").collect();
     const newDF: pl.DataFrame = pl.readParquet("./test.parquet");
     const actualDf: pl.DataFrame = await ldf.collect();
     expect(newDF.sort("foo")).toFrameEqual(actualDf);
@@ -1345,7 +1345,7 @@ describe("lazyframe", () => {
         pl.Series("bar", ["a", "b", "c"]),
       ])
       .lazy();
-    ldf.sinkParquet("./test.parquet", { compression: "gzip" });
+    await ldf.sinkParquet("./test.parquet", { compression: "gzip" }).collect();
     const newDF: pl.DataFrame = pl.readParquet("./test.parquet");
     const actualDf: pl.DataFrame = await ldf.collect();
     expect(newDF.sort("foo")).toFrameEqual(actualDf);
