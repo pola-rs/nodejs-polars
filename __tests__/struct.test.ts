@@ -11,11 +11,11 @@ describe("struct", () => {
     expect(s.name).toEqual(name);
     expect(s.toArray()).toEqual(data);
   });
-  test.skip("pli.struct", () => {
+  test("pli.struct", () => {
     const expected = pl
       .DataFrame({
-        foo: [1],
-        bar: [2],
+        foo: [[1]],
+        bar: [[2]],
       })
       .toStruct("foo");
     const foo = pl.Series("foo", [1]);

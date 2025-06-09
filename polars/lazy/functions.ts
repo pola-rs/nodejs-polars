@@ -726,7 +726,7 @@ export function struct(
 
   if (Series.isSeries(exprs[0])) {
     return select(
-      _Expr(pli.asStruct(exprs.map((e) => pli.lit(e.inner())))),
+      _Expr(pli.asStruct(exprs.map((e) => pli.lit(e._s).alias(e.name)))),
     ).toSeries();
   }
   exprs = selectionToExprList(exprs);
