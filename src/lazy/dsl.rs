@@ -336,7 +336,7 @@ impl JsExpr {
     pub fn gather(&self, idx: &JsExpr) -> JsExpr {
         self.clone()
             .inner
-            .gather(idx.inner.clone().cast(DataType::Int64))
+            .gather(idx.inner.clone())
             .into()
     }
     #[napi(catch_unwind)]
