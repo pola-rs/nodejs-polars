@@ -1518,7 +1518,7 @@ export const _Expr = (_expr: any): Expr => {
     },
     gather(indices) {
       if (Array.isArray(indices)) {
-        indices = pli.lit(Series("", indices, Int64).inner());
+        indices = pli.lit(Series("", indices, pli.Int64).inner());
       } else {
         indices = indices.inner();
       }

@@ -334,10 +334,7 @@ impl JsExpr {
     }
     #[napi(catch_unwind)]
     pub fn gather(&self, idx: &JsExpr) -> JsExpr {
-        self.clone()
-            .inner
-            .gather(idx.inner.clone())
-            .into()
+        self.clone().inner.gather(idx.inner.clone()).into()
     }
     #[napi(catch_unwind)]
     pub fn sort_by(&self, by: Vec<&JsExpr>, reverse: Vec<bool>) -> JsExpr {
