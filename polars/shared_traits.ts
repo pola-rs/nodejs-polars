@@ -241,13 +241,13 @@ export interface Rolling<T> {
    * @param center - Set the labels at the center of the window
    * @category Rolling
    */
-  rollingMax(options: RollingOptions): T;
   rollingMax(
     windowSize: number,
     weights?: Array<number>,
     minPeriods?: Array<number>,
     center?: boolean,
   ): T;
+  rollingMax(options: RollingOptions): T;
   /**
    * __Apply a rolling mean (moving mean) over the values in this Series.__
    *
@@ -264,13 +264,13 @@ export interface Rolling<T> {
    * @param center - Set the labels at the center of the window
    * @category Rolling
    */
-  rollingMean(options: RollingOptions): T;
   rollingMean(
     windowSize: number,
     weights?: Array<number>,
     minPeriods?: Array<number>,
     center?: boolean,
   ): T;
+  rollingMean(options: RollingOptions): T;
   /**
    * __Apply a rolling min (moving min) over the values in this Series.__
    *
@@ -287,13 +287,13 @@ export interface Rolling<T> {
    * @param center - Set the labels at the center of the window
    * @category Rolling
    */
-  rollingMin(options: RollingOptions): T;
   rollingMin(
     windowSize: number,
     weights?: Array<number>,
     minPeriods?: Array<number>,
     center?: boolean,
   ): T;
+  rollingMin(options: RollingOptions): T;
   /**
    * Compute a rolling std dev
    *
@@ -312,7 +312,6 @@ export interface Rolling<T> {
    *        By default ddof is 1.
    * @category Rolling
    */
-  rollingStd(options: RollingOptions): T;
   rollingStd(
     windowSize: number,
     weights?: Array<number>,
@@ -320,6 +319,7 @@ export interface Rolling<T> {
     center?: boolean,
     ddof?: number,
   ): T;
+  rollingStd(options: RollingOptions): T;
   /**
    * __Apply a rolling sum (moving sum) over the values in this Series.__
    *
@@ -336,13 +336,13 @@ export interface Rolling<T> {
    * @param center - Set the labels at the center of the window
    * @category Rolling
    */
-  rollingSum(options: RollingOptions): T;
   rollingSum(
     windowSize: number,
     weights?: Array<number>,
     minPeriods?: Array<number>,
     center?: boolean,
   ): T;
+  rollingSum(options: RollingOptions): T;
   /**
    * __Compute a rolling variance.__
    *
@@ -362,7 +362,6 @@ export interface Rolling<T> {
    *        By default ddof is 1.
    * @category Rolling
    */
-  rollingVar(options: RollingOptions): T;
   rollingVar(
     windowSize: number,
     weights?: Array<number>,
@@ -370,17 +369,18 @@ export interface Rolling<T> {
     center?: boolean,
     ddof?: number,
   ): T;
+  rollingVar(options: RollingOptions): T;
   /**
    * Compute a rolling median
    * @category Rolling
    */
-  rollingMedian(options: RollingOptions): T;
   rollingMedian(
     windowSize: number,
     weights?: Array<number>,
     minPeriods?: Array<number>,
     center?: boolean,
   ): T;
+  rollingMedian(options: RollingOptions): T;
   /**
    * Compute a rolling quantile
    * @param quantile quantile to compute
@@ -393,7 +393,6 @@ export interface Rolling<T> {
    * @param center - Set the labels at the center of the window
    * @category Rolling
    */
-  rollingQuantile(options: RollingQuantileOptions): T;
   rollingQuantile(
     quantile: number,
     interpolation?: InterpolationMethod,
@@ -404,6 +403,7 @@ export interface Rolling<T> {
     by?: string,
     closed?: ClosedWindow,
   ): T;
+  rollingQuantile(options: RollingQuantileOptions): T;
   /**
    * Compute a rolling skew
    * @param windowSize Size of the rolling window
@@ -485,6 +485,12 @@ export interface Sample<T> {
    * @category Math
    */
 
+  sample(
+    n?: number,
+    frac?: number,
+    withReplacement?: boolean,
+    seed?: number | bigint,
+  ): T;
   sample(opts?: {
     n: number;
     withReplacement?: boolean;
@@ -495,12 +501,6 @@ export interface Sample<T> {
     withReplacement?: boolean;
     seed?: number | bigint;
   }): T;
-  sample(
-    n?: number,
-    frac?: number,
-    withReplacement?: boolean,
-    seed?: number | bigint,
-  ): T;
 }
 
 export interface Bincode<T> {
@@ -661,14 +661,14 @@ export interface ListFunctions<T> {
   /**
    * Join all string items in a sublist and place a separator between them.
    * This errors if inner type of list `!= Utf8`.
-   * @param separator A string used to separate one element of the list from the next in the resulting string.
+   * @param options.separator A string used to separate one element of the list from the next in the resulting string.
    * If omitted, the list elements are separated with a comma.
-   * @param ignoreNulls - If true, null values will be ignored.
+   * @param options.ignoreNulls - If true, null values will be ignored.
    * @category List
    */
+  join(options: { separator?: string | Expr; ignoreNulls?: boolean }): T;
   join(): T;
   join(separator: string | Expr): T;
-  join(options: { separator?: string | Expr; ignoreNulls?: boolean }): T;
   /**
    * Get the last value of the sublists.
    * @category List
@@ -714,13 +714,12 @@ export interface ListFunctions<T> {
   slice(offset: number, length: number): T;
   /**
    * Sort the sublists.
-   * @deprecated *since 0.16.0* Use {@link descending} instead
-   * @param reverse - Reverse/descending sort.
    * @param descending - Sort in reverse order.
    * @category List
    */
   sort(descending?: boolean): T;
   sort(opt: { descending: boolean }): T;
+  /* @deprecated Use descending instead */
   sort(opt: { reverse: boolean }): T;
   /**
    * Sum all elements of the sublists.
@@ -929,7 +928,7 @@ export interface StringFunctions<T> {
   encode(encoding: "hex" | "base64"): T;
   /**
    * Extract the target capture group from provided patterns.
-   * @param pattern A valid regex pattern
+   * @param pat A valid regex pattern
    * @param groupIndex Index of the targeted capture group.
    * Group 0 mean the whole pattern, first group begin at index 1
    * Default to the first capture group
@@ -963,7 +962,7 @@ export interface StringFunctions<T> {
    * Throw errors if encounter invalid json strings.
    * All return value will be casted to Utf8 regardless of the original value.
    * @see https://goessner.net/articles/JsonPath/
-   * @param jsonPath - A valid JSON path query string
+   * @param pat - A valid JSON path query string
    * @returns Utf8 array. Contain null if original value is null or the `jsonPath` return nothing.
    * @example
    * ```
@@ -1011,8 +1010,8 @@ export interface StringFunctions<T> {
   slice(start: number, length?: number): T;
   /**
    * Split a string into substrings using the specified separator and return them as a Series.
-   * @param separator — A string that identifies character or characters to use in separating the string.
-   * @param inclusive Include the split character/string in the results
+   * @param by — A string that identifies character or characters to use in separating the string.
+   * @param options.inclusive Include the split character/string in the results
    */
   split(by: string, options?: { inclusive?: boolean } | boolean): T;
   /** Remove leading and trailing whitespace. */
@@ -1082,24 +1081,16 @@ export interface GroupByOps<T> {
     - "10i"     # length 10
 
 
-    @param indexColumn Column used to group based on the time window.
+    @param opts.indexColumn Column used to group based on the time window.
     Often to type Date/Datetime
     This column must be sorted in ascending order. If not the output will not make sense.
 
     In case of a rolling groupby on indices, dtype needs to be one of {Int32, Int64}. Note that
     Int32 gets temporarily cast to Int64, so if performance matters use an Int64 column.
-    @param period length of the window
-    @param offset offset of the window. Default is `-period`
-    @param closed Defines if the window interval is closed or not.
-    @param check_sorted
-            When the ``by`` argument is given, polars can not check sortedness
-            by the metadata and has to do a full scan on the index column to
-            verify data is sorted. This is expensive. If you are sure the
-            data within the by groups is sorted, you can set this to ``False``.
-            Doing so incorrectly will lead to incorrect output
-
-    Any of `{"left", "right", "both" "none"}`
-    @param by Also group by this column/these columns
+    @param opts.period length of the window
+    @param opts.offset offset of the window. Default is `-period`
+    @param opts.closed Defines if the window interval is closed or not. Any of `{"left", "right", "both" "none"}`
+    @param opts.by Also group by this column/these columns
 
     @example
     ```
@@ -1152,7 +1143,6 @@ export interface GroupByOps<T> {
     period: string;
     offset?: string;
     closed?: "left" | "right" | "both" | "none";
-    check_sorted?: boolean;
   }): T;
 
   /**
@@ -1191,27 +1181,20 @@ export interface GroupByOps<T> {
 
   Parameters
   ----------
-  @param index_column Column used to group based on the time window.
+  @param options.indexColumn Column used to group based on the time window.
       Often to type Date/Datetime
       This column must be sorted in ascending order. If not the output will not make sense.
 
       In case of a dynamic groupby on indices, dtype needs to be one of {Int32, Int64}. Note that
       Int32 gets temporarily cast to Int64, so if performance matters use an Int64 column.
-  @param every interval of the window
-  @param period length of the window, if None it is equal to 'every'
-  @param offset offset of the window if None and period is None it will be equal to negative `every`
-  @param label Define which label to use for the window: Any if {'left', 'right', 'datapoint'}
-  @param truncate truncate the time value to the window lower bound
-  @param includeBoundaries add the lower and upper bound of the window to the "_lower_bound" and "_upper_bound" columns. This will impact performance because it's harder to parallelize
-  @param closed Defines if the window interval is closed or not.
-      Any of {"left", "right", "both" "none"}
-  @param check_sorted
-      When the ``by`` argument is given, polars can not check sortedness
-      by the metadata and has to do a full scan on the index column to
-      verify data is sorted. This is expensive. If you are sure the
-      data within the by groups is sorted, you can set this to ``False``.
-      Doing so incorrectly will lead to incorrect output
-  @param by Also group by this column/these columns
+  @param options.every interval of the window
+  @param options.period length of the window, if None it is equal to 'every'
+  @param options.offset offset of the window if None and period is None it will be equal to negative `every`
+  @param options.label Define which label to use for the window: Any if {'left', 'right', 'datapoint'}
+  @param options.includeBoundaries add the lower and upper bound of the window to the "_lower_bound" and "_upper_bound" columns. This will impact performance because it's harder to parallelize
+  @param options.closed Defines if the window interval is closed or not. Any of {"left", "right", "both" "none"}
+  @param options.by Also group by this column/these columns
+  @param options.startBy The strategy to determine the start of the first window by. Any of {'window', 'datapoint', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'}
  */
   groupByDynamic(options: {
     indexColumn: string;
@@ -1259,7 +1242,6 @@ export interface EwmOps<T> {
    * └──────────┘
    * ```
    */
-  ewmMean(): T;
   ewmMean(
     alpha?: number,
     adjust?: boolean,
@@ -1274,6 +1256,7 @@ export interface EwmOps<T> {
     bias?: boolean;
     ignoreNulls?: boolean;
   }): T;
+  ewmMean(): T;
   /**
    * Exponentially-weighted standard deviation.
    *
@@ -1304,7 +1287,6 @@ export interface EwmOps<T> {
    * └──────────┘
    * ```
    */
-  ewmStd(): T;
   ewmStd(
     alpha?: number,
     adjust?: boolean,
@@ -1319,6 +1301,7 @@ export interface EwmOps<T> {
     bias?: boolean;
     ignoreNulls?: boolean;
   }): T;
+  ewmStd(): T;
   /**
    * Exponentially-weighted variance.
    *
@@ -1348,7 +1331,6 @@ export interface EwmOps<T> {
    * └──────────┘
    * ```
    */
-  ewmVar(): T;
   ewmVar(
     alpha?: number,
     adjust?: boolean,
@@ -1363,4 +1345,5 @@ export interface EwmOps<T> {
     bias?: boolean;
     ignoreNulls?: boolean;
   }): T;
+  ewmVar(): T;
 }

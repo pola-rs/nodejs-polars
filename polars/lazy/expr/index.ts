@@ -763,7 +763,6 @@ export interface Expr
                       Defaults to keeping the original value.
                       Accepts expression input. Non-expression inputs are parsed as literals.
    * @param returnDtype - The data type of the resulting expression. If set to `None` (default), the data type is determined automatically based on the other inputs.
-   * @see {@link str.replace}
    * @see {@link replace}
    * @example
    * Replace a single value by another value. Values that were not replaced remain unchanged.
@@ -904,8 +903,8 @@ export interface Expr
    * @param new_ - Value or sequence of values to replace by.
                   Accepts expression input. Sequences are parsed as Series, other non-expression inputs are parsed as literals.
                   Length must match the length of `old` or have length 1.
-   * @see {@link replace_strict}
-   * @see {@link str.replace}
+   * @see {@link replaceStrict}
+   * @see {@link replace}
    * @example
    * Replace a single value by another value. Values that were not replaced remain unchanged.
    * ```
@@ -1129,8 +1128,8 @@ export interface Expr
    * Get the unique values of this expression;
    * @param maintainOrder Maintain order of data. This requires more work.
    */
-  unique(opt: { maintainOrder: boolean }): Expr;
   unique(maintainOrder?: boolean): Expr;
+  unique(opt: { maintainOrder: boolean }): Expr;
   /** Returns a unit Series with the highest value possible for the dtype of this expression. */
   upperBound(): Expr;
   /** Get variance. */

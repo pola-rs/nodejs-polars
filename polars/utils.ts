@@ -1,5 +1,5 @@
 import path from "node:path";
-import { isExternal, isRegExp } from "node:util/types";
+import { isRegExp } from "node:util/types";
 import { DataFrame } from "./dataframe";
 import { LazyDataFrame } from "./lazy/dataframe";
 import { Expr, exprToLitOrExpr } from "./lazy/expr";
