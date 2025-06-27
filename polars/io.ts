@@ -232,6 +232,7 @@ const scanCsvDefaultOptions: Partial<ScanCsvOptions> = {
   ignoreErrors: true,
   skipRows: 0,
   sep: ",",
+  eolChar: "\n",
   rechunk: false,
   encoding: "utf8",
   lowMemory: false,
