@@ -621,7 +621,7 @@ pub struct ScanCsvOptions {
     pub encoding: String,
     pub low_memory: Option<bool>,
     pub comment_prefix: Option<String>,
-    pub eol_char: Option<u8>,
+    pub eol_char: String,
     pub quote_char: Option<String>,
     pub parse_dates: Option<bool>,
     pub skip_rows_after_header: u32,
@@ -678,7 +678,7 @@ pub fn scan_csv(path: String, options: ScanCsvOptions) -> napi::Result<JsLazyFra
                 .map_or(None, |s| Some(PlSmallStr::from_string(s))),
         )
         .with_quote_char(quote_char)
-        .with_eol_char(options.eol_char.unwrap_or(b'\n'))
+        .with_eol_char(options.eol_char.as_bytes()[0])
         .with_rechunk(options.rechunk.unwrap_or(false))
         .with_skip_rows_after_header(options.skip_rows_after_header as usize)
         .with_encoding(encoding)

@@ -23,7 +23,7 @@ export interface ReadCsvOptions {
   numThreads: number;
   dtypes: Record<string, DataType>;
   lowMemory: boolean;
-  commentChar: string;
+  commentPrefix: string;
   quoteChar: string;
   eolChar: string;
   nullValues: string | Array<string> | Record<string, string>;
@@ -167,7 +167,7 @@ export function readRecords(
  * @param options.dtype -Overwrite the dtypes during inference.
  * @param options.schema -Set the CSV file's schema. This only accepts datatypes that are implemented in the csv parser and expects a complete Schema.
  * @param options.lowMemory - Reduce memory usage in expense of performance.
- * @param options.commentChar - character that indicates the start of a comment line, for instance '#'.
+ * @param options.commentPrefix - character that indicates the start of a comment line, for instance '#'.
  * @param options.quoteChar -character that is used for csv quoting, default = ''. Set to null to turn special handling and escaping of quotes off.
  * @param options.nullValues - Values to interpret as null values. You can provide a
  *     - `string` -> all values encountered equal to this string will be null
@@ -205,7 +205,7 @@ export function readCSV(pathOrBody, options?) {
 export interface ScanCsvOptions {
   hasHeader: boolean;
   sep: string;
-  commentChar: string;
+  commentPrefix: string;
   quoteChar: string;
   skipRows: number;
   nullValues: string | Array<string> | Record<string, string>;
@@ -232,6 +232,7 @@ const scanCsvDefaultOptions: Partial<ScanCsvOptions> = {
   ignoreErrors: true,
   skipRows: 0,
   sep: ",",
+  eolChar: "\n",
   rechunk: false,
   encoding: "utf8",
   lowMemory: false,
@@ -250,7 +251,7 @@ const scanCsvDefaultOptions: Partial<ScanCsvOptions> = {
  * @param options.hasHeader - Indicate if first row of dataset is header or not. If set to False first row will be set to `column_x`,
  *     `x` being an enumeration over every column in the dataset.
  * @param options.sep -Character to use as delimiter in the file.
- * @param options.commentChar - character that indicates the start of a comment line, for instance '#'.
+ * @param options.commentPrefix - character that indicates the start of a comment line, for instance '#'.
  * @param options.quoteChar -character that is used for csv quoting, default = ''. Set to null to turn special handling and escaping of quotes off.
  * @param options.skipRows -Start reading after `skipRows` position.
  * @param options.nullValues - Values to interpret as null values. You can provide a
@@ -630,7 +631,7 @@ export function scanIPC(path, options = {}) {
  * @param options.numThreads -Number of threads to use in csv parsing. Defaults to the number of physical cpu's of your system.
  * @param options.dtype -Overwrite the dtypes during inference.
  * @param options.lowMemory - Reduce memory usage in expense of performance.
- * @param options.commentChar - character that indicates the start of a comment line, for instance '#'.
+ * @param options.commentPrefix - character that indicates the start of a comment line, for instance '#'.
  * @param options.quoteChar -character that is used for csv quoting, default = ''. Set to null to turn special handling and escaping of quotes off.
  * @param options.nullValues - Values to interpret as null values. You can provide a
  *     - `string` -> all values encountered equal to this string will be null
