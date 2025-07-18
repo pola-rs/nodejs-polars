@@ -9,6 +9,8 @@ const tsvpath = path.resolve(__dirname, "./examples/datasets/data.tsv");
 // eslint-disable-next-line no-undef
 const emptycsvpath = path.resolve(__dirname, "./examples/datasets/empty.csv");
 // eslint-disable-next-line no-undef
+const pipecsvpath = path.resolve(__dirname, "./examples/datasets/pipe-eol.csv");
+// eslint-disable-next-line no-undef
 const parquetpath = path.resolve(__dirname, "./examples/foods.parquet");
 // eslint-disable-next-line no-undef
 const avropath = path.resolve(__dirname, "./examples/foods.avro");
@@ -51,6 +53,19 @@ describe("read:csv", () => {
     expect(df.writeCSV().toString().slice(0, 22)).toEqual(
       csvString.slice(0, 22),
     );
+  });
+  it("can read from a csv file with eolChar", async () => {
+    const actual = pl.readCSV(pipecsvpath, { eolChar: "|" });
+    const expected = `shape: (2, 2)
+┌─────┬─────┐
+│ a   ┆ b   │
+│ --- ┆ --- │
+│ i64 ┆ str │
+╞═════╪═════╡
+│ 1   ┆ foo │
+│ 2   ┆ boo │
+└─────┴─────┘`;
+    expect(actual.toString()).toEqual(expected);
   });
   it("can read from a csv buffer with newline in the header", () => {
     const csvBuffer = Buffer.from(
@@ -263,6 +278,19 @@ describe("scan", () => {
     const df = pl.scanParquet(parquetpath).collectSync();
 
     expect(df.shape).toEqual({ height: 4, width: 4 });
+  });
+  it("can lazy load (scan) from a csv file with eolChar", async () => {
+    const actual = pl.scanCSV(pipecsvpath, { eolChar: "|" }).collectSync();
+    const expected = `shape: (2, 2)
+┌─────┬─────┐
+│ a   ┆ b   │
+│ --- ┆ --- │
+│ i64 ┆ str │
+╞═════╪═════╡
+│ 1   ┆ foo │
+│ 2   ┆ boo │
+└─────┴─────┘`;
+    expect(actual.toString()).toEqual(expected);
   });
 });
 
