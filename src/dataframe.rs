@@ -67,7 +67,7 @@ pub struct ReadCsvOptions {
     pub path: Option<String>,
     pub dtypes: Option<HashMap<String, Wrap<DataType>>>,
     pub chunk_size: u32,
-    pub comment_char: Option<String>,
+    pub comment_prefix: Option<String>,
     pub null_values: Option<Wrap<NullValues>>,
     pub quote_char: Option<String>,
     pub skip_rows_after_header: u32,
@@ -145,7 +145,7 @@ fn mmap_reader_to_df<'a>(
                 .with_separator(options.sep.unwrap_or(",".to_owned()).as_bytes()[0])
                 .with_encoding(encoding)
                 .with_missing_is_null(options.missing_is_null)
-                .with_comment_prefix(options.comment_char.as_deref())
+                .with_comment_prefix(options.comment_prefix.as_deref())
                 .with_null_values(null_values)
                 .with_try_parse_dates(options.try_parse_dates)
                 .with_quote_char(quote_char)
