@@ -177,6 +177,10 @@ describe("read:csv", () => {
     const df2 = pl.readCSV(csv, { dtypes: { a: pl.Utf8 } });
     expect(df2.dtypes[0].equals(pl.String)).toBeTruthy();
   });
+  test("csv with commentPrefix", () => {
+    const df = pl.readCSV(csvpath, { commentPrefix: "vegetables" });
+    expect(df.shape).toEqual({ height: 20, width: 4 });
+  });
   it.todo("can read from a stream");
 });
 
