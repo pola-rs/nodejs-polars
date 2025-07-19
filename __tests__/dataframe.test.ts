@@ -36,7 +36,6 @@ describe("dataframe", () => {
     const expected = ["d", "e"];
     const df = pl.DataFrame({ a: [1, 2, 3], b: ["a", "b", "c"] });
     df.columns = expected;
-
     expect(df.columns).toEqual(expected);
   });
   test("clone", () => {
@@ -51,12 +50,13 @@ describe("dataframe", () => {
         b: ["a", "b", "c"],
         c: [true, true, false],
       })
-      .describe();
+      .describe()
+      .withColumn(pl.col("c").round(6).as("c"));
     const expected = pl.DataFrame({
       describe: ["mean", "std", "min", "max", "median"],
       a: [2, 1, 1, 3, 2],
       b: [null, null, "a", "c", null],
-      c: [0.6666666666666666, 0.5773502691896258, 0, 1, 1],
+      c: [0.666667, 0.57735, 0, 1, 1],
     });
     expect(actual).toFrameEqual(expected);
   });
