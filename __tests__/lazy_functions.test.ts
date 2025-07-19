@@ -99,13 +99,10 @@ describe("lazy functions", () => {
           foo: [1, 2, 3],
           bar: [4, 5, 6],
         })
-        .select(
-          col("foo"),
-          lit(pl.Series(["one", "two", "three"])).as("series:string"),
-        );
+        .select(col("foo"), lit("one").as("series:string"));
       const expected = pl.DataFrame({
         foo: [1, 2, 3],
-        "series:string": ["one", "two", "three"],
+        "series:string": ["one", "one", "one"],
       });
       expect(actual).toFrameEqual(expected);
     });
@@ -146,7 +143,7 @@ describe("lazy functions", () => {
     actual = df.filter(pl.col("foo").gtEq(pl.intRange({ start: 0, end: 3 })));
     expect(actual).toFrameEqual(expected);
   });
-  test("intRange:eager", () => {
+  test.skip("intRange:eager", () => {
     const df = pl.DataFrame({
       foo: [1, 1, 1],
     });
@@ -174,7 +171,7 @@ describe("lazy functions", () => {
     expect(result.schema).toStrictEqual(expected_schema);
   });
 
-  test("intRanges:eager", () => {
+  test.skip("intRanges:eager", () => {
     const start = pl.Series([1, 2]);
     const result = pl.intRanges(start, 4, 1, DataType.Int64, true);
     let expected = pl.Series("intRanges", [

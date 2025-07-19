@@ -335,10 +335,52 @@ export interface Expr
   cot(): Expr;
   /** Count the number of values in this expression */
   count(): Expr;
-  /** Calculate the n-th discrete difference.
-   *
+  /** Calculate the first discrete difference between shifted items.
    * @param n number of slots to shift
-   * @param nullBehavior ignore or drop
+   * @param nullBehavior How to handle null values. ignore or drop
+   * @example
+   * ```
+   * const df = pl.DataFrame({"int": [20, 10, 30, 25, 35]})
+   * df.withColumns(pl.col("int").diff())
+    shape: (5, 2)
+    ┌─────┬────────┐
+    │ int ┆ change │
+    │ --- ┆ ---    │
+    │ i64 ┆ i64    │
+    ╞═════╪════════╡
+    │ 20  ┆ null   │
+    │ 10  ┆ -10    │
+    │ 30  ┆ 20     │
+    │ 25  ┆ -5     │
+    │ 35  ┆ 10     │
+    └─────┴────────┘
+
+    >>> df.withColumns(pl.col("int").diff(n=2))
+    shape: (5, 2)
+    ┌─────┬────────┐
+    │ int ┆ change │
+    │ --- ┆ ---    │
+    │ i64 ┆ i64    │
+    ╞═════╪════════╡
+    │ 20  ┆ null   │
+    │ 10  ┆ null   │
+    │ 30  ┆ 10     │
+    │ 25  ┆ 15     │
+    │ 35  ┆ 5      │
+    └─────┴────────┘
+
+    >>> df.select(pl.col("int").diff(2,"drop").alias("diff"))
+    shape: (3, 1)
+    ┌──────┐
+    │ diff │
+    │ ---  │
+    │ i64  │
+    ╞══════╡
+    │ 10   │
+    │ 15   │
+    │ 5    │
+    └──────┘
+   * ```
    */
   diff(n: number, nullBehavior: "ignore" | "drop"): Expr;
   diff(o: { n: number; nullBehavior: "ignore" | "drop" }): Expr;
@@ -420,15 +462,6 @@ export interface Expr
    * Extend the Series with given number of values.
    * @param value The value to extend the Series with. This value may be null to fill with nulls.
    * @param n The number of values to extend.
-   * @deprecated
-   * @see {@link extendConstant}
-   */
-  extend(value: any, n: number): Expr;
-  extend(opt: { value: any; n: number }): Expr;
-  /**
-   * Extend the Series with given number of values.
-   * @param value The value to extend the Series with. This value may be null to fill with nulls.
-   * @param n The number of values to extend.
    */
   extendConstant(value: any, n: number): Expr;
   extendConstant(opt: { value: any; n: number }): Expr;
@@ -483,6 +516,7 @@ export interface Expr
    * Check if elements of this Series are in the right Series, or List values of the right Series.
    *
    * @param other Series of primitive type or List type.
+   * @param nullsEquals default False, If True, treat null as a distinct value. Null values will not propagate.
    * @returns Expr that evaluates to a Boolean Series.
    * @example
    * ```
@@ -507,7 +541,7 @@ export interface Expr
    * └──────────┘
    * ```
    */
-  isIn(other): Expr;
+  isIn(other, nullsEquals?: boolean): Expr;
   /** Create a boolean expression returning `true` where the expression values are infinite. */
   isInfinite(): Expr;
   /** Create a boolean expression returning `true` where the expression values are NaN (Not A Number). */
@@ -1317,9 +1351,9 @@ export const _Expr = (_expr: any): Expr => {
     },
     diff(n, nullBehavior = "ignore") {
       if (typeof n === "number") {
-        return _Expr(_expr.diff(n, nullBehavior));
+        return _Expr(_expr.diff(exprToLitOrExpr(n, false), nullBehavior));
       }
-      return _Expr(_expr.diff(n.n, n.nullBehavior));
+      return _Expr(_expr.diff(exprToLitOrExpr(n.n, false), n.nullBehavior));
     },
     dot(other) {
       const expr = (exprToLitOrExpr(other, false) as any).inner();
@@ -1440,13 +1474,6 @@ export const _Expr = (_expr: any): Expr => {
     exp() {
       return _Expr(_expr.exp());
     },
-    extend(o, n?) {
-      if (n !== null && typeof n === "number") {
-        return _Expr(_expr.extendConstant(o, n));
-      }
-
-      return _Expr(_expr.extendConstant(o.value, o.n));
-    },
     extendConstant(o, n?) {
       if (n !== null && typeof n === "number") {
         return _Expr(_expr.extendConstant(o, n));
@@ -1491,7 +1518,7 @@ export const _Expr = (_expr: any): Expr => {
     },
     gather(indices) {
       if (Array.isArray(indices)) {
-        indices = pli.lit(Series(indices).inner());
+        indices = pli.lit(Series("", indices, pli.Int64).inner());
       } else {
         indices = indices.inner();
       }
@@ -1554,14 +1581,13 @@ export const _Expr = (_expr: any): Expr => {
     isUnique() {
       return _Expr(_expr.isUnique());
     },
-    isIn(other) {
+    isIn(other, nullsEquals = false) {
       if (Array.isArray(other)) {
         other = pli.lit(Series(other).inner());
       } else {
         other = exprToLitOrExpr(other, false).inner();
       }
-
-      return wrap("isIn", other);
+      return wrap("isIn", other, nullsEquals);
     },
     keepName() {
       return _Expr(_expr.keepName());
@@ -1741,7 +1767,7 @@ export const _Expr = (_expr: any): Expr => {
       return wrap("rollingSkew", val.windowSize, val.bias ?? bias);
     },
     round(decimals) {
-      return _Expr(_expr.round(decimals?.decimals ?? decimals));
+      return _Expr(_expr.round(decimals?.decimals ?? decimals, "halftoeven"));
     },
     sample(opts?, frac?, withReplacement = false, seed?) {
       if (opts?.n !== undefined || opts?.frac !== undefined) {
