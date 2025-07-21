@@ -24,7 +24,7 @@ impl From<Series> for JsSeries {
 #[napi]
 impl JsSeries {
     #[napi(catch_unwind)]
-    pub fn to_js(&self, env: Env) -> napi::Result<napi::JsUnknown> {
+    pub fn to_js(&self, env: Env) -> napi::Result<napi::Unknown> {
         env.to_js_value(&self.series)
     }
 
@@ -159,7 +159,7 @@ impl JsSeries {
     #[napi(factory, catch_unwind)]
     pub fn new_opt_date(
         name: String,
-        values: Vec<napi::JsUnknown>,
+        values: Vec<napi::Unknown>,
         strict: Option<bool>,
     ) -> napi::Result<JsSeries> {
         let len = values.len();
@@ -168,9 +168,9 @@ impl JsSeries {
         for item in values.into_iter() {
             match item.get_type()? {
                 ValueType::Object => {
-                    let obj: &napi::JsObject = unsafe { &item.cast() };
+                    let obj: &Object = unsafe { &item.cast()? };
                     if obj.is_date()? {
-                        let d: &napi::JsDate = unsafe { &item.cast() };
+                        let d: &napi::JsDate = unsafe { &item.cast()? };
                         match d.value_of() {
                             Ok(v) => builder.append_value(v as i64),
                             Err(e) => {
@@ -1019,12 +1019,12 @@ impl JsSeries {
     #[napi(catch_unwind)]
     pub fn to_dummies(
         &self,
-        separator: Option<&str>,
+        separator: Option<String>,
         drop_first: bool,
     ) -> napi::Result<JsDataFrame> {
         let df = self
             .series
-            .to_dummies(separator, drop_first)
+            .to_dummies(separator.as_deref(), drop_first)
             .map_err(JsPolarsErr::from)?;
         Ok(df.into())
     }

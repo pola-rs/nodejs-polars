@@ -1,7 +1,6 @@
 use crate::lazy::dsl::JsExpr;
 use crate::prelude::*;
 use napi::bindgen_prelude::*;
-use napi::{JsBigInt, JsBoolean, JsDate, JsNumber, JsObject, JsString, JsUnknown};
 use polars::prelude::NullStrategy;
 use polars::prelude::*;
 use polars_core::series::ops::NullBehavior;
@@ -41,7 +40,7 @@ pub(crate) trait ToSeries {
     unsafe fn to_series(&self) -> Series;
 }
 
-impl ToSeries for Array {
+impl ToSeries for Array<'_> {
     unsafe fn to_series(&self) -> Series {
         let len = self.len();
         let mut v: Vec<AnyValue> = Vec::with_capacity(len as usize);
@@ -53,13 +52,13 @@ impl ToSeries for Array {
     }
 }
 
-impl ToSeries for JsUnknown {
+impl ToSeries for Unknown<'_> {
     unsafe fn to_series(&self) -> Series {
-        let obj = self.cast::<JsObject>();
-        let len = obj.get_array_length_unchecked().unwrap();
+        let obj = self.cast::<Object>();
+        let len = obj.as_ref().unwrap().get_array_length_unchecked().unwrap();
         let mut v: Vec<AnyValue> = Vec::with_capacity(len as usize);
         for i in 0..len {
-            let unknown: JsUnknown = obj.get_element_unchecked(i).unwrap();
+            let unknown: Unknown = obj.as_ref().unwrap().clone().get_element(i).unwrap();
             let av = AnyValue::from_js(unknown).unwrap();
             v.push(av);
         }
@@ -83,7 +82,7 @@ impl ToNapiValue for Wrap<&Series> {
                 let mut rows = env.create_array(height as u32)?;
 
                 for idx in 0..height {
-                    let mut row = env.create_object()?;
+                    let mut row = Object::new(&env)?;
                     for col in df.get_columns() {
                         let key = col.name();
                         let val = col.get(idx);
@@ -639,7 +638,7 @@ impl FromNapiValue for Wrap<DataType> {
         match ty {
             ValueType::Object => {
                 let obj = Object::from_napi_value(env, napi_val)?;
-                let variant = obj.get::<_, String>("variant")?.map_or("".into(), |v| v);
+                let variant = obj.get::<String>("variant")?.map_or("".into(), |v| v);
 
                 let dtype = match variant.as_ref() {
                     "Int8" => DataType::Int8,
@@ -656,7 +655,7 @@ impl FromNapiValue for Wrap<DataType> {
                     "Utf8" => DataType::String,
                     "String" => DataType::String,
                     "List" => {
-                        let inner = obj.get::<_, Array>("inner")?.unwrap();
+                        let inner = obj.get::<Array>("inner")?.unwrap();
                         let inner_dtype: Object = inner.get::<Object>(0)?.unwrap();
                         let napi_dt = Object::to_napi_value(env, inner_dtype).unwrap();
 
@@ -664,7 +663,7 @@ impl FromNapiValue for Wrap<DataType> {
                         DataType::List(Box::new(dt.0))
                     }
                     "FixedSizeList" => {
-                        let inner = obj.get::<_, Array>("inner")?.unwrap();
+                        let inner = obj.get::<Array>("inner")?.unwrap();
                         let inner_dtype: Object = inner.get::<Object>(0)?.unwrap();
                         let napi_dt = Object::to_napi_value(env, inner_dtype).unwrap();
 
@@ -677,28 +676,28 @@ impl FromNapiValue for Wrap<DataType> {
 
                     "Date" => DataType::Date,
                     "Datetime" => {
-                        let tu = obj.get::<_, Wrap<TimeUnit>>("timeUnit")?.unwrap();
+                        let tu = obj.get::<Wrap<TimeUnit>>("timeUnit")?.unwrap();
                         DataType::Datetime(tu.0, None)
                     }
                     "Time" => DataType::Time,
                     "Object" => DataType::Object("object", None),
                     "Categorical" => DataType::Categorical(None, Default::default()),
                     "Struct" => {
-                        let inner = obj.get::<_, Array>("fields")?.unwrap();
+                        let inner = obj.get::<Array>("fields")?.unwrap();
                         let mut fldvec: Vec<Field> = Vec::with_capacity(inner.len() as usize);
                         for i in 0..inner.len() {
                             let inner_dtype: Object = inner.get::<Object>(i)?.unwrap();
                             let napi_dt = Object::to_napi_value(env, inner_dtype).unwrap();
                             let obj = Object::from_napi_value(env, napi_dt)?;
-                            let name = obj.get::<_, String>("name")?.unwrap();
-                            let dt = obj.get::<_, Wrap<DataType>>("dtype")?.unwrap();
+                            let name = obj.get::<String>("name")?.unwrap();
+                            let dt = obj.get::<Wrap<DataType>>("dtype")?.unwrap();
                             let fld = Field::new(name.into(), dt.0);
                             fldvec.push(fld);
                         }
                         DataType::Struct(fldvec)
                     }
                     "Decimal" => {
-                        let inner = obj.get::<_, Array>("inner")?.unwrap(); // [precision, scale]
+                        let inner = obj.get::<Array>("inner")?.unwrap(); // [precision, scale]
                         let precision = inner.get::<Option<i32>>(0)?.unwrap().map(|x| x as usize);
                         let scale = inner.get::<Option<i32>>(1)?.unwrap().map(|x| x as usize);
                         DataType::Decimal(precision, scale)
@@ -725,7 +724,7 @@ impl FromNapiValue for Wrap<Schema> {
                 Ok(Wrap(
                     keys.iter()
                         .map(|key| {
-                            let value = obj.get::<_, Object>(&key)?.unwrap();
+                            let value = obj.get::<Object>(&key)?.unwrap();
                             let napi_val = Object::to_napi_value(env, value)?;
                             let dtype = Wrap::<DataType>::from_napi_value(env, napi_val)?;
 
@@ -744,7 +743,7 @@ impl FromNapiValue for Wrap<Schema> {
 impl ToNapiValue for Wrap<Schema> {
     unsafe fn to_napi_value(napi_env: sys::napi_env, val: Self) -> Result<sys::napi_value> {
         let env = Env::from_raw(napi_env);
-        let mut schema = env.create_object()?;
+        let mut schema = Object::new(&env)?;
 
         for (name, dtype) in val.0.iter() {
             schema.set(name, Wrap(dtype.clone()))?;
@@ -757,7 +756,7 @@ impl ToNapiValue for Wrap<ParallelStrategy> {
     unsafe fn to_napi_value(napi_env: sys::napi_env, val: Self) -> Result<sys::napi_value> {
         let env = Env::from_raw(napi_env);
         let s = val.0;
-        let mut strategy = env.create_object()?;
+        let mut strategy = Object::new(&env)?;
 
         let unit = match s {
             ParallelStrategy::Auto => "auto",
@@ -809,14 +808,14 @@ impl FromNapiValue for Wrap<InterpolationMethod> {
 impl FromNapiValue for Wrap<SortOptions> {
     unsafe fn from_napi_value(env: sys::napi_env, napi_val: sys::napi_value) -> napi::Result<Self> {
         let obj = Object::from_napi_value(env, napi_val)?;
-        let descending = obj.get::<_, bool>("descending")?.unwrap_or(false);
+        let descending = obj.get::<bool>("descending")?.unwrap_or(false);
         let nulls_last = obj
-            .get::<_, bool>("nulls_last")?
-            .or_else(|| obj.get::<_, bool>("nullsLast").expect("expect nullsLast"))
+            .get::<bool>("nulls_last")?
+            .or_else(|| obj.get::<bool>("nullsLast").expect("expect nullsLast"))
             .unwrap_or(false);
-        let multithreaded = obj.get::<_, bool>("multithreaded")?.unwrap_or(false);
-        let maintain_order: bool = obj.get::<_, bool>("maintainOrder")?.unwrap_or(true);
-        let limit = obj.get::<_, _>("limit")?.unwrap();
+        let multithreaded = obj.get::<bool>("multithreaded")?.unwrap_or(false);
+        let maintain_order: bool = obj.get::<bool>("maintainOrder")?.unwrap_or(true);
+        let limit = obj.get::< _>("limit")?.unwrap();
         let options = SortOptions {
             descending,
             nulls_last,
@@ -846,32 +845,32 @@ impl FromNapiValue for Wrap<QuoteStyle> {
 impl FromNapiValue for Wrap<CsvWriterOptions> {
     unsafe fn from_napi_value(env: sys::napi_env, napi_val: sys::napi_value) -> napi::Result<Self> {
         let obj = Object::from_napi_value(env, napi_val)?;
-        let include_bom = obj.get::<_, bool>("includeBom")?.unwrap_or(false);
-        let include_header = obj.get::<_, bool>("includeHeader")?.unwrap_or(true);
-        let batch_size = NonZero::new(obj.get::<_, i64>("batchSize")?.unwrap_or(1024) as usize)
+        let include_bom = obj.get::<bool>("includeBom")?.unwrap_or(false);
+        let include_header = obj.get::<bool>("includeHeader")?.unwrap_or(true);
+        let batch_size = NonZero::new(obj.get::<i64>("batchSize")?.unwrap_or(1024) as usize)
             .ok_or_else(|| napi::Error::from_reason("Invalid batch size"))?;
-        let maintain_order = obj.get::<_, bool>("maintainOrder")?.unwrap_or(true);
-        let date_format = obj.get::<_, String>("dateFormat")?;
-        let time_format = obj.get::<_, String>("timeFormat")?;
-        let datetime_format = obj.get::<_, String>("datetimeFormat")?;
-        let float_scientific = obj.get::<_, bool>("floatScientific")?;
-        let float_precision = obj.get::<_, i32>("floatPrecision")?.map(|x| x as usize);
+        let maintain_order = obj.get::<bool>("maintainOrder")?.unwrap_or(true);
+        let date_format = obj.get::<String>("dateFormat")?;
+        let time_format = obj.get::<String>("timeFormat")?;
+        let datetime_format = obj.get::<String>("datetimeFormat")?;
+        let float_scientific = obj.get::<bool>("floatScientific")?;
+        let float_precision = obj.get::<i32>("floatPrecision")?.map(|x| x as usize);
         let separator = obj
-            .get::<_, String>("separator")?
+            .get::<String>("separator")?
             .unwrap_or(",".to_owned())
             .as_bytes()[0];
         let quote_char = obj
-            .get::<_, String>("quoteChar")?
+            .get::<String>("quoteChar")?
             .unwrap_or("\"".to_owned())
             .as_bytes()[0];
         let null_value = obj
-            .get::<_, String>("nullValue")?
+            .get::<String>("nullValue")?
             .unwrap_or(SerializeOptions::default().null);
         let line_terminator = obj
-            .get::<_, String>("lineTerminator")?
+            .get::<String>("lineTerminator")?
             .unwrap_or("\n".to_owned());
         let quote_style = obj
-            .get::<_, Wrap<QuoteStyle>>("quoteStyle")?
+            .get::<Wrap<QuoteStyle>>("quoteStyle")?
             .map_or(QuoteStyle::default(), |wrap| wrap.0);
 
         let serialize_options = SerializeOptions {
@@ -1018,7 +1017,7 @@ impl ToNapiValue for Wrap<DataType> {
             DataType::String => String::to_napi_value(env, "String".to_owned()),
             DataType::List(inner) => {
                 let env_ctx = Env::from_raw(env);
-                let mut obj = env_ctx.create_object()?;
+                let mut obj = Object::new(&env_ctx)?;
                 let wrapped = Wrap(*inner);
 
                 obj.set("variant", "List")?;
@@ -1028,7 +1027,7 @@ impl ToNapiValue for Wrap<DataType> {
             DataType::Date => String::to_napi_value(env, "Date".to_owned()),
             DataType::Datetime(tu, tz) => {
                 let env_ctx = Env::from_raw(env);
-                let mut obj = env_ctx.create_object()?;
+                let mut obj = Object::new(&env_ctx)?;
                 let mut inner_arr = env_ctx.create_array(2)?;
 
                 inner_arr.set(0, tu.to_ascii())?;
@@ -1044,12 +1043,12 @@ impl ToNapiValue for Wrap<DataType> {
             DataType::Struct(flds) => {
                 let env_ctx = Env::from_raw(env);
 
-                let mut obj = env_ctx.create_object()?;
+                let mut obj = Object::new(&env_ctx)?;
                 let mut js_flds = env_ctx.create_array(flds.len() as u32)?;
                 for (idx, fld) in flds.iter().enumerate() {
                     let name = fld.name().clone();
                     let dtype = Wrap(fld.dtype().clone());
-                    let mut fld_obj = env_ctx.create_object()?;
+                    let mut fld_obj = Object::new(&env_ctx)?;
                     fld_obj.set("name", name.to_string())?;
                     fld_obj.set("dtype", dtype)?;
                     js_flds.set(idx as u32, fld_obj)?;
@@ -1061,7 +1060,7 @@ impl ToNapiValue for Wrap<DataType> {
             }
             DataType::Array(dtype, size) => {
                 let env_ctx = Env::from_raw(env);
-                let mut obj = env_ctx.create_object()?;
+                let mut obj = Object::new(&env_ctx)?;
                 let wrapped = Wrap(*dtype);
                 let mut inner_arr = env_ctx.create_array(2)?;
                 inner_arr.set(0, wrapped)?;
@@ -1072,7 +1071,7 @@ impl ToNapiValue for Wrap<DataType> {
             }
             DataType::Decimal(precision, scale) => {
                 let env_ctx = Env::from_raw(env);
-                let mut obj = env_ctx.create_object()?;
+                let mut obj = Object::new(&env_ctx)?;
                 let mut inner_arr = env_ctx.create_array(2)?;
                 inner_arr.set(0, precision.map(|p| p as u32))?;
                 inner_arr.set(1, scale.map(|s| s as u32))?;
@@ -1129,18 +1128,18 @@ impl ToNapiValue for Wrap<NullValues> {
 }
 
 pub trait FromJsUnknown: Sized + Send {
-    fn from_js(obj: JsUnknown) -> Result<Self>;
+    fn from_js(obj: Unknown) -> Result<Self>;
 }
 
 impl FromJsUnknown for String {
-    fn from_js(val: JsUnknown) -> Result<Self> {
-        let s: JsString = val.try_into()?;
-        s.into_utf8()?.into_owned()
+    fn from_js(val: Unknown) -> Result<Self> {
+        let s: String = unsafe { val.cast()? };
+        Ok(s)
     }
 }
 
 impl FromJsUnknown for AnyValue<'_> {
-    fn from_js(val: JsUnknown) -> Result<Self> {
+    fn from_js(val: Unknown) -> Result<Self> {
         match val.get_type()? {
             ValueType::Undefined | ValueType::Null => Ok(AnyValue::Null),
             ValueType::Boolean => bool::from_js(val).map(AnyValue::Boolean),
@@ -1149,7 +1148,7 @@ impl FromJsUnknown for AnyValue<'_> {
             ValueType::BigInt => u64::from_js(val).map(AnyValue::UInt64),
             ValueType::Object => {
                 if val.is_date()? {
-                    let d: JsDate = unsafe { val.cast() };
+                    let d: Date = unsafe { val.cast()? };
                     let d = d.value_of()?;
                     let d = d as i64;
                     Ok(AnyValue::Datetime(d, TimeUnit::Milliseconds, None))
@@ -1163,7 +1162,7 @@ impl FromJsUnknown for AnyValue<'_> {
 }
 
 impl FromJsUnknown for DataType {
-    fn from_js(val: JsUnknown) -> Result<Self> {
+    fn from_js(val: Unknown) -> Result<Self> {
         match val.get_type()? {
             ValueType::Undefined | ValueType::Null => Ok(DataType::Null),
             ValueType::Boolean => Ok(DataType::Boolean),
@@ -1183,29 +1182,29 @@ impl FromJsUnknown for DataType {
 }
 
 impl FromJsUnknown for bool {
-    fn from_js(val: JsUnknown) -> Result<Self> {
-        let s: JsBoolean = val.try_into()?;
-        s.try_into()
+    fn from_js(val: Unknown) -> Result<Self> {
+        let s: bool = unsafe { val.cast()? };
+        Ok(s)
     }
 }
 
 impl FromJsUnknown for f64 {
-    fn from_js(val: JsUnknown) -> Result<Self> {
-        let s: JsNumber = val.try_into()?;
-        s.try_into()
+    fn from_js(val: Unknown) -> Result<Self> {
+        let s: f64 = unsafe { val.cast()? };
+        Ok(s)
     }
 }
 
 impl FromJsUnknown for i64 {
-    fn from_js(val: JsUnknown) -> Result<Self> {
+    fn from_js(val: Unknown) -> Result<Self> {
         match val.get_type()? {
             ValueType::BigInt => {
-                let big: JsBigInt = unsafe { val.cast() };
-                big.try_into()
+                let big: BigInt = unsafe { val.cast()? };
+                Ok(big.get_i64().0)
             }
             ValueType::Number => {
-                let s: JsNumber = val.try_into()?;
-                s.try_into()
+                let s: BigInt = unsafe { val.cast()? };
+                Ok(s.get_i64().0)
             }
             dt => Err(JsPolarsErr::Other(format!("cannot cast {} to i64", dt)).into()),
         }
@@ -1213,68 +1212,68 @@ impl FromJsUnknown for i64 {
 }
 
 impl FromJsUnknown for u64 {
-    fn from_js(val: JsUnknown) -> Result<Self> {
+    fn from_js(val: Unknown) -> Result<Self> {
         match val.get_type()? {
             ValueType::BigInt => {
-                let big: JsBigInt = unsafe { val.cast() };
-                big.try_into()
+                let big: BigInt = unsafe { val.cast()? };
+                Ok(big.get_u64().1)
             }
             ValueType::Number => {
-                let s: JsNumber = val.try_into()?;
-                Ok(s.get_int64()? as u64)
+                let s: BigInt = unsafe { val.cast()? };
+                Ok(s.get_u64().1)
             }
             dt => Err(JsPolarsErr::Other(format!("cannot cast {} to u64", dt)).into()),
         }
     }
 }
 impl FromJsUnknown for u32 {
-    fn from_js(val: JsUnknown) -> Result<Self> {
-        let s: JsNumber = val.try_into()?;
-        s.get_uint32()
+    fn from_js(val: Unknown) -> Result<Self> {
+        let s: u32 = unsafe { val.cast() }?;
+        Ok(s)
     }
 }
 impl FromJsUnknown for f32 {
-    fn from_js(val: JsUnknown) -> Result<Self> {
-        let s: JsNumber = val.try_into()?;
-        s.get_double().map(|s| s as f32)
+    fn from_js(val: Unknown) -> Result<Self> {
+        let s: f64 = unsafe { val.cast() }?;
+        Ok(s as f32)
     }
 }
 
 impl FromJsUnknown for usize {
-    fn from_js(val: JsUnknown) -> Result<Self> {
-        let s: JsNumber = val.try_into()?;
-        Ok(s.get_uint32()? as usize)
+    fn from_js(val: Unknown) -> Result<Self> {
+        let s: u32 = unsafe { val.cast() }?;
+        Ok(s as usize)
     }
 }
 impl FromJsUnknown for u8 {
-    fn from_js(val: JsUnknown) -> Result<Self> {
-        let s: JsNumber = val.try_into()?;
-        Ok(s.get_uint32()? as u8)
+    fn from_js(val: Unknown) -> Result<Self> {
+        let s: u8 = unsafe { val.cast() }?;
+        Ok(s)
     }
 }
 impl FromJsUnknown for u16 {
-    fn from_js(val: JsUnknown) -> Result<Self> {
-        let s: JsNumber = val.try_into()?;
-        Ok(s.get_uint32()? as u16)
+    fn from_js(val: Unknown) -> Result<Self> {
+        let s: u16 = unsafe { val.cast() }?;
+        Ok(s)
     }
 }
 impl FromJsUnknown for i8 {
-    fn from_js(val: JsUnknown) -> Result<Self> {
-        let s: JsNumber = val.try_into()?;
-        Ok(s.get_int32()? as i8)
+    fn from_js(val: Unknown) -> Result<Self> {
+        let s: i8 = unsafe { val.cast() }?;
+        Ok(s)
     }
 }
 impl FromJsUnknown for i16 {
-    fn from_js(val: JsUnknown) -> Result<Self> {
-        let s: JsNumber = val.try_into()?;
-        Ok(s.get_int32()? as i16)
+    fn from_js(val: Unknown) -> Result<Self> {
+        let s: i16 = unsafe { val.cast() }?;
+        Ok(s)
     }
 }
 
 impl FromJsUnknown for i32 {
-    fn from_js(val: JsUnknown) -> Result<Self> {
-        let s: JsNumber = val.try_into()?;
-        s.try_into()
+    fn from_js(val: Unknown) -> Result<Self> {
+        let s: i32 = unsafe { val.cast() }?;
+        Ok(s)
     }
 }
 
@@ -1282,7 +1281,7 @@ impl<V> FromJsUnknown for Option<V>
 where
     V: FromJsUnknown,
 {
-    fn from_js(val: JsUnknown) -> Result<Self> {
+    fn from_js(val: Unknown) -> Result<Self> {
         let v = V::from_js(val);
         match v {
             Ok(v) => Ok(Some(v)),
@@ -1297,7 +1296,7 @@ unsafe fn struct_dict<'a>(
     flds: &[Field],
 ) -> Result<sys::napi_value> {
     let env = Env::from_raw(env_raw);
-    let mut obj = env.create_object()?;
+    let mut obj = Object::new(&env)?;
     for (val, fld) in vals.zip(flds) {
         let key = fld.name();
         let val = Wrap(val);

@@ -20,7 +20,7 @@ macro_rules! typed_option_or_null {
             $dtype,
         );
         for idx in 0..len {
-            let obj: napi::JsUnknown = $arr.get(idx)?.unwrap();
+            let obj: napi::Unknown = $arr.get(idx)?.unwrap();
             if obj.is_typedarray()? {
                 let buff: napi::JsTypedArray = unsafe { obj.cast() };
                 let v = buff.into_value()?;
@@ -60,10 +60,10 @@ macro_rules! build_list_with_downcast {
             $dtype,
         );
         for idx in 0..len {
-            let obj: napi::JsUnknown = $arr.get(idx)?.unwrap();
+            let obj: napi::Unknown = $arr.get(idx)?.unwrap();
             if obj.is_typedarray()? {
-                let buff: napi::JsTypedArray = unsafe { obj.cast() };
-                let v = buff.into_value()?;
+                let buff: TypedArray = unsafe { obj.cast()? };
+                let v = buff.value();
                 let ca = typed_to_chunked!(v, $type, $pl_type);
                 builder.append_iter(ca.into_iter())
             } else {
@@ -174,10 +174,10 @@ pub fn js_arr_to_list(name: &str, arr: &Array, dtype: &DataType) -> napi::Result
                 (len as usize) * 5,
             );
             for idx in 0..len {
-                let values: Either<Vec<Option<&str>>, Null> = arr.get(idx)?.unwrap();
+                let values: Either<Vec<Option<String>>, Null> = arr.get(idx)?.unwrap();
 
                 match values {
-                    Either::A(inner_arr) => builder.append_trusted_len_iter(inner_arr.into_iter()),
+                    Either::A(inner_arr) => builder.append_trusted_len_iter(inner_arr.into_iter().into()),
                     Either::B(_) => builder.append_null(),
                 }
             }
@@ -245,6 +245,7 @@ pub fn js_arr_to_list(name: &str, arr: &Array, dtype: &DataType) -> napi::Result
     Ok(s)
 }
 
+/*
 pub fn from_typed_array(arr: &JsTypedArrayValue) -> JsResult<Series> {
     let dtype: JsDataType = arr.typedarray_type.into();
     let series = match dtype {
@@ -263,3 +264,4 @@ pub fn from_typed_array(arr: &JsTypedArrayValue) -> JsResult<Series> {
 
     Ok(series)
 }
+*/

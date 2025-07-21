@@ -18,17 +18,14 @@
     "rust"
   ],
   "napi": {
-    "name": "nodejs-polars",
-    "triples": {
-      "defaults": true,
-      "additional": [
+    "binaryName": "nodejs-polars",
+    "targets": [
         "aarch64-apple-darwin",
         "aarch64-unknown-linux-gnu",
         "aarch64-unknown-linux-musl",
         "aarch64-linux-android",
         "x86_64-unknown-linux-musl"
-      ]
-    }
+    ]
   },
   "engines": {
     "node": ">= 18"
