@@ -1175,7 +1175,7 @@ impl JsDataFrame {
         Ok(df.into())
     }
     #[napi(catch_unwind)]
-    pub fn to_row(&self, idx: f64, env: Env) -> napi::Result<Array> {
+    pub fn to_row<'a>(&self, idx: f64, env: &'a Env) -> napi::Result<Array<'a>> {
         let idx = idx as i64;
 
         let idx = if idx < 0 {
@@ -1185,8 +1185,7 @@ impl JsDataFrame {
         };
 
         let width = self.df.width();
-        let mut row = &mut env.create_array(width as u32)?;
-
+        let mut row = env.create_array(width as u32)?;
         for (i, col) in self.df.get_columns().iter().enumerate() {
             let val = col.get(idx);
             row.set(i as u32, Wrap(val.unwrap()))?;
@@ -1195,10 +1194,10 @@ impl JsDataFrame {
     }
 
     #[napi(catch_unwind)]
-    pub fn to_rows(&self, env: Env) -> napi::Result<Array> {
+    pub fn to_rows<'a>(&self, env: &'a Env) -> napi::Result<Array<'a>> {
         let (height, width) = self.df.shape();
 
-        let mut rows = &mut env.create_array(height as u32)?;
+        let mut rows = env.create_array(height as u32)?;
         for idx in 0..height {
             let mut row = env.create_array(width as u32)?;
             for (i, col) in self.df.get_columns().iter().enumerate() {
@@ -1249,8 +1248,9 @@ impl JsDataFrame {
 
     // Ok(())
     // }
+
     #[napi]
-    pub fn to_row_obj(&self, idx: Either<i64, f64>, env: Env) -> napi::Result<Object> {
+    pub fn to_row_obj<'a>(&self, idx: Either<i64, f64>, env: &'a Env) -> napi::Result<Object<'a>> {
         let idx = match idx {
             Either::A(a) => a,
             Either::B(b) => b as i64,
@@ -1272,7 +1272,7 @@ impl JsDataFrame {
         Ok(row)
     }
     #[napi(catch_unwind)]
-    pub fn to_objects(&self, env: Env) -> napi::Result<Array> {
+    pub fn to_objects<'a>(&self, env: &'a Env) -> napi::Result<Array<'a>> {
         let (height, _) = self.df.shape();
 
         let mut rows = env.create_array(height as u32)?;
@@ -1701,7 +1701,7 @@ fn coerce_js_anyvalue<'a>(val: Unknown, dtype: DataType, env: Env) -> JsResult<A
         (ValueType::String, String) => AnyValue::from_js(val),
         (_, String) => {
             let s = val.coerce_to_string()?.into_unknown(&env);
-            AnyValue::from_js(s)
+            AnyValue::from_js(s?)
         }
         (ValueType::Boolean, Boolean) => bool::from_js(val).map(AnyValue::Boolean),
         (_, Boolean) => val.coerce_to_bool().map(|b| {
@@ -1787,8 +1787,7 @@ fn coerce_js_anyvalue<'a>(val: Unknown, dtype: DataType, env: Env) -> JsResult<A
             })?;
 
             let inner_val: napi::bindgen_prelude::Object = unsafe { val.cast()? };
-            let mut val_vec: Vec<polars::prelude::AnyValue<'_>> =
-                Vec::with_capacity(number_of_fields as usize);
+            let mut val_vec: Vec<polars::prelude::AnyValue<'_>> = Vec::with_capacity(number_of_fields as usize);
             fields.iter().for_each(|fld| {
                 let single_val = inner_val
                     .get::<napi::Unknown>(&fld.name)
@@ -1796,7 +1795,7 @@ fn coerce_js_anyvalue<'a>(val: Unknown, dtype: DataType, env: Env) -> JsResult<A
                     .unwrap();
                 let vv = match &fld.dtype {
                     DataType::Boolean => {
-                        AnyValue::Boolean(single_val.coerce_to_bool().unwrap().get_value().unwrap())
+                        AnyValue::Boolean(single_val.coerce_to_bool().unwrap().try_into().unwrap())
                     }
                     DataType::String => AnyValue::from_js(single_val).expect("Expecting string"),
                     DataType::Int16 => AnyValue::Int16(

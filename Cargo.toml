@@ -15,12 +15,12 @@ crate-type = ["cdylib", "lib"]
 [dependencies]
 ahash = "0.8.12"
 bincode = "1.3.3"
-napi = { version = "3.0.0", default-features = false, features = [
+napi = { version = "3.1.2", default-features = false, features = [
     "napi8",
     "serde-json",
     "compat-mode"
 ] }
-napi-derive = { version = "3.0.0", default-features = false }
+napi-derive = { version = "3.1.1", default-features = false }
 polars-core = { git = "https://github.com/pola-rs/polars.git", rev = "f298ace880b238fb5793eaf0cdeb6b418e2ba583", default-features = false }
 polars-io = { git = "https://github.com/pola-rs/polars.git", rev = "f298ace880b238fb5793eaf0cdeb6b418e2ba583", default-features = false }
 polars-lazy = { git = "https://github.com/pola-rs/polars.git", rev = "f298ace880b238fb5793eaf0cdeb6b418e2ba583", default-features = false }

@@ -79,6 +79,7 @@ impl From<&DataType> for JsDataType {
     }
 }
 
+/*
 impl From<napi::TypedArrayType> for JsDataType {
     fn from(dt: napi::TypedArrayType) -> Self {
         use napi::TypedArrayType::*;
@@ -97,7 +98,7 @@ impl From<napi::TypedArrayType> for JsDataType {
             _ => panic!("unknown datatype"),
         }
     }
-}
+} */
 
 #[derive(Debug, Clone)]
 pub enum JsAnyValue {
