@@ -1,5 +1,7 @@
 use crate::prelude::*;
 use crate::series::JsSeries;
+use napi::bindgen_prelude::TypedArrayType;
+
 #[napi(js_name = "DataType")]
 pub enum JsDataType {
     Int8,
@@ -79,10 +81,9 @@ impl From<&DataType> for JsDataType {
     }
 }
 
-/*
-impl From<napi::TypedArrayType> for JsDataType {
-    fn from(dt: napi::TypedArrayType) -> Self {
-        use napi::TypedArrayType::*;
+impl From<TypedArrayType> for JsDataType {
+    fn from(dt: TypedArrayType) -> Self {
+        use napi::bindgen_prelude::TypedArrayType::*;
         match dt {
             Int8 => JsDataType::Int8,
             Uint8 => JsDataType::UInt8,
@@ -98,7 +99,7 @@ impl From<napi::TypedArrayType> for JsDataType {
             _ => panic!("unknown datatype"),
         }
     }
-} */
+}
 
 #[derive(Debug, Clone)]
 pub enum JsAnyValue {
