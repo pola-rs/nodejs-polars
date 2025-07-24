@@ -1,4 +1,4 @@
-import pl, { DataType, col, cols, lit } from "@polars";
+import pl, { col, cols, DataType, lit } from "@polars";
 import { df as _df } from "./setup";
 
 describe("lazy functions", () => {

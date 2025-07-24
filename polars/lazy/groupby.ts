@@ -1,5 +1,5 @@
 import { selectionToExprList } from "../utils";
-import { type LazyDataFrame, _LazyDataFrame } from "./dataframe";
+import { _LazyDataFrame, type LazyDataFrame } from "./dataframe";
 import type { Expr } from "./expr";
 
 /** @ignore */

@@ -1,4 +1,4 @@
-import { type DataFrame, _DataFrame } from "../dataframe";
+import { _DataFrame, type DataFrame } from "../dataframe";
 import pli from "../internals/polars_internal";
 import type { Series } from "../series";
 import type { Deserialize, GroupByOps, Serialize } from "../shared_traits";
@@ -11,13 +11,13 @@ import type {
 import {
   type ColumnSelection,
   type ColumnsOrExpr,
-  type ExprOrString,
-  type ValueOrArray,
   columnOrColumnsStrict,
+  type ExprOrString,
   selectionToExprList,
+  type ValueOrArray,
 } from "../utils";
 import { Expr, exprToLitOrExpr } from "./expr";
-import { type LazyGroupBy, _LazyGroupBy } from "./groupby";
+import { _LazyGroupBy, type LazyGroupBy } from "./groupby";
 
 const inspect = Symbol.for("nodejs.util.inspect.custom");
 
@@ -383,10 +383,7 @@ export interface LazyDataFrame extends Serialize, GroupByOps<LazyGroupBy> {
    * @see {@link DataFrame.shiftAndFill}
    */
   shiftAndFill(n: number, fillValue: number): LazyDataFrame;
-  shiftAndFill(opts: {
-    n: number;
-    fillValue: number;
-  }): LazyDataFrame;
+  shiftAndFill(opts: { n: number; fillValue: number }): LazyDataFrame;
   /**
    * @see {@link DataFrame.slice}
    */

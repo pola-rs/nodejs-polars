@@ -2,9 +2,10 @@ import * as dt from "./datetime";
 import * as lst from "./list";
 import * as str from "./string";
 import * as struct from "./struct";
-export type { ExprString as StringNamespace } from "./string";
-export type { ExprList as ListNamespace } from "./list";
+
 export type { ExprDateTime as DatetimeNamespace } from "./datetime";
+export type { ExprList as ListNamespace } from "./list";
+export type { ExprString as StringNamespace } from "./string";
 export type { ExprStruct as StructNamespace } from "./struct";
 
 import { isRegExp } from "node:util/types";
@@ -266,11 +267,17 @@ export interface Expr
   argSort({
     reverse, // deprecated
     maintainOrder,
-  }: { reverse?: boolean; maintainOrder?: boolean }): Expr;
+  }: {
+    reverse?: boolean;
+    maintainOrder?: boolean;
+  }): Expr;
   argSort({
     descending,
     maintainOrder,
-  }: { descending?: boolean; maintainOrder?: boolean }): Expr;
+  }: {
+    descending?: boolean;
+    maintainOrder?: boolean;
+  }): Expr;
   /** Get index of first unique value. */
   argUnique(): Expr;
   /** @see {@link Expr.alias} */
@@ -498,7 +505,12 @@ export interface Expr
     k1,
     k2,
     k3,
-  }: { k0?: number; k1?: number; k2?: number; k3?: number }): Expr;
+  }: {
+    k0?: number;
+    k1?: number;
+    k2?: number;
+    k3?: number;
+  }): Expr;
   /** Take the first n values.  */
   head(length?: number): Expr;
   head({ length }: { length: number }): Expr;
@@ -1017,7 +1029,10 @@ export interface Expr
   shiftAndFill({
     periods,
     fillValue,
-  }: { periods: number; fillValue: number }): Expr;
+  }: {
+    periods: number;
+    fillValue: number;
+  }): Expr;
   /**
    * Compute the element-wise value for the sine.
    * @returns Expression of data type :class:`Float64`.
@@ -1069,7 +1084,10 @@ export interface Expr
   slice({
     offset,
     length,
-  }: { offset: number | Expr; length: number | Expr }): Expr;
+  }: {
+    offset: number | Expr;
+    length: number | Expr;
+  }): Expr;
   /**
    * Sort this column. In projection/ selection context the whole column is sorted.
    * @param descending
@@ -1081,11 +1099,17 @@ export interface Expr
   sort({
     descending,
     nullsLast,
-  }: { descending?: boolean; nullsLast?: boolean }): Expr;
+  }: {
+    descending?: boolean;
+    nullsLast?: boolean;
+  }): Expr;
   sort({
     reverse, // deprecated
     nullsLast,
-  }: { reverse?: boolean; nullsLast?: boolean }): Expr;
+  }: {
+    reverse?: boolean;
+    nullsLast?: boolean;
+  }): Expr;
   /**
    * Sort this column by the ordering of another column, or multiple other columns.
       In projection/ selection context the whole column is sorted.
@@ -1724,7 +1748,7 @@ export const _Expr = (_expr: any): Expr => {
     rollingMedian: rolling("rollingMedian"),
     rollingQuantile(
       val,
-      interpolation?,
+      _interpolation?,
       windowSize?,
       weights?,
       minPeriods?,
@@ -1903,7 +1927,7 @@ export interface ExprConstructor extends Deserialize<Expr> {
 const isExpr = (anyVal: any): anyVal is Expr => {
   try {
     return anyVal?.[Symbol.toStringTag]?.() === "Expr";
-  } catch (err) {
+  } catch (_err) {
     return false;
   }
 };

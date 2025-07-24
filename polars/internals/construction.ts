@@ -1,5 +1,4 @@
 import { isTypedArray } from "node:util/types";
-import { _DataFrame } from "../dataframe";
 import { DataType, polarsTypeToConstructor } from "../datatypes";
 import { FixedSizeList, TimeUnit } from "../datatypes/datatype";
 import { Field } from "../datatypes/field";

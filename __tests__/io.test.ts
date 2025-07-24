@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { Stream } from "node:stream";
 import pl from "@polars";
+
 // eslint-disable-next-line no-undef
 const csvpath = path.resolve(__dirname, "./examples/datasets/foods1.csv");
 // eslint-disable-next-line no-undef

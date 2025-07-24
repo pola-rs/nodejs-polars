@@ -3,7 +3,7 @@ import { DataType } from "../datatypes";
 import pli from "../internals/polars_internal";
 import { Series } from "../series";
 import { type ExprOrString, range, selectionToExprList } from "../utils";
-import { Expr, _Expr, exprToLitOrExpr } from "./expr";
+import { _Expr, Expr, exprToLitOrExpr } from "./expr";
 
 /**
  * __A column in a DataFrame.__

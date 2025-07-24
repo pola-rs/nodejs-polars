@@ -20,18 +20,18 @@ napi = { version = "2.16.17", default-features = false, features = [
     "serde-json",
 ] }
 napi-derive = { version = "2.16.13", default-features = false }
-polars-core = { version = "0.47.1", default-features = false }
-polars-io = { version = "0.47.1", default-features = false }
-polars-lazy = { version = "0.47.1", default-features = false }
-polars-ops = { version = "0.47.1", default-features = false }
-polars-arrow = { version = "0.47.1", default-features = false }
-polars-utils = { version = "0.47.1", default-features = false }
-polars-compute = { version = "0.47.1", default-features = false }
+polars-core = { version = "0.49.1", default-features = false }
+polars-io = { version = "0.49.1", default-features = false }
+polars-lazy = { version = "0.49.1", default-features = false }
+polars-ops = { version = "0.49.1", default-features = false }
+polars-arrow = { version = "0.49.1", default-features = false }
+polars-utils = { version = "0.49.1", default-features = false }
+polars-compute = { version = "0.49.1", default-features = false }
 thiserror = "1"
 smartstring = { version = "1" }
 serde_json = { version = "1" }
 either = "1.15.0"
-hashbrown = { version = "0.15.3", features = ["rayon", "serde"] }
+hashbrown = { version = "0.15.4", features = ["rayon", "serde"] }
 
 [dependencies.polars]
 features = [
@@ -166,10 +166,10 @@ features = [
   "azure"
 ]
 
-version = "0.47.1"
+version = "0.49.1"
 
 [build-dependencies]
-napi-build = "2.1.6"
+napi-build = "2.2.2"
 
 [profile.release]
 codegen-units = 1

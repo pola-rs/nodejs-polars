@@ -131,7 +131,7 @@ impl JsLazyFrame {
             .with_predicate_pushdown(predicate_pushdown)
             .with_simplify_expr(simplify_expr)
             .with_slice_pushdown(slice_pushdown)
-            .with_streaming(streaming)
+            .with_new_streaming(streaming)
             .with_projection_pushdown(projection_pushdown)
             .with_comm_subplan_elim(comm_subplan_elim)
             .with_comm_subexpr_elim(comm_subexpr_elim);
@@ -594,6 +594,8 @@ impl JsLazyFrame {
             statistics,
             row_group_size,
             data_page_size,
+            key_value_metadata: None,
+            field_overwrites: Vec::new(),
         };
 
         let sink_target = SinkTarget::Path(Arc::new(path.into()));

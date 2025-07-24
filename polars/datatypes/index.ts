@@ -2,8 +2,7 @@ export * from "./datatype";
 export { Field } from "./field";
 
 import pli from "../internals/polars_internal";
-// biome-ignore lint/style/useImportType: <explanation>
-import { type DataType } from "./datatype";
+import type { DataType } from "./datatype";
 
 /** @ignore */
 export type TypedArray =

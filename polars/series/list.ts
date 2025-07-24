@@ -1,7 +1,6 @@
-import { type Series, _Series } from ".";
-import { exprToLitOrExpr } from "..";
 import { col } from "../lazy/functions";
 import type { ListFunctions } from "../shared_traits";
+import { _Series, type Series } from ".";
 
 // export type ListNamespace = ListFunctions<Series>;
 
@@ -43,8 +42,8 @@ export const SeriesListFunctions = (_s): SeriesListFunctions => {
     get(index: number) {
       return wrap("get", index);
     },
-    eval(expr, parallel) {
-      return wrap("eval", expr, parallel);
+    eval(expr) {
+      return wrap("eval", expr);
     },
     first() {
       return wrap("get", 0);
