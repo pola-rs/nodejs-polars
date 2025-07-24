@@ -336,7 +336,7 @@ impl JsSeries {
         }
     }
     #[napi(catch_unwind)]
-    pub fn get_idx(&self, idx: i64) -> Wrap<AnyValue> {
+    pub fn get_idx(&self, idx: i64) -> Wrap<AnyValue<'_>> {
         Wrap(self.series.get(idx as usize).unwrap())
     }
     #[napi(catch_unwind)]

@@ -386,16 +386,8 @@ impl JsExpr {
         strategy: String,
         limit: FillNullLimit,
     ) -> JsResult<JsExpr> {
-        let strat = parse_fill_null_strategy(&strategy, limit)?;
-        Ok(self
-            .inner
-            .clone()
-            .apply(
-                move |s| s.fill_null(strat).map(Some),
-                GetOutput::same_type(),
-            )
-            .with_fmt("fill_null_with_strategy")
-            .into())
+        let strategy = parse_fill_null_strategy(&strategy, limit)?;
+        Ok(self.inner.clone().fill_null_with_strategy(strategy).into())
     }
     #[napi(catch_unwind)]
     pub fn fill_nan(&self, expr: &JsExpr) -> JsExpr {
@@ -453,17 +445,9 @@ impl JsExpr {
     }
     #[napi(catch_unwind)]
     pub fn gather_every(&self, n: i64, offset: i64) -> JsExpr {
-        self.clone()
-            .inner
-            .map(
-                move |s: Column| {
-                    Ok(Some(
-                        s.gather_every(n as usize, offset as usize).expect("REASON"),
-                    ))
-                },
-                GetOutput::same_type(),
-            )
-            .with_fmt("gather_every")
+        self.inner
+            .clone()
+            .gather_every(n as usize, offset as usize)
             .into()
     }
     #[napi(catch_unwind)]
@@ -677,7 +661,7 @@ impl JsExpr {
         let ambiguous = ambiguous
             .map(|e| e.0)
             .unwrap_or(dsl::lit(String::from("raise")));
-        let time_zone = time_zone.map_or(None, |x| Some(PlSmallStr::from_string(x)));
+        let time_zone = TimeZone::opt_try_new(time_zone).unwrap();
         self.inner
             .clone()
             .str()
@@ -696,7 +680,6 @@ impl JsExpr {
         self.clone()
             .inner
             .map(function, GetOutput::same_type())
-            .with_fmt("str.strip")
             .into()
     }
 
@@ -737,7 +720,6 @@ impl JsExpr {
         self.clone()
             .inner
             .map(function, GetOutput::same_type())
-            .with_fmt("str.rstrip")
             .into()
     }
 
@@ -753,7 +735,6 @@ impl JsExpr {
         self.clone()
             .inner
             .map(function, GetOutput::same_type())
-            .with_fmt("str.lstrip")
             .into()
     }
 
@@ -769,7 +750,6 @@ impl JsExpr {
         self.clone()
             .inner
             .map(function, GetOutput::from_type(DataType::String))
-            .with_fmt("str.pad_start")
             .into()
     }
 
@@ -786,7 +766,6 @@ impl JsExpr {
         self.clone()
             .inner
             .map(function, GetOutput::from_type(DataType::String))
-            .with_fmt("str.pad_end")
             .into()
     }
 
@@ -804,7 +783,6 @@ impl JsExpr {
         self.clone()
             .inner
             .map(function, GetOutput::from_type(DataType::UInt32))
-            .with_fmt("str.to_uppercase")
             .into()
     }
 
@@ -840,7 +818,6 @@ impl JsExpr {
         self.clone()
             .inner
             .map(function, GetOutput::from_type(DataType::UInt32))
-            .with_fmt("str.to_lowercase")
             .into()
     }
 
@@ -853,7 +830,6 @@ impl JsExpr {
         self.clone()
             .inner
             .map(function, GetOutput::from_type(DataType::UInt32))
-            .with_fmt("str.len")
             .into()
     }
 
@@ -909,7 +885,6 @@ impl JsExpr {
                 move |s| s.str().map(|s| Some(s.hex_encode().into_column())),
                 GetOutput::same_type(),
             )
-            .with_fmt("str.hex_encode")
             .into()
     }
     #[napi(catch_unwind)]
@@ -920,7 +895,6 @@ impl JsExpr {
                 move |s| s.str()?.hex_decode(strict).map(|s| Some(s.into_column())),
                 GetOutput::same_type(),
             )
-            .with_fmt("str.hex_decode")
             .into()
     }
     #[napi(catch_unwind)]
@@ -931,7 +905,6 @@ impl JsExpr {
                 move |s| s.str().map(|s| Some(s.base64_encode().into_column())),
                 GetOutput::same_type(),
             )
-            .with_fmt("str.base64_encode")
             .into()
     }
 
@@ -947,7 +920,6 @@ impl JsExpr {
                 },
                 GetOutput::same_type(),
             )
-            .with_fmt("str.base64_decode")
             .into()
     }
     #[napi(catch_unwind)]
@@ -976,7 +948,6 @@ impl JsExpr {
         self.clone()
             .inner
             .map(function, GetOutput::from_type(DataType::Boolean))
-            .with_fmt("str.json_path_match")
             .into()
     }
     #[napi(catch_unwind)]
@@ -1306,12 +1277,12 @@ impl JsExpr {
 
     #[napi(catch_unwind)]
     pub fn list_sum(&self) -> JsExpr {
-        self.inner.clone().list().sum().with_fmt("arr.sum").into()
+        self.inner.clone().list().sum().into()
     }
 
     #[napi(catch_unwind)]
     pub fn list_mean(&self) -> JsExpr {
-        self.inner.clone().list().mean().with_fmt("arr.mean").into()
+        self.inner.clone().list().mean().into()
     }
 
     #[napi(catch_unwind)]
@@ -1323,7 +1294,6 @@ impl JsExpr {
                 descending,
                 ..Default::default()
             })
-            .with_fmt("arr.sort")
             .into()
     }
 
@@ -1391,19 +1361,15 @@ impl JsExpr {
             .into()
     }
     #[napi(catch_unwind)]
-    pub fn list_eval(&self, expr: &JsExpr, parallel: bool) -> JsExpr {
-        self.inner
-            .clone()
-            .list()
-            .eval(expr.inner.clone(), parallel)
-            .into()
+    pub fn list_eval(&self, expr: &JsExpr) -> JsExpr {
+        self.inner.clone().list().eval(expr.inner.clone()).into()
     }
     #[napi(catch_unwind)]
-    pub fn list_contains(&self, expr: &JsExpr) -> JsExpr {
+    pub fn list_contains(&self, expr: &JsExpr, nulls_equal: bool) -> JsExpr {
         self.inner
             .clone()
             .list()
-            .contains(expr.inner.clone())
+            .contains(expr.inner.clone(), nulls_equal)
             .into()
     }
     #[napi(catch_unwind)]
@@ -1476,7 +1442,6 @@ impl JsExpr {
                 |s| Ok(Some(s.to_physical_repr().to_owned())),
                 GetOutput::map_dtype(|dt| Ok(dt.to_physical())),
             )
-            .with_fmt("to_physical")
             .into()
     }
 
@@ -1561,7 +1526,6 @@ impl JsExpr {
                 move |s| Ok(Some(s.extend_constant(value.clone().into(), n as usize)?)),
                 GetOutput::same_type(),
             )
-            .with_fmt("extend")
             .into()
     }
     #[napi(catch_unwind)]
@@ -1763,7 +1727,7 @@ pub fn int_ranges(
 ) -> JsExpr {
     let dtype = dtype.map(|d| d.0 as DataType);
 
-    let mut result = dsl::int_ranges(start.0, end.0, step.0);
+    let mut result = dsl::int_ranges(start.0, end.0, step.0, dtype.clone().unwrap());
 
     if dtype.is_some() && dtype.clone().unwrap() != DataType::Int64 {
         result = result.cast(DataType::List(Box::new(dtype.clone().unwrap())));

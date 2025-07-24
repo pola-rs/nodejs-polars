@@ -1,5 +1,6 @@
 /* eslint-disable newline-per-chained-call */
 import pl, { col, lit } from "@polars/index";
+
 const df = () => {
   const df = pl.DataFrame({
     bools: [false, true, false],
@@ -2558,7 +2559,7 @@ describe("EWM", () => {
         .ewmMean({ adjust: true, minPeriods: 2, ignoreNulls: true })
         .round(5)
         .rename("ewmMean");
-      const actual = df.withColumn(
+      const _actual = df.withColumn(
         col("a")
           .ewmMean({ adjust: true, minPeriods: 2, ignoreNulls: true })
           .round(5)

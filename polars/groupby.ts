@@ -1,9 +1,9 @@
 import util from "node:util";
-import { type DataFrame, _DataFrame } from "./dataframe";
+import { _DataFrame, type DataFrame } from "./dataframe";
 import type { Expr } from "./lazy/expr";
 import { col, exclude } from "./lazy/functions";
-import * as utils from "./utils";
 import type { ColumnsOrExpr, StartBy } from "./utils";
+import * as utils from "./utils";
 
 const inspect = Symbol.for("nodejs.util.inspect.custom");
 const inspectOpts = { colors: true, depth: null };
@@ -144,7 +144,10 @@ export interface GroupBy {
   pivot({
     pivotCol,
     valuesCol,
-  }: { pivotCol: string; valuesCol: string }): PivotOps;
+  }: {
+    pivotCol: string;
+    valuesCol: string;
+  }): PivotOps;
   /**
    * Compute the quantile per group.
    */

@@ -1,5 +1,5 @@
 import { selectionToExprList } from "../../utils";
-import { type Expr, _Expr } from "../expr";
+import { _Expr, type Expr } from "../expr";
 
 /**
  * Struct functions for Lazy datatframes

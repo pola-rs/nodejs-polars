@@ -1,7 +1,5 @@
-import { type Expr, _Expr } from "./lazy/expr";
-import type { ColumnsOrExpr, StartBy } from "./utils";
-
 import type { DataType } from "./datatypes";
+import type { Expr } from "./lazy/expr";
 import type {
   ClosedWindow,
   InterpolationMethod,
@@ -9,6 +7,7 @@ import type {
   RollingQuantileOptions,
   RollingSkewOptions,
 } from "./types";
+import type { ColumnsOrExpr, StartBy } from "./utils";
 
 /**
  * Arithmetic operations

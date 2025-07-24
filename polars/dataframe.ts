@@ -1,37 +1,19 @@
 import { Stream, Writable } from "node:stream";
+import { DataType, type DTypeToJs, type JsToDtype } from "./datatypes";
 import { concat } from "./functions";
 import {
+  _GroupBy,
   DynamicGroupBy,
   type GroupBy,
   RollingGroupBy,
-  _GroupBy,
 } from "./groupby";
+import { escapeHTML } from "./html";
 import { arrayToJsDataFrame } from "./internals/construction";
 import pli from "./internals/polars_internal";
-import { type LazyDataFrame, _LazyDataFrame } from "./lazy/dataframe";
+import { _LazyDataFrame, type LazyDataFrame } from "./lazy/dataframe";
 import { Expr } from "./lazy/expr";
-import { Series, _Series } from "./series";
-import type {
-  CsvWriterOptions,
-  FillNullStrategy,
-  JoinOptions,
-  WriteAvroOptions,
-  WriteIPCOptions,
-  WriteParquetOptions,
-} from "./types";
-
-import { type DTypeToJs, DataType, type JsToDtype } from "./datatypes";
-
-import {
-  type ColumnSelection,
-  type ColumnsOrExpr,
-  type ExprOrString,
-  type Simplify,
-  type ValueOrArray,
-  columnOrColumns,
-  columnOrColumnsStrict,
-  isSeriesArray,
-} from "./utils";
+import { col, element } from "./lazy/functions";
+import { _Series, Series } from "./series";
 
 import type {
   Arithmetic,
@@ -40,10 +22,24 @@ import type {
   Sample,
   Serialize,
 } from "./shared_traits";
-
-import { escapeHTML } from "./html";
-
-import { col, element } from "./lazy/functions";
+import type {
+  CsvWriterOptions,
+  FillNullStrategy,
+  JoinOptions,
+  WriteAvroOptions,
+  WriteIPCOptions,
+  WriteParquetOptions,
+} from "./types";
+import {
+  type ColumnSelection,
+  type ColumnsOrExpr,
+  columnOrColumns,
+  columnOrColumnsStrict,
+  type ExprOrString,
+  isSeriesArray,
+  type Simplify,
+  type ValueOrArray,
+} from "./utils";
 
 const inspect = Symbol.for("nodejs.util.inspect.custom");
 const jupyterDisplay = Symbol.for("Jupyter.display");
@@ -1435,7 +1431,10 @@ export interface DataFrame<T extends Record<string, Series> = any>
   shiftAndFill({
     n,
     fillValue,
-  }: { n: number; fillValue: number }): DataFrame<T>;
+  }: {
+    n: number;
+    fillValue: number;
+  }): DataFrame<T>;
   /**
    * Shrink memory usage of this DataFrame to fit the exact capacity needed to hold the data.
    */
@@ -2407,7 +2406,6 @@ export const _DataFrame = (_df: any): DataFrame => {
       return _df.toRows();
     },
     sample(opts?, frac?, withReplacement = false, seed?) {
-      // biome-ignore lint/style/noArguments: <explanation>
       if (arguments.length === 0) {
         return wrap(
           "sampleN",

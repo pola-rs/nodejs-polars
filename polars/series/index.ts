@@ -1,5 +1,5 @@
-import { DataFrame, _DataFrame } from "../dataframe";
-import { DTYPE_TO_FFINAME, DataType, type Optional } from "../datatypes";
+import { _DataFrame, DataFrame } from "../dataframe";
+import { DataType, DTYPE_TO_FFINAME, type Optional } from "../datatypes";
 import type {
   DTypeToJs,
   DTypeToJsLoose,
@@ -30,8 +30,8 @@ import { SeriesStructFunctions } from "./struct";
 
 // For documentation
 export type { SeriesDateFunctions as DatetimeSeries } from "./datetime";
-export type { SeriesStringFunctions as StringSeries } from "./string";
 export type { SeriesListFunctions as ListSeries } from "./list";
+export type { SeriesStringFunctions as StringSeries } from "./string";
 export type { SeriesStructFunctions as StructSeries } from "./struct";
 
 const inspect = Symbol.for("nodejs.util.inspect.custom");
@@ -142,12 +142,18 @@ export interface Series<T extends DataType = any, Name extends string = string>
   argSort({
     descending,
     nullsLast,
-  }: { descending?: boolean; nullsLast?: boolean }): Series<T, Name>;
+  }: {
+    descending?: boolean;
+    nullsLast?: boolean;
+  }): Series<T, Name>;
   /* @deprecated Use descending instead */
   argSort({
     reverse, // deprecated
     nullsLast,
-  }: { reverse?: boolean; nullsLast?: boolean }): Series<T, Name>;
+  }: {
+    reverse?: boolean;
+    nullsLast?: boolean;
+  }): Series<T, Name>;
   argSort(): Series<T, Name>;
   /**
    * __Rename this Series.__
@@ -792,7 +798,7 @@ export interface Series<T extends DataType = any, Name extends string = string>
    * false
    * ```
    */
-  seriesEqual<U1>(
+  seriesEqual<_U1>(
     other: Series,
     nullEqual?: boolean,
     strict?: boolean,
@@ -1719,7 +1725,6 @@ export function _Series(_s: any): Series {
       return dtypeWrap("SetWithMask", mask.inner(), value);
     },
     sample(opts?, frac?, withReplacement = false, seed?) {
-      // biome-ignore lint/style/noArguments: <explanation>
       if (arguments.length === 0) {
         return wrap("sampleN", 1, withReplacement, false, seed);
       }
@@ -1959,7 +1964,7 @@ const SeriesConstructor = (
 const isSeries = (anyVal: any): anyVal is Series => {
   try {
     return anyVal?.[Symbol.toStringTag]?.() === "Series";
-  } catch (err) {
+  } catch (_err) {
     return false;
   }
 };

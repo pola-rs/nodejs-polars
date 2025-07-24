@@ -140,7 +140,7 @@ describe("lazyframe", () => {
   });
   // run this test 100 times to make sure it is deterministic.
   test("unique:maintainOrder", () => {
-    for (const x of Array.from({ length: 100 })) {
+    for (const _x of Array.from({ length: 100 })) {
       const actual = pl
         .DataFrame({
           foo: [0, 1, 2, 2, 2],
@@ -160,7 +160,7 @@ describe("lazyframe", () => {
   });
   // run this test 100 times to make sure it is deterministic.
   test("unique:maintainOrder:single subset", () => {
-    for (const x of Array.from({ length: 100 })) {
+    for (const _x of Array.from({ length: 100 })) {
       const actual = pl
         .DataFrame({
           foo: [0, 1, 2, 2, 2],
@@ -180,7 +180,7 @@ describe("lazyframe", () => {
   });
   // run this test 100 times to make sure it is deterministic.
   test("unique:maintainOrder:multi subset", () => {
-    for (const x of Array.from({ length: 100 })) {
+    for (const _x of Array.from({ length: 100 })) {
       const actual = pl
         .DataFrame({
           foo: [0, 1, 2, 2, 2],
