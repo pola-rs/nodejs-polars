@@ -1366,7 +1366,6 @@ describe("lazyframe", () => {
       {
         variableName: "foo",
         valueName: "bar",
-        streamable: true,
       },
     );
     const expected = pl.DataFrame({

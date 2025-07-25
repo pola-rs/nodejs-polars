@@ -354,9 +354,6 @@ export interface LazyDataFrame extends Serialize, GroupByOps<LazyGroupBy> {
   melt(idVars: ColumnSelection, valueVars: ColumnSelection): LazyDataFrame;
   /**
    * @see {@link DataFrame.unpivot}
-   * @param options.streamable - Allow this node to run in the streaming engine.
-   *                             If this runs in streaming, the output of the unpivot operation will not have a stable
-   *                             ordering.
    */
   unpivot(
     idVars: ColumnSelection,
@@ -364,7 +361,6 @@ export interface LazyDataFrame extends Serialize, GroupByOps<LazyGroupBy> {
     options?: {
       variableName?: string | null;
       valueName?: string | null;
-      streamable?: boolean;
     },
   ): LazyDataFrame;
   /**
@@ -971,7 +967,6 @@ export const _LazyDataFrame = (_ldf: any): LazyDataFrame => {
       options = {
         variableName: null,
         valueName: null,
-        streamable: false,
         ...options,
       };
       return _LazyDataFrame(
@@ -980,7 +975,6 @@ export const _LazyDataFrame = (_ldf: any): LazyDataFrame => {
           columnOrColumnsStrict(values),
           options.variableName,
           options.valueName,
-          options.streamable,
         ),
       );
     },

@@ -2321,8 +2321,19 @@ export const _DataFrame = (_df: any): DataFrame => {
     melt(ids, values) {
       return wrap("unpivot", columnOrColumns(ids), columnOrColumns(values));
     },
-    unpivot(ids, values) {
-      return wrap("unpivot", columnOrColumns(ids), columnOrColumns(values));
+    unpivot(ids, values, options) {
+      options = {
+        variableName: null,
+        valueName: null,
+        ...options,
+      };
+      return wrap(
+        "unpivot",
+        columnOrColumns(ids),
+        columnOrColumns(values),
+        options.variableName,
+        options.valueName,
+      );
     },
     min(axis = 0) {
       if (axis === 1) {
