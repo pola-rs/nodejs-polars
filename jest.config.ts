@@ -1,5 +1,6 @@
 import { pathsToModuleNameMapper } from "ts-jest";
-import {compilerOptions} from "./tsconfig.json";
+import ts from "typescript";
+const { config } = ts.readConfigFile("./tsconfig.json", ts.sys.readFile);
 
 export default {
   preset: "ts-jest",
@@ -9,7 +10,7 @@ export default {
   moduleDirectories: ["node_modules", "./polars"],
   moduleFileExtensions: ["js", "ts"],
   setupFilesAfterEnv : ["<rootDir>/__tests__/setup.ts"],
-  moduleNameMapper: pathsToModuleNameMapper(compilerOptions.paths, { prefix: "<rootDir>/polars" }),
+  moduleNameMapper: pathsToModuleNameMapper(config.compilerOptions.paths, { prefix: "<rootDir>/polars" }),
   testPathIgnorePatterns: ["<rootDir>/__tests__/setup.ts"],
   transform: {
     '^.+\\.{ts|tsx}?$': ['ts-jest', {
