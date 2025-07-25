@@ -996,6 +996,8 @@ export interface DataFrame<T extends Record<string, Series> = any>
    *
    * @param idVars - Columns to use as identifier variables.
    * @param valueVars - Values to use as value variables.
+   * @param options.variableName - Name to give to the `variable` column. Defaults to "variable"
+   * @param options.valueName - Name to give to the `value` column. Defaults to "value"
    * @example
    * ```
    * > const df1 = pl.DataFrame({
@@ -1019,7 +1021,14 @@ export interface DataFrame<T extends Record<string, Series> = any>
    * └─────┴─────────────┴───────┘
    * ```
    */
-  unpivot(idVars: ColumnSelection, valueVars: ColumnSelection): DataFrame;
+  unpivot(
+    idVars: ColumnSelection,
+    valueVars: ColumnSelection,
+    options?: {
+      variableName?: string | null;
+      valueName?: string | null;
+    },
+  ): DataFrame;
   /**
    * Aggregate the columns of this DataFrame to their minimum value.
    * ___
@@ -2308,8 +2317,22 @@ export const _DataFrame = (_df: any): DataFrame => {
     median() {
       return this.lazy().median().collectSync();
     },
-    unpivot(ids, values) {
+    melt(ids, values) {
       return wrap("unpivot", columnOrColumns(ids), columnOrColumns(values));
+    },
+    unpivot(ids, values, options) {
+      options = {
+        variableName: null,
+        valueName: null,
+        ...options,
+      };
+      return wrap(
+        "unpivot",
+        columnOrColumns(ids),
+        columnOrColumns(values),
+        options.variableName,
+        options.valueName,
+      );
     },
     min(axis = 0) {
       if (axis === 1) {
