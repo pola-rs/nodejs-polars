@@ -1,23 +1,23 @@
 import { type DataFrame, _DataFrame } from "../dataframe";
-import { Expr, exprToLitOrExpr } from "./expr";
 import pli from "../internals/polars_internal";
+import type { Series } from "../series";
+import type { Deserialize, GroupByOps, Serialize } from "../shared_traits";
+import type {
+  CsvWriterOptions,
+  LazyJoinOptions,
+  LazyOptions,
+  SinkParquetOptions,
+} from "../types";
 import {
-  columnOrColumnsStrict,
   type ColumnSelection,
   type ColumnsOrExpr,
   type ExprOrString,
-  selectionToExprList,
   type ValueOrArray,
+  columnOrColumnsStrict,
+  selectionToExprList,
 } from "../utils";
-import { _LazyGroupBy, type LazyGroupBy } from "./groupby";
-import type { Deserialize, GroupByOps, Serialize } from "../shared_traits";
-import type {
-  LazyOptions,
-  LazyJoinOptions,
-  SinkCsvOptions,
-  SinkParquetOptions,
-} from "../types";
-import type { Series } from "../series";
+import { Expr, exprToLitOrExpr } from "./expr";
+import { type LazyGroupBy, _LazyGroupBy } from "./groupby";
 
 const inspect = Symbol.for("nodejs.util.inspect.custom");
 
@@ -40,14 +40,14 @@ export interface LazyDataFrame extends Serialize, GroupByOps<LazyGroupBy> {
    * Collect into a DataFrame.
    * Note: use `fetch` if you want to run this query on the first `n` rows only.
    * This can be a huge time saver in debugging queries.
-   * @param typeCoercion -Do type coercion optimization.
-   * @param predicatePushdown - Do predicate pushdown optimization.
-   * @param projectionPushdown - Do projection pushdown optimization.
-   * @param simplifyExpression - Run simplify expressions optimization.
-   * @param noOptimization - Turn off optimizations.
-   * @param commSubplanElim - Will try to cache branching subplans that occur on self-joins or unions.
-   * @param commSubexprElim - Common subexpressions will be cached and reused.
-   * @param streaming - Process the query in batches to handle larger-than-memory data.
+   * @param opts.typeCoercion -Do type coercion optimization.
+   * @param opts.predicatePushdown - Do predicate pushdown optimization.
+   * @param opts.projectionPushdown - Do projection pushdown optimization.
+   * @param opts.simplifyExpression - Run simplify expressions optimization.
+   * @param opts.noOptimization - Turn off optimizations.
+   * @param opts.commSubplanElim - Will try to cache branching subplans that occur on self-joins or unions.
+   * @param opts.commSubexprElim - Common subexpressions will be cached and reused.
+   * @param opts.streaming - Process the query in batches to handle larger-than-memory data.
             If set to `False` (default), the entire query is processed in a single
             batch.
 
@@ -69,29 +69,11 @@ export interface LazyDataFrame extends Serialize, GroupByOps<LazyGroupBy> {
   describePlan(): string;
   /**
    * Remove one or multiple columns from a DataFrame.
-   * @param columns - column or list of columns to be removed
+   * @param name - column or list of columns to be removed
    */
   drop(name: string): LazyDataFrame;
   drop(names: string[]): LazyDataFrame;
   drop(name: string, ...names: string[]): LazyDataFrame;
-  /**
-   * Drop duplicate rows from this DataFrame.
-   * Note that this fails if there is a column of type `List` in the DataFrame.
-   * @param maintainOrder
-   * @param subset - subset to drop duplicates for
-   * @param keep "first" | "last"
-   * @deprecated @since 0.4.0 @use {@link unique}
-   */
-  distinct(
-    maintainOrder?: boolean,
-    subset?: ColumnSelection,
-    keep?: "first" | "last",
-  ): LazyDataFrame;
-  distinct(opts: {
-    maintainOrder?: boolean;
-    subset?: ColumnSelection;
-    keep?: "first" | "last";
-  }): LazyDataFrame;
   /**
    * Drop rows with null values from this DataFrame.
    * This method only drops nulls row-wise if any single value of the row is null.
@@ -112,7 +94,6 @@ export interface LazyDataFrame extends Serialize, GroupByOps<LazyGroupBy> {
    * Filter, join operations and a lower number of rows available in the scanned file influence
    * the final number of rows.
    * @param numRows - collect 'n' number of rows from data source
-   * @param opts
    * @param opts.typeCoercion -Do type coercion optimization.
    * @param opts.predicatePushdown - Do predicate pushdown optimization.
    * @param opts.projectionPushdown - Do projection pushdown optimization.
@@ -128,8 +109,8 @@ export interface LazyDataFrame extends Serialize, GroupByOps<LazyGroupBy> {
                 at any point without it being considered a breaking change.
    *
    */
-  fetch(numRows?: number): Promise<DataFrame>;
   fetch(numRows: number, opts: LazyOptions): Promise<DataFrame>;
+  fetch(numRows?: number): Promise<DataFrame>;
   /** Behaves the same as fetch, but will perform the actions synchronously */
   fetchSync(numRows?: number): DataFrame;
   fetchSync(numRows: number, opts: LazyOptions): DataFrame;
@@ -183,15 +164,14 @@ export interface LazyDataFrame extends Serialize, GroupByOps<LazyGroupBy> {
   inner(): any;
   /**
    *  __SQL like joins.__
-   * @param df - DataFrame to join with.
-   * @param options
-   * @param options.leftOn - Name(s) of the left join column(s).
-   * @param options.rightOn - Name(s) of the right join column(s).
-   * @param options.on - Name(s) of the join columns in both DataFrames.
-   * @param options.how - Join strategy
-   * @param options.suffix - Suffix to append to columns with a duplicate name.
-   * @param options.allowParallel - Allow the physical plan to optionally evaluate the computation of both DataFrames up to the join in parallel.
-   * @param options.forceParallel - Force the physical plan to evaluate the computation of both DataFrames up to the join in parallel.
+   * @param other - DataFrame to join with.
+   * @param joinOptions.leftOn - Name(s) of the left join column(s).
+   * @param joinOptions.rightOn - Name(s) of the right join column(s).
+   * @param joinOptions.on - Name(s) of the join columns in both DataFrames.
+   * @param joinOptions.how - Join strategy
+   * @param joinOptions.suffix - Suffix to append to columns with a duplicate name.
+   * @param joinOptions.allowParallel - Allow the physical plan to optionally evaluate the computation of both DataFrames up to the join in parallel.
+   * @param joinOptions.forceParallel - Force the physical plan to evaluate the computation of both DataFrames up to the join in parallel.
    * @see {@link LazyJoinOptions}
    * @example
    * ```
@@ -253,6 +233,10 @@ export interface LazyDataFrame extends Serialize, GroupByOps<LazyGroupBy> {
         - A "forward" search selects the first row in the right DataFrame whose
           'on' key is greater than or equal to the left's key.
 
+        - A "nearest" search selects the last row in the right DataFrame whose value
+          is nearest to the left's key. String keys are not currently supported for a
+          nearest search.
+
       The default is "backward".
 
       Parameters
@@ -263,7 +247,7 @@ export interface LazyDataFrame extends Serialize, GroupByOps<LazyGroupBy> {
       @param options.on Join column of both DataFrames. If set, `leftOn` and `rightOn` should be undefined.
       @param options.byLeft join on these columns before doing asof join
       @param options.byRight join on these columns before doing asof join
-      @param options.strategy One of {'forward', 'backward'}
+      @param options.strategy One of {'forward', 'backward', 'nearest'}
       @param options.suffix Suffix to append to columns with a duplicate name.
       @param options.tolerance
         Numeric tolerance. By setting this the join will only be done if the near keys are within this distance.
@@ -337,7 +321,7 @@ export interface LazyDataFrame extends Serialize, GroupByOps<LazyGroupBy> {
       byLeft?: string | string[];
       byRight?: string | string[];
       by?: string | string[];
-      strategy?: "backward" | "forward";
+      strategy?: "backward" | "forward" | "nearest";
       suffix?: string;
       tolerance?: number | string;
       allowParallel?: boolean;
@@ -366,7 +350,6 @@ export interface LazyDataFrame extends Serialize, GroupByOps<LazyGroupBy> {
   median(): LazyDataFrame;
   /**
    * @see {@link DataFrame.unpivot}
-   * @deprecated *since 0.13.0* use {@link unpivot}
    */
   melt(idVars: ColumnSelection, valueVars: ColumnSelection): LazyDataFrame;
   /**
@@ -430,14 +413,14 @@ export interface LazyDataFrame extends Serialize, GroupByOps<LazyGroupBy> {
   sort(
     by: ColumnsOrExpr,
     descending?: ValueOrArray<boolean>,
-    nulls_last?: boolean,
-    maintain_order?: boolean,
+    nullsLast?: boolean,
+    maintainOrder?: boolean,
   ): LazyDataFrame;
   sort(opts: {
     by: ColumnsOrExpr;
     descending?: ValueOrArray<boolean>;
-    nulls_last?: boolean;
-    maintain_order?: boolean;
+    nullsLast?: boolean;
+    maintainOrder?: boolean;
   }): LazyDataFrame;
   /**
    * @see {@link DataFrame.std}
@@ -508,41 +491,26 @@ export interface LazyDataFrame extends Serialize, GroupByOps<LazyGroupBy> {
     Parameters
     ----------
     @param path - File path to which the file should be written.
-    @param includeBom - Whether to include UTF-8 BOM in the CSV output.
-    @param includeHeader - Whether to include header in the CSV output.
-    @param separator - Separate CSV fields with this symbol.
-    @param lineTerminator - String used to end each row.
-    @param quoteChar - Byte to use as quoting character.
-    @param batchSize - Number of rows that will be processed per thread. Default - 1024
-    @param datetimeFormat - A format string, with the specifiers defined by the
+    @param options.includeBom - Whether to include UTF-8 BOM in the CSV output.
+    @param options.includeHeader - Whether to include header in the CSV output.
+    @param options.separator - Separate CSV fields with this symbol.
+    @param options.lineTerminator - String used to end each row.
+    @param options.quoteChar - Byte to use as quoting character.
+    @param options.batchSize - Number of rows that will be processed per thread. Default - 1024
+    @param options.datetimeFormat - A format string, with the specifiers defined by the
         `chrono <https://docs.rs/chrono/latest/chrono/format/strftime/index.html>`_
         Rust crate. If no format specified, the default fractional-second
         precision is inferred from the maximum timeunit found in the frame's
         Datetime cols (if any).
-    @param dateFormat - A format string, with the specifiers defined by the
+    @param options.dateFormat - A format string, with the specifiers defined by the
         `chrono <https://docs.rs/chrono/latest/chrono/format/strftime/index.html>`_
         Rust crate.
-    @param timeFormat A format string, with the specifiers defined by the
+    @param options.timeFormat A format string, with the specifiers defined by the
         `chrono <https://docs.rs/chrono/latest/chrono/format/strftime/index.html>`_
         Rust crate.
-    @param floatPrecision - Number of decimal places to write, applied to both `Float32` and `Float64` datatypes.
-    @param nullValue - A string representing null values (defaulting to the empty string).
-    @param quoteStyle - Determines the quoting strategy used. : {'necessary', 'always', 'non_numeric', 'never'}
-        - necessary (default): This puts quotes around fields only when necessary.
-          They are necessary when fields contain a quote,
-          delimiter or record terminator.
-          Quotes are also necessary when writing an empty record
-          (which is indistinguishable from a record with one empty field).
-          This is the default.
-        - always: This puts quotes around every field. Always.
-        - never: This never puts quotes around fields, even if that results in
-          invalid CSV data (e.g.: by not quoting strings containing the
-          separator).
-        - non_numeric: This puts quotes around all fields that are non-numeric.
-          Namely, when writing a field that does not parse as a valid float
-          or integer, then quotes will be used even if they aren`t strictly
-          necessary.
-    @param maintainOrder - Maintain the order in which data is processed.
+    @param options.floatPrecision - Number of decimal places to write, applied to both `Float32` and `Float64` datatypes.
+    @param options.nullValue - A string representing null values (defaulting to the empty string).
+    @param options.maintainOrder - Maintain the order in which data is processed.
         Setting this to `False` will  be slightly faster.
 
     Examples
@@ -551,7 +519,7 @@ export interface LazyDataFrame extends Serialize, GroupByOps<LazyGroupBy> {
     >>> lf.sinkCsv("out.csv")
   */
 
-  sinkCSV(path: string, options?: SinkCsvOptions): void;
+  sinkCSV(path: string, options?: CsvWriterOptions): void;
 
   /***
    *
@@ -566,31 +534,41 @@ export interface LazyDataFrame extends Serialize, GroupByOps<LazyGroupBy> {
     Parameters
     ----------
     @param path - File path to which the file should be written.
-    @param compression : {'lz4', 'uncompressed', 'snappy', 'gzip', 'lzo', 'brotli', 'zstd'}
+    @param options.compression : {'lz4', 'uncompressed', 'snappy', 'gzip', 'lzo', 'brotli', 'zstd'}
         Choose "zstd" for good compression performance. (default)
         Choose "lz4" for fast compression/decompression.
         Choose "snappy" for more backwards compatibility guarantees
         when you deal with older parquet readers.
-    @param compressionLevel - The level of compression to use. Higher compression means smaller files on disk.
+    @param options.compressionLevel - The level of compression to use. Higher compression means smaller files on disk.
         - "gzip" : min-level: 0, max-level: 10.
         - "brotli" : min-level: 0, max-level: 11.
         - "zstd" : min-level: 1, max-level: 22.
-    @param statistics - Write statistics to the parquet headers. This requires extra compute. Default - false
-    @param rowGroupSize - Size of the row groups in number of rows.
+    @param options.statistics - Write statistics to the parquet headers. This requires extra compute. Default - false
+    @param options.rowGroupSize - Size of the row groups in number of rows.
         If None (default), the chunks of the `DataFrame` are
         used. Writing in smaller chunks may reduce memory pressure and improve
         writing speeds.
-    @param dataPagesizeLimit - Size limit of individual data pages.
+    @param options.dataPagesizeLimit - Size limit of individual data pages.
         If not set defaults to 1024 * 1024 bytes
-    @param maintainOrder - Maintain the order in which data is processed. Default -> true
+    @param options.maintainOrder - Maintain the order in which data is processed. Default -> true
         Setting this to `False` will  be slightly faster.
-    @param typeCoercion - Do type coercion optimization. Default -> true
-    @param predicatePushdown - Do predicate pushdown optimization. Default -> true
-    @param projectionPushdown - Do projection pushdown optimization. Default -> true
-    @param simplifyExpression - Run simplify expressions optimization. Default -> true
-    @param slicePushdown - Slice pushdown optimization. Default -> true
-    @param noOptimization - Turn off (certain) optimizations. Default -> false
+    @param options.typeCoercion - Do type coercion optimization. Default -> true
+    @param options.predicatePushdown - Do predicate pushdown optimization. Default -> true
+    @param options.projectionPushdown - Do projection pushdown optimization. Default -> true
+    @param options.simplifyExpression - Run simplify expressions optimization. Default -> true
+    @param options.slicePushdown - Slice pushdown optimization. Default -> true
+    @param options.noOptimization - Turn off (certain) optimizations. Default -> false
+    @param options.cloudOptions - Options that indicate how to connect to a cloud provider.
+        If the cloud provider is not supported by Polars, the storage options are passed to `fsspec.open()`.
 
+        The cloud providers currently supported are AWS, GCP, and Azure.
+        See supported keys here:
+
+        * `aws <https://docs.rs/object_store/latest/object_store/aws/enum.AmazonS3ConfigKey.html>`_
+        * `gcp <https://docs.rs/object_store/latest/object_store/gcp/enum.GoogleConfigKey.html>`_
+        * `azure <https://docs.rs/object_store/latest/object_store/azure/enum.AzureConfigKey.html>`_
+
+        If `cloudOptions` is not provided, Polars will try to infer the information from environment variables.
     Examples
     --------
     >>> const lf = pl.scanCsv("/path/to/my_larger_than_ram_file.csv")  # doctest: +SKIP
@@ -684,9 +662,6 @@ export const _LazyDataFrame = (_ldf: any): LazyDataFrame => {
     },
     drop(...cols) {
       return _LazyDataFrame(_ldf.dropColumns(cols.flat(2)));
-    },
-    distinct(...args: any[]) {
-      return _LazyDataFrame((_ldf.unique as any)(...args));
     },
     unique(opts: any = false, subset?, keep = "first") {
       const defaultOptions = {
@@ -796,18 +771,16 @@ export const _LazyDataFrame = (_ldf: any): LazyDataFrame => {
 
       return _LazyGroupBy(_ldf.groupby(by, maintainOrder));
     },
-    groupByRolling({ indexColumn, by, period, offset, closed, check_sorted }) {
+    groupByRolling({ indexColumn, by, period, offset, closed }) {
       offset = offset ?? `-${period}`;
       closed = closed ?? "right";
       by = prepareGroupbyInputs(by);
-      check_sorted = check_sorted ?? false;
       const lgb = _ldf.groupbyRolling(
         pli.col(indexColumn),
         period,
         offset,
         closed,
         by,
-        check_sorted,
       );
 
       return _LazyGroupBy(lgb);
@@ -819,30 +792,28 @@ export const _LazyDataFrame = (_ldf: any): LazyDataFrame => {
       offset,
       includeBoundaries,
       closed,
+      label,
       by,
-      start_by,
-      check_sorted,
+      startBy,
     }) {
       period = period ?? every;
-      offset = offset ?? `-${period}`;
-      closed = closed ?? "right";
+      offset = offset ?? "0ns";
+      closed = closed ?? "left";
+      label = label ?? "left";
       by = prepareGroupbyInputs(by);
       includeBoundaries = includeBoundaries ?? false;
-      start_by = start_by ?? "monday";
-      check_sorted = check_sorted ?? false;
-
+      startBy = startBy ?? "monday";
       const lgb = _ldf.groupbyDynamic(
         pli.col(indexColumn),
         every,
         period,
         offset,
+        label,
         includeBoundaries,
         closed,
         by,
-        start_by,
-        check_sorted,
+        startBy,
       );
-
       return _LazyGroupBy(lgb);
     },
     head(len = 5) {
@@ -1048,20 +1019,20 @@ export const _LazyDataFrame = (_ldf: any): LazyDataFrame => {
       }
       return _LazyDataFrame(_ldf.slice(opt, len));
     },
-    sort(arg, descending = false, nulls_last = false, maintain_order = false) {
+    sort(arg, descending = false, nullsLast = false, maintainOrder = false) {
       if (arg?.by !== undefined) {
         return this.sort(
           arg.by,
           arg.descending,
-          arg.nulls_last,
-          arg.maintain_order,
+          arg.nullsLast,
+          arg.maintainOrder,
         );
       }
       if (typeof arg === "string") {
-        return wrap("sort", arg, descending, nulls_last, maintain_order);
+        return wrap("sort", arg, descending, nullsLast, maintainOrder);
       }
       const by = selectionToExprList(arg, false);
-      return wrap("sortByExprs", by, descending, nulls_last, maintain_order);
+      return wrap("sortByExprs", by, descending, nullsLast, maintainOrder);
     },
     std() {
       return _LazyDataFrame(_ldf.std());
@@ -1100,7 +1071,7 @@ export const _LazyDataFrame = (_ldf: any): LazyDataFrame => {
     withRowCount(name = "row_nr") {
       return _LazyDataFrame(_ldf.withRowCount(name));
     },
-    sinkCSV(path, options: SinkCsvOptions = {}) {
+    sinkCSV(path, options: CsvWriterOptions = {}) {
       options.maintainOrder = options.maintainOrder ?? false;
       _ldf.sinkCsv(path, options);
     },

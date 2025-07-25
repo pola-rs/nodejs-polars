@@ -1,5 +1,5 @@
-import { Expr } from "./expr";
 import pli from "../internals/polars_internal";
+import { Expr } from "./expr";
 
 export interface When {
   /** Values to return in case of the predicate being `true`.*/

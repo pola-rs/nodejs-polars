@@ -1,13 +1,12 @@
+import fs from "node:fs";
+import { Stream } from "node:stream";
 /* eslint-disable newline-per-chained-call */
 import pl from "@polars";
-import { Stream } from "stream";
-import fs from "fs";
 describe("dataframe", () => {
   const df = pl.DataFrame([
     pl.Series("foo", [1, 2, 9], pl.Int16),
     pl.Series("bar", [6, 2, 8], pl.Int16),
   ]);
-
   test("dtypes", () => {
     const expected = [pl.Float64, pl.String];
     const actual = pl.DataFrame({ a: [1, 2, 3], b: ["a", "b", "c"] }).dtypes;
@@ -37,7 +36,6 @@ describe("dataframe", () => {
     const expected = ["d", "e"];
     const df = pl.DataFrame({ a: [1, 2, 3], b: ["a", "b", "c"] });
     df.columns = expected;
-
     expect(df.columns).toEqual(expected);
   });
   test("clone", () => {
@@ -52,12 +50,13 @@ describe("dataframe", () => {
         b: ["a", "b", "c"],
         c: [true, true, false],
       })
-      .describe();
+      .describe()
+      .withColumn(pl.col("c").round(6).as("c"));
     const expected = pl.DataFrame({
       describe: ["mean", "std", "min", "max", "median"],
       a: [2, 1, 1, 3, 2],
       b: [null, null, "a", "c", null],
-      c: [0.6666666666666666, 0.5773502691896258, 0, 1, 1],
+      c: [0.666667, 0.57735, 0, 1, 1],
     });
     expect(actual).toFrameEqual(expected);
   });
@@ -338,24 +337,30 @@ describe("dataframe", () => {
     const actual = df.fold((a, b) => a.concat(b));
     expect(actual).toSeriesEqual(expected);
   });
-  // test("fold", () => {
-  //   const s1 = pl.Series([1, 2, 3]);
-  //   const s2 = pl.Series([4, 5, 6]);
-  //   const s3 = pl.Series([7, 8, 1]);
-  //   const expected = pl.Series("foo", [true, true, false]);
-  //   const df = pl.DataFrame([s1, s2, s3]);
-  //   const actual = df.fold((a, b) => a.lessThan(b)).alias("foo");
-  //   expect(actual).toSeriesEqual(expected);
-  // });
-  // test("fold-again", () => {
-  //   const s1 = pl.Series([1, 2, 3]);
-  //   const s2 = pl.Series([4, 5, 6]);
-  //   const s3 = pl.Series([7, 8, 1]);
-  //   const expected = pl.Series("foo", [12, 15, 10]);
-  //   const df = pl.DataFrame([s1, s2, s3]);
-  //   const actual = df.fold((a, b) => a.plus(b)).alias("foo");
-  //   expect(actual).toSeriesEqual(expected);
-  // });
+  it.each`
+    name                     | actual                                                 | expected
+    ${"fold:lessThan"}       | ${df.fold((a, b) => a.lessThan(b)).alias("foo")}       | ${pl.Series("foo", [true, false, false])}
+    ${"fold:lt"}             | ${df.fold((a, b) => a.lt(b)).alias("foo")}             | ${pl.Series("foo", [true, false, false])}
+    ${"fold:lessThanEquals"} | ${df.fold((a, b) => a.lessThanEquals(b)).alias("foo")} | ${pl.Series("foo", [true, true, false])}
+    ${"fold:ltEq"}           | ${df.fold((a, b) => a.ltEq(b)).alias("foo")}           | ${pl.Series("foo", [true, true, false])}
+    ${"fold:neq"}            | ${df.fold((a, b) => a.neq(b)).alias("foo")}            | ${pl.Series("foo", [true, false, true])}
+    ${"fold:plus"}           | ${df.fold((a, b) => a.plus(b)).alias("foo")}           | ${pl.Series("foo", [7, 4, 17])}
+    ${"fold:minus"}          | ${df.fold((a, b) => a.minus(b)).alias("foo")}          | ${pl.Series("foo", [-5, 0, 1])}
+    ${"fold:mul"}            | ${df.fold((a, b) => a.mul(b)).alias("foo")}            | ${pl.Series("foo", [6, 4, 72])}
+  `("$# $name expected matches actual", ({ expected, actual }) => {
+    expect(expected).toSeriesEqual(actual);
+  });
+  test("fold:lt", () => {
+    const s1 = pl.Series([1, 2, 3]);
+    const s2 = pl.Series([4, 5, 6]);
+    const s3 = pl.Series([7, 8, 1]);
+    const df = pl.DataFrame([s1, s2, s3]);
+    const expected = pl.Series("foo", [true, true, false]);
+    let actual = df.fold((a, b) => a.lessThan(b)).alias("foo");
+    expect(actual).toSeriesEqual(expected);
+    actual = df.fold((a, b) => a.lt(b)).alias("foo");
+    expect(actual).toSeriesEqual(expected);
+  });
   test("frameEqual:true", () => {
     const df = pl.DataFrame({
       foo: [1, 2, 3],
@@ -649,14 +654,18 @@ describe("dataframe", () => {
       .median();
     expect(actual.row(0)).toEqual([2, 7, null]);
   });
-  test("melt", () => {
+  test("unpivot", () => {
     const df = pl.DataFrame({
       id: [1],
       asset_key_1: ["123"],
       asset_key_2: ["456"],
       asset_key_3: ["abc"],
     });
-    const actual = df.melt("id", ["asset_key_1", "asset_key_2", "asset_key_3"]);
+    const actual = df.unpivot("id", [
+      "asset_key_1",
+      "asset_key_2",
+      "asset_key_3",
+    ]);
     const expected = pl.DataFrame({
       id: [1, 1, 1],
       variable: ["asset_key_1", "asset_key_2", "asset_key_3"],
@@ -772,7 +781,7 @@ describe("dataframe", () => {
     expect(actual.columns).toEqual(["foo_new", "bar_new", "ham_new"]);
   });
   test("replaceAtIdx", () => {
-    const actual = pl.DataFrame({
+    const actual: pl.DataFrame = pl.DataFrame({
       foo: [1, 2, 3],
       bar: [6, 7, 8],
       ham: ["a", "b", "c"],
@@ -1031,7 +1040,7 @@ describe("dataframe", () => {
     expect(actual).toFrameEqual(expected);
   });
   test("sort:named", () => {
-    const actual = pl
+    let actual = pl
       .DataFrame({
         foo: [1, 2, 3, 1],
         bar: [6, 7, 8, 1],
@@ -1041,6 +1050,13 @@ describe("dataframe", () => {
       foo: [3, 2, 1, 1],
       bar: [8, 7, 6, 1],
     });
+    expect(actual).toFrameEqual(expected);
+    actual = pl
+      .DataFrame({
+        foo: [1, 2, 3, 1],
+        bar: [6, 7, 8, 1],
+      })
+      .sort({ by: "bar", reverse: true }); // deprecated
     expect(actual).toFrameEqual(expected);
   });
   test("sort:multi-args", () => {
@@ -1060,23 +1076,23 @@ describe("dataframe", () => {
     });
     expect(actual).toFrameEqual(expected);
   });
-  test("sort:nulls_last:false", () => {
+  test("sort:nullsLast:false", () => {
     const actual = pl
       .DataFrame({
         foo: [1, null, 2, 3],
       })
-      .sort({ by: "foo", nulls_last: false });
+      .sort({ by: "foo", nullsLast: false });
     const expected = pl.DataFrame({
       foo: [null, 1, 2, 3],
     });
     expect(actual).toFrameEqual(expected);
   });
-  test("sort:nulls_last:true", () => {
+  test("sort:nullsLast:true", () => {
     const actual = pl
       .DataFrame({
         foo: [1, null, 2, 3],
       })
-      .sort({ by: "foo", nulls_last: true });
+      .sort({ by: "foo", nullsLast: true });
     const expected = pl.DataFrame({
       foo: [1, 2, 3, null],
     });
@@ -1323,59 +1339,314 @@ describe("dataframe", () => {
     ]);
     expect(actual).toFrameEqual(expected);
   });
-  test("pivot", () => {
-    let df = pl.DataFrame({
-      a: pl.Series([1, 2, 3]).cast(pl.Int32),
-      b: pl
-        .Series([
-          [1, 1],
-          [2, 2],
-          [3, 3],
-        ])
-        .cast(pl.List(pl.Int32)),
+  test("df from JSON with multiple struct", () => {
+    const rows = [
+      {
+        id: 1,
+        name: "one",
+        attributes: {
+          b: false,
+          bb: true,
+          s: "one",
+          x: 1,
+          att2: { s: "two", y: 2, att3: { s: "three", y: 3 } },
+        },
+      },
+    ];
+
+    const actual = pl.DataFrame(rows);
+    const expected = `shape: (1,)
+Series: 'attributes' [struct[5]]
+[
+	{false,true,"one",1.0,{"two",2.0,{"three",3.0}}}
+]`;
+    expect(actual.select("attributes").toSeries().toString()).toEqual(expected);
+  });
+  test("df from JSON with struct", () => {
+    const rows = [
+      {
+        id: 1,
+        name: "one",
+        attributes: { b: false, bb: true, s: "one", x: 1 },
+      },
+      {
+        id: 2,
+        name: "two",
+        attributes: { b: false, bb: true, s: "two", x: 2 },
+      },
+      {
+        id: 3,
+        name: "three",
+        attributes: { b: false, bb: true, s: "three", x: 3 },
+      },
+    ];
+
+    let actual = pl.DataFrame(rows);
+    expect(actual.schema).toStrictEqual({
+      id: pl.Float64,
+      name: pl.String,
+      attributes: pl.Struct([
+        new pl.Field("b", pl.Bool),
+        new pl.Field("bb", pl.Bool),
+        new pl.Field("s", pl.String),
+        new pl.Field("x", pl.Float64),
+      ]),
     });
 
-    let expected = pl
-      .DataFrame({
+    let expected = `shape: (3, 3)
+┌─────┬───────┬──────────────────────────┐
+│ id  ┆ name  ┆ attributes               │
+│ --- ┆ ---   ┆ ---                      │
+│ f64 ┆ str   ┆ struct[4]                │
+╞═════╪═══════╪══════════════════════════╡
+│ 1.0 ┆ one   ┆ {false,true,"one",1.0}   │
+│ 2.0 ┆ two   ┆ {false,true,"two",2.0}   │
+│ 3.0 ┆ three ┆ {false,true,"three",3.0} │
+└─────┴───────┴──────────────────────────┘`;
+    expect(actual.toString()).toStrictEqual(expected);
+
+    const schema = {
+      id: pl.Int32,
+      name: pl.String,
+      attributes: pl.Struct([
+        new pl.Field("b", pl.Bool),
+        new pl.Field("bb", pl.Bool),
+        new pl.Field("s", pl.String),
+        new pl.Field("x", pl.Int16),
+      ]),
+    };
+    actual = pl.DataFrame(rows, { schema: schema });
+    expected = `shape: (3, 3)
+┌─────┬───────┬────────────────────────┐
+│ id  ┆ name  ┆ attributes             │
+│ --- ┆ ---   ┆ ---                    │
+│ i32 ┆ str   ┆ struct[4]              │
+╞═════╪═══════╪════════════════════════╡
+│ 1   ┆ one   ┆ {false,true,"one",1}   │
+│ 2   ┆ two   ┆ {false,true,"two",2}   │
+│ 3   ┆ three ┆ {false,true,"three",3} │
+└─────┴───────┴────────────────────────┘`;
+    expect(actual.toString()).toStrictEqual(expected);
+    expect(actual.getColumn("name").toArray()).toEqual(
+      rows.map((e) => e["name"]),
+    );
+    expect(actual.getColumn("attributes").toArray()).toMatchObject(
+      rows.map((e) => e["attributes"]),
+    );
+  });
+  test("pivot:values-with-options", () => {
+    {
+      const df = pl.DataFrame({
         a: pl.Series([1, 2, 3]).cast(pl.Int32),
-        "1": pl.Series([[1, 1], null, null]).cast(pl.List(pl.Int32)),
-        "2": pl.Series([null, [2, 2], null]).cast(pl.List(pl.Int32)),
-        "3": pl.Series([null, null, [3, 3]]).cast(pl.List(pl.Int32)),
-      })
-      .select("a", "1", "2", "3");
+        b: pl
+          .Series([
+            [1, 1],
+            [2, 2],
+            [3, 3],
+          ])
+          .cast(pl.List(pl.Int32)),
+      });
 
-    let actual = df.pivot("b", {
-      index: "a",
-      on: "a",
-      aggregateFunc: "first",
-      sortColumns: true,
-    });
+      const expected = pl
+        .DataFrame({
+          a: pl.Series([1, 2, 3]).cast(pl.Int32),
+          "1": pl.Series([[1, 1], null, null]).cast(pl.List(pl.Int32)),
+          "2": pl.Series([null, [2, 2], null]).cast(pl.List(pl.Int32)),
+          "3": pl.Series([null, null, [3, 3]]).cast(pl.List(pl.Int32)),
+        })
+        .select("a", "1", "2", "3");
 
-    expect(actual).toFrameEqual(expected, true);
+      const actual = df.pivot("b", {
+        index: "a",
+        on: "a",
+        aggregateFunc: "first",
+        sortColumns: true,
+      });
 
-    df = pl.DataFrame({
-      a: ["beep", "bop"],
-      b: ["a", "b"],
-      c: ["s", "f"],
-      d: [7, 8],
-      e: ["x", "y"],
-    });
-    actual = df.pivot(["a", "e"], {
-      index: "b",
-      on: ["b"],
-      aggregateFunc: "first",
-      separator: "|",
-      maintainOrder: true,
-    });
+      expect(actual).toFrameEqual(expected, true);
+    }
 
-    expected = pl.DataFrame({
-      b: ["a", "b"],
-      "a|a": ["beep", null],
-      "a|b": [null, "bop"],
-      "e|a": ["x", null],
-      "e|b": [null, "y"],
-    });
-    expect(actual).toFrameEqual(expected, true);
+    {
+      const df = pl.DataFrame({
+        a: ["beep", "bop"],
+        b: ["a", "b"],
+        c: ["s", "f"],
+        d: [7, 8],
+        e: ["x", "y"],
+      });
+      const actual = df.pivot(["a", "e"], {
+        index: "b",
+        on: ["b"],
+        aggregateFunc: "first",
+        separator: "|",
+        maintainOrder: true,
+      });
+
+      const expected = pl.DataFrame({
+        b: ["a", "b"],
+        "a|a": ["beep", null],
+        "a|b": [null, "bop"],
+        "e|a": ["x", null],
+        "e|b": [null, "y"],
+      });
+      expect(actual).toFrameEqual(expected, true);
+    }
+    {
+      const df = pl.DataFrame({
+        foo: ["A", "A", "B", "B", "C"],
+        N: [1, 2, 2, 4, 2],
+        bar: ["k", "l", "m", "n", "o"],
+      });
+      const actual = df.pivot(["N"], {
+        index: "foo",
+        on: "bar",
+        aggregateFunc: "first",
+      });
+
+      const expected = pl.DataFrame({
+        foo: ["A", "B", "C"],
+        k: [1, null, null],
+        l: [2, null, null],
+        m: [null, 2, null],
+        n: [null, 4, null],
+        o: [null, null, 2],
+      });
+
+      expect(actual).toFrameEqual(expected, true);
+    }
+    {
+      const df = pl.DataFrame({
+        ix: [1, 1, 2, 2, 1, 2],
+        col: ["a", "a", "a", "a", "b", "b"],
+        foo: [0, 1, 2, 2, 7, 1],
+        bar: [0, 2, 0, 0, 9, 4],
+      });
+
+      const actual = df.pivot(["foo", "bar"], {
+        index: "ix",
+        on: "col",
+        aggregateFunc: "sum",
+        separator: "/",
+      });
+
+      const expected = pl.DataFrame({
+        ix: [1, 2],
+        "foo/a": [1, 4],
+        "foo/b": [7, 1],
+        "bar/a": [2, 0],
+        "bar/b": [9, 4],
+      });
+      expect(actual).toFrameEqual(expected, true);
+    }
+  });
+  test("pivot:options-only", () => {
+    {
+      const df = pl.DataFrame({
+        a: pl.Series([1, 2, 3]).cast(pl.Int32),
+        b: pl
+          .Series([
+            [1, 1],
+            [2, 2],
+            [3, 3],
+          ])
+          .cast(pl.List(pl.Int32)),
+      });
+
+      const expected = pl
+        .DataFrame({
+          a: pl.Series([1, 2, 3]).cast(pl.Int32),
+          "1": pl.Series([[1, 1], null, null]).cast(pl.List(pl.Int32)),
+          "2": pl.Series([null, [2, 2], null]).cast(pl.List(pl.Int32)),
+          "3": pl.Series([null, null, [3, 3]]).cast(pl.List(pl.Int32)),
+        })
+        .select("a", "1", "2", "3");
+
+      const actual = df.pivot({
+        values: "b",
+        index: "a",
+        on: "a",
+        aggregateFunc: "first",
+        sortColumns: true,
+      });
+
+      expect(actual).toFrameEqual(expected, true);
+    }
+
+    {
+      const df = pl.DataFrame({
+        a: ["beep", "bop"],
+        b: ["a", "b"],
+        c: ["s", "f"],
+        d: [7, 8],
+        e: ["x", "y"],
+      });
+      const actual = df.pivot({
+        values: ["a", "e"],
+        index: "b",
+        on: ["b"],
+        aggregateFunc: "first",
+        separator: "|",
+        maintainOrder: true,
+      });
+
+      const expected = pl.DataFrame({
+        b: ["a", "b"],
+        "a|a": ["beep", null],
+        "a|b": [null, "bop"],
+        "e|a": ["x", null],
+        "e|b": [null, "y"],
+      });
+      expect(actual).toFrameEqual(expected, true);
+    }
+    {
+      const df = pl.DataFrame({
+        foo: ["A", "A", "B", "B", "C"],
+        N: [1, 2, 2, 4, 2],
+        bar: ["k", "l", "m", "n", "o"],
+      });
+      const actual = df.pivot({
+        values: ["N"],
+        index: "foo",
+        on: "bar",
+        aggregateFunc: "first",
+      });
+
+      const expected = pl.DataFrame({
+        foo: ["A", "B", "C"],
+        k: [1, null, null],
+        l: [2, null, null],
+        m: [null, 2, null],
+        n: [null, 4, null],
+        o: [null, null, 2],
+      });
+
+      expect(actual).toFrameEqual(expected, true);
+    }
+    {
+      const df = pl.DataFrame({
+        ix: [1, 1, 2, 2, 1, 2],
+        col: ["a", "a", "a", "a", "b", "b"],
+        foo: [0, 1, 2, 2, 7, 1],
+        bar: [0, 2, 0, 0, 9, 4],
+      });
+
+      const actual = df.pivot({
+        values: ["foo", "bar"],
+        index: "ix",
+        on: "col",
+        aggregateFunc: "sum",
+        separator: "/",
+      });
+
+      const expected = pl.DataFrame({
+        ix: [1, 2],
+        "foo/a": [1, 4],
+        "foo/b": [7, 1],
+        "bar/a": [2, 0],
+        "bar/b": [9, 4],
+      });
+      expect(actual).toFrameEqual(expected, true);
+    }
   });
 });
 describe("join", () => {
@@ -1638,7 +1909,7 @@ describe("io", () => {
     expect(actual).toEqual(expected);
   });
   test("writeCSV:string:sep", () => {
-    const actual = df.clone().writeCSV({ sep: "X" }).toString();
+    const actual = df.clone().writeCSV({ separator: "X" }).toString();
     const expected = "fooXbar\n1X6\n2X2\n9X8\n";
     expect(actual).toEqual(expected);
   });
@@ -1647,14 +1918,14 @@ describe("io", () => {
       bar: ["a,b,c", "d,e,f", "g,h,i"],
       foo: [1, 2, 3],
     });
-    const actual = df.writeCSV({ quote: "^" }).toString();
+    const actual = df.writeCSV({ quoteChar: "^" }).toString();
     const expected = "bar,foo\n^a,b,c^,1.0\n^d,e,f^,2.0\n^g,h,i^,3.0\n";
     expect(actual).toEqual(expected);
   });
   test("writeCSV:string:header", () => {
     const actual = df
       .clone()
-      .writeCSV({ sep: "X", includeHeader: false, lineTerminator: "|" })
+      .writeCSV({ separator: "X", includeHeader: false, lineTerminator: "|" })
       .toString();
     const expected = "1X6|2X2|9X8|";
     expect(actual).toEqual(expected);
@@ -1686,30 +1957,6 @@ describe("io", () => {
     expect(newDF).toFrameEqual(df);
     fs.rmSync("./test.csv");
     done();
-  });
-  test("JSON.stringify", () => {
-    const df = pl.DataFrame({
-      foo: [1],
-      bar: ["a"],
-    });
-    const expected = JSON.stringify({
-      columns: [
-        {
-          name: "foo",
-          datatype: "Float64",
-          bit_settings: "",
-          values: [1.0],
-        },
-        {
-          name: "bar",
-          datatype: "String",
-          bit_settings: "",
-          values: ["a"],
-        },
-      ],
-    });
-    const actual = JSON.stringify(df);
-    expect(actual).toEqual(expected);
   });
   test("toRecords", () => {
     const df = pl.DataFrame({
@@ -1841,8 +2088,8 @@ describe("create", () => {
       bool: pl.Bool,
       date: pl.Date,
       date_nulls: pl.Date,
-      datetime: pl.Datetime("ms"),
-      datetime_nulls: pl.Datetime("ms"),
+      datetime: pl.Datetime("ms", ""),
+      datetime_nulls: pl.Datetime("ms", ""),
       string: pl.String,
       string_nulls: pl.String,
       categorical: pl.Categorical,
@@ -1962,8 +2209,18 @@ describe("create", () => {
     expect(df.toRecords()).toEqual(expected);
     expect(df.schema).toStrictEqual({
       num: pl.Float64,
-      date: pl.Datetime("ms"),
+      date: pl.Datetime("ms", ""),
       string: pl.String,
+    });
+  });
+  test("from row objects, inferred schema, empty array", () => {
+    const df = pl.readRecords([
+      { a: [], b: 0 },
+      { a: [""], b: 0 },
+    ]);
+    expect(df.schema).toStrictEqual({
+      a: pl.List(pl.String),
+      b: pl.Float64,
     });
   });
   test("from row objects, with schema", () => {

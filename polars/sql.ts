@@ -5,9 +5,8 @@ const INSPECT = Symbol.for("nodejs.util.inspect.custom");
 /**
  * Run SQL queries against DataFrame/LazyFrame data.
  *
- * @warning This functionality is considered **unstable**, although it is close to being
- * considered stable. It may be changed at any point without it being considered
- * a breaking change.
+ * @experimental This functionality is considered **unstable**, although it is close to being
+ * considered stable. It may be changed at any point without it being considered a breaking change.
  */
 export interface SQLContext {
   /**
@@ -81,10 +80,9 @@ export interface SQLContext {
    * // └────────┴─────────────┴─────────┘
    * ```
    */
-  execute(query: string): LazyDataFrame;
   execute(query: string, { eager }: { eager: true }): DataFrame;
   execute(query: string, { eager }: { eager: false }): LazyDataFrame;
-
+  execute(query: string): LazyDataFrame;
   /**
    * Register a single frame as a table, using the given name.
    *

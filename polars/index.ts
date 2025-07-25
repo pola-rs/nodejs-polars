@@ -1,12 +1,12 @@
-import * as series from "./series";
 import * as df from "./dataframe";
 import { DataType, Field as _field } from "./datatypes";
+import * as series from "./series";
 export { DataType } from "./datatypes";
-import * as func from "./functions";
-import * as io from "./io";
 import * as cfg from "./cfg";
-import * as ldf from "./lazy/dataframe";
+import * as func from "./functions";
 import pli from "./internals/polars_internal";
+import * as io from "./io";
+import * as ldf from "./lazy/dataframe";
 export * from "./series";
 export * from "./dataframe";
 export * from "./functions";
@@ -44,6 +44,7 @@ export namespace pl {
   export import readRecords = io.readRecords;
   export import readCSV = io.readCSV;
   export import readIPC = io.readIPC;
+  export import readIPCStream = io.readIPCStream;
   export import readJSON = io.readJSON;
   export import readParquet = io.readParquet;
   export import readAvro = io.readAvro;
@@ -71,6 +72,7 @@ export namespace pl {
   export import groups = lazy.groups;
   export import head = lazy.head;
   export import last = lazy.last;
+  export import len = lazy.len;
   export import mean = lazy.mean;
   export import median = lazy.median;
   export import nUnique = lazy.nUnique;
@@ -144,9 +146,8 @@ export namespace pl {
   /**
    * Run SQL queries against DataFrame/LazyFrame data.
    *
-   * @warning This functionality is considered **unstable**, although it is close to being
-   * considered stable. It may be changed at any point without it being considered
-   * a breaking change.
+   * @experimental This functionality is considered **unstable**, although it is close to being
+   * considered stable. It may be changed at any point without it being considered a breaking change.
    */
   export function SQLContext(
     frames?: Record<string, DataFrame | LazyDataFrame>,
@@ -188,6 +189,7 @@ export import scanParquet = io.scanParquet;
 export import readRecords = io.readRecords;
 export import readCSV = io.readCSV;
 export import readIPC = io.readIPC;
+export import readIPCStream = io.readIPCStream;
 export import readJSON = io.readJSON;
 export import readParquet = io.readParquet;
 export import readAvro = io.readAvro;
@@ -287,9 +289,8 @@ export const Decimal = DataType.Decimal;
 /**
  * Run SQL queries against DataFrame/LazyFrame data.
  *
- * @warning This functionality is considered **unstable**, although it is close to being
- * considered stable. It may be changed at any point without it being considered
- * a breaking change.
+ * @experimental This functionality is considered **unstable**, although it is close to being
+ * considered stable. It may be changed at any point without it being considered a breaking change.
  */
 export function SQLContext(
   frames?: Record<string, DataFrame | LazyDataFrame>,

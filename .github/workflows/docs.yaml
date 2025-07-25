@@ -14,7 +14,7 @@ jobs:
       - name: Install latest Rust nightly
         uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: nightly-2024-06-23
+          toolchain: nightly-2025-01-05
           components: rustfmt, clippy
       - name: Install ghp-import
         uses: actions/setup-python@v5
@@ -27,7 +27,7 @@ jobs:
       - name: Set up Node
         uses: actions/setup-node@v4
         with: 
-          node-version: 20
+          node-version: 22
       - name: Build node reference
         run: | 
           npm install

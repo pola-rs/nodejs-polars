@@ -171,14 +171,14 @@ impl<'a> FromNapiValue for Wrap<AnyValue<'a>> {
             ValueType::Object => {
                 if let Ok(vals) = Vec::<Wrap<AnyValue>>::from_napi_value(env, napi_val) {
                     let vals = std::mem::transmute::<_, Vec<AnyValue>>(vals);
-                    let s = Series::new("", vals);
+                    let s = Series::new(PlSmallStr::EMPTY, vals);
                     AnyValue::List(s)
                 } else if let Ok(s) = <&JsSeries>::from_napi_value(env, napi_val) {
                     AnyValue::List(s.series.clone())
                 } else if let Ok(d) = napi::JsDate::from_napi_value(env, napi_val) {
                     let d = d.value_of()?;
                     let dt = d as i64;
-                    AnyValue::Datetime(dt, TimeUnit::Milliseconds, &None)
+                    AnyValue::Datetime(dt, TimeUnit::Milliseconds, None)
                 } else {
                     return Err(Error::new(
                         Status::InvalidArg,
@@ -277,7 +277,7 @@ impl<'a> From<JsAnyValue> for AnyValue<'a> {
             JsAnyValue::Float32(v) => AnyValue::Float32(v),
             JsAnyValue::Float64(v) => AnyValue::Float64(v),
             JsAnyValue::Date(v) => AnyValue::Date(v),
-            JsAnyValue::Datetime(v, w, _) => AnyValue::Datetime(v, w, &None),
+            JsAnyValue::Datetime(v, w, _) => AnyValue::Datetime(v, w, None),
             JsAnyValue::Duration(v, _) => AnyValue::Duration(v, TimeUnit::Milliseconds),
             JsAnyValue::Time(v) => AnyValue::Time(v),
             JsAnyValue::List(v) => AnyValue::List(v),

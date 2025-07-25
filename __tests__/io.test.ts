@@ -1,13 +1,15 @@
+import fs from "node:fs";
+import path from "node:path";
+import { Stream } from "node:stream";
 import pl from "@polars";
-import path from "path";
-import { Stream } from "stream";
-import fs from "fs";
 // eslint-disable-next-line no-undef
 const csvpath = path.resolve(__dirname, "./examples/datasets/foods1.csv");
 // eslint-disable-next-line no-undef
 const tsvpath = path.resolve(__dirname, "./examples/datasets/data.tsv");
 // eslint-disable-next-line no-undef
 const emptycsvpath = path.resolve(__dirname, "./examples/datasets/empty.csv");
+// eslint-disable-next-line no-undef
+const pipecsvpath = path.resolve(__dirname, "./examples/datasets/pipe-eol.csv");
 // eslint-disable-next-line no-undef
 const parquetpath = path.resolve(__dirname, "./examples/foods.parquet");
 // eslint-disable-next-line no-undef
@@ -24,7 +26,7 @@ describe("read:csv", () => {
     expect(df.shape).toEqual({ height: 27, width: 4 });
   });
   it("can read from a csv file with inferSchemaLength = 0 option", () => {
-    const df = pl.readCSV(csvpath, { inferSchemaLength: 0 });
+    let df = pl.readCSV(csvpath, { inferSchemaLength: 0 });
     const expected = `shape: (1, 4)
 ┌────────────┬──────────┬────────┬──────────┐
 │ category   ┆ calories ┆ fats_g ┆ sugars_g │
@@ -33,6 +35,8 @@ describe("read:csv", () => {
 ╞════════════╪══════════╪════════╪══════════╡
 │ vegetables ┆ 45       ┆ 0.5    ┆ 2        │
 └────────────┴──────────┴────────┴──────────┘`;
+    expect(df.head(1).toString()).toEqual(expected);
+    df = pl.readCSV(csvpath, { inferSchemaLength: null });
     expect(df.head(1).toString()).toEqual(expected);
   });
   it("can read from a csv file with options", () => {
@@ -49,6 +53,34 @@ describe("read:csv", () => {
     expect(df.writeCSV().toString().slice(0, 22)).toEqual(
       csvString.slice(0, 22),
     );
+  });
+  it("can read from a csv file with eolChar", async () => {
+    const actual = pl.readCSV(pipecsvpath, { eolChar: "|" });
+    const expected = `shape: (2, 2)
+┌─────┬─────┐
+│ a   ┆ b   │
+│ --- ┆ --- │
+│ i64 ┆ str │
+╞═════╪═════╡
+│ 1   ┆ foo │
+│ 2   ┆ boo │
+└─────┴─────┘`;
+    expect(actual.toString()).toEqual(expected);
+  });
+  it("can read from a csv buffer with newline in the header", () => {
+    const csvBuffer = Buffer.from(
+      '"name\na","height\nb"\n"John",172.23\n"Anna",1653.34',
+    );
+    const df = pl.readCSV(csvBuffer, {
+      quoteChar: '"',
+      sep: ",",
+      hasHeader: false,
+      skipRows: 1,
+    });
+    expect(df.toRecords()).toEqual([
+      { column_1: "John", column_2: 172.23 },
+      { column_1: "Anna", column_2: 1653.34 },
+    ]);
   });
   it("can read from a csv buffer", () => {
     const csvBuffer = Buffer.from("foo,bar,baz\n1,2,3\n4,5,6\n", "utf-8");
@@ -145,6 +177,10 @@ describe("read:csv", () => {
     const df2 = pl.readCSV(csv, { dtypes: { a: pl.Utf8 } });
     expect(df2.dtypes[0].equals(pl.String)).toBeTruthy();
   });
+  test("csv with commentPrefix", () => {
+    const df = pl.readCSV(csvpath, { commentPrefix: "vegetables" });
+    expect(df.shape).toEqual({ height: 20, width: 4 });
+  });
   it.todo("can read from a stream");
 });
 
@@ -154,7 +190,11 @@ describe("read:json", () => {
     expect(df.shape).toEqual({ height: 27, width: 4 });
   });
   it("can specify read options", () => {
-    const df = pl.readJSON(jsonpath, { batchSize: 10, inferSchemaLength: 100 });
+    let df = pl.readJSON(jsonpath, { batchSize: 10, inferSchemaLength: 100 });
+    expect(df.shape).toEqual({ height: 27, width: 4 });
+    df = pl.readJSON(jsonpath, { batchSize: 10, inferSchemaLength: null });
+    expect(df.shape).toEqual({ height: 27, width: 4 });
+    df = pl.readJSON(jsonpath, { batchSize: 10, inferSchemaLength: 0 });
     expect(df.shape).toEqual({ height: 27, width: 4 });
   });
   it("can read from a json buffer", () => {
@@ -168,6 +208,16 @@ describe("read:json", () => {
     expect(df.writeJSON({ format: "lines" }).toString().slice(0, 30)).toEqual(
       json.slice(0, 30),
     );
+  });
+  it("can read null json from buffer", () => {
+    const json = [
+      JSON.stringify({ bar: 1, foo: "a", nul: null }),
+      JSON.stringify({ bar: 2, foo: "b", nul: null }),
+      "",
+    ].join("\n");
+    const df = pl.readJSON(Buffer.from(json), { format: "lines" });
+    const actualCols = df.getColumns().map((x) => x.dtype);
+    expect(actualCols).toEqual([pl.Int64, pl.Utf8, pl.Null]);
   });
 });
 
@@ -232,6 +282,19 @@ describe("scan", () => {
     const df = pl.scanParquet(parquetpath).collectSync();
 
     expect(df.shape).toEqual({ height: 4, width: 4 });
+  });
+  it("can lazy load (scan) from a csv file with eolChar", async () => {
+    const actual = pl.scanCSV(pipecsvpath, { eolChar: "|" }).collectSync();
+    const expected = `shape: (2, 2)
+┌─────┬─────┐
+│ a   ┆ b   │
+│ --- ┆ --- │
+│ i64 ┆ str │
+╞═════╪═════╡
+│ 1   ┆ foo │
+│ 2   ┆ boo │
+└─────┴─────┘`;
+    expect(actual.toString()).toEqual(expected);
   });
 });
 
@@ -334,6 +397,42 @@ describe("ipc", () => {
     expect(ipcDF).toFrameEqual(csvDF);
   });
 });
+describe("ipc stream", () => {
+  beforeEach(() => {
+    pl.readCSV(csvpath).writeIPCStream(ipcpath);
+  });
+  afterEach(() => {
+    fs.rmSync(ipcpath);
+  });
+
+  test("read", () => {
+    const df = pl.readIPCStream(ipcpath);
+    expect(df.shape).toEqual({ height: 27, width: 4 });
+  });
+  test("read/write:buffer", () => {
+    const buff = pl.readCSV(csvpath).writeIPCStream();
+    const df = pl.readIPCStream(buff);
+    expect(df.shape).toEqual({ height: 27, width: 4 });
+  });
+  test("read:compressed", () => {
+    const csvDF = pl.readCSV(csvpath);
+    csvDF.writeIPCStream(ipcpath, { compression: "lz4" });
+    const ipcDF = pl.readIPCStream(ipcpath);
+    expect(ipcDF).toFrameEqual(csvDF);
+  });
+
+  test("read:options", () => {
+    const df = pl.readIPCStream(ipcpath, { nRows: 4 });
+    expect(df.shape).toEqual({ height: 4, width: 4 });
+  });
+
+  test("writeIPCStream", () => {
+    const csvDF = pl.readCSV(csvpath);
+    csvDF.writeIPCStream(ipcpath);
+    const ipcDF = pl.readIPCStream(ipcpath);
+    expect(ipcDF).toFrameEqual(csvDF);
+  });
+});
 
 describe("avro", () => {
   beforeEach(() => {
@@ -352,20 +451,20 @@ describe("avro", () => {
     const actual = pl.readAvro(buf);
     expect(actual).toFrameEqual(expected);
   });
-  test("read", () => {
-    const df = pl.readAvro(avropath);
-    expect(df.shape).toEqual({ height: 27, width: 4 });
+  test("read:avro", () => {
+    const df = pl.readAvro(avropath, { nRows: 4 });
+    expect(df.shape).toEqual({ height: 4, width: 4 });
   });
-  test("read:buffer", () => {
+  test("read:avro:buffer", () => {
     const buff = fs.readFileSync(avropath);
-    const df = pl.readAvro(buff);
-    expect(df.shape).toEqual({ height: 27, width: 4 });
+    const df = pl.readAvro(buff, { nRows: 4 });
+    expect(df.shape).toEqual({ height: 4, width: 4 });
   });
 
-  test("read:compressed", () => {
-    const csvDF = pl.readCSV(csvpath);
+  test("read:avro:compressed", () => {
+    const csvDF = pl.readCSV(csvpath, { nRows: 4 });
     csvDF.writeAvro(avropath, { compression: "snappy" });
-    const df = pl.readAvro(avropath);
+    const df = pl.readAvro(avropath, { nRows: 4 });
     expect(df).toFrameEqual(csvDF);
   });
 

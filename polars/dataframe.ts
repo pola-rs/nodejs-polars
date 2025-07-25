@@ -1,35 +1,36 @@
-import pli from "./internals/polars_internal";
-import { arrayToJsDataFrame } from "./internals/construction";
+import { Stream, Writable } from "node:stream";
+import { concat } from "./functions";
 import {
-  _GroupBy,
   DynamicGroupBy,
   type GroupBy,
   RollingGroupBy,
+  _GroupBy,
 } from "./groupby";
-import { _LazyDataFrame, type LazyDataFrame } from "./lazy/dataframe";
-import { concat } from "./functions";
+import { arrayToJsDataFrame } from "./internals/construction";
+import pli from "./internals/polars_internal";
+import { type LazyDataFrame, _LazyDataFrame } from "./lazy/dataframe";
 import { Expr } from "./lazy/expr";
-import { _Series, Series } from "./series";
-import { Stream, Writable } from "stream";
+import { Series, _Series } from "./series";
 import type {
+  CsvWriterOptions,
   FillNullStrategy,
   JoinOptions,
   WriteAvroOptions,
-  WriteCsvOptions,
   WriteIPCOptions,
   WriteParquetOptions,
 } from "./types";
 
-import { DataType } from "./datatypes";
+import { type DTypeToJs, DataType, type JsToDtype } from "./datatypes";
 
 import {
-  columnOrColumns,
-  columnOrColumnsStrict,
   type ColumnSelection,
   type ColumnsOrExpr,
   type ExprOrString,
-  isSeriesArray,
+  type Simplify,
   type ValueOrArray,
+  columnOrColumns,
+  columnOrColumnsStrict,
+  isSeriesArray,
 } from "./utils";
 
 import type {
@@ -60,8 +61,8 @@ interface WriteMethods {
    * @param options.includeBom - Whether to include UTF-8 BOM in the CSV output.
    * @param options.lineTerminator - String used to end each row.
    * @param options.includeHeader - Whether or not to include header in the CSV output.
-   * @param options.sep - Separate CSV fields with this symbol. _defaults to `,`
-   * @param options.quote - Character to use for quoting. Default: \" Note: it will note be used when sep is used
+   * @param options.separator - Separate CSV fields with this symbol. _defaults to `,`
+   * @param options.quoteChar - Character to use for quoting. Default: \" Note: it will note be used when sep is used
    * @param options.batchSize - Number of rows that will be processed per thread.
    * @param options.datetimeFormat - A format string, with the specifiers defined by the
    *    `chrono <https://docs.rs/chrono/latest/chrono/format/strftime/index.html>`_
@@ -107,13 +108,12 @@ interface WriteMethods {
    * ```
    * @category IO
    */
+  writeCSV(dest: string | Writable, options?: CsvWriterOptions): void;
   writeCSV(): Buffer;
-  writeCSV(options: WriteCsvOptions): Buffer;
-  writeCSV(dest: string | Writable, options?: WriteCsvOptions): void;
+  writeCSV(options: CsvWriterOptions): Buffer;
   /**
    * Write Dataframe to JSON string, file, or write stream
    * @param destination file or write stream
-   * @param options
    * @param options.format - json | lines
    * @example
    * ```
@@ -135,40 +135,49 @@ interface WriteMethods {
    * ```
    * @category IO
    */
-  writeJSON(options?: { format: "lines" | "json" }): Buffer;
   writeJSON(
     destination: string | Writable,
     options?: { format: "lines" | "json" },
   ): void;
+  writeJSON(options?: { format: "lines" | "json" }): Buffer;
   /**
-   * Write to Arrow IPC binary stream, or a feather file.
-   * @param file File path to which the file should be written.
+   * Write to Arrow IPC feather file, either to a file path or to a write stream.
+   * @param destination File path to which the file should be written, or writable.
    * @param options.compression Compression method *defaults to "uncompressed"*
    * @category IO
    */
-  writeIPC(options?: WriteIPCOptions): Buffer;
   writeIPC(destination: string | Writable, options?: WriteIPCOptions): void;
-
+  writeIPC(options?: WriteIPCOptions): Buffer;
+  /**
+   * Write to Arrow IPC stream file, either to a file path or to a write stream.
+   * @param destination File path to which the file should be written, or writable.
+   * @param options.compression Compression method *defaults to "uncompressed"*
+   * @category IO
+   */
+  writeIPCStream(
+    destination: string | Writable,
+    options?: WriteIPCOptions,
+  ): void;
+  writeIPCStream(options?: WriteIPCOptions): Buffer;
   /**
    * Write the DataFrame disk in parquet format.
-   * @param file File path to which the file should be written.
+   * @param destination File path to which the file should be written, or writable.
    * @param options.compression Compression method *defaults to "uncompressed"*
    * @category IO
    */
-  writeParquet(options?: WriteParquetOptions): Buffer;
   writeParquet(
     destination: string | Writable,
     options?: WriteParquetOptions,
   ): void;
-
+  writeParquet(options?: WriteParquetOptions): Buffer;
   /**
    * Write the DataFrame disk in avro format.
-   * @param file File path to which the file should be written.
+   * @param destination File path to which the file should be written, or writable.
    * @param options.compression Compression method *defaults to "uncompressed"*
    * @category IO
    */
-  writeAvro(options?: WriteAvroOptions): Buffer;
   writeAvro(destination: string | Writable, options?: WriteAvroOptions): void;
+  writeAvro(options?: WriteAvroOptions): Buffer;
 }
 
 /**
@@ -242,10 +251,10 @@ interface WriteMethods {
  * ╰─────┴─────┴─────╯
  * ```
  */
-export interface DataFrame
-  extends Arithmetic<DataFrame>,
-    Sample<DataFrame>,
-    Arithmetic<DataFrame>,
+export interface DataFrame<T extends Record<string, Series> = any>
+  extends Arithmetic<DataFrame<T>>,
+    Sample<DataFrame<T>>,
+    Arithmetic<DataFrame<T>>,
     WriteMethods,
     Serialize,
     GroupByOps<RollingGroupBy> {
@@ -262,7 +271,7 @@ export interface DataFrame
   /**
    * Very cheap deep clone.
    */
-  clone(): DataFrame;
+  clone(): DataFrame<T>;
   /**
    * __Summary statistics for a DataFrame.__
    *
@@ -295,8 +304,6 @@ export interface DataFrame
    * ```
    */
   describe(): DataFrame;
-  /** @deprecated *since 0.4.0* use {@link unique} */
-  distinct(maintainOrder?, subset?, keep?): DataFrame;
   /**
    * __Remove column from DataFrame and return as new.__
    * ___
@@ -309,7 +316,18 @@ export interface DataFrame
    * ...    "ham": ['a', 'b', 'c'],
    * ...    "apple": ['a', 'b', 'c']
    * ...  });
-   * >  console.log(df.drop(['ham', 'apple']).toString());
+   *    // df: pl.DataFrame<{
+   *    //     foo: pl.Series<Float64, "foo">;
+   *    //     bar: pl.Series<Float64, "bar">;
+   *    //     ham: pl.Series<Utf8, "ham">;
+   *    //     apple: pl.Series<Utf8, "apple">;
+   *    // }>
+   * >  const df2 = df.drop(['ham', 'apple']);
+   *    // df2: pl.DataFrame<{
+   *    //     foo: pl.Series<Float64, "foo">;
+   *    //     bar: pl.Series<Float64, "bar">;
+   *    // }>
+   * >  console.log(df2.toString());
    * shape: (3, 2)
    * ╭─────┬─────╮
    * │ foo ┆ bar │
@@ -324,9 +342,14 @@ export interface DataFrame
    * ╰─────┴─────╯
    * ```
    */
-  drop(name: string): DataFrame;
-  drop(names: string[]): DataFrame;
-  drop(name: string, ...names: string[]): DataFrame;
+  drop<U extends string>(name: U): DataFrame<Simplify<Omit<T, U>>>;
+  drop<const U extends string[]>(
+    names: U,
+  ): DataFrame<Simplify<Omit<T, U[number]>>>;
+  drop<U extends string, const V extends string[]>(
+    name: U,
+    ...names: V
+  ): DataFrame<Simplify<Omit<T, U | V[number]>>>;
   /**
    * __Return a new DataFrame where the null values are dropped.__
    *
@@ -352,9 +375,9 @@ export interface DataFrame
    * └─────┴─────┴─────┘
    * ```
    */
-  dropNulls(column: string): DataFrame;
-  dropNulls(columns: string[]): DataFrame;
-  dropNulls(...columns: string[]): DataFrame;
+  dropNulls(column: keyof T): DataFrame<T>;
+  dropNulls(columns: (keyof T)[]): DataFrame<T>;
+  dropNulls(...columns: (keyof T)[]): DataFrame<T>;
   /**
    * __Explode `DataFrame` to long format by exploding a column with Lists.__
    * ___
@@ -413,8 +436,8 @@ export interface DataFrame
    * ╰─────────┴─────╯
    * ```
    */
-  explode(column: ExprOrString): DataFrame;
   explode(columns: ExprOrString[]): DataFrame;
+  explode(column: ExprOrString): DataFrame;
   explode(column: ExprOrString, ...columns: ExprOrString[]): DataFrame;
   /**
    *
@@ -437,7 +460,7 @@ export interface DataFrame
 
    * @param other DataFrame to vertically add.
    */
-  extend(other: DataFrame): DataFrame;
+  extend(other: DataFrame<T>): DataFrame<T>;
   /**
    * Fill null/missing values by a filling strategy
    *
@@ -451,7 +474,7 @@ export interface DataFrame
    *   - "one"
    * @returns DataFrame with None replaced with the filling strategy.
    */
-  fillNull(strategy: FillNullStrategy): DataFrame;
+  fillNull(strategy: FillNullStrategy): DataFrame<T>;
   /**
    * Filter the rows in the DataFrame based on a predicate expression.
    * ___
@@ -490,7 +513,7 @@ export interface DataFrame
    * └─────┴─────┴─────┘
    * ```
    */
-  filter(predicate: any): DataFrame;
+  filter(predicate: any): DataFrame<T>;
   /**
    * Find the index of a column by name.
    * ___
@@ -506,7 +529,7 @@ export interface DataFrame
    * 2
    * ```
    */
-  findIdxByName(name: string): number;
+  findIdxByName(name: keyof T): number;
   /**
    * __Apply a horizontal reduction on a DataFrame.__
    *
@@ -567,9 +590,8 @@ export interface DataFrame
   /**
    * Check if DataFrame is equal to other.
    * ___
-   * @param options
-   * @param options.other - DataFrame to compare.
-   * @param options.nullEqual Consider null values as equal.
+   * @param other DataFrame to compare.
+   * @param nullEqual Consider null values as equal.
    * @example
    * ```
    * > const df1 = pl.DataFrame({
@@ -588,16 +610,50 @@ export interface DataFrame
    * false
    * ```
    */
-  frameEqual(other: DataFrame): boolean;
   frameEqual(other: DataFrame, nullEqual: boolean): boolean;
+  frameEqual(other: DataFrame): boolean;
   /**
    * Get a single column as Series by name.
+   *
+   * ---
+   * @example
+   * ```
+   * > const df = pl.DataFrame({
+   * ...     foo: [1, 2, 3],
+   * ...     bar: [6, null, 8],
+   * ...     ham: ["a", "b", "c"],
+   * ... });
+   * // df: pl.DataFrame<{
+   * //     foo: pl.Series<Float64, "foo">;
+   * //     bar: pl.Series<Float64, "bar">;
+   * //     ham: pl.Series<Utf8, "ham">;
+   * // }>
+   * > const column = df.getColumn("foo");
+   * // column: pl.Series<Float64, "foo">
+   * ```
    */
+  getColumn<U extends keyof T>(name: U): T[U];
   getColumn(name: string): Series;
   /**
    * Get the DataFrame as an Array of Series.
+   * ---
+   * @example
+   * ```
+   * >  const df = pl.DataFrame({
+   * ...     foo: [1, 2, 3],
+   * ...     bar: [6, null, 8],
+   * ...     ham: ["a", "b", "c"],
+   * ... });
+   * // df: pl.DataFrame<{
+   * //     foo: pl.Series<Float64, "foo">;
+   * //     bar: pl.Series<Float64, "bar">;
+   * //     ham: pl.Series<Utf8, "ham">;
+   * // }>
+   * > const columns = df.getColumns();
+   * // columns: (pl.Series<Float64, "foo"> | pl.Series<Float64, "bar"> | pl.Series<Utf8, "ham">)[]
+   * ```
    */
-  getColumns(): Array<Series>;
+  getColumns(): T[keyof T][];
   /**
    * Start a groupby operation.
    * ___
@@ -644,7 +700,7 @@ export interface DataFrame
    * ╰─────┴─────┴─────╯
    * ```
    */
-  head(length?: number): DataFrame;
+  head(length?: number): DataFrame<T>;
   /**
    * Return a new DataFrame grown horizontally by stacking multiple Series to it.
    * @param columns - array of Series or DataFrame to stack
@@ -656,8 +712,20 @@ export interface DataFrame
    * ...   "bar": [6, 7, 8],
    * ...   "ham": ['a', 'b', 'c']
    * ... });
+   * // df: pl.DataFrame<{
+   * //     foo: pl.Series<Float64, "foo">;
+   * //     bar: pl.Series<Float64, "bar">;
+   * //     ham: pl.Series<Utf8, "ham">;
+   * // }>
    * > const x = pl.Series("apple", [10, 20, 30])
-   * > df.hStack([x])
+   * // x: pl.Series<Float64, "apple">
+   * > df.hstack([x])
+   * // pl.DataFrame<{
+   * //     foo: pl.Series<Float64, "foo">;
+   * //     bar: pl.Series<Float64, "bar">;
+   * //     ham: pl.Series<Utf8, "ham">;
+   * //     apple: pl.Series<Float64, "apple">;
+   * // }>
    * shape: (3, 4)
    * ╭─────┬─────┬─────┬───────╮
    * │ foo ┆ bar ┆ ham ┆ apple │
@@ -672,8 +740,14 @@ export interface DataFrame
    * ╰─────┴─────┴─────┴───────╯
    * ```
    */
-  hstack(columns: Array<Series> | DataFrame): DataFrame;
   hstack(columns: Array<Series> | DataFrame, inPlace?: boolean): void;
+  hstack<U extends Record<string, Series> = any>(
+    columns: DataFrame<U>,
+  ): DataFrame<Simplify<T & U>>;
+  hstack<U extends Series[]>(
+    columns: U,
+  ): DataFrame<Simplify<T & { [K in U[number] as K["name"]]: K }>>;
+  hstack(columns: Array<Series> | DataFrame): DataFrame;
   /**
    * Insert a Series at a certain column index. This operation is in place.
    * @param index - Column position to insert the new `Series` column.
@@ -683,7 +757,7 @@ export interface DataFrame
   /**
    * Interpolate intermediate values. The interpolation method is linear.
    */
-  interpolate(): DataFrame;
+  interpolate(): DataFrame<T>;
   /**
    * Get a mask of all duplicated rows in this DataFrame.
    */
@@ -698,7 +772,7 @@ export interface DataFrame
   isUnique(): Series;
   /**
    *  __SQL like joins.__
-   * @param df - DataFrame to join with.
+   * @param other - DataFrame to join with.
    * @param options
    * @param options.leftOn - Name(s) of the left join column(s).
    * @param options.rightOn - Name(s) of the right join column(s).
@@ -759,6 +833,10 @@ export interface DataFrame
    *  - A "forward" search selects the first row in the right DataFrame whose
    *    'on' key is greater than or equal to the left's key.
    *
+   *  - A "nearest" search selects the last row in the right DataFrame whose value
+   *    is nearest to the left's key. String keys are not currently supported for a
+   *    nearest search.
+   *
    * The default is "backward".
    *
    * @param other DataFrame to join with.
@@ -767,7 +845,7 @@ export interface DataFrame
    * @param options.on Join column of both DataFrames. If set, `leftOn` and `rightOn` should be undefined.
    * @param options.byLeft join on these columns before doing asof join
    * @param options.byRight join on these columns before doing asof join
-   * @param options.strategy One of 'forward', 'backward'
+   * @param options.strategy One of 'forward', 'backward', 'nearest'
    * @param options.suffix Suffix to append to columns with a duplicate name.
    * @param options.tolerance
    *   Numeric tolerance. By setting this the join will only be done if the near keys are within this distance.
@@ -840,7 +918,7 @@ export interface DataFrame
       byLeft?: string | string[];
       byRight?: string | string[];
       by?: string | string[];
-      strategy?: "backward" | "forward";
+      strategy?: "backward" | "forward" | "nearest";
       suffix?: string;
       tolerance?: number | string;
       allowParallel?: boolean;
@@ -852,8 +930,11 @@ export interface DataFrame
    * Get first N rows as DataFrame.
    * @see {@link head}
    */
-  limit(length?: number): DataFrame;
-  map(func: (...args: any[]) => any): any[];
+  limit(length?: number): DataFrame<T>;
+  map<ReturnT>(
+    // TODO: strong types for the mapping function
+    func: (row: any[], i: number, arr: any[][]) => ReturnT,
+  ): ReturnT[];
 
   /**
    * Aggregate the columns of this DataFrame to their maximum value.
@@ -877,9 +958,9 @@ export interface DataFrame
    * ╰─────┴─────┴──────╯
    * ```
    */
-  max(): DataFrame;
-  max(axis: 0): DataFrame;
+  max(axis: 0): DataFrame<T>;
   max(axis: 1): Series;
+  max(): DataFrame<T>;
   /**
    * Aggregate the columns of this DataFrame to their mean value.
    * ___
@@ -887,10 +968,10 @@ export interface DataFrame
    * @param axis - either 0 or 1
    * @param nullStrategy - this argument is only used if axis == 1
    */
-  mean(): DataFrame;
-  mean(axis: 0): DataFrame;
-  mean(axis: 1): Series;
   mean(axis: 1, nullStrategy?: "ignore" | "propagate"): Series;
+  mean(): DataFrame<T>;
+  mean(axis: 0): DataFrame<T>;
+  mean(axis: 1): Series;
   /**
    * Aggregate the columns of this DataFrame to their median value.
    * ___
@@ -912,14 +993,9 @@ export interface DataFrame
    * ╰─────┴─────┴──────╯
    * ```
    */
-  median(): DataFrame;
+  median(): DataFrame<T>;
   /**
    * Unpivot a DataFrame from wide to long format.
-   * @deprecated *since 0.13.0* use {@link unpivot}
-   */
-  melt(idVars: ColumnSelection, valueVars: ColumnSelection): DataFrame;
-  /**
-   * Unpivot DataFrame to long format.
    * ___
    *
    * @param idVars - Columns to use as identifier variables.
@@ -979,9 +1055,9 @@ export interface DataFrame
    * ╰─────┴─────┴──────╯
    * ```
    */
-  min(): DataFrame;
-  min(axis: 0): DataFrame;
+  min(axis: 0): DataFrame<T>;
   min(axis: 1): Series;
+  min(): DataFrame<T>;
   /**
    * Get number of chunks used by the ChunkedArrays of this DataFrame.
    */
@@ -1007,12 +1083,14 @@ export interface DataFrame
    * └─────┴─────┴─────┘
    * ```
    */
-  nullCount(): DataFrame;
+  nullCount(): DataFrame<{
+    [K in keyof T]: Series<JsToDtype<number>, K & string>;
+  }>;
   partitionBy(
     cols: string | string[],
     stable?: boolean,
     includeKey?: boolean,
-  ): DataFrame[];
+  ): DataFrame<T>[];
   partitionBy<T>(
     cols: string | string[],
     stable: boolean,
@@ -1022,9 +1100,15 @@ export interface DataFrame
   /**
    *   Create a spreadsheet-style pivot table as a DataFrame.
    *
-   *   @param values Column values to aggregate. Can be multiple columns if the *columns* arguments contains multiple columns as well
-   *   @param options.index One or multiple keys to group by
-   *   @param options.columns Columns whose values will be used as the header of the output DataFrame
+   *   @param values The existing column(s) of values which will be moved under the new columns from index. If an
+   *                  aggregation is specified, these are the values on which the aggregation will be computed.
+   *                  If None, all remaining columns not specified on `on` and `index` will be used.
+   *                  At least one of `index` and `values` must be specified.
+   *   @param options.index The column(s) that remain from the input to the output. The output DataFrame will have one row
+   *                        for each unique combination of the `index`'s values.
+   *                        If None, all remaining columns not specified on `on` and `values` will be used. At least one
+   *                        of `index` and `values` must be specified.
+   *   @param options.on The column(s) whose values will be used as the new columns of the output DataFrame.
    *   @param options.aggregateFunc
    *       Any of:
    *       - "sum"
@@ -1048,7 +1132,7 @@ export interface DataFrame
    *   ...         "baz": [1, 2, 3, 4, 5, 6],
    *   ...     }
    *   ... );
-   *   > df.pivot("baz", {index:"foo", columns:"bar"});
+   *   > df.pivot("baz", {index:"foo", on:"bar"});
    *   shape: (2, 4)
    *   ┌─────┬─────┬─────┬─────┐
    *   │ foo ┆ A   ┆ B   ┆ C   │
@@ -1124,13 +1208,13 @@ export interface DataFrame
    * ╰─────┴─────┴──────╯
    * ```
    */
-  quantile(quantile: number): DataFrame;
+  quantile(quantile: number): DataFrame<T>;
   /**
    * __Rechunk the data in this DataFrame to a contiguous allocation.__
    *
    * This will make sure all subsequent operations have optimal and predictable performance.
    */
-  rechunk(): DataFrame;
+  rechunk(): DataFrame<T>;
   /**
    * __Rename column names.__
    * ___
@@ -1143,6 +1227,11 @@ export interface DataFrame
    * ...   "bar": [6, 7, 8],
    * ...   "ham": ['a', 'b', 'c']
    * ... });
+   * // df: pl.DataFrame<{
+   * //     foo: pl.Series<Float64, "foo">;
+   * //     bar: pl.Series<Float64, "bar">;
+   * //     ham: pl.Series<Utf8, "ham">;
+   * // }>
    * > df.rename({"foo": "apple"});
    * ╭───────┬─────┬─────╮
    * │ apple ┆ bar ┆ ham │
@@ -1157,21 +1246,38 @@ export interface DataFrame
    * ╰───────┴─────┴─────╯
    * ```
    */
+  rename<const U extends Partial<Record<keyof T, string>>>(
+    mapping: U,
+  ): DataFrame<{ [K in keyof T as U[K] extends string ? U[K] : K]: T[K] }>;
   rename(mapping: Record<string, string>): DataFrame;
   /**
    * Replace a column at an index location.
+   *
+   * Warning: typescript cannot encode type mutation,
+   * so the type of the DataFrame will be incorrect. cast the type of dataframe manually.
    * ___
    * @param index - Column index
    * @param newColumn - New column to insert
    * @example
    * ```
-   * > const df = pl.DataFrame({
+   * > const df: pl.DataFrame = pl.DataFrame({
    * ...   "foo": [1, 2, 3],
    * ...   "bar": [6, 7, 8],
    * ...   "ham": ['a', 'b', 'c']
    * ... });
+   * // df: pl.DataFrame<{
+   * //     foo: pl.Series<Float64, "foo">;
+   * //     bar: pl.Series<Float64, "bar">;
+   * //     ham: pl.Series<Utf8, "ham">;
+   * // }>
    * > const x = pl.Series("apple", [10, 20, 30]);
+   * // x: pl.Series<Float64, "apple">
    * > df.replaceAtIdx(0, x);
+   * // df: pl.DataFrame<{
+   * //     foo: pl.Series<Float64, "foo">; <- notice how the type is still the same!
+   * //     bar: pl.Series<Float64, "bar">;
+   * //     ham: pl.Series<Utf8, "ham">;
+   * // }>
    * shape: (3, 3)
    * ╭───────┬─────┬─────╮
    * │ apple ┆ bar ┆ ham │
@@ -1206,7 +1312,28 @@ export interface DataFrame
    * Convert columnar data to rows as arrays
    */
   rows(): Array<Array<any>>;
-  get schema(): Record<string, DataType>;
+  /**
+   * @example
+   * ```
+   * > const df: pl.DataFrame = pl.DataFrame({
+   * ...   "foo": [1, 2, 3],
+   * ...   "bar": [6, 7, 8],
+   * ...   "ham": ['a', 'b', 'c']
+   * ... });
+   * // df: pl.DataFrame<{
+   * //     foo: pl.Series<Float64, "foo">;
+   * //     bar: pl.Series<Float64, "bar">;
+   * //     ham: pl.Series<Utf8, "ham">;
+   * // }>
+   * > df.schema
+   * // {
+   * //     foo: Float64;
+   * //     bar: Float64;
+   * //     ham: Utf8;
+   * // }
+   * ```
+   */
+  get schema(): { [K in keyof T]: T[K]["dtype"] };
   /**
    * Select columns from this DataFrame.
    * ___
@@ -1218,7 +1345,15 @@ export interface DataFrame
    * ...     "bar": [6, 7, 8],
    * ...     "ham": ['a', 'b', 'c']
    * ...     });
+   * // df: pl.DataFrame<{
+   * //     foo: pl.Series<Float64, "foo">;
+   * //     bar: pl.Series<Float64, "bar">;
+   * //     ham: pl.Series<Utf8, "ham">;
+   * // }>
    * > df.select('foo');
+   * // pl.DataFrame<{
+   * //     foo: pl.Series<Float64, "foo">;
+   * // }>
    * shape: (3, 1)
    * ┌─────┐
    * │ foo │
@@ -1233,7 +1368,8 @@ export interface DataFrame
    * └─────┘
    * ```
    */
-  select(...columns: ExprOrString[]): DataFrame;
+  select<U extends keyof T>(...columns: U[]): DataFrame<{ [P in U]: T[P] }>;
+  select(...columns: ExprOrString[]): DataFrame<T>;
   /**
    * Shift the values by a given period and fill the parts that will be empty due to this operation
    * with `Nones`.
@@ -1274,15 +1410,14 @@ export interface DataFrame
    * └──────┴──────┴──────┘
    * ```
    */
-  shift(periods: number): DataFrame;
-  shift({ periods }: { periods: number }): DataFrame;
+  shift(periods: number): DataFrame<T>;
+  shift({ periods }: { periods: number }): DataFrame<T>;
   /**
    * Shift the values by a given period and fill the parts that will be empty due to this operation
    * with the result of the `fill_value` expression.
    * ___
-   * @param opts
-   * @param opts.n - Number of places to shift (may be negative).
-   * @param opts.fillValue - fill null values with this value.
+   * @param n - Number of places to shift (may be negative).
+   * @param fillValue - fill null values with this value.
    * @example
    * ```
    * > const df = pl.DataFrame({
@@ -1305,12 +1440,15 @@ export interface DataFrame
    * └─────┴─────┴─────┘
    * ```
    */
-  shiftAndFill(n: number, fillValue: number): DataFrame;
-  shiftAndFill({ n, fillValue }: { n: number; fillValue: number }): DataFrame;
+  shiftAndFill(n: number, fillValue: number): DataFrame<T>;
+  shiftAndFill({
+    n,
+    fillValue,
+  }: { n: number; fillValue: number }): DataFrame<T>;
   /**
    * Shrink memory usage of this DataFrame to fit the exact capacity needed to hold the data.
    */
-  shrinkToFit(): DataFrame;
+  shrinkToFit(): DataFrame<T>;
   shrinkToFit(inPlace: true): void;
   shrinkToFit({ inPlace }: { inPlace: true }): void;
   /**
@@ -1339,30 +1477,43 @@ export interface DataFrame
    * └─────┴─────┴─────┘
    * ```
    */
-  slice({ offset, length }: { offset: number; length: number }): DataFrame;
-  slice(offset: number, length: number): DataFrame;
+  slice({ offset, length }: { offset: number; length: number }): DataFrame<T>;
+  slice(offset: number, length: number): DataFrame<T>;
   /**
    * Sort the DataFrame by column.
    * ___
-   * @param by - By which columns to sort. Only accepts string.
-   * @param reverse - Reverse/descending sort.
+   * @param by - Column(s) to sort by. Accepts expression input, including selectors. Strings are parsed as column names.
+   * @param descending - Sort in descending order. When sorting by multiple columns, can be specified per column by passing a sequence of booleans.
+   * @param nullsLast - Place null values last; can specify a single boolean applying to all columns or a sequence of booleans for per-column control.
+   * @param maintainOrder - Whether the order should be maintained if elements are equal.
    */
   sort(
     by: ColumnsOrExpr,
     descending?: boolean,
-    nulls_last?: boolean,
-    maintain_order?: boolean,
-  ): DataFrame;
+    nullsLast?: boolean,
+    maintainOrder?: boolean,
+  ): DataFrame<T>;
+  sort({
+    by,
+    reverse, // deprecated
+    maintainOrder,
+  }: {
+    by: ColumnsOrExpr;
+    /** @param @deprecated *since 0.16.0* Use descending instead */
+    reverse?: boolean; // deprecated
+    nullsLast?: boolean;
+    maintainOrder?: boolean;
+  }): DataFrame<T>;
   sort({
     by,
     descending,
-    maintain_order,
+    maintainOrder,
   }: {
     by: ColumnsOrExpr;
     descending?: boolean;
-    nulls_last?: boolean;
-    maintain_order?: boolean;
-  }): DataFrame;
+    nullsLast?: boolean;
+    maintainOrder?: boolean;
+  }): DataFrame<T>;
   /**
    * Aggregate the columns of this DataFrame to their standard deviation value.
    * ___
@@ -1384,7 +1535,7 @@ export interface DataFrame
    * ╰─────┴─────┴──────╯
    * ```
    */
-  std(): DataFrame;
+  std(): DataFrame<T>;
   /**
    * Aggregate the columns of this DataFrame to their mean value.
    * ___
@@ -1392,10 +1543,10 @@ export interface DataFrame
    * @param axis - either 0 or 1
    * @param nullStrategy - this argument is only used if axis == 1
    */
-  sum(): DataFrame;
-  sum(axis: 0): DataFrame;
-  sum(axis: 1): Series;
   sum(axis: 1, nullStrategy?: "ignore" | "propagate"): Series;
+  sum(): DataFrame<T>;
+  sum(axis: 0): DataFrame<T>;
+  sum(axis: 1): Series;
   /**
    * @example
    * ```
@@ -1443,12 +1594,7 @@ export interface DataFrame
    * ╰─────────┴─────╯
    * ```
    */
-  tail(length?: number): DataFrame;
-  /**
-   * @deprecated *since 0.4.0* use {@link writeCSV}
-   * @category Deprecated
-   */
-  toCSV(destOrOptions?, options?);
+  tail(length?: number): DataFrame<T>;
   /**
    * Converts dataframe object into row oriented javascript objects
    * @example
@@ -1462,14 +1608,7 @@ export interface DataFrame
    * ```
    * @category IO
    */
-  toRecords(): Record<string, any>[];
-
-  /**
-   * compat with `JSON.stringify`
-   * @category IO
-   */
-  toJSON(): string;
-
+  toRecords(): { [K in keyof T]: DTypeToJs<T[K]["dtype"]> | null }[];
   /**
    * Converts dataframe object into a {@link TabularDataResource}
    */
@@ -1492,19 +1631,8 @@ export interface DataFrame
    * ```
    * @category IO
    */
-  toObject(): Record<string, any[]>;
-
-  /**
-   * @deprecated *since 0.4.0* use {@link writeIPC}
-   * @category IO Deprecated
-   */
-  toIPC(destination?, options?);
-  /**
-   * @deprecated *since 0.4.0* use {@link writeParquet}
-   * @category IO Deprecated
-   */
-  toParquet(destination?, options?);
-  toSeries(index?: number): Series;
+  toObject(): { [K in keyof T]: DTypeToJs<T[K]["dtype"] | null>[] };
+  toSeries(index?: number): T[keyof T];
   toString(): string;
   /**
    *  Convert a ``DataFrame`` to a ``Series`` of type ``Struct``
@@ -1616,12 +1744,12 @@ export interface DataFrame
     maintainOrder?: boolean,
     subset?: ColumnSelection,
     keep?: "first" | "last",
-  ): DataFrame;
+  ): DataFrame<T>;
   unique(opts: {
     maintainOrder?: boolean;
     subset?: ColumnSelection;
     keep?: "first" | "last";
-  }): DataFrame;
+  }): DataFrame<T>;
   /**
       Decompose a struct into its fields. The fields will be inserted in to the `DataFrame` on the
       location of the `struct` type.
@@ -1681,7 +1809,7 @@ export interface DataFrame
    * ╰─────┴─────┴──────╯
    * ```
    */
-  var(): DataFrame;
+  var(): DataFrame<T>;
   /**
    * Grow this DataFrame vertically by stacking a DataFrame to it.
    * @param df - DataFrame to stack.
@@ -1714,20 +1842,33 @@ export interface DataFrame
    * ╰─────┴─────┴─────╯
    * ```
    */
-  vstack(df: DataFrame): DataFrame;
+  vstack(df: DataFrame<T>): DataFrame<T>;
   /**
    * Return a new DataFrame with the column added or replaced.
    * @param column - Series, where the name of the Series refers to the column in the DataFrame.
    */
-  withColumn(column: Series | Expr): DataFrame;
+  withColumn<SeriesTypeT extends DataType, SeriesNameT extends string>(
+    column: Series<SeriesTypeT, SeriesNameT>,
+  ): DataFrame<
+    Simplify<T & { [K in SeriesNameT]: Series<SeriesTypeT, SeriesNameT> }>
+  >;
   withColumn(column: Series | Expr): DataFrame;
   withColumns(...columns: (Expr | Series)[]): DataFrame;
   /**
    * Return a new DataFrame with the column renamed.
    * @param existingName
-   * @param newName
+   * @param replacement
    */
+  withColumnRenamed<Existing extends keyof T, New extends string>(
+    existingName: Existing,
+    replacement: New,
+  ): DataFrame<{ [K in keyof T as K extends Existing ? New : K]: T[K] }>;
   withColumnRenamed(existing: string, replacement: string): DataFrame;
+
+  withColumnRenamed<Existing extends keyof T, New extends string>(opts: {
+    existingName: Existing;
+    replacement: New;
+  }): DataFrame<{ [K in keyof T as K extends Existing ? New : K]: T[K] }>;
   withColumnRenamed(opts: { existing: string; replacement: string }): DataFrame;
   /**
    * Add a column at index 0 that counts the rows.
@@ -1735,7 +1876,7 @@ export interface DataFrame
    */
   withRowCount(name?: string): DataFrame;
   /** @see {@link filter} */
-  where(predicate: any): DataFrame;
+  where(predicate: any): DataFrame<T>;
   /**
     Upsample a DataFrame at a regular frequency.
 
@@ -1811,13 +1952,13 @@ shape: (7, 3)
     every: string,
     by?: string | string[],
     maintainOrder?: boolean,
-  ): DataFrame;
+  ): DataFrame<T>;
   upsample(opts: {
     timeColumn: string;
     every: string;
     by?: string | string[];
     maintainOrder?: boolean;
-  }): DataFrame;
+  }): DataFrame<T>;
 }
 
 function prepareOtherArg(anyValue: any): Series {
@@ -1872,9 +2013,7 @@ function mapPolarsTypeToJSONSchema(colType: DataType): string {
   return typeMapping[dataType] || "string";
 }
 
-/**
- * @ignore
- */
+/** @ignore */
 export const _DataFrame = (_df: any): DataFrame => {
   const unwrap = (method: string, ...args: any[]) => {
     return _df[method as any](...args);
@@ -1993,9 +2132,6 @@ export const _DataFrame = (_df: any): DataFrame => {
       }
       return wrap("dropNulls");
     },
-    distinct(opts: any = false, subset?, keep = "first") {
-      return this.unique(opts, subset);
-    },
     unique(opts: any = false, subset?, keep = "first") {
       const defaultOptions = {
         maintainOrder: false,
@@ -2058,7 +2194,6 @@ export const _DataFrame = (_df: any): DataFrame => {
         opts.offset,
         opts.closed,
         opts.by,
-        opts.check_sorted,
       );
     },
     groupByDynamic({
@@ -2066,9 +2201,11 @@ export const _DataFrame = (_df: any): DataFrame => {
       every,
       period,
       offset,
+      label,
       includeBoundaries,
       closed,
       by,
+      startBy,
     }) {
       return DynamicGroupBy(
         _DataFrame(_df) as any,
@@ -2076,9 +2213,11 @@ export const _DataFrame = (_df: any): DataFrame => {
         every,
         period,
         offset,
+        label,
         includeBoundaries,
         closed,
         by,
+        startBy,
       );
     },
     upsample(opts, every?, by?, maintainOrder?) {
@@ -2182,19 +2321,8 @@ export const _DataFrame = (_df: any): DataFrame => {
     melt(ids, values) {
       return wrap("unpivot", columnOrColumns(ids), columnOrColumns(values));
     },
-    unpivot(ids, values, options) {
-      options = {
-        variableName: null,
-        valueName: null,
-        ...options,
-      };
-      return wrap(
-        "unpivot",
-        columnOrColumns(ids),
-        columnOrColumns(values),
-        options.variableName,
-        options.valueName,
-      );
+    unpivot(ids, values) {
+      return wrap("unpivot", columnOrColumns(ids), columnOrColumns(values));
     },
     min(axis = 0) {
       if (axis === 1) {
@@ -2215,6 +2343,9 @@ export const _DataFrame = (_df: any): DataFrame => {
         .map((d) => mapFn(_DataFrame(d)));
     },
     pivot(values, options?) {
+      if (values && !options) {
+        options = values;
+      }
       let {
         values: values_,
         index,
@@ -2253,8 +2384,8 @@ export const _DataFrame = (_df: any): DataFrame => {
       return _DataFrame(
         _df.pivotExpr(
           values,
-          index,
           on,
+          index,
           fn,
           maintainOrder,
           sortColumns,
@@ -2354,22 +2485,22 @@ export const _DataFrame = (_df: any): DataFrame => {
       }
       return wrap("slice", opts.offset, opts.length);
     },
-    sort(arg, descending = false, nulls_last = false, maintain_order = false) {
+    sort(arg, descending = false, nullsLast = false, maintainOrder = false) {
       if (arg?.by !== undefined) {
         return this.sort(
           arg.by,
-          arg.descending,
-          arg.nulls_last,
-          arg.maintain_order,
+          arg.descending ?? arg.reverse ?? false,
+          arg.nullsLast,
+          arg.maintainOrder,
         );
       }
       if (Array.isArray(arg) || Expr.isExpr(arg)) {
         return _DataFrame(_df)
           .lazy()
-          .sort(arg, descending, nulls_last, maintain_order)
+          .sort(arg, descending, nullsLast, maintainOrder)
           .collectSync({ noOptimization: true });
       }
-      return wrap("sort", arg, descending, nulls_last, maintain_order);
+      return wrap("sort", arg, descending, nullsLast, maintainOrder);
     },
     std() {
       return this.lazy().std().collectSync();
@@ -2383,9 +2514,6 @@ export const _DataFrame = (_df: any): DataFrame => {
     tail: (length = 5) => wrap("tail", length),
     serialize(format) {
       return _df.serialize(format);
-    },
-    toCSV(...args) {
-      return this.writeCSV(...args);
     },
     writeCSV(dest?, options = {}) {
       if (dest instanceof Writable || typeof dest === "string") {
@@ -2405,14 +2533,6 @@ export const _DataFrame = (_df: any): DataFrame => {
     },
     toRecords() {
       return _df.toObjects();
-    },
-    toJSON(...args: any[]) {
-      // this is passed by `JSON.stringify` when calling `toJSON()`
-      if (args[0] === "") {
-        return _df.toJs();
-      }
-
-      return _df.serialize("json").toString();
     },
     toHTML(): string {
       let htmlTable = "<table>";
@@ -2470,9 +2590,6 @@ export const _DataFrame = (_df: any): DataFrame => {
 
       return Buffer.concat(buffers);
     },
-    toParquet(dest?, options?) {
-      return this.writeParquet(dest, options);
-    },
     writeParquet(dest?, options = { compression: "uncompressed" }) {
       if (dest instanceof Writable || typeof dest === "string") {
         return _df.writeParquet(dest, options.compression) as any;
@@ -2507,9 +2624,6 @@ export const _DataFrame = (_df: any): DataFrame => {
 
       return Buffer.concat(buffers);
     },
-    toIPC(dest?, options?) {
-      return this.writeIPC(dest, options);
-    },
     writeIPC(dest?, options = { compression: "uncompressed" }) {
       if (dest instanceof Writable || typeof dest === "string") {
         return _df.writeIpc(dest, options.compression) as any;
@@ -2523,6 +2637,26 @@ export const _DataFrame = (_df: any): DataFrame => {
       });
 
       _df.writeIpc(writeStream, dest?.compression ?? options?.compression);
+      writeStream.end("");
+
+      return Buffer.concat(buffers);
+    },
+    writeIPCStream(dest?, options = { compression: "uncompressed" }) {
+      if (dest instanceof Writable || typeof dest === "string") {
+        return _df.writeIpcStream(dest, options.compression) as any;
+      }
+      const buffers: Buffer[] = [];
+      const writeStream = new Stream.Writable({
+        write(chunk, _encoding, callback) {
+          buffers.push(chunk);
+          callback(null);
+        },
+      });
+
+      _df.writeIpcStream(
+        writeStream,
+        dest?.compression ?? options?.compression,
+      );
       writeStream.end("");
 
       return Buffer.concat(buffers);
@@ -2657,6 +2791,14 @@ export const _DataFrame = (_df: any): DataFrame => {
   });
 };
 
+interface DataFrameOptions {
+  columns?: any[];
+  orient?: "row" | "col";
+  schema?: Record<string, string | DataType>;
+  schemaOverrides?: Record<string, string | DataType>;
+  inferSchemaLength?: number;
+}
+
 /**
  * DataFrame constructor
  */
@@ -2706,16 +2848,21 @@ export interface DataFrameConstructor extends Deserialize<DataFrame> {
    * ╰─────┴─────╯
    * ```
    */
-  (
-    data: any,
-    options?: {
-      columns?: any[];
-      orient?: "row" | "col";
-      schema?: Record<string, string | DataType>;
-      schemaOverrides?: Record<string, string | DataType>;
-      inferSchemaLength?: number;
-    },
-  ): DataFrame;
+  <T1 extends ArrayLike<Series>>(
+    data: T1,
+    options?: DataFrameOptions,
+  ): DataFrame<{
+    [K in T1[number] as K["name"]]: K;
+  }>;
+  <T2 extends Record<string, ArrayLike<any>>>(
+    data: T2,
+    options?: DataFrameOptions,
+  ): DataFrame<{
+    [K in keyof T2]: K extends string
+      ? Series<JsToDtype<T2[K][number]>, K>
+      : never;
+  }>;
+  (data: any, options?: DataFrameOptions): DataFrame;
   isDataFrame(arg: any): arg is DataFrame;
 }
 

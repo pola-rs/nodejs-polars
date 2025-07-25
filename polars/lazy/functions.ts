@@ -1,9 +1,9 @@
-import { Expr, _Expr, exprToLitOrExpr } from "./expr";
-import { DataType } from "../datatypes";
-import { Series } from "../series";
 import { DataFrame } from "../dataframe";
-import { type ExprOrString, range, selectionToExprList } from "../utils";
+import { DataType } from "../datatypes";
 import pli from "../internals/polars_internal";
+import { Series } from "../series";
+import { type ExprOrString, range, selectionToExprList } from "../utils";
+import { Expr, _Expr, exprToLitOrExpr } from "./expr";
 
 /**
  * __A column in a DataFrame.__
@@ -100,7 +100,7 @@ import pli from "../internals/polars_internal";
  */
 export function col(col: string | string[] | Series | DataType): Expr {
   if (Series.isSeries(col)) {
-    col = col.toArray();
+    col = col.toArray() as string[];
   }
   if (Array.isArray(col)) {
     return _Expr(pli.cols(col));
@@ -156,78 +156,132 @@ export function lit(value: any): Expr {
   return _Expr(pli.lit(value));
 }
 
-// // ----------
-// // Helper Functions
-// // ------
+// ----------
+// Helper Functions
+// ------
 
 /**
- * __Create a range expression.__
- * ___
+ * Generate a range of integers.
  *
  * This can be used in a `select`, `with_column` etc.
  * Be sure that the range size is equal to the DataFrame you are collecting.
- * @param low - Lower bound of range.
- * @param high - Upper bound of range.
- * @param step - Step size of the range
- * @param eager - If eager evaluation is `true`, a Series is returned instead of an Expr
+ * @param start - Start of the range (inclusive). Defaults to 0.
+ * @param end - End of the range (exclusive). If set to `None` (default), the value of `start` is used and `start` is set to `0`.
+ * @param step - Step size of the range.
+ * @param dtype - Data type of the range.
+ * @param eager - Evaluate immediately and return a `Series`. If set to `False` (default), return an expression instead.
+ * @returns Expr or Series Column of integer data type `dtype`.
+ * @see {@link intRanges}
  * @example
  * ```
  * > df.lazy()
  * >   .filter(pl.col("foo").lt(pl.intRange(0, 100)))
  * >   .collect()
  * ```
+ *
+ *
+ * Generate an index column by using `intRange` in conjunction with :func:`len`.
+ * ```
+ *  df = pl.DataFrame({"a": [1, 3, 5], "b": [2, 4, 6]})
+    df.select(
+    ...     pl.intRange(pl.len()).alias("index"),
+    ...     pl.all(),
+    ... )
+    shape: (3, 3)
+    ┌───────┬─────┬─────┐
+    │ index ┆ a   ┆ b   │
+    │ ---   ┆ --- ┆ --- │
+    │ u32   ┆ i64 ┆ i64 │
+    ╞═══════╪═════╪═════╡
+    │ 0     ┆ 1   ┆ 2   │
+    │ 1     ┆ 3   ┆ 4   │
+    │ 2     ┆ 5   ┆ 6   │
+    └───────┴─────┴─────┘
+ * ```
  */
-export function intRange<T>(opts: {
-  low: any;
-  high: any;
-  step: number;
-  dtype: DataType;
-  eager?: boolean;
-});
 export function intRange(
-  low: any,
-  high?: any,
-  step?: number,
-  dtype?: DataType,
-  eager?: true,
-): Series;
-export function intRange(
-  low: any,
-  high?: any,
-  step?: number,
+  start: number | Expr,
+  end?: number | Expr,
+  step?: number | Expr,
   dtype?: DataType,
   eager?: false,
 ): Expr;
-export function intRange(
+export function intRange<DT extends DataType = DataType.Int64>(opts: {
+  start: number | Expr;
+  end: number | Expr;
+  step?: number | Expr;
+  dtype?: DT;
+  eager: true;
+}): Series<DT>;
+export function intRange(opts: {
+  start: number | Expr;
+  end: number | Expr;
+  step?: number | Expr;
+  dtype?: DataType;
+  eager?: false;
+}): Expr;
+export function intRange<DT extends DataType = DataType.Int64>(opts: {
+  start: number | Expr;
+  end: number | Expr;
+  step?: number | Expr;
+  dtype?: DT;
+  eager?: boolean;
+}): Expr | Series<DT>;
+/** @deprecated *since 0.15.0* use `start` and `end` instead */
+export function intRange(opts: {
+  low: number | Expr;
+  high: number | Expr;
+  step?: number | Expr;
+  dtype?: DataType;
+  eager?: boolean;
+}): Expr | Series;
+export function intRange<DT extends DataType = DataType.Int64>(
+  start: number | Expr,
+  end?: number | Expr,
+  step?: number | Expr,
+  dtype?: DT,
+  eager?: true,
+): Series<DT>;
+export function intRange<DT extends DataType = DataType.Int64>(
   opts: any,
-  high?,
-  step = 1,
-  dtype = DataType.Int64,
-  eager?,
+  end?: number | Expr,
+  step = 1 as number | Expr,
+  dtype?: DT,
+  eager?: boolean,
 ): Series | Expr {
+  // @deprecated since 0.15.0
   if (typeof opts?.low === "number") {
     return intRange(opts.low, opts.high, opts.step, opts.dtype, opts.eager);
   }
-  const low = exprToLitOrExpr(opts, false);
-  high = exprToLitOrExpr(high, false);
+  if (typeof opts?.start === "number") {
+    return intRange(opts.start, opts.end, opts.step, opts.dtype, opts.eager);
+  }
+  // if expression like pl.len() passed
+  if (end === undefined || end === null) {
+    end = opts;
+    opts = 0;
+  }
+  const start = exprToLitOrExpr(opts, false);
+  end = exprToLitOrExpr(end, false);
   if (eager) {
     const df = DataFrame({ a: [1] });
 
     return df
-      .select(intRange(low, high, step).alias("intRange") as any)
+      .select(intRange(start, end, step).alias("intRange") as any)
       .getColumn("intRange") as any;
   }
-  return _Expr(pli.intRange(low, high, step, dtype));
+  return _Expr(pli.intRange(start, end, step, dtype || DataType.Int64));
 }
-
 /***
  * Generate a range of integers for each row of the input columns.
- * @param start - Lower bound of the range (inclusive).
- * @param end - Upper bound of the range (exclusive).
+ * @param start - Start of the range (inclusive). Defaults to 0.
+ * @param end - End of the range (exclusive). If set to `None` (default), the value of `start` is used and `start` is set to `0`.
  * @param step - Step size of the range.
+ * @param dtype - Integer data type of the ranges. Defaults to `Int64`.
  * @param eager - Evaluate immediately and return a ``Series``. If set to ``False`` (default), return an expression instead.
- * @return - Column of data type ``List(dtype)``.
- *  * @example
+ * @return - Expr or Series Column of data type `List(dtype)`.
+ * @see {@link intRange}
+ * @example
  * ```
  * const df = pl.DataFrame({"a": [1, 2], "b": [3, 4]})
  * const result = df.select(pl.intRanges("a", "b"));
@@ -275,7 +329,6 @@ export function all(): Expr {
 /**
  * Return the row indices that would sort the columns.
  * @param exprs Column(s) to arg sort by. Accepts expression input.
- * @param *more_exprs Additional columns to arg sort by, specified as positional arguments.
  * @param descending Sort in descending order. When sorting by multiple columns, can be specified per column by passing a sequence of booleans.
  * @example
  * ```
@@ -472,7 +525,51 @@ export function head(column: Series | ExprOrString, n?): Series | Expr {
   }
   return exprToLitOrExpr(column, false).head(n);
 }
+/** Return the number of elements in the column.
+  This is similar to `COUNT(*)` in SQL.
 
+  @return Expr - Expression of data type :class:`UInt32`.
+  @example
+  ```
+  >>> const df = pl.DataFrame(
+  ...     {
+  ...         "a": [1, 2, None],
+  ...         "b": [3, None, None],
+  ...         "c": ["foo", "bar", "foo"],
+  ...     }
+  ... )
+  >>> df.select(pl.len())
+  shape: (1, 1)
+  ┌─────┐
+  │ len │
+  │ --- │
+  │ u32 │
+  ╞═════╡
+  │ 3   │
+  └─────┘
+  ```
+  Generate an index column by using `len` in conjunction with :func:`intRange`.
+
+  ```
+  >>> df.select(
+  ...     pl.intRange(pl.len(), dtype=pl.UInt32).alias("index"),
+  ...     pl.all(),
+  ... )
+  shape: (3, 4)
+  ┌───────┬──────┬──────┬─────┐
+  │ index ┆ a    ┆ b    ┆ c   │
+  │ ---   ┆ ---  ┆ ---  ┆ --- │
+  │ u32   ┆ i64  ┆ i64  ┆ str │
+  ╞═══════╪══════╪══════╪═════╡
+  │ 0     ┆ 1    ┆ 3    ┆ foo │
+  │ 1     ┆ 2    ┆ null ┆ bar │
+  │ 2     ┆ null ┆ null ┆ foo │
+  └───────┴──────┴──────┴─────┘
+  ```
+*/
+export function len(): Expr {
+  return _Expr(pli.len());
+}
 /** Get the last value. */
 export function last(column: ExprOrString | Series): any {
   if (Series.isSeries(column)) {
@@ -552,7 +649,7 @@ export function spearmanRankCorr(a: ExprOrString, b: ExprOrString): Expr {
   a = exprToLitOrExpr(a, false);
   b = exprToLitOrExpr(b, false);
 
-  return _Expr(pli.spearmanRankCorr(a, b, null, false));
+  return _Expr(pli.spearmanRankCorr(a, b, false));
 }
 
 /** Get the last n rows of an Expression. */
@@ -574,11 +671,7 @@ export function list(column: ExprOrString): Expr {
     Collect several columns into a Series of dtype Struct
     Parameters
     ----------
-    @param exprs
-        Columns/Expressions to collect into a Struct
-    @param eager
-        Evaluate immediately
-
+    @param exprs Columns/Expressions to collect into a Struct
     Examples
     --------
     ```
@@ -691,7 +784,7 @@ export function element(): Expr {
 
 /**
  * Compute the bitwise AND horizontally across columns.
- * @param *exprs
+ * @param exprs
  *         Column(s) to use in the aggregation. Accepts expression input. Strings are
  *         parsed as column names, other non-expression inputs are parsed as literals.
  *
@@ -729,7 +822,7 @@ export function allHorizontal(exprs: ExprOrString | ExprOrString[]): Expr {
 
 /**
  * Compute the bitwise OR horizontally across columns.
- * @param *exprs
+ * @param exprs
  *       Column(s) to use in the aggregation. Accepts expression input. Strings are
  *       parsed as column names, other non-expression inputs are parsed as literals.
  * @example
@@ -766,7 +859,7 @@ export function anyHorizontal(exprs: ExprOrString | ExprOrString[]): Expr {
 
 /**
  * Get the maximum value horizontally across columns.
- * @param *exprs
+ * @param exprs
  *       Column(s) to use in the aggregation. Accepts expression input. Strings are
  *       parsed as column names, other non-expression inputs are parsed as literals.
  * @example
@@ -800,9 +893,8 @@ export function maxHorizontal(exprs: ExprOrString | ExprOrString[]): Expr {
 }
 /**
  * Get the minimum value horizontally across columns.
- * @param *exprs
- *       Column(s) to use in the aggregation. Accepts expression input. Strings are
- *       parsed as column names, other non-expression inputs are parsed as literals.
+ * @param exprs Column(s) to use in the aggregation. Accepts expression input. Strings are
+ *              parsed as column names, other non-expression inputs are parsed as literals.
  * @example
  * ```
  *  >>> const df = pl.DataFrame(
@@ -836,7 +928,7 @@ export function minHorizontal(exprs: ExprOrString | ExprOrString[]): Expr {
 
 /**
  * Sum all values horizontally across columns.
- * @param *exprs
+ * @param exprs
  *       Column(s) to use in the aggregation. Accepts expression input. Strings are
  *       parsed as column names, other non-expression inputs are parsed as literals.
  * @example
@@ -866,7 +958,7 @@ export function sumHorizontal(exprs: ExprOrString | ExprOrString[]): Expr {
 
   exprs = selectionToExprList(exprs);
 
-  return _Expr(pli.sumHorizontal(exprs));
+  return _Expr(pli.sumHorizontal(exprs, true));
 }
 
 // // export function collect_all() {}

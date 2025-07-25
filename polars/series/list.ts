@@ -3,9 +3,14 @@ import { exprToLitOrExpr } from "..";
 import { col } from "../lazy/functions";
 import type { ListFunctions } from "../shared_traits";
 
-export type ListNamespace = ListFunctions<Series>;
+// export type ListNamespace = ListFunctions<Series>;
 
-export const SeriesListFunctions = (_s): ListFunctions<Series> => {
+/**
+ * List functions for Series
+ */
+export interface SeriesListFunctions extends ListFunctions<Series> {}
+
+export const SeriesListFunctions = (_s): SeriesListFunctions => {
   const wrap = (method, ...args) => {
     const s = _Series(_s);
 
@@ -77,10 +82,10 @@ export const SeriesListFunctions = (_s): ListFunctions<Series> => {
     slice(offset, length) {
       return wrap("slice", offset, length);
     },
-    sort(reverse: any = false) {
-      return typeof reverse === "boolean"
-        ? wrap("sort", reverse)
-        : wrap("sort", reverse.reverse);
+    sort(descending: any = false) {
+      return typeof descending === "boolean"
+        ? wrap("sort", descending)
+        : wrap("sort", descending.descending ?? descending.reverse ?? false);
     },
     sum() {
       return wrap("sum");

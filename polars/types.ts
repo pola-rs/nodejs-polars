@@ -1,3 +1,6 @@
+import { DataFrame } from ".";
+import { LazyDataFrame } from "./lazy/dataframe";
+
 /**
  * Downsample rules
  */
@@ -39,33 +42,16 @@ export interface ConcatOptions {
   how?: "vertical" | "horizontal" | "diagonal";
 }
 /**
- * Options for {@link DataFrame.writeCSV}
- * @category Options
- */
-export interface WriteCsvOptions {
-  includeBom?: boolean;
-  includeHeader?: boolean;
-  sep?: string;
-  quote?: string;
-  lineTerminator?: string;
-  batchSize?: number;
-  datetimeFormat?: string;
-  dateFormat?: string;
-  timeFormat?: string;
-  floatPrecision?: number;
-  nullValue?: string;
-}
-/**
+ * Options for @see {@link DataFrame.writeCSV}
  * Options for @see {@link LazyDataFrame.sinkCSV}
  * @category Options
  */
-export interface SinkCsvOptions {
-  includeHeader?: boolean;
-  quote?: string;
+export interface CsvWriterOptions {
   includeBom?: boolean;
+  includeHeader?: boolean;
   separator?: string;
-  lineTerminator?: string;
   quoteChar?: string;
+  lineTerminator?: string;
   batchSize?: number;
   datetimeFormat?: string;
   dateFormat?: string;
@@ -91,6 +77,8 @@ export interface SinkParquetOptions {
   simplifyExpression?: boolean;
   slicePushdown?: boolean;
   noOptimization?: boolean;
+  cloudOptions?: Map<string, string>;
+  retries?: number;
 }
 /**
  * Options for {@link DataFrame.writeJSON}
@@ -141,12 +129,22 @@ export interface ReadParquetOptions {
  * Options for {@link scanParquet}
  */
 export interface ScanParquetOptions {
-  columns?: string[] | number[];
-  numRows?: number;
-  parallel?: "auto" | "columns" | "row_groups" | "none";
-  rowCount?: RowCount;
+  nRows?: number;
+  rowIndexName?: string;
+  rowIndexOffset?: number;
   cache?: boolean;
+  parallel?: "auto" | "columns" | "row_groups" | "none";
+  glob?: boolean;
+  hivePartitioning?: boolean;
+  hiveSchema?: unknown;
+  tryParseHiveDates?: boolean;
   rechunk?: boolean;
+  lowMemory?: boolean;
+  useStatistics?: boolean;
+  cloudOptions?: Map<string, string>;
+  retries?: number;
+  includeFilePaths?: string;
+  allowMissingColumns?: boolean;
 }
 
 /**
@@ -156,7 +154,7 @@ export interface RowCount {
   /** name of column */
   name: string;
   /** offset */
-  offset: string;
+  offset: number;
 }
 
 /**

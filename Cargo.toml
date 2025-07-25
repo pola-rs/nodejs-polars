@@ -1,6 +1,6 @@
 [package]
 name = "nodejs-polars"
-version = "0.14.0"
+version = "0.19.0"
 authors = ["Cory Grinstead"]
 documentation = "https://pola-rs.github.io/polars-book/"
 edition = "2021"
@@ -15,18 +15,21 @@ crate-type = ["cdylib", "lib"]
 [dependencies]
 ahash = "0.8.11"
 bincode = "1.3.3"
-napi = { version = "2.16.8", default-features = false, features = [
+napi = { version = "2.16.16", default-features = false, features = [
     "napi8",
     "serde-json",
 ] }
-napi-derive = { version = "2.16.8", default-features = false }
-polars-core = { git = "https://github.com/pola-rs/polars.git", rev = "91a423fea2dc067837db65c3608e3cbc1112a6fc", default-features = false }
-polars-io = { git = "https://github.com/pola-rs/polars.git", rev = "91a423fea2dc067837db65c3608e3cbc1112a6fc", default-features = false }
-polars-lazy = { git = "https://github.com/pola-rs/polars.git", rev = "91a423fea2dc067837db65c3608e3cbc1112a6fc", default-features = false }
+napi-derive = { version = "2.16.13", default-features = false }
+polars-core = { git = "https://github.com/pola-rs/polars.git", rev = "f298ace880b238fb5793eaf0cdeb6b418e2ba583", default-features = false }
+polars-io = { git = "https://github.com/pola-rs/polars.git", rev = "f298ace880b238fb5793eaf0cdeb6b418e2ba583", default-features = false }
+polars-lazy = { git = "https://github.com/pola-rs/polars.git", rev = "f298ace880b238fb5793eaf0cdeb6b418e2ba583", default-features = false }
+polars-ops = { git = "https://github.com/pola-rs/polars.git", rev = "f298ace880b238fb5793eaf0cdeb6b418e2ba583", default-features = false }
+polars-arrow = { git = "https://github.com/pola-rs/polars.git", rev = "f298ace880b238fb5793eaf0cdeb6b418e2ba583", default-features = false }
 thiserror = "1"
 smartstring = { version = "1" }
 serde_json = { version = "1" }
 either = "1.13.0"
+hashbrown = { version = "0.15.2", features = ["rayon", "serde"] }
 
 [dependencies.polars]
 features = [
@@ -84,7 +87,7 @@ features = [
   "parquet",
   "to_dummies",
   "ipc",
-  "avro",
+  "ipc_streaming",
   "list_eval",
   "arg_where",
   "timezones",
@@ -161,10 +164,10 @@ features = [
   "azure"
 ]
 git = "https://github.com/pola-rs/polars.git"
-rev = "91a423fea2dc067837db65c3608e3cbc1112a6fc"
+rev = "f298ace880b238fb5793eaf0cdeb6b418e2ba583"
 
 [build-dependencies]
-napi-build = "2.1.3"
+napi-build = "2.1.4"
 
 [profile.release]
 codegen-units = 1

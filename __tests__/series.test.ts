@@ -1,5 +1,5 @@
 /* eslint-disable newline-per-chained-call */
-import pl from "@polars";
+import pl, { DataType } from "@polars";
 import Chance from "chance";
 
 describe("from lists", () => {
@@ -217,13 +217,13 @@ describe("series", () => {
 
   describe("create series", () => {
     it.each`
-      values                    | dtype                | type
-      ${["foo", "bar", "baz"]}  | ${pl.String}         | ${"string"}
-      ${[1, 2, 3]}              | ${pl.Float64}        | ${"number"}
-      ${[1n, 2n, 3n]}           | ${pl.UInt64}         | ${"bigint"}
-      ${[true, false]}          | ${pl.Bool}           | ${"boolean"}
-      ${[]}                     | ${pl.Float64}        | ${"empty"}
-      ${[new Date(Date.now())]} | ${pl.Datetime("ms")} | ${"Date"}
+      values                    | dtype                    | type
+      ${["foo", "bar", "baz"]}  | ${pl.String}             | ${"string"}
+      ${[1, 2, 3]}              | ${pl.Float64}            | ${"number"}
+      ${[1n, 2n, 3n]}           | ${pl.UInt64}             | ${"bigint"}
+      ${[true, false]}          | ${pl.Bool}               | ${"boolean"}
+      ${[]}                     | ${pl.Float64}            | ${"empty"}
+      ${[new Date(Date.now())]} | ${pl.Datetime("ms", "")} | ${"Date"}
     `('defaults to $dtype for "$type"', ({ values, dtype }) => {
       const name = chance.string();
       const s = pl.Series(name, values);
@@ -330,7 +330,6 @@ describe("series", () => {
     ${numSeries()}  | ${"isNotNaN"}        | ${[]}
     ${numSeries()}  | ${"isNumeric"}       | ${[]}
     ${numSeries()}  | ${"isUnique"}        | ${[]}
-    ${numSeries()}  | ${"isUtf8"}          | ${[]}
     ${numSeries()}  | ${"kurtosis"}        | ${[]}
     ${numSeries()}  | ${"kurtosis"}        | ${[{ fisher: true, bias: true }]}
     ${numSeries()}  | ${"kurtosis"}        | ${[{ bias: false }]}
@@ -430,8 +429,8 @@ describe("series", () => {
     ${numSeries()}  | ${"sort"}            | ${[]}
     ${numSeries()}  | ${"sort"}            | ${[false]}
     ${numSeries()}  | ${"sort"}            | ${[true]}
-    ${numSeries()}  | ${"sort"}            | ${[{ reverse: true }]}
-    ${numSeries()}  | ${"sort"}            | ${[{ reverse: false }]}
+    ${numSeries()}  | ${"sort"}            | ${[{ descending: true }]}
+    ${numSeries()}  | ${"sort"}            | ${[{ descending: false }]}
     ${numSeries()}  | ${"sum"}             | ${[]}
     ${numSeries()}  | ${"tail"}            | ${[]}
     ${numSeries()}  | ${"gather"}          | ${[[1, 2]]}
@@ -449,128 +448,116 @@ describe("series", () => {
   });
 
   it.each`
-    name                 | actual                                                                                     | expected
-    ${"dtype:Utf8"}      | ${pl.Series(["foo"]).dtype}                                                                | ${pl.Utf8}
-    ${"dtype:UInt64"}    | ${pl.Series([1n]).dtype}                                                                   | ${pl.UInt64}
-    ${"dtype:Float64"}   | ${pl.Series([1]).dtype}                                                                    | ${pl.Float64}
-    ${"dtype"}           | ${pl.Series(["foo"]).dtype}                                                                | ${pl.Utf8}
-    ${"name"}            | ${pl.Series("a", ["foo"]).name}                                                            | ${"a"}
-    ${"length"}          | ${pl.Series([1, 2, 3, 4]).length}                                                          | ${4}
-    ${"abs"}             | ${pl.Series([1, 2, -3]).abs()}                                                             | ${pl.Series([1, 2, 3])}
-    ${"alias"}           | ${pl.Series([1, 2, 3]).as("foo")}                                                          | ${pl.Series("foo", [1, 2, 3])}
-    ${"alias"}           | ${pl.Series([1, 2, 3]).alias("foo")}                                                       | ${pl.Series("foo", [1, 2, 3])}
-    ${"argMax"}          | ${pl.Series([1, 2, 3]).argMax()}                                                           | ${2}
-    ${"argMin"}          | ${pl.Series([1, 2, 3]).argMin()}                                                           | ${0}
-    ${"argSort"}         | ${pl.Series([3, 2, 1]).argSort()}                                                          | ${pl.Series([2, 1, 0])}
-    ${"argSort"}         | ${pl.Series([null, 3, 2, 1]).argSort({ reverse: true })}                                   | ${pl.Series([1, 2, 3, 0])}
-    ${"argTrue"}         | ${pl.Series([true, false]).argTrue()}                                                      | ${pl.Series([0])}
-    ${"argUnique"}       | ${pl.Series([1, 1, 2]).argUnique()}                                                        | ${pl.Series([0, 2])}
-    ${"cast-Int16"}      | ${pl.Series("", [1, 1, 2]).cast(pl.Int16)}                                                 | ${pl.Series("", [1, 1, 2], pl.Int16)}
-    ${"cast-Int32"}      | ${pl.Series("", [1, 1, 2]).cast(pl.Int32)}                                                 | ${pl.Series("", [1, 1, 2], pl.Int32)}
-    ${"cast-Int64"}      | ${pl.Series("", [1, 1, 2]).cast(pl.Int64)}                                                 | ${pl.Series("", [1, 1, 2], pl.Int64)}
-    ${"cast-UInt16"}     | ${pl.Series("", [1, 1, 2]).cast(pl.UInt16)}                                                | ${pl.Series("", [1, 1, 2], pl.UInt16)}
-    ${"cast-UInt32"}     | ${pl.Series("", [1, 1, 2]).cast(pl.UInt32)}                                                | ${pl.Series("", [1, 1, 2], pl.UInt32)}
-    ${"cast-UInt64"}     | ${pl.Series("", [1, 1, 2]).cast(pl.UInt64)}                                                | ${pl.Series("", [1n, 1n, 2n])}
-    ${"cast-Utf8"}       | ${pl.Series("", [1, 1, 2]).cast(pl.Utf8)}                                                  | ${pl.Series("", ["1.0", "1.0", "2.0"])}
-    ${"chunkLengths"}    | ${pl.Series([1, 2, 3]).chunkLengths()[0]}                                                  | ${3}
-    ${"clone"}           | ${pl.Series([1, 2, 3]).clone()}                                                            | ${pl.Series([1, 2, 3])}
-    ${"concat"}          | ${pl.Series([1]).concat(pl.Series([2, 3]))}                                                | ${pl.Series([1, 2, 3])}
-    ${"cumMax"}          | ${pl.Series([3, 2, 4]).cumMax()}                                                           | ${pl.Series([3, 3, 4])}
-    ${"cumMin"}          | ${pl.Series([3, 2, 4]).cumMin()}                                                           | ${pl.Series([3, 2, 2])}
-    ${"cumProd"}         | ${pl.Series("", [1, 2, 3], pl.Int32).cumProd()}                                            | ${pl.Series("", [1, 2, 6], pl.Int64)}
-    ${"cumSum"}          | ${pl.Series("", [1, 2, 3], pl.Int32).cumSum()}                                             | ${pl.Series("", [1, 3, 6], pl.Int32)}
-    ${"diff"}            | ${pl.Series([1, 2, 12]).diff(1, "drop").toObject()}                                        | ${pl.Series([1, 10]).toObject()}
-    ${"diff"}            | ${pl.Series([1, 11]).diff(1, "ignore")}                                                    | ${pl.Series("", [null, 10], pl.Float64)}
-    ${"dropNulls"}       | ${pl.Series([1, null, 2]).dropNulls()}                                                     | ${pl.Series([1, 2])}
-    ${"dropNulls"}       | ${pl.Series([1, undefined, 2]).dropNulls()}                                                | ${pl.Series([1, 2])}
-    ${"dropNulls"}       | ${pl.Series(["a", null, "f"]).dropNulls()}                                                 | ${pl.Series(["a", "f"])}
-    ${"fillNull:zero"}   | ${pl.Series([1, null, 2]).fillNull("zero")}                                                | ${pl.Series([1, 0, 2])}
-    ${"fillNull:one"}    | ${pl.Series([1, null, 2]).fillNull("one")}                                                 | ${pl.Series([1, 1, 2])}
-    ${"fillNull:max"}    | ${pl.Series([1, null, 5]).fillNull("max")}                                                 | ${pl.Series([1, 5, 5])}
-    ${"fillNull:min"}    | ${pl.Series([1, null, 5]).fillNull("min")}                                                 | ${pl.Series([1, 1, 5])}
-    ${"fillNull:mean"}   | ${pl.Series([1, 1, null, 10]).fillNull("mean")}                                            | ${pl.Series([1, 1, 4, 10])}
-    ${"fillNull:back"}   | ${pl.Series([1, 1, null, 10]).fillNull("backward")}                                        | ${pl.Series([1, 1, 10, 10])}
-    ${"fillNull:fwd"}    | ${pl.Series([1, 1, null, 10]).fillNull("forward")}                                         | ${pl.Series([1, 1, 1, 10])}
-    ${"floor"}           | ${pl.Series([1.1, 2.2]).floor()}                                                           | ${pl.Series([1, 2])}
-    ${"get"}             | ${pl.Series(["foo"]).get(0)}                                                               | ${"foo"}
-    ${"get"}             | ${pl.Series([1, 2, 3]).get(2)}                                                             | ${3}
-    ${"getIndex"}        | ${pl.Series(["a", "b", "c"]).getIndex(0)}                                                  | ${"a"}
-    ${"hasValidity"}     | ${pl.Series([1, null, 2]).hasValidity()}                                                   | ${true}
-    ${"hasValidity"}     | ${pl.Series([1, 1, 2]).hasValidity()}                                                      | ${false}
-    ${"hash"}            | ${pl.Series([1]).hash()}                                                                   | ${pl.Series([7355865757046787768n])}
-    ${"head"}            | ${pl.Series([1, 2, 3, 4, 5, 5, 5]).head()}                                                 | ${pl.Series([1, 2, 3, 4, 5])}
-    ${"head"}            | ${pl.Series([1, 2, 3, 4, 5, 5, 5]).head(2)}                                                | ${pl.Series([1, 2])}
-    ${"interpolate"}     | ${pl.Series([1, 2, null, null, 5]).interpolate()}                                          | ${pl.Series([1, 2, 3, 4, 5])}
-    ${"isBoolean"}       | ${pl.Series([1, 2, 3]).isBoolean()}                                                        | ${false}
-    ${"isBoolean"}       | ${pl.Series([true, false]).isBoolean()}                                                    | ${true}
-    ${"isDateTime"}      | ${pl.Series([new Date(Date.now())]).isDateTime()}                                          | ${true}
-    ${"isDuplicated"}    | ${pl.Series([1, 3, 3]).isDuplicated()}                                                     | ${pl.Series([false, true, true])}
-    ${"isFinite"}        | ${pl.Series([1.0, 3.1]).isFinite()}                                                        | ${pl.Series([true, true])}
-    ${"isInfinite"}      | ${pl.Series([1.0, 2]).isInfinite()}                                                        | ${pl.Series([false, false])}
-    ${"isNotNull"}       | ${pl.Series([1, null, undefined, 2]).isNotNull()}                                          | ${pl.Series([true, false, false, true])}
-    ${"isNull"}          | ${pl.Series([1, null, undefined, 2]).isNull()}                                             | ${pl.Series([false, true, true, false])}
-    ${"isNumeric"}       | ${pl.Series([1, 2, 3]).isNumeric()}                                                        | ${true}
-    ${"isUnique"}        | ${pl.Series([1, 2, 3, 1]).isUnique()}                                                      | ${pl.Series([false, true, true, false])}
-    ${"isUtf8"}          | ${pl.Series([1, 2, 3, 1]).dtype.equals(pl.String)}                                         | ${false}
-    ${"kurtosis"}        | ${pl.Series([1, 2, 3, 3, 4]).kurtosis()?.toFixed(6)}                                       | ${"-1.044379"}
-    ${"isUtf8"}          | ${pl.Series(["foo"]).dtype.equals(pl.String)}                                              | ${true}
-    ${"isString"}        | ${pl.Series(["foo"]).isString()}                                                           | ${true}
-    ${"len"}             | ${pl.Series([1, 2, 3, 4, 5]).len()}                                                        | ${5}
-    ${"limit"}           | ${pl.Series([1, 2, 3, 4, 5, 5, 5]).limit(2)}                                               | ${pl.Series([1, 2])}
-    ${"max"}             | ${pl.Series([-1, 10, 3]).max()}                                                            | ${10}
-    ${"mean"}            | ${pl.Series([1, 1, 10]).mean()}                                                            | ${4}
-    ${"median"}          | ${pl.Series([1, 1, 10]).median()}                                                          | ${1}
-    ${"min"}             | ${pl.Series([-1, 10, 3]).min()}                                                            | ${-1}
-    ${"nChunks"}         | ${pl.Series([1, 2, 3, 4, 4]).nChunks()}                                                    | ${1}
-    ${"nullCount"}       | ${pl.Series([1, null, null, 4, 4]).nullCount()}                                            | ${2}
-    ${"peakMax"}         | ${pl.Series([9, 4, 5]).peakMax()}                                                          | ${pl.Series([true, false, true])}
-    ${"peakMin"}         | ${pl.Series([4, 1, 3, 2, 5]).peakMin()}                                                    | ${pl.Series([false, true, false, true, false])}
-    ${"quantile"}        | ${pl.Series([1, 2, 3]).quantile(0.5)}                                                      | ${2}
-    ${"rank"}            | ${pl.Series([1, 2, 3, 2, 2, 3, 0]).rank("dense")}                                          | ${pl.Series("", [2, 3, 4, 3, 3, 4, 1], pl.UInt32)}
-    ${"rename"}          | ${pl.Series([1, 3, 0]).rename("b")}                                                        | ${pl.Series("b", [1, 3, 0])}
-    ${"rollingMax"}      | ${pl.Series([1, 2, 3, 2, 1]).rollingMax(2)}                                                | ${pl.Series("", [null, 2, 3, 3, 2], pl.Float64)}
-    ${"rollingMin"}      | ${pl.Series([1, 2, 3, 2, 1]).rollingMin(2)}                                                | ${pl.Series("", [null, 1, 2, 2, 1], pl.Float64)}
-    ${"rollingSum"}      | ${pl.Series([1, 2, 3, 2, 1]).rollingSum(2)}                                                | ${pl.Series("", [null, 3, 5, 5, 3], pl.Float64)}
-    ${"rollingMean"}     | ${pl.Series([1, 2, 3, 2, 1]).rollingMean(2)}                                               | ${pl.Series("", [null, 1.5, 2.5, 2.5, 1.5], pl.Float64)}
-    ${"rollingVar"}      | ${pl.Series([1, 2, 3, 2, 1]).rollingVar(2)[1]}                                             | ${0.5}
-    ${"rollingMedian"}   | ${pl.Series([1, 2, 3, 3, 2, 10, 8]).rollingMedian({ windowSize: 2 })}                      | ${pl.Series([null, 1.5, 2.5, 3, 2.5, 6, 9])}
-    ${"rollingQuantile"} | ${pl
-  .Series([1, 2, 3, 3, 2, 10, 8])
-  .rollingQuantile({ windowSize: 2, quantile: 0.5 })} | ${pl.Series([null, 2, 3, 3, 3, 10, 10])}
-    ${"sample:n"}        | ${pl.Series([1, 2, 3, 4, 5]).sample(2).len()}                                              | ${2}
-    ${"sample:frac"}     | ${pl.Series([1, 2, 3, 4, 5]).sample({ frac: 0.4, seed: 0 }).len()}                         | ${2}
-    ${"shift"}           | ${pl.Series([1, 2, 3]).shift(1)}                                                           | ${pl.Series([null, 1, 2])}
-    ${"shift"}           | ${pl.Series([1, 2, 3]).shift(-1)}                                                          | ${pl.Series([2, 3, null])}
-    ${"skew"}            | ${pl.Series([1, 2, 3, 3, 0]).skew()?.toPrecision(6)}                                       | ${"-0.363173"}
-    ${"slice"}           | ${pl.Series([1, 2, 3, 3, 0]).slice(-3, 3)}                                                 | ${pl.Series([3, 3, 0])}
-    ${"slice"}           | ${pl.Series([1, 2, 3, 3, 0]).slice(1, 3)}                                                  | ${pl.Series([2, 3, 3])}
-    ${"sort"}            | ${pl.Series([4, 2, 5, 1, 2, 3, 3, 0]).sort()}                                              | ${pl.Series([0, 1, 2, 2, 3, 3, 4, 5])}
-    ${"sort"}            | ${pl.Series([4, 2, 5, 0]).sort({ descending: true })}                                      | ${pl.Series([5, 4, 2, 0])}
-    ${"sort"}            | ${pl.Series([4, 2, 5, 0]).sort({ descending: false })}                                     | ${pl.Series([0, 2, 4, 5])}
-    ${"sum"}             | ${pl.Series([1, 2, 2, 1]).sum()}                                                           | ${6}
-    ${"tail"}            | ${pl.Series([1, 2, 2, 1]).tail(2)}                                                         | ${pl.Series([2, 1])}
-    ${"gatherEvery"}     | ${pl.Series([1, 3, 2, 9, 1]).gatherEvery(2)}                                               | ${pl.Series([1, 2, 1])}
-    ${"gather"}          | ${pl.Series([1, 3, 2, 9, 1]).gather([0, 1, 3])}                                            | ${pl.Series([1, 3, 9])}
+    name                 | actual                                                                                 | expected
+    ${"dtype:Utf8"}      | ${pl.Series(["foo"]).dtype}                                                            | ${pl.Utf8}
+    ${"dtype:UInt64"}    | ${pl.Series([1n]).dtype}                                                               | ${pl.UInt64}
+    ${"dtype:Float64"}   | ${pl.Series([1]).dtype}                                                                | ${pl.Float64}
+    ${"dtype"}           | ${pl.Series(["foo"]).dtype}                                                            | ${pl.Utf8}
+    ${"name"}            | ${pl.Series("a", ["foo"]).name}                                                        | ${"a"}
+    ${"length"}          | ${pl.Series([1, 2, 3, 4]).length}                                                      | ${4}
+    ${"abs"}             | ${pl.Series([1, 2, -3]).abs()}                                                         | ${pl.Series([1, 2, 3])}
+    ${"alias"}           | ${pl.Series([1, 2, 3]).as("foo")}                                                      | ${pl.Series("foo", [1, 2, 3])}
+    ${"alias"}           | ${pl.Series([1, 2, 3]).alias("foo")}                                                   | ${pl.Series("foo", [1, 2, 3])}
+    ${"argMax"}          | ${pl.Series([1, 2, 3]).argMax()}                                                       | ${2}
+    ${"argMin"}          | ${pl.Series([1, 2, 3]).argMin()}                                                       | ${0}
+    ${"argSort"}         | ${pl.Series([3, 2, 1]).argSort()}                                                      | ${pl.Series([2, 1, 0])}
+    ${"argSort"}         | ${pl.Series([null, 3, 2, 1]).argSort({ descending: true })}                            | ${pl.Series([1, 2, 3, 0])}
+    ${"argTrue"}         | ${pl.Series([true, false]).argTrue()}                                                  | ${pl.Series([0])}
+    ${"argUnique"}       | ${pl.Series([1, 1, 2]).argUnique()}                                                    | ${pl.Series([0, 2])}
+    ${"cast-Int16"}      | ${pl.Series("", [1, 1, 2]).cast(pl.Int16)}                                             | ${pl.Series("", [1, 1, 2], pl.Int16)}
+    ${"cast-Int32"}      | ${pl.Series("", [1, 1, 2]).cast(pl.Int32)}                                             | ${pl.Series("", [1, 1, 2], pl.Int32)}
+    ${"cast-Int64"}      | ${pl.Series("", [1, 1, 2]).cast(pl.Int64)}                                             | ${pl.Series("", [1, 1, 2], pl.Int64)}
+    ${"cast-UInt16"}     | ${pl.Series("", [1, 1, 2]).cast(pl.UInt16)}                                            | ${pl.Series("", [1, 1, 2], pl.UInt16)}
+    ${"cast-UInt32"}     | ${pl.Series("", [1, 1, 2]).cast(pl.UInt32)}                                            | ${pl.Series("", [1, 1, 2], pl.UInt32)}
+    ${"cast-UInt64"}     | ${pl.Series("", [1, 1, 2]).cast(pl.UInt64)}                                            | ${pl.Series("", [1n, 1n, 2n])}
+    ${"cast-Utf8"}       | ${pl.Series("", [1, 1, 2]).cast(pl.Utf8)}                                              | ${pl.Series("", ["1.0", "1.0", "2.0"])}
+    ${"chunkLengths"}    | ${pl.Series([1, 2, 3]).chunkLengths()[0]}                                              | ${3}
+    ${"clone"}           | ${pl.Series([1, 2, 3]).clone()}                                                        | ${pl.Series([1, 2, 3])}
+    ${"concat"}          | ${pl.Series([1]).concat(pl.Series([2, 3]))}                                            | ${pl.Series([1, 2, 3])}
+    ${"cumMax"}          | ${pl.Series([3, 2, 4]).cumMax()}                                                       | ${pl.Series([3, 3, 4])}
+    ${"cumMin"}          | ${pl.Series([3, 2, 4]).cumMin()}                                                       | ${pl.Series([3, 2, 2])}
+    ${"cumProd"}         | ${pl.Series("", [1, 2, 3], pl.Int32).cumProd()}                                        | ${pl.Series("", [1, 2, 6], pl.Int64)}
+    ${"cumSum"}          | ${pl.Series("", [1, 2, 3], pl.Int32).cumSum()}                                         | ${pl.Series("", [1, 3, 6], pl.Int32)}
+    ${"diff"}            | ${pl.Series([1, 2, 12]).diff(1, "drop").toObject()}                                    | ${pl.Series([1, 10]).toObject()}
+    ${"diff"}            | ${pl.Series([1, 11]).diff(1, "ignore")}                                                | ${pl.Series("", [null, 10], pl.Float64)}
+    ${"dropNulls"}       | ${pl.Series([1, null, 2]).dropNulls()}                                                 | ${pl.Series([1, 2])}
+    ${"dropNulls"}       | ${pl.Series([1, undefined, 2]).dropNulls()}                                            | ${pl.Series([1, 2])}
+    ${"dropNulls"}       | ${pl.Series(["a", null, "f"]).dropNulls()}                                             | ${pl.Series(["a", "f"])}
+    ${"fillNull:zero"}   | ${pl.Series([1, null, 2]).fillNull("zero")}                                            | ${pl.Series([1, 0, 2])}
+    ${"fillNull:one"}    | ${pl.Series([1, null, 2]).fillNull("one")}                                             | ${pl.Series([1, 1, 2])}
+    ${"fillNull:max"}    | ${pl.Series([1, null, 5]).fillNull("max")}                                             | ${pl.Series([1, 5, 5])}
+    ${"fillNull:min"}    | ${pl.Series([1, null, 5]).fillNull("min")}                                             | ${pl.Series([1, 1, 5])}
+    ${"fillNull:mean"}   | ${pl.Series([1, 1, null, 10]).fillNull("mean")}                                        | ${pl.Series([1, 1, 4, 10])}
+    ${"fillNull:back"}   | ${pl.Series([1, 1, null, 10]).fillNull("backward")}                                    | ${pl.Series([1, 1, 10, 10])}
+    ${"fillNull:fwd"}    | ${pl.Series([1, 1, null, 10]).fillNull("forward")}                                     | ${pl.Series([1, 1, 1, 10])}
+    ${"floor"}           | ${pl.Series([1.1, 2.2]).floor()}                                                       | ${pl.Series([1, 2])}
+    ${"get"}             | ${pl.Series(["foo"]).get(0)}                                                           | ${"foo"}
+    ${"get"}             | ${pl.Series([1, 2, 3]).get(2)}                                                         | ${3}
+    ${"getIndex"}        | ${pl.Series(["a", "b", "c"]).getIndex(0)}                                              | ${"a"}
+    ${"hasValidity"}     | ${pl.Series([1, null, 2]).hasValidity()}                                               | ${true}
+    ${"hasValidity"}     | ${pl.Series([1, 1, 2]).hasValidity()}                                                  | ${false}
+    ${"hash"}            | ${pl.Series([1]).hash()}                                                               | ${pl.Series([7355865757046787768n])}
+    ${"head"}            | ${pl.Series([1, 2, 3, 4, 5, 5, 5]).head()}                                             | ${pl.Series([1, 2, 3, 4, 5])}
+    ${"head"}            | ${pl.Series([1, 2, 3, 4, 5, 5, 5]).head(2)}                                            | ${pl.Series([1, 2])}
+    ${"interpolate"}     | ${pl.Series([1, 2, null, null, 5]).interpolate()}                                      | ${pl.Series([1, 2, 3, 4, 5])}
+    ${"isBoolean"}       | ${pl.Series([1, 2, 3]).isBoolean()}                                                    | ${false}
+    ${"isBoolean"}       | ${pl.Series([true, false]).isBoolean()}                                                | ${true}
+    ${"isDateTime"}      | ${pl.Series([new Date(Date.now())]).isDateTime()}                                      | ${true}
+    ${"isDuplicated"}    | ${pl.Series([1, 3, 3]).isDuplicated()}                                                 | ${pl.Series([false, true, true])}
+    ${"isFinite"}        | ${pl.Series([1.0, 3.1]).isFinite()}                                                    | ${pl.Series([true, true])}
+    ${"isInfinite"}      | ${pl.Series([1.0, 2]).isInfinite()}                                                    | ${pl.Series([false, false])}
+    ${"isNotNull"}       | ${pl.Series([1, null, undefined, 2]).isNotNull()}                                      | ${pl.Series([true, false, false, true])}
+    ${"isNull"}          | ${pl.Series([1, null, undefined, 2]).isNull()}                                         | ${pl.Series([false, true, true, false])}
+    ${"isNumeric"}       | ${pl.Series([1, 2, 3]).isNumeric()}                                                    | ${true}
+    ${"isUnique"}        | ${pl.Series([1, 2, 3, 1]).isUnique()}                                                  | ${pl.Series([false, true, true, false])}
+    ${"isUtf8"}          | ${pl.Series([1, 2, 3, 1]).dtype.equals(pl.String)}                                     | ${false}
+    ${"kurtosis"}        | ${pl.Series([1, 2, 3, 3, 4]).kurtosis()?.toFixed(6)}                                   | ${"-1.044379"}
+    ${"isUtf8"}          | ${pl.Series(["foo"]).dtype.equals(pl.String)}                                          | ${true}
+    ${"isString"}        | ${pl.Series(["foo"]).isString()}                                                       | ${true}
+    ${"len"}             | ${pl.Series([1, 2, 3, 4, 5]).len()}                                                    | ${5}
+    ${"limit"}           | ${pl.Series([1, 2, 3, 4, 5, 5, 5]).limit(2)}                                           | ${pl.Series([1, 2])}
+    ${"max"}             | ${pl.Series([-1, 10, 3]).max()}                                                        | ${10}
+    ${"mean"}            | ${pl.Series([1, 1, 10]).mean()}                                                        | ${4}
+    ${"median"}          | ${pl.Series([1, 1, 10]).median()}                                                      | ${1}
+    ${"min"}             | ${pl.Series([-1, 10, 3]).min()}                                                        | ${-1}
+    ${"nChunks"}         | ${pl.Series([1, 2, 3, 4, 4]).nChunks()}                                                | ${1}
+    ${"nullCount"}       | ${pl.Series([1, null, null, 4, 4]).nullCount()}                                        | ${2}
+    ${"peakMax"}         | ${pl.Series([9, 4, 5]).peakMax()}                                                      | ${pl.Series([true, false, true])}
+    ${"peakMin"}         | ${pl.Series([4, 1, 3, 2, 5]).peakMin()}                                                | ${pl.Series([false, true, false, true, false])}
+    ${"quantile"}        | ${pl.Series([1, 2, 3]).quantile(0.5)}                                                  | ${2}
+    ${"rank"}            | ${pl.Series([1, 2, 3, 2, 2, 3, 0]).rank("dense")}                                      | ${pl.Series("", [2, 3, 4, 3, 3, 4, 1], pl.UInt32)}
+    ${"rename"}          | ${pl.Series([1, 3, 0]).rename("b")}                                                    | ${pl.Series("b", [1, 3, 0])}
+    ${"rollingMax"}      | ${pl.Series([1, 2, 3, 2, 1]).rollingMax(2)}                                            | ${pl.Series("", [null, 2, 3, 3, 2], pl.Float64)}
+    ${"rollingMin"}      | ${pl.Series([1, 2, 3, 2, 1]).rollingMin(2)}                                            | ${pl.Series("", [null, 1, 2, 2, 1], pl.Float64)}
+    ${"rollingSum"}      | ${pl.Series([1, 2, 3, 2, 1]).rollingSum(2)}                                            | ${pl.Series("", [null, 3, 5, 5, 3], pl.Float64)}
+    ${"rollingMean"}     | ${pl.Series([1, 2, 3, 2, 1]).rollingMean(2)}                                           | ${pl.Series("", [null, 1.5, 2.5, 2.5, 1.5], pl.Float64)}
+    ${"rollingVar"}      | ${pl.Series([1, 2, 3, 2, 1]).rollingVar(2)[1]}                                         | ${0.5}
+    ${"rollingMedian"}   | ${pl.Series([1, 2, 3, 3, 2, 10, 8]).rollingMedian({ windowSize: 2 })}                  | ${pl.Series([null, 1.5, 2.5, 3, 2.5, 6, 9])}
+    ${"rollingQuantile"} | ${pl.Series([1, 2, 3, 3, 2, 10, 8]).rollingQuantile({ windowSize: 2, quantile: 0.5 })} | ${pl.Series([null, 2, 3, 3, 3, 10, 10])}
+    ${"sample:n"}        | ${pl.Series([1, 2, 3, 4, 5]).sample(2).len()}                                          | ${2}
+    ${"sample:frac"}     | ${pl.Series([1, 2, 3, 4, 5]).sample({ frac: 0.4, seed: 0 }).len()}                     | ${2}
+    ${"shift"}           | ${pl.Series([1, 2, 3]).shift(1)}                                                       | ${pl.Series([null, 1, 2])}
+    ${"shift"}           | ${pl.Series([1, 2, 3]).shift(-1)}                                                      | ${pl.Series([2, 3, null])}
+    ${"skew"}            | ${pl.Series([1, 2, 3, 3, 0]).skew()?.toPrecision(6)}                                   | ${"-0.363173"}
+    ${"slice"}           | ${pl.Series([1, 2, 3, 3, 0]).slice(-3, 3)}                                             | ${pl.Series([3, 3, 0])}
+    ${"slice"}           | ${pl.Series([1, 2, 3, 3, 0]).slice(1, 3)}                                              | ${pl.Series([2, 3, 3])}
+    ${"sort"}            | ${pl.Series([4, 2, 5, 1, 2, 3, 3, 0]).sort()}                                          | ${pl.Series([0, 1, 2, 2, 3, 3, 4, 5])}
+    ${"sort"}            | ${pl.Series([4, 2, 5, 0]).sort({ descending: true })}                                  | ${pl.Series([5, 4, 2, 0])}
+    ${"sort"}            | ${pl.Series([4, 2, 5, 0]).sort({ descending: false })}                                 | ${pl.Series([0, 2, 4, 5])}
+    ${"sum"}             | ${pl.Series([1, 2, 2, 1]).sum()}                                                       | ${6}
+    ${"tail"}            | ${pl.Series([1, 2, 2, 1]).tail(2)}                                                     | ${pl.Series([2, 1])}
+    ${"gatherEvery"}     | ${pl.Series([1, 3, 2, 9, 1]).gatherEvery(2)}                                           | ${pl.Series([1, 2, 1])}
+    ${"gather"}          | ${pl.Series([1, 3, 2, 9, 1]).gather([0, 1, 3])}                                        | ${pl.Series([1, 3, 9])}
     ${"gather:array"} | ${pl
-  .Series([
-    [1, 2, 3],
-    [4, 5],
-    [6, 7, 8],
-  ])
+  .Series([[1, 2, 3], [4, 5], [6, 7, 8]])
   .gather([2])} | ${pl.Series([[6, 7, 8]])}
-    ${"toArray"}         | ${pl.Series([1, 2, 3]).toArray()}                                                          | ${[1, 2, 3]}
-    ${"unique"}          | ${pl.Series([1, 2, 3, 3]).unique().sort()}                                                 | ${pl.Series([1, 2, 3])}
-    ${"cumCount"}        | ${pl.Series([1, 2, 3, 3]).cumCount()}                                                      | ${pl.Series([1, 2, 3, 4])}
-    ${"shiftAndFill"}    | ${pl.Series("foo", [1, 2, 3]).shiftAndFill(1, 99)}                                         | ${pl.Series("foo", [99, 1, 2])}
-    ${"bitand"}          | ${pl
-  .Series("bit", [1, 2, 3], pl.Int32)
-  .bitand(pl.Series("bit", [0, 1, 1], pl.Int32))} | ${pl.Series("bit", [0, 0, 1])}
-    ${"bitor"}           | ${pl
-  .Series("bit", [1, 2, 3], pl.Int32)
-  .bitor(pl.Series("bit", [0, 1, 1], pl.Int32))}  | ${pl.Series("bit", [1, 3, 3])}
-    ${"bitxor"}          | ${pl
-  .Series("bit", [1, 2, 3], pl.Int32)
-  .bitxor(pl.Series("bit", [0, 1, 1], pl.Int32))} | ${pl.Series("bit", [1, 3, 2])}
+    ${"toArray"}         | ${pl.Series([1, 2, 3]).toArray()}                                                      | ${[1, 2, 3]}
+    ${"unique"}          | ${pl.Series([1, 2, 3, 3]).unique().sort()}                                             | ${pl.Series([1, 2, 3])}
+    ${"cumCount"}        | ${pl.Series([1, 2, 3, 3]).cumCount()}                                                  | ${pl.Series([1, 2, 3, 4])}
+    ${"shiftAndFill"}    | ${pl.Series("foo", [1, 2, 3]).shiftAndFill(1, 99)}                                     | ${pl.Series("foo", [99, 1, 2])}
+    ${"bitand"}          | ${pl.Series("bit", [1, 2, 3], pl.Int32).bitand(pl.Series("bit", [0, 1, 1], pl.Int32))} | ${pl.Series("bit", [0, 0, 1])}
+    ${"bitor"}           | ${pl.Series("bit", [1, 2, 3], pl.Int32).bitor(pl.Series("bit", [0, 1, 1], pl.Int32))}  | ${pl.Series("bit", [1, 3, 3])}
+    ${"bitxor"}          | ${pl.Series("bit", [1, 2, 3], pl.Int32).bitxor(pl.Series("bit", [0, 1, 1], pl.Int32))} | ${pl.Series("bit", [1, 3, 2])}
   `("$# $name: expected matches actual ", ({ expected, actual }) => {
     if (pl.Series.isSeries(expected) && pl.Series.isSeries(actual)) {
       expect(actual).toSeriesEqual(expected);
@@ -585,27 +572,62 @@ describe("series", () => {
     expect(() => pl.Series("dt", [null], pl.Date).describe()).toThrow(
       "Invalid operation: describe is not supported for DataType(Date)",
     );
-    let actual = pl.Series([true, false, true]).describe();
-    let expected = pl.DataFrame({
-      statistic: ["sum", "null_count", "count"],
-      value: [false, null, null],
-    });
-
-    expect(actual).toFrameEqual(expected);
-    actual = pl.Series(["a", "b", "c", null]).describe();
-    expected = pl.DataFrame({
-      statistic: ["unique", "null_count", "count"],
-      value: [4, 1, 4],
-    });
-    expect(actual).toFrameEqual(expected);
+    {
+      const actual = pl.Series([true, false, true]).describe();
+      const expected = pl.DataFrame({
+        statistic: ["sum", "null_count", "count"],
+        value: [false, null, null],
+      });
+      expect(actual).toFrameEqual(expected);
+    }
+    {
+      const actual = pl.Series(["a", "b", "c", null]).describe();
+      const expected = pl.DataFrame({
+        statistic: ["unique", "null_count", "count"],
+        value: [4, 1, 4],
+      });
+      expect(actual).toFrameEqual(expected);
+    }
   });
   it("series:valueCounts", () => {
-    const actual = pl.Series("a", [1, 2, 2, 3]).valueCounts(true);
-    const expected = pl.DataFrame({
-      a: [2, 1, 3],
-      count: [2, 1, 1],
-    });
-    expect(actual).toFrameEqual(expected);
+    {
+      const actual = pl.Series("a", [1, 2, 2, 3]).valueCounts(true);
+      const expected = pl.DataFrame({
+        a: [2, 1, 3],
+        count: [2, 1, 1],
+      });
+      expect(actual).toFrameEqual(expected);
+    }
+    {
+      const actual = pl
+        .Series("a", [1, 2, 2, 3])
+        .valueCounts(true, true, undefined, true);
+      const expected = pl.DataFrame({
+        a: [2, 1, 3],
+        proportion: [0.5, 0.25, 0.25],
+      });
+      expect(actual).toFrameEqual(expected);
+    }
+    {
+      const actual = pl
+        .Series("a", [1, 2, 2, 3])
+        .valueCounts(true, true, "foo", false);
+      const expected = pl.DataFrame({
+        a: [2, 1, 3],
+        foo: [2, 1, 1],
+      });
+      expect(actual).toFrameEqual(expected);
+    }
+    {
+      const actual = pl
+        .Series("a", [1, 2, 2, 3])
+        .valueCounts(true, true, "foo", true);
+      const expected = pl.DataFrame({
+        a: [2, 1, 3],
+        foo: [0.5, 0.25, 0.25],
+      });
+      expect(actual).toFrameEqual(expected);
+    }
   });
   it("set: expected matches actual", () => {
     const expected = pl.Series([99, 2, 3]);
@@ -691,18 +713,22 @@ describe("series", () => {
   });
   test("toDummies", () => {
     const s = pl.Series("a", [1, 2, 3]);
-    let actual = s.toDummies();
-    let expected = pl.DataFrame(
-      { "a_1.0": [1, 0, 0], "a_2.0": [0, 1, 0], "a_3.0": [0, 0, 1] },
-      { schema: { "a_1.0": pl.UInt8, "a_2.0": pl.UInt8, "a_3.0": pl.UInt8 } },
-    );
-    expect(actual).toFrameEqual(expected);
-    actual = s.toDummies(":", true);
-    expected = pl.DataFrame(
-      { "a:2.0": [0, 1, 0], "a:3.0": [0, 0, 1] },
-      { schema: { "a:2.0": pl.UInt8, "a:3.0": pl.UInt8 } },
-    );
-    expect(actual).toFrameEqual(expected);
+    {
+      const actual = s.toDummies();
+      const expected = pl.DataFrame(
+        { "a_1.0": [1, 0, 0], "a_2.0": [0, 1, 0], "a_3.0": [0, 0, 1] },
+        { schema: { "a_1.0": pl.UInt8, "a_2.0": pl.UInt8, "a_3.0": pl.UInt8 } },
+      );
+      expect(actual).toFrameEqual(expected);
+    }
+    {
+      const actual = s.toDummies(":", true);
+      const expected = pl.DataFrame(
+        { "a:2.0": [0, 1, 0], "a:3.0": [0, 0, 1] },
+        { schema: { "a:2.0": pl.UInt8, "a:3.0": pl.UInt8 } },
+      );
+      expect(actual).toFrameEqual(expected);
+    }
   });
 });
 describe("comparators & math", () => {
@@ -845,6 +871,12 @@ describe("StringFunctions", () => {
     const serString = s.toString();
     expect(actualInspect).toStrictEqual(serString);
   });
+  test("str contains", () => {
+    const s = pl.Series(["linux-kali", "linux-debian", "windows-vista"]);
+    const expected = pl.Series([true, true, false]);
+    const encoded = s.str.contains("linux");
+    expect(encoded).toSeriesEqual(expected);
+  });
 });
 describe("series struct", () => {
   test("struct:fields", () => {
@@ -877,5 +909,35 @@ describe("series struct", () => {
       .struct.renameFields(["foo", "bar", "ham"])
       .toArray();
     expect(actual).toEqual(expected);
+  });
+  test("struct:nth", () => {
+    const arr = [
+      { foo: 1, bar: 2, ham: "c" },
+      { foo: null, bar: 10, ham: null },
+      { foo: 2, bar: 0, ham: "z" },
+    ];
+    const expected = [1, null, 2];
+    const actual = pl.Series(arr).struct.nth(0).toArray();
+    expect(actual).toEqual(expected);
+  });
+});
+describe("generics", () => {
+  const series = pl.Series([1, 2, 3]);
+
+  test("dtype", () => {
+    expect(series.dtype).toStrictEqual(DataType.Float64);
+  });
+  test("to array", () => {
+    const arr = series.toArray();
+    expect<number[]>(arr).toStrictEqual([1, 2, 3]);
+
+    const arr2 = [...series];
+    expect<number[]>(arr2).toStrictEqual([1, 2, 3]);
+  });
+  test.skip("to object", () => {
+    const obj = series.toObject();
+    expect<{ name: string; datatype: "Float64"; values: number[] }>(
+      obj,
+    ).toMatchObject({ name: "", datatype: "Float64", values: [1, 2, 3] });
   });
 });

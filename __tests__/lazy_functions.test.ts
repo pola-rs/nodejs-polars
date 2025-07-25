@@ -136,9 +136,14 @@ describe("lazy functions", () => {
       foo: [1, 1, 1],
     });
     const expected = pl.DataFrame({ foo: [1, 1] });
-    const actual = df.filter(
-      pl.col("foo").gtEq(pl.intRange({ low: 0, high: 3 })),
+    let actual = df.filter(
+      /** @deprecated *since 0.15.0* use `start` and `end` instead */
+      pl
+        .col("foo")
+        .gtEq(pl.intRange({ low: 0, high: 3 })),
     );
+    expect(actual).toFrameEqual(expected);
+    actual = df.filter(pl.col("foo").gtEq(pl.intRange({ start: 0, end: 3 })));
     expect(actual).toFrameEqual(expected);
   });
   test("intRange:eager", () => {
@@ -147,20 +152,14 @@ describe("lazy functions", () => {
     });
     const expected = pl.DataFrame({ foo: [1, 1] });
     const actual = df.filter(
-      pl.col("foo").gtEq(pl.intRange({ low: 0, high: 3, eager: true })),
+      pl.col("foo").gtEq(pl.intRange({ start: 0, end: 3, eager: true })),
     );
     expect(actual).toFrameEqual(expected);
   });
   test.each`
     start  | end  | expected
-    ${"a"} | ${"b"} | ${pl.Series("a", [
-  [1, 2],
-  [2, 3],
-])}
-    ${-1} | ${"a"} | ${pl.Series("literal", [
-  [-1, 0],
-  [-1, 0, 1],
-])}
+    ${"a"} | ${"b"} | ${pl.Series("a", [[1, 2], [2, 3]])}
+    ${-1} | ${"a"} | ${pl.Series("literal", [[-1, 0], [-1, 0, 1]])}
     ${"b"} | ${4} | ${pl.Series("b", [[3], []])}
   `("$# cumMax", ({ start, end, expected }) => {
     const df = pl.DataFrame({ a: [1, 2], b: [3, 4] });

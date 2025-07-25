@@ -1,13 +1,15 @@
-import { Expr, _Expr, exprToLitOrExpr } from "../expr";
-import type { ListFunctions } from "../../shared_traits";
-import { Series } from "../../series";
 import pli from "../../internals/polars_internal";
+import { Series } from "../../series";
+import type { ListFunctions } from "../../shared_traits";
+import { Expr, _Expr, exprToLitOrExpr } from "../expr";
 import { concatList } from "../functions";
 
 /**
- * namespace containing expr list functions
+ * List functions for Lazy dataframes
  */
-export type ExprList = ListFunctions<Expr>;
+export interface ExprList extends ListFunctions<Expr> {}
+// export interface ListNamespace extends ListFunctions<Expr> {}
+
 export const ExprListFunctions = (_expr: any): ExprList => {
   const wrap = (method, ...args: any[]): Expr => {
     return _Expr(_expr[method](...args));
@@ -110,10 +112,10 @@ export const ExprListFunctions = (_expr: any): ExprList => {
         exprToLitOrExpr(length)._expr,
       );
     },
-    sort(reverse: any = false) {
-      return typeof reverse === "boolean"
-        ? wrap("listSort", reverse)
-        : wrap("listSort", reverse.reverse);
+    sort(descending: any = false) {
+      return typeof descending === "boolean"
+        ? wrap("listSort", descending)
+        : wrap("listSort", descending.descending);
     },
     sum() {
       return wrap("listSum");

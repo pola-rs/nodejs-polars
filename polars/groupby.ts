@@ -1,8 +1,8 @@
+import util from "node:util";
 import { type DataFrame, _DataFrame } from "./dataframe";
-import * as utils from "./utils";
-import util from "util";
 import type { Expr } from "./lazy/expr";
 import { col, exclude } from "./lazy/functions";
+import * as utils from "./utils";
 import type { ColumnsOrExpr, StartBy } from "./utils";
 
 const inspect = Symbol.for("nodejs.util.inspect.custom");
@@ -44,11 +44,6 @@ export interface GroupBy {
    */
   agg(...columns: Expr[]): DataFrame;
   agg(columns: Record<string, keyof Expr | (keyof Expr)[]>): DataFrame;
-  /**
-   * Count the number of values in each group.
-   * @deprecated @since 0.10.0 @use {@link len}
-   */
-  count(): DataFrame;
   /**
    * Return the number of rows in each group.
    */
@@ -145,11 +140,11 @@ export interface GroupBy {
    * @param valuesCol - Column that will be aggregated.
    *
    */
+  pivot(pivotCol: string, valuesCol: string): PivotOps;
   pivot({
     pivotCol,
     valuesCol,
   }: { pivotCol: string; valuesCol: string }): PivotOps;
-  pivot(pivotCol: string, valuesCol: string): PivotOps;
   /**
    * Compute the quantile per group.
    */
@@ -164,9 +159,8 @@ export interface GroupBy {
 
 export type PivotOps = Pick<
   GroupBy,
-  "count" | "first" | "max" | "mean" | "median" | "min" | "sum"
+  "len" | "first" | "max" | "mean" | "median" | "min" | "sum"
 > & { [inspect](): string };
-
 /** @ignore */
 export function _GroupBy(df: any, by: string[], maintainOrder = false) {
   const customInspect = () =>
@@ -212,9 +206,6 @@ export function _GroupBy(df: any, by: string[], maintainOrder = false) {
     agg,
     pivot,
     aggList: () => agg(exclude(by as any)),
-    count() {
-      return _DataFrame(df.groupby([by].flat(), by, "count"));
-    },
     len() {
       return _DataFrame(df.groupby([by].flat(), by, "count"));
     },
@@ -254,7 +245,7 @@ function PivotOps(
     min: pivot("min"),
     max: pivot("max"),
     mean: pivot("mean"),
-    count: pivot("count"),
+    len: pivot("len"),
     median: pivot("median"),
   };
 }
@@ -274,7 +265,6 @@ export function RollingGroupBy(
   offset?: string,
   closed?,
   by?: ColumnsOrExpr,
-  check_sorted?: boolean,
 ): RollingGroupBy {
   return {
     agg(column: ColumnsOrExpr, ...columns: ColumnsOrExpr[]) {
@@ -286,7 +276,6 @@ export function RollingGroupBy(
           offset,
           closed,
           by,
-          check_sorted,
         } as any)
         .agg(column as any, ...columns)
         .collectSync();
@@ -307,11 +296,11 @@ export function DynamicGroupBy(
   every: string,
   period?: string,
   offset?: string,
+  label?: string,
   includeBoundaries?: boolean,
   closed?: string,
   by?: ColumnsOrExpr,
-  start_by?: StartBy,
-  check_sorted?: boolean,
+  startBy?: StartBy,
 ): DynamicGroupBy {
   return {
     agg(column: ColumnsOrExpr, ...columns: ColumnsOrExpr[]) {
@@ -322,11 +311,11 @@ export function DynamicGroupBy(
           every,
           period,
           offset,
+          label,
           includeBoundaries,
           closed,
           by,
-          start_by,
-          check_sorted,
+          startBy,
         } as any)
         .agg(column as any, ...columns)
         .collectSync({ noOptimizations: true });

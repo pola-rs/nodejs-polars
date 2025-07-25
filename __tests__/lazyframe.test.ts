@@ -1,5 +1,5 @@
+import fs from "node:fs";
 import pl from "@polars";
-import fs from "fs";
 
 describe("lazyframe", () => {
   test("columns", () => {
@@ -44,7 +44,7 @@ describe("lazyframe", () => {
       })
       .lazy();
     let actual = df.describeOptimizedPlan().replace(/\s+/g, " ");
-    const expected = `DF ["foo", "bar"]; PROJECT */2 COLUMNS; SELECTION: None`;
+    const expected = `DF ["foo", "bar"]; PROJECT */2 COLUMNS`;
     expect(actual).toEqual(expected);
     actual = df.describePlan().replace(/\s+/g, " ");
     expect(actual).toEqual(expected);
@@ -1011,7 +1011,7 @@ describe("lazyframe", () => {
         foo: [1, null, 2, 3],
       })
       .lazy()
-      .sort({ by: "foo", nulls_last: false })
+      .sort({ by: "foo", nullsLast: false })
       .collectSync();
     const expected = pl.DataFrame({
       foo: [null, 1, 2, 3],
@@ -1024,7 +1024,7 @@ describe("lazyframe", () => {
         foo: [1, null, 2, 3],
       })
       .lazy()
-      .sort({ by: "foo", nulls_last: true })
+      .sort({ by: "foo", nullsLast: true })
       .collectSync();
     const expected = pl.DataFrame({
       foo: [1, 2, 3, null],
@@ -1260,7 +1260,11 @@ describe("lazyframe", () => {
     });
     const actual = pl
       .DataFrame({
-        json: ['{"a": 1, "b": true}', null, '{"a": 2, "b": false}'],
+        json: [
+          '{"a": 1, "b": true}',
+          '{"a": null, "b": null }',
+          '{"a": 2, "b": false}',
+        ],
       })
       .lazy()
       .select(pl.col("json").str.jsonDecode())

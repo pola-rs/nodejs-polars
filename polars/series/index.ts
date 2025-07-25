@@ -1,65 +1,77 @@
-import pli from "../internals/polars_internal";
-import { arrayToJsSeries } from "../internals/construction";
-import { DataType, DTYPE_TO_FFINAME, type Optional } from "../datatypes";
 import { DataFrame, _DataFrame } from "../dataframe";
-import { SeriesStringFunctions, type StringNamespace } from "./string";
-import { type ListNamespace, SeriesListFunctions } from "./list";
-import { SeriesDateFunctions } from "./datetime";
-import { SeriesStructFunctions } from "./struct";
+import { DTYPE_TO_FFINAME, DataType, type Optional } from "../datatypes";
+import type {
+  DTypeToJs,
+  DTypeToJsLoose,
+  DtypeToJsName,
+  JsToDtype,
+  JsType,
+} from "../datatypes/datatype";
 import { InvalidOperationError } from "../error";
+import { arrayToJsSeries } from "../internals/construction";
+import pli from "../internals/polars_internal";
+import { col } from "../lazy/functions";
 import type {
   Arithmetic,
   Comparison,
   Cumulative,
   Deserialize,
+  EwmOps,
   Rolling,
   Round,
   Sample,
   Serialize,
-  EwmOps,
 } from "../shared_traits";
-import { col } from "../lazy/functions";
 import type { InterpolationMethod, RankMethod } from "../types";
+import { SeriesDateFunctions } from "./datetime";
+import { SeriesListFunctions } from "./list";
+import { SeriesStringFunctions } from "./string";
+import { SeriesStructFunctions } from "./struct";
+
+// For documentation
+export type { SeriesDateFunctions as DatetimeSeries } from "./datetime";
+export type { SeriesStringFunctions as StringSeries } from "./string";
+export type { SeriesListFunctions as ListSeries } from "./list";
+export type { SeriesStructFunctions as StructSeries } from "./struct";
 
 const inspect = Symbol.for("nodejs.util.inspect.custom");
 /**
  * A Series represents a single column in a polars DataFrame.
  */
-export interface Series
-  extends ArrayLike<any>,
-    Rolling<Series>,
-    Arithmetic<Series>,
-    Comparison<Series>,
-    Cumulative<Series>,
-    Round<Series>,
-    Sample<Series>,
-    EwmOps<Series>,
+export interface Series<T extends DataType = any, Name extends string = string>
+  extends ArrayLike<T>,
+    Rolling<Series<T>>,
+    Arithmetic<Series<T>>,
+    Comparison<Series<T>>,
+    Cumulative<Series<T>>,
+    Round<Series<T>>,
+    Sample<Series<T>>,
+    EwmOps<Series<T>>,
     Serialize {
   inner(): any;
-  name: string;
-  dtype: DataType;
-  str: StringNamespace;
-  lst: ListNamespace;
+  name: Name;
+  dtype: T;
+  str: SeriesStringFunctions;
+  lst: SeriesListFunctions;
   struct: SeriesStructFunctions;
   date: SeriesDateFunctions;
   [inspect](): string;
-  [Symbol.iterator](): IterableIterator<any>;
+  [Symbol.iterator](): IterableIterator<DTypeToJs<T>>;
   // inner(): JsSeries
-  bitand(other: Series): Series;
-  bitor(other: Series): Series;
-  bitxor(other: Series): Series;
+  bitand(other: Series<T>): Series<T, Name>;
+  bitor(other: Series<T>): Series<T, Name>;
+  bitxor(other: Series<T>): Series<T, Name>;
   /**
    * Take absolute values
    */
-  abs(): Series;
+  abs(): Series<T, Name>;
   /**
    * __Rename this Series.__
    *
    * @param name - new name
    * @see {@link rename}
-   *
    */
-  alias(name: string): Series;
+  alias<U extends string>(name: U): Series<T, U>;
   /**
    * __Append a Series to this one.__
    * ___
@@ -113,43 +125,51 @@ export interface Series
   argMin(): Optional<number>;
   /**
    * Get index values where Boolean Series evaluate True.
-   *
    */
-  argTrue(): Series;
+  argTrue(): Series<T, Name>;
   /**
    * Get unique index as Series.
    */
-  argUnique(): Series;
+  argUnique(): Series<T, Name>;
   /**
-   * Index location of the sorted variant of this Series.
+   * Get the index values that would sort this Series.
    * ___
-   * @param reverse
+   * @param descending - Sort in descending order.
+   * @param nullsLast - Place null values last instead of first.
    * @return {SeriesType} indexes - Indexes that can be used to sort this array.
    */
-  argSort(): Series;
-  argSort(reverse: boolean): Series;
-  argSort({ reverse }: { reverse: boolean }): Series;
+  argSort(descending?: boolean, nullsLast?: boolean): Series<T, Name>;
+  argSort({
+    descending,
+    nullsLast,
+  }: { descending?: boolean; nullsLast?: boolean }): Series<T, Name>;
+  /* @deprecated Use descending instead */
+  argSort({
+    reverse, // deprecated
+    nullsLast,
+  }: { reverse?: boolean; nullsLast?: boolean }): Series<T, Name>;
+  argSort(): Series<T, Name>;
   /**
    * __Rename this Series.__
    *
    * @param name - new name
    * @see {@link rename} {@link alias}
-   *
    */
-  as(name: string): Series;
+  as<U extends string>(name: string): Series<T, U>;
   /**
    * Cast between data types.
    */
+  cast<const U extends DataType>(dtype: U, strict?: boolean): Series<U>;
   cast(dtype: DataType, strict?: boolean): Series;
   /**
    * Get the length of each individual chunk
    */
-  chunkLengths(): Array<any>;
+  chunkLengths(): Array<T>;
   /**
    * Cheap deep clones.
    */
-  clone(): Series;
-  concat(other: Series): Series;
+  clone(): Series<T, Name>;
+  concat(other: Series<T>): Series<T, Name>;
 
   /**
    * __Quick summary statistics of a series. __
@@ -203,14 +223,14 @@ export interface Series
    * @param n - number of slots to shift
    * @param nullBehavior - `'ignore' | 'drop'`
    */
-  diff(n: number, nullBehavior: "ignore" | "drop"): Series;
+  diff(n: number, nullBehavior: "ignore" | "drop"): Series<T, Name>;
   diff({
     n,
     nullBehavior,
   }: {
     n: number;
     nullBehavior: "ignore" | "drop";
-  }): Series;
+  }): Series<T, Name>;
   /**
    * Compute the dot/inner product between two Series
    * ___
@@ -226,7 +246,7 @@ export interface Series
   /**
    * Create a new Series that copies data from this Series without null values.
    */
-  dropNulls(): Series;
+  dropNulls(): Series<T, Name>;
   /**
    * __Explode a list or utf8 Series.__
    *
@@ -301,7 +321,6 @@ export interface Series
   /**
    * __Filter elements by a boolean mask.__
    * @param {SeriesType} predicate - Boolean mask
-   *
    */
   filter(predicate: Series): Series;
   filter({ predicate }: { predicate: Series }): Series;
@@ -513,12 +532,6 @@ export interface Series
    */
   isUnique(): Series;
   /**
-   * Checks if this Series datatype is a Utf8.
-   * @deprecated *since 0.8.4*
-   * @see Use `Series.dtype.equals(pl.String)` instead.
-   */
-  isUtf8(): boolean;
-  /**
    * Checks if this Series datatype is a String.
    */
   isString(): boolean;
@@ -534,8 +547,8 @@ export interface Series
    * @param fisher -
    * - If True, Fisher's definition is used (normal ==> 0.0).
    * - If False, Pearson's definition is used (normal ==> 3.0)
+   * @param bias : bool, optional If False, the calculations are corrected for statistical bias.
    */
-  kurtosis(): Optional<number>;
   kurtosis(fisher: boolean, bias?: boolean): Optional<number>;
   kurtosis({
     fisher,
@@ -544,6 +557,7 @@ export interface Series
     fisher?: boolean;
     bias?: boolean;
   }): Optional<number>;
+  kurtosis(): Optional<number>;
   /**
    * __Length of this Series.__
    * ___
@@ -655,7 +669,6 @@ export interface Series
   /**
    * Count the null values in this Series. --
    * _`undefined` values are treated as null_
-   *
    */
   nullCount(): number;
   /**
@@ -710,8 +723,8 @@ export interface Series
   quantile(quantile: number, interpolation?: string): number;
   /**
    * Assign ranks to data, dealing with ties appropriately.
-   * @param method
    * The method used to assign ranks to tied elements.
+   * @param method {'average', 'min', 'max', 'dense', 'ordinal', 'random'}
    * The following methods are available: _default is 'average'_
    *
    *  *   __'average'__: The average of the ranks that would have been assigned to
@@ -728,8 +741,9 @@ export interface Series
    *    the order that the values occur in `a`.
    *  * __'random'__: Like 'ordinal', but the rank for ties is not dependent
    *    on the order that the values occur in `a`.
+   * @param descending - Rank in descending order.
    */
-  rank(method?: RankMethod): Series;
+  rank(method?: RankMethod, descending?: boolean): Series;
   rechunk(): Series;
   rechunk(inPlace: true): Series;
   rechunk(inPlace: false): void;
@@ -744,7 +758,6 @@ export interface Series
    * - True -> pl.Int64
    * - False -> pl.UInt64
    * @see {@link cast}
-   *
    */
   reinterpret(signed?: boolean): Series;
   /**
@@ -766,8 +779,8 @@ export interface Series
    * ]
    * ```
    */
-  rename(name: string): Series;
   rename(name: string, inPlace: boolean): void;
+  rename(name: string): Series;
   rename({ name, inPlace }: { name: string; inPlace?: boolean }): void;
   rename({ name, inPlace }: { name: string; inPlace: true }): void;
 
@@ -791,13 +804,6 @@ export interface Series
     nullEqual?: boolean,
     strict?: boolean,
   ): boolean;
-  /**
-   * __Set masked values__
-   * @param filter Boolean mask
-   * @param value value to replace masked values with
-   * @deprecated @since 0.8.4 @use {@link scatter}
-   */
-  setAtIdx(indices: number[] | Series, value: any): void;
   /**
    * __Set masked values__
    * @param filter Boolean mask
@@ -848,8 +854,8 @@ export interface Series
    * __Shrink memory usage of this Series to fit the exact capacity needed to hold the data.__
    * @param inPlace - Modify the Series in-place.
    */
-  shrinkToFit(): Series;
   shrinkToFit(inPlace: true): void;
+  shrinkToFit(): Series;
   /**
    * __Compute the sample skewness of a data set.__
    *
@@ -865,14 +871,14 @@ export interface Series
   /**
    * Create subslices of the Series.
    *
-   * @param offset - Start of the slice (negative indexing may be used).
+   * @param start - Start of the slice (negative indexing may be used).
    * @param length - length of the slice.
    */
   slice(start: number, length?: number): Series;
   /**
    * __Sort this Series.__
-   * @param descending - Sort in descending order.
-   * @param nullsLast - Place nulls at the end.
+   * @param options.descending - Sort in descending order.
+   * @param options.nullsLast - Place nulls at the end.
    * @example
    * ```
    * s = pl.Series("a", [1, 3, 4, 2])
@@ -896,8 +902,10 @@ export interface Series
    * ]
    * ```
    */
-  sort(): Series;
   sort(options: { descending?: boolean; nullsLast?: boolean }): Series;
+  /* @deprecated Use descending instead */
+  sort(options: { reverse?: boolean; nullsLast?: boolean }): Series;
+  sort(): Series;
   /**
    * Reduce this Series to the sum value.
    * @example
@@ -1030,7 +1038,6 @@ export interface Series
    * ___
    * @param mask - Boolean Series
    * @param other - Series of same type
-   *
    */
   zipWith(mask: Series, other: Series): Series;
 
@@ -1049,7 +1056,7 @@ export interface Series
    * true
    * ```
    */
-  toArray(): Array<any>;
+  toArray(): Array<DTypeToJs<T>>;
   /**
    * Converts series to a javascript typedArray.
    *
@@ -1060,9 +1067,9 @@ export interface Series
 
   /**
    * Get dummy/indicator variables.
-   * @param separator: str = "_", 
-   * @param dropFirst: bool = False
-   * 
+   * @param separator str = "_",
+   * @param dropFirst bool = False
+   *
    * @example
    * const s = pl.Series("a", [1, 2, 3])
     >>> s.toDummies()
@@ -1088,7 +1095,7 @@ export interface Series
     │ 1   ┆ 0   │
     │ 0   ┆ 1   │
     └─────┴─────┘
-   * 
+   *
    */
   toDummies(separator?: string, dropFirst?: boolean): DataFrame;
 
@@ -1107,14 +1114,18 @@ export interface Series
    * }
    * ```
    */
-  toObject(): { name: string; datatype: string; values: any[] };
+  toObject(): {
+    name: Name;
+    datatype: DtypeToJsName<T>;
+    values: DTypeToJs<T>[];
+  };
   toFrame(): DataFrame;
   /** compat with `JSON.stringify */
   toJSON(): string;
   /** Returns an iterator over the values */
   values(): IterableIterator<any>;
 }
-
+/** @ignore */
 export function _Series(_s: any): Series {
   const unwrap = (method: keyof any, ...args: any[]) => {
     return _s[method as any](...args);
@@ -1213,23 +1224,23 @@ export function _Series(_s: any): Series {
       return _s.argMin();
     },
     argSort(
-      reverse: any = false,
+      descending: any = false,
       nullsLast = true,
       multithreaded = true,
       maintainOrder = false,
     ) {
-      if (typeof reverse === "boolean") {
+      if (typeof descending === "boolean") {
         return _Series(
-          _s.argsort(reverse, nullsLast, multithreaded, maintainOrder),
+          _s.argsort(descending, nullsLast, multithreaded, maintainOrder),
         );
       }
 
       return _Series(
         _s.argsort(
-          reverse.reverse,
-          reverse.nullsLast ?? nullsLast,
-          reverse.multithreaded ?? multithreaded,
-          reverse.maintainOrder ?? maintainOrder,
+          descending.descending ?? descending.reverse ?? false,
+          descending.nullsLast ?? nullsLast,
+          descending.multithreaded ?? multithreaded,
+          descending.maintainOrder ?? maintainOrder,
         ),
       );
     },
@@ -1506,9 +1517,6 @@ export function _Series(_s: any): Series {
     isString() {
       return this.dtype.equals(DataType.String);
     },
-    isUtf8() {
-      return this.dtype.equals(DataType.Utf8);
-    },
     kurtosis(fisher: any = true, bias = true) {
       if (typeof fisher === "boolean") {
         return _s.kurtosis(fisher, bias);
@@ -1525,16 +1533,32 @@ export function _Series(_s: any): Series {
       return this.length;
     },
     lt(field) {
-      return dtypeWrap("Lt", field);
+      if (typeof field === "number") return dtypeWrap("Lt", field);
+      if (Series.isSeries(field)) {
+        return wrap("lt", (field as any)._s);
+      }
+      throw new Error("Not a number nor a series");
     },
     lessThan(field) {
-      return dtypeWrap("Lt", field);
+      if (typeof field === "number") return dtypeWrap("Lt", field);
+      if (Series.isSeries(field)) {
+        return wrap("lt", (field as any)._s);
+      }
+      throw new Error("Not a number nor a series");
     },
     ltEq(field) {
-      return dtypeWrap("LtEq", field);
+      if (typeof field === "number") return dtypeWrap("LtEq", field);
+      if (Series.isSeries(field)) {
+        return wrap("ltEq", (field as any)._s);
+      }
+      throw new Error("Not a number nor a series");
     },
     lessThanEquals(field) {
-      return dtypeWrap("LtEq", field);
+      if (typeof field === "number") return dtypeWrap("LtEq", field);
+      if (Series.isSeries(field)) {
+        return wrap("ltEq", (field as any)._s);
+      }
+      throw new Error("Not a number nor a series");
     },
     limit(n = 10) {
       return wrap("limit", n);
@@ -1555,16 +1579,28 @@ export function _Series(_s: any): Series {
       return wrap("mode");
     },
     minus(other) {
-      return dtypeWrap("Sub", other);
+      if (typeof other === "number") return dtypeWrap("Sub", other);
+      if (Series.isSeries(other)) {
+        return wrap("sub", (other as any)._s);
+      }
+      throw new Error("Not a number nor a series");
     },
     mul(other) {
-      return dtypeWrap("Mul", other);
+      if (typeof other === "number") return dtypeWrap("Mul", other);
+      if (Series.isSeries(other)) {
+        return wrap("mul", (other as any)._s);
+      }
+      throw new Error("Not a number nor a series");
     },
     nChunks() {
       return _s.nChunks();
     },
     neq(other) {
-      return dtypeWrap("Neq", other);
+      if (typeof other === "number") return dtypeWrap("Neq", other);
+      if (Series.isSeries(other)) {
+        return wrap("neq", (other as any)._s);
+      }
+      throw new Error("Not a number nor a series");
     },
     notEquals(other) {
       return this.neq(other);
@@ -1582,13 +1618,17 @@ export function _Series(_s: any): Series {
       return expr_op("peakMin");
     },
     plus(other) {
-      return dtypeWrap("Add", other);
+      if (typeof other === "number") return dtypeWrap("Add", other);
+      if (Series.isSeries(other)) {
+        return wrap("add", (other as any)._s);
+      }
+      throw new Error("Not a number nor a series");
     },
     quantile(quantile, interpolation = "nearest") {
       return _s.quantile(quantile, interpolation);
     },
-    rank(method = "average", reverse = false) {
-      return wrap("rank", method, reverse);
+    rank(method = "average", descending = false) {
+      return wrap("rank", method, descending);
     },
     rechunk(inPlace = false) {
       return wrap("rechunk", inPlace);
@@ -1663,9 +1703,6 @@ export function _Series(_s: any): Series {
     clip(...args) {
       return expr_op("clip", ...args);
     },
-    setAtIdx(indices, value) {
-      _s.scatter(indices, value);
-    },
     scatter(indices, value) {
       indices = Series.isSeries(indices)
         ? indices.cast(DataType.UInt32)
@@ -1738,7 +1775,11 @@ export function _Series(_s: any): Series {
     },
     sort(options?) {
       options = { descending: false, nullsLast: false, ...(options ?? {}) };
-      return wrap("sort", options.descending, options.nullsLast);
+      return wrap(
+        "sort",
+        options.descending ?? options.reverse ?? false,
+        options.nullsLast,
+      );
     },
     sub(field) {
       return dtypeWrap("Sub", field);
@@ -1798,7 +1839,7 @@ export function _Series(_s: any): Series {
       name?: string,
       normalize?: boolean,
     ) {
-      name = name ?? normalize ? "proportion" : "count";
+      name = name ?? (normalize ? "proportion" : "count");
       return _DataFrame(
         unwrap(
           "valueCounts",
@@ -1817,7 +1858,7 @@ export function _Series(_s: any): Series {
     },
   };
 
-  return new Proxy(series, {
+  return new Proxy(series as unknown as Series, {
     get: (target, prop, receiver) => {
       if (typeof prop !== "symbol" && !Number.isNaN(Number(prop))) {
         return target.get(Number(prop));
@@ -1854,6 +1895,7 @@ export interface SeriesConstructor extends Deserialize<Series> {
    * ]
    * ```
    */
+  <T extends JsType>(values: ArrayLike<T | null>): Series<JsToDtype<T>>;
   (values: any): Series;
   /**
    * Create a new named series
@@ -1871,18 +1913,33 @@ export interface SeriesConstructor extends Deserialize<Series> {
    * ]
    * ```
    */
+  <T1 extends JsType, Name extends string>(
+    name: Name,
+    values: ArrayLike<T1 | null>,
+  ): Series<JsToDtype<T1>, Name>;
+  <T2 extends DataType, Name extends string>(
+    name: Name,
+    values: ArrayLike<DTypeToJsLoose<T2 | null>>,
+    dtype?: T2,
+  ): Series<T2, Name>;
   (name: string, values: any[], dtype?): Series;
 
   /**
    * Creates an array from an array-like object.
    * @param arrayLike — An array-like object to convert to an array.
    */
+  from<T1 extends JsType>(arrayLike: ArrayLike<T1>): Series<JsToDtype<T1>>;
   from<T1>(arrayLike: ArrayLike<T1>): Series;
+  from<T2 extends JsType, Name extends string>(
+    name: Name,
+    arrayLike: ArrayLike<T2>,
+  ): Series<JsToDtype<T2>, Name>;
   from<T2>(name: string, arrayLike: ArrayLike<T2>): Series;
   /**
    * Returns a new Series from a set of elements.
    * @param items — A set of elements to include in the new Series object.
    */
+  of<T3 extends JsType>(...items: T3[]): Series<JsToDtype<T3>>;
   of<T3>(...items: T3[]): Series;
   isSeries(arg: any): arg is Series;
   /**

@@ -9,7 +9,8 @@ use polars_core::functions as pl_functions;
 #[napi(catch_unwind)]
 pub fn horizontal_concat(dfs: Vec<&JsDataFrame>) -> napi::Result<JsDataFrame> {
     let dfs: Vec<DataFrame> = dfs.iter().map(|df| df.df.clone()).collect();
-    let df = pl_functions::concat_df_horizontal(&dfs).map_err(crate::error::JsPolarsErr::from)?;
+    let df =
+        pl_functions::concat_df_horizontal(&dfs, true).map_err(crate::error::JsPolarsErr::from)?;
     Ok(df.into())
 }
 
