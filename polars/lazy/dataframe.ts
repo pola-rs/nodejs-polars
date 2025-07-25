@@ -107,7 +107,7 @@ export interface LazyDataFrame extends Serialize, GroupByOps<LazyGroupBy> {
             .. warning::
                 Streaming mode is considered **unstable**. It may be changed
                 at any point without it being considered a breaking change.
-   * 
+   *
    */
   fetch(numRows: number, opts: LazyOptions): Promise<DataFrame>;
   fetch(numRows?: number): Promise<DataFrame>;
@@ -351,7 +351,18 @@ export interface LazyDataFrame extends Serialize, GroupByOps<LazyGroupBy> {
   /**
    * @see {@link DataFrame.unpivot}
    */
-  unpivot(idVars: ColumnSelection, valueVars: ColumnSelection): LazyDataFrame;
+  melt(idVars: ColumnSelection, valueVars: ColumnSelection): LazyDataFrame;
+  /**
+   * @see {@link DataFrame.unpivot}
+   */
+  unpivot(
+    idVars: ColumnSelection,
+    valueVars: ColumnSelection,
+    options?: {
+      variableName?: string | null;
+      valueName?: string | null;
+    },
+  ): LazyDataFrame;
   /**
    * @see {@link DataFrame.min}
    */
@@ -947,9 +958,24 @@ export const _LazyDataFrame = (_ldf: any): LazyDataFrame => {
     median() {
       return _LazyDataFrame(_ldf.median());
     },
-    unpivot(ids, values) {
+    melt(ids, values) {
       return _LazyDataFrame(
         _ldf.unpivot(columnOrColumnsStrict(ids), columnOrColumnsStrict(values)),
+      );
+    },
+    unpivot(ids, values, options) {
+      options = {
+        variableName: null,
+        valueName: null,
+        ...options,
+      };
+      return _LazyDataFrame(
+        _ldf.unpivot(
+          columnOrColumnsStrict(ids),
+          columnOrColumnsStrict(values),
+          options.variableName,
+          options.valueName,
+        ),
       );
     },
     min() {
