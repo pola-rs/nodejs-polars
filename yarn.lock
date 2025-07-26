@@ -3442,6 +3442,7 @@ __metadata:
     jest-get-type: "npm:^29.6.3"
     source-map-support: "npm:^0.5.21"
     ts-jest: "npm:^29.4.0"
+    ts-expect: "npm:^1.3.0"
     ts-node: "npm:^10.9.2"
     typedoc: "npm:^0.28.7"
     typedoc-plugin-missing-exports: "npm:^4.0.0"
@@ -4012,6 +4013,13 @@ __metadata:
   dependencies:
     is-number: "npm:^7.0.0"
   checksum: 10/10dda13571e1f5ad37546827e9b6d4252d2e0bc176c24a101252153ef435d83696e2557fe128c4678e4e78f5f01e83711c703eef9814eb12dab028580d45980a
+  languageName: node
+  linkType: hard
+
+"ts-expect@npm:^1.3.0":
+  version: 1.3.0
+  resolution: "ts-expect@npm:1.3.0"
+  checksum: 10/3f33ba17f9cdad550e9b12a23d78b19836d4fd5741da590c25426ea31ceb8f1765feeeeef2c529bab3e2350b5f9ce5fbbb207012db2c7c4b4b116d1b7fed7ec5
   languageName: node
   linkType: hard
 
