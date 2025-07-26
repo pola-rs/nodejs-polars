@@ -1,10 +1,10 @@
-import { DataFrame, _DataFrame } from "../dataframe";
+import { _DataFrame, DataFrame } from "../dataframe";
 import {
   type Bool,
+  DataType,
   DTYPE_TO_FFINAME,
   type DTypeToJs,
   type DTypeToJsLoose,
-  DataType,
   type DtypeToJsName,
   type JsToDtype,
   type JsType,

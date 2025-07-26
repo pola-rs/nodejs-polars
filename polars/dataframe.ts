@@ -23,6 +23,7 @@ import type {
   Serialize,
 } from "./shared_traits";
 import type {
+  CrossJoinOptions,
   CsvWriterOptions,
   DifferentNameColumnJoinOptions,
   FillNullStrategy,
@@ -1568,7 +1569,7 @@ export interface DataFrame<S extends Schema = any>
   }: {
     n: number;
     fillValue: number;
-  }): DataFrame<T>;
+  }): DataFrame<S>;
   /**
    * Shrink memory usage of this DataFrame to fit the exact capacity needed to hold the data.
    */

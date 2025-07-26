@@ -1,6 +1,6 @@
+export * from "./conversion";
 export * from "./datatype";
 export { Field } from "./field";
-export * from "./conversion";
 
 import pli from "../internals/polars_internal";
 import type { DataType } from "./datatype";

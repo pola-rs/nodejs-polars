@@ -1,8 +1,8 @@
 import {
+  _DataFrame,
   type DataFrame,
   type JoinSchemas,
   type Schema,
-  _DataFrame,
 } from "../dataframe";
 import pli from "../internals/polars_internal";
 import type { Series } from "../series";
@@ -19,11 +19,11 @@ import type {
 import {
   type ColumnSelection,
   type ColumnsOrExpr,
+  columnOrColumnsStrict,
   type ExprOrString,
   type Simplify,
-  type ValueOrArray,
-  columnOrColumnsStrict,
   selectionToExprList,
+  type ValueOrArray,
 } from "../utils";
 import { Expr, exprToLitOrExpr } from "./expr";
 import { _LazyGroupBy, type LazyGroupBy } from "./groupby";
