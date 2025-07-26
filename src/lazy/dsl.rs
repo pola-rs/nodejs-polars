@@ -49,7 +49,7 @@ impl ToExprs for Vec<&JsExpr> {
 #[napi]
 impl JsExpr {
     #[napi(catch_unwind)]
-    pub fn to_js(&self, env: Env) -> napi::Result<napi::JsUnknown> {
+    pub fn to_js(&self, env: Env) -> napi::Result<napi::Unknown<'_>> {
         env.to_js_value(&self.inner)
     }
     #[napi(catch_unwind)]

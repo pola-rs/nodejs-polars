@@ -1,5 +1,4 @@
 use crate::prelude::*;
-use napi::JsTypedArrayValue;
 
 macro_rules! typed_to_chunked {
     ($arr:expr, $type:ty, $pl_type:ty) => {{
@@ -20,9 +19,9 @@ macro_rules! typed_option_or_null {
             $dtype,
         );
         for idx in 0..len {
-            let obj: napi::JsUnknown = $arr.get(idx)?.unwrap();
+            let obj: napi::Unknown = $arr.get(idx)?.unwrap();
             if obj.is_typedarray()? {
-                let buff: napi::JsTypedArray = unsafe { obj.cast() };
+                let buff: napi::JsTypedArray = unsafe { obj.cast()? };
                 let v = buff.into_value()?;
                 let ca = typed_to_chunked!(v, $type, $pl_type);
                 builder.append_iter(ca.into_iter())
@@ -60,9 +59,9 @@ macro_rules! build_list_with_downcast {
             $dtype,
         );
         for idx in 0..len {
-            let obj: napi::JsUnknown = $arr.get(idx)?.unwrap();
+            let obj: napi::Unknown = $arr.get(idx)?.unwrap();
             if obj.is_typedarray()? {
-                let buff: napi::JsTypedArray = unsafe { obj.cast() };
+                let buff: napi::JsTypedArray = unsafe { obj.cast()? };
                 let v = buff.into_value()?;
                 let ca = typed_to_chunked!(v, $type, $pl_type);
                 builder.append_iter(ca.into_iter())
@@ -71,8 +70,7 @@ macro_rules! build_list_with_downcast {
                 match values {
                     Either::A(inner_arr) => {
                         let inner_len = inner_arr.len();
-                        let mut inner_builder =
-                            PrimitiveChunkedBuilder::<$pl_type>::new($name, inner_len as usize);
+                        let mut inner_builder = PrimitiveChunkedBuilder::<$pl_type>::new($name, inner_len as usize);
                         for inner_idx in 0..inner_len {
                             let item: Option<Wrap<$type>> = inner_arr.get(inner_idx)?.unwrap();
                             match item {
@@ -173,14 +171,14 @@ pub fn js_arr_to_list(name: &str, arr: &Array, dtype: &DataType) -> napi::Result
                 len as usize,
                 (len as usize) * 5,
             );
-            for idx in 0..len {
-                let values: Either<Vec<Option<&str>>, Null> = arr.get(idx)?.unwrap();
+            // for idx in 0..len {
+            //     let values: Either<Vec<Option<String>>, Null> = arr.get(idx)?.unwrap();
 
-                match values {
-                    Either::A(inner_arr) => builder.append_trusted_len_iter(inner_arr.into_iter()),
-                    Either::B(_) => builder.append_null(),
-                }
-            }
+            //     match values {
+            //         Either::A(inner_arr) => builder.append_trusted_len_iter(inner_arr.into_iter().into()),
+            //         Either::B(_) => builder.append_null(),
+            //     }
+            // }
             builder.finish().into_series()
         }
         DataType::Boolean => {
@@ -245,7 +243,8 @@ pub fn js_arr_to_list(name: &str, arr: &Array, dtype: &DataType) -> napi::Result
     Ok(s)
 }
 
-pub fn from_typed_array(arr: &JsTypedArrayValue) -> JsResult<Series> {
+/*
+pub fn from_typed_array(arr: &napi::JsTypedArrayValue) -> JsResult<Series> {
     let dtype: JsDataType = arr.typedarray_type.into();
     let series = match dtype {
         JsDataType::Int8 => typed_to_chunked!(arr, i8, Int8Type).into(),
@@ -262,4 +261,4 @@ pub fn from_typed_array(arr: &JsTypedArrayValue) -> JsResult<Series> {
     };
 
     Ok(series)
-}
+} */
