@@ -401,7 +401,7 @@ impl Into<DataType> for JsDataType {
             JsDataType::Date => Date,
             JsDataType::Datetime => Datetime(TimeUnit::Milliseconds, None),
             JsDataType::Time => Time,
-            JsDataType::Object => Object("object", None),
+            JsDataType::Object => Object("object"),
             JsDataType::Categorical => Categorical(None, Default::default()),
             JsDataType::Struct => Struct(vec![]),
         }

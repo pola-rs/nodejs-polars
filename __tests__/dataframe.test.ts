@@ -2,6 +2,7 @@ import fs from "node:fs";
 import { Stream } from "node:stream";
 /* eslint-disable newline-per-chained-call */
 import pl from "@polars";
+
 describe("dataframe", () => {
   const df = pl.DataFrame([
     pl.Series("foo", [1, 2, 9], pl.Int16),
@@ -135,7 +136,7 @@ describe("dataframe", () => {
   });
   // run this test 100 times to make sure it is deterministic.
   test("unique:maintainOrder", () => {
-    for (const x of Array.from({ length: 100 })) {
+    for (const _x of Array.from({ length: 100 })) {
       const actual = pl
         .DataFrame({
           foo: [0, 1, 2, 2, 2],
@@ -154,7 +155,7 @@ describe("dataframe", () => {
   });
   // run this test 100 times to make sure it is deterministic.
   test("unique:maintainOrder:single subset", () => {
-    for (const x of Array.from({ length: 100 })) {
+    for (const _x of Array.from({ length: 100 })) {
       const actual = pl
         .DataFrame({
           foo: [0, 1, 2, 2, 2],
@@ -173,7 +174,7 @@ describe("dataframe", () => {
   });
   // run this test 100 times to make sure it is deterministic.
   test("unique:maintainOrder:multi subset", () => {
-    for (const x of Array.from({ length: 100 })) {
+    for (const _x of Array.from({ length: 100 })) {
       const actual = pl
         .DataFrame({
           foo: [0, 1, 2, 2, 2],
@@ -670,6 +671,28 @@ describe("dataframe", () => {
       id: [1, 1, 1],
       variable: ["asset_key_1", "asset_key_2", "asset_key_3"],
       value: ["123", "456", "abc"],
+    });
+    expect(actual).toFrameEqual(expected);
+  });
+  test("unpivot renamed", () => {
+    const df = pl.DataFrame({
+      id: [1],
+      asset_key_1: ["123"],
+      asset_key_2: ["456"],
+      asset_key_3: ["abc"],
+    });
+    const actual = df.unpivot(
+      "id",
+      ["asset_key_1", "asset_key_2", "asset_key_3"],
+      {
+        variableName: "foo",
+        valueName: "bar",
+      },
+    );
+    const expected = pl.DataFrame({
+      id: [1, 1, 1],
+      foo: ["asset_key_1", "asset_key_2", "asset_key_3"],
+      bar: ["123", "456", "abc"],
     });
     expect(actual).toFrameEqual(expected);
   });
@@ -1915,7 +1938,7 @@ describe("io", () => {
     ]);
     let body = "";
     const writeStream = new Stream.Writable({
-      write(chunk, encoding, callback) {
+      write(chunk, _encoding, callback) {
         body += chunk;
         callback(null);
       },
@@ -1989,7 +2012,7 @@ describe("io", () => {
 
     let body = "";
     const writeStream = new Stream.Writable({
-      write(chunk, encoding, callback) {
+      write(chunk, _encoding, callback) {
         body += chunk;
         callback(null);
       },

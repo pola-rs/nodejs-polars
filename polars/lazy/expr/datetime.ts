@@ -1,5 +1,5 @@
 import type { DateFunctions } from "../../shared_traits";
-import { type Expr, _Expr } from "../expr";
+import { _Expr, type Expr } from "../expr";
 
 /**
  * DateTime functions for Lazy dataframes

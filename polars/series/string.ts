@@ -1,9 +1,9 @@
-import { type Series, _Series } from ".";
 import type { DataType } from "../datatypes";
+import type { Expr } from "./../lazy/expr/index";
 import { col } from "../lazy/functions";
 import type { StringFunctions } from "../shared_traits";
 import { regexToString } from "../utils";
-import { type Expr, exprToLitOrExpr } from "./../lazy/expr/index";
+import { _Series, type Series } from ".";
 
 /**
  * String functions for Series
@@ -291,8 +291,11 @@ export interface SeriesStringFunctions extends StringFunctions<Series> {
    * @param datatype Date or Datetime.
    * @param fmt formatting syntax. [Read more](https://docs.rs/chrono/0.4.19/chrono/format/strptime/index.html)
    */
-  strptime(datatype: DataType.Date, fmt?: string): Series;
-  strptime(datatype: DataType.Datetime, fmt?: string): Series;
+  strptime(datatype: DataType.Date, fmt?: string): Series<DataType.Date>;
+  strptime(
+    datatype: DataType.Datetime,
+    fmt?: string,
+  ): Series<DataType.Datetime>;
   strptime(datatype: typeof DataType.Datetime, fmt?: string): Series;
 }
 

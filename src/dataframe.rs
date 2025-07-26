@@ -5,9 +5,11 @@ use polars::frame::row::{infer_schema, Row};
 use polars_io::csv::write::CsvWriterOptions;
 use polars_io::mmap::MmapBytesReader;
 use polars_io::RowIndex;
+use polars_utils::aliases::PlFixedStateQuality;
 use std::borrow::Borrow;
 use std::collections::HashMap;
 use std::fs::File;
+use std::hash::BuildHasher;
 use std::io::{BufReader, BufWriter, Cursor};
 use std::num::NonZeroUsize;
 
@@ -475,7 +477,7 @@ pub fn from_rows(
 #[napi]
 impl JsDataFrame {
     #[napi(catch_unwind)]
-    pub fn to_js(&self, env: Env) -> napi::Result<napi::Unknown> {
+    pub fn to_js(&self, env: Env) -> napi::Result<napi::Unknown<'_>> {
         env.to_js_value(&self.df)
     }
 
@@ -1090,7 +1092,8 @@ impl JsDataFrame {
         k2: Wrap<u64>,
         k3: Wrap<u64>,
     ) -> napi::Result<JsSeries> {
-        let hb = PlRandomState::with_seeds(k0.0, k1.0, k2.0, k3.0);
+        let seed = PlFixedStateQuality::default().hash_one((k0.0, k1.0, k2.0, k3.0));
+        let hb = PlSeedableRandomStateQuality::seed_from_u64(seed);
         let hash = self.df.hash_rows(Some(hb)).map_err(JsPolarsErr::from)?;
         Ok(hash.into_series().into())
     }

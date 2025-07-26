@@ -1,7 +1,7 @@
 import pli from "../../internals/polars_internal";
 import { Series } from "../../series";
 import type { ListFunctions } from "../../shared_traits";
-import { Expr, _Expr, exprToLitOrExpr } from "../expr";
+import { _Expr, Expr, exprToLitOrExpr } from "../expr";
 import { concatList } from "../functions";
 
 /**
@@ -44,7 +44,7 @@ export const ExprListFunctions = (_expr: any): ExprList => {
       return concatList(otherList);
     },
     contains(item) {
-      return wrap("listContains", exprToLitOrExpr(item)._expr);
+      return wrap("listContains", exprToLitOrExpr(item)._expr, false);
     },
     diff(n = 1, nullBehavior = "ignore") {
       return wrap("listDiff", n, nullBehavior);
@@ -61,11 +61,11 @@ export const ExprListFunctions = (_expr: any): ExprList => {
     tail(n = 5) {
       return this.slice(-n, n);
     },
-    eval(expr, parallel = true) {
+    eval(expr) {
       if (Expr.isExpr(expr)) {
-        return wrap("listEval", expr._expr, parallel);
+        return wrap("listEval", expr._expr);
       }
-      return wrap("listEval", expr, parallel);
+      return wrap("listEval", expr);
     },
     first() {
       return this.get(0);

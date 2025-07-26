@@ -1,5 +1,5 @@
-import { type Series, _Series } from ".";
 import type { DateFunctions } from "../shared_traits";
+import { _Series, type Series } from ".";
 
 /**
  * DateTime functions for Series

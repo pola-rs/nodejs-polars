@@ -5,7 +5,6 @@ use polars::prelude::{col, lit, ClosedWindow, JoinType};
 use polars_io::{HiveOptions, RowIndex};
 use std::collections::HashMap;
 use std::num::NonZeroUsize;
-use std::path::PathBuf;
 
 #[napi]
 #[repr(transparent)]
@@ -48,7 +47,7 @@ impl JsLazyGroupBy {
 #[napi]
 impl JsLazyFrame {
     #[napi(catch_unwind)]
-    pub fn to_js(&self, env: Env) -> napi::Result<napi::Unknown> {
+    pub fn to_js(&self, env: Env) -> napi::Result<napi::Unknown<'_>> {
         env.to_js_value(&self.ldf.logical_plan)
     }
 
@@ -132,7 +131,7 @@ impl JsLazyFrame {
             .with_predicate_pushdown(predicate_pushdown)
             .with_simplify_expr(simplify_expr)
             .with_slice_pushdown(slice_pushdown)
-            .with_streaming(streaming)
+            .with_new_streaming(streaming)
             .with_projection_pushdown(projection_pushdown)
             .with_comm_subplan_elim(comm_subplan_elim)
             .with_comm_subexpr_elim(comm_subexpr_elim);
@@ -559,20 +558,25 @@ impl JsLazyFrame {
         &self,
         path: String,
         options: Wrap<CsvWriterOptions>,
+        sink_options: JsSinkOptions,
         cloud_options: Option<HashMap<String, String>>,
         max_retries: Option<u32>,
-    ) -> napi::Result<()> {
+    ) -> napi::Result<JsLazyFrame> {
         let cloud_options = parse_cloud_options(&path, cloud_options, max_retries);
-        let path_buf: PathBuf = PathBuf::from(path);
+        let sink_target = SinkTarget::Path(Arc::new(path.into()));
         let ldf = self.ldf.clone().with_comm_subplan_elim(false);
-        let _ = ldf
-            .sink_csv(path_buf, options.0, cloud_options)
-            .map_err(JsPolarsErr::from);
-        Ok(())
+        let rldf = ldf
+            .sink_csv(sink_target, options.0, cloud_options, sink_options.into())
+            .map_err(JsPolarsErr::from)?;
+        Ok(rldf.into())
     }
 
     #[napi(catch_unwind)]
-    pub fn sink_parquet(&self, path: String, options: SinkParquetOptions) -> napi::Result<()> {
+    pub fn sink_parquet(
+        &self,
+        path: String,
+        options: SinkParquetOptions,
+    ) -> napi::Result<JsLazyFrame> {
         let compression_str = options.compression.unwrap_or("zstd".to_string());
         let compression = parse_parquet_compression(compression_str, options.compression_level)?;
         let statistics = if options.statistics.expect("Expect statistics") {
@@ -582,23 +586,24 @@ impl JsLazyFrame {
         };
         let row_group_size = options.row_group_size.map(|i| i as usize);
         let data_page_size = options.data_pagesize_limit.map(|i| i as usize);
-        let maintain_order = options.maintain_order.unwrap_or(true);
         let cloud_options = parse_cloud_options(&path, options.cloud_options, options.retries);
 
+        let sink_options = options.sink_options.into();
         let options = ParquetWriteOptions {
             compression,
             statistics,
             row_group_size,
             data_page_size,
-            maintain_order,
+            key_value_metadata: None,
+            field_overwrites: Vec::new(),
         };
 
-        let path_buf: PathBuf = PathBuf::from(path);
+        let sink_target = SinkTarget::Path(Arc::new(path.into()));
         let ldf = self.ldf.clone().with_comm_subplan_elim(false);
-        let _ = ldf
-            .sink_parquet(&path_buf, options, cloud_options)
-            .map_err(JsPolarsErr::from);
-        Ok(())
+        let rldf = ldf
+            .sink_parquet(sink_target, options, cloud_options, sink_options)
+            .map_err(JsPolarsErr::from)?;
+        Ok(rldf.into())
     }
 }
 

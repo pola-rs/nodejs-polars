@@ -67,7 +67,7 @@ export const isDataFrameArray = (ty: any): ty is DataFrame[] =>
   Array.isArray(ty) && DataFrame.isDataFrame(ty[0]);
 export const isLazyDataFrameArray = (ty: any): ty is LazyDataFrame[] =>
   Array.isArray(ty) && LazyDataFrame.isLazyDataFrame(ty[0]);
-export const isSeriesArray = <T>(ty: any): ty is Series[] =>
+export const isSeriesArray = <_T>(ty: any): ty is Series[] =>
   Array.isArray(ty) && ty.every(Series.isSeries);
 export const isExprArray = (ty: any): ty is Expr[] =>
   Array.isArray(ty) && Expr.isExpr(ty[0]);

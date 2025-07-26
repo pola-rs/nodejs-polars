@@ -1,7 +1,7 @@
 import { Field } from "./field";
 
-export abstract class DataType {
-  declare readonly __dtype: string;
+export abstract class DataType<Dtype extends DataTypeName = any> {
+  declare readonly __dtype: Dtype;
   get variant() {
     return this.constructor.name as DataTypeName;
   }
@@ -164,67 +164,67 @@ export abstract class DataType {
   }
 }
 
-export class Null extends DataType {
+export class Null extends DataType<"Null"> {
   declare __dtype: "Null";
 }
 
-export class Bool extends DataType {
+export class Bool extends DataType<"Bool"> {
   declare __dtype: "Bool";
 }
-export class Int8 extends DataType {
+export class Int8 extends DataType<"Int8"> {
   declare __dtype: "Int8";
 }
-export class Int16 extends DataType {
+export class Int16 extends DataType<"Int16"> {
   declare __dtype: "Int16";
 }
-export class Int32 extends DataType {
+export class Int32 extends DataType<"Int32"> {
   declare __dtype: "Int32";
 }
-export class Int64 extends DataType {
+export class Int64 extends DataType<"Int64"> {
   declare __dtype: "Int64";
 }
-export class UInt8 extends DataType {
+export class UInt8 extends DataType<"UInt8"> {
   declare __dtype: "UInt8";
 }
-export class UInt16 extends DataType {
+export class UInt16 extends DataType<"UInt16"> {
   declare __dtype: "UInt16";
 }
-export class UInt32 extends DataType {
+export class UInt32 extends DataType<"UInt32"> {
   declare __dtype: "UInt32";
 }
-export class UInt64 extends DataType {
+export class UInt64 extends DataType<"UInt64"> {
   declare __dtype: "UInt64";
 }
-export class Float32 extends DataType {
+export class Float32 extends DataType<"Float32"> {
   declare __dtype: "Float32";
 }
-export class Float64 extends DataType {
+export class Float64 extends DataType<"Float64"> {
   declare __dtype: "Float64";
 }
 
-// biome-ignore lint/suspicious/noShadowRestrictedNames: <explanation>
-export class Date extends DataType {
+// biome-ignore lint/suspicious/noShadowRestrictedNames: Using Polars Date
+export class Date extends DataType<"Date"> {
   declare __dtype: "Date";
 }
-export class Time extends DataType {
+export class Time extends DataType<"Time"> {
   declare __dtype: "Time";
 }
-export class Object_ extends DataType {
+export class Object_ extends DataType<"Object"> {
   declare __dtype: "Object";
 }
-export class Utf8 extends DataType {
+export class Utf8 extends DataType<"Utf8"> {
   declare __dtype: "Utf8";
 }
-// biome-ignore lint/suspicious/noShadowRestrictedNames: <explanation>
-export class String extends DataType {
+// biome-ignore lint/suspicious/noShadowRestrictedNames: Using Polars String
+export class String extends DataType<"String"> {
   declare __dtype: "String";
 }
 
-export class Categorical extends DataType {
+export class Categorical extends DataType<"Categorical"> {
   declare __dtype: "Categorical";
 }
 
-export class Decimal extends DataType {
+export class Decimal extends DataType<"Decimal"> {
   declare __dtype: "Decimal";
   private precision: number | null;
   private scale: number | null;
@@ -261,7 +261,7 @@ export class Decimal extends DataType {
 /**
  * Datetime type
  */
-export class Datetime extends DataType {
+export class Datetime extends DataType<"Datetime"> {
   declare __dtype: "Datetime";
   constructor(
     private timeUnit: TimeUnit | "ms" | "ns" | "us" = "ms",
@@ -284,7 +284,7 @@ export class Datetime extends DataType {
   }
 }
 
-export class List extends DataType {
+export class List extends DataType<"List"> {
   declare __dtype: "List";
   constructor(protected __inner: DataType) {
     super();
@@ -300,7 +300,7 @@ export class List extends DataType {
   }
 }
 
-export class FixedSizeList extends DataType {
+export class FixedSizeList extends DataType<"FixedSizeList"> {
   declare __dtype: "FixedSizeList";
   constructor(
     protected __inner: DataType,
@@ -334,7 +334,7 @@ export class FixedSizeList extends DataType {
   }
 }
 
-export class Struct extends DataType {
+export class Struct extends DataType<"Struct"> {
   declare __dtype: "Struct";
   private fields: Field[];
 
@@ -465,46 +465,59 @@ export type DataTypeName =
   | "Decimal"
   | "Date"
   | "Datetime"
+  | "Time"
+  | "Object"
   | "Utf8"
+  | "String"
   | "Categorical"
   | "List"
+  | "FixedSizeList"
   | "Struct";
 
 export type JsType = number | boolean | string;
-export type JsToDtype<T> = T extends number
-  ? DataType.Float64
-  : T extends boolean
-    ? DataType.Bool
-    : T extends string
-      ? DataType.Utf8
-      : never;
 export type DTypeToJs<T> = T extends DataType.Decimal
   ? bigint
   : T extends DataType.Float64
     ? number
-    : T extends DataType.Int64
-      ? bigint
-      : T extends DataType.Int32
-        ? number
-        : T extends DataType.Bool
-          ? boolean
-          : T extends DataType.Utf8
-            ? string
-            : never;
+    : T extends DataType.Float32
+      ? number
+      : T extends DataType.Int64
+        ? bigint
+        : T extends DataType.Int32
+          ? number
+          : T extends DataType.Int16
+            ? number
+            : T extends DataType.Int8
+              ? number
+              : T extends DataType.Bool
+                ? boolean
+                : T extends DataType.Utf8
+                  ? string
+                  : T extends DataType.String
+                    ? string
+                    : never;
 // some objects can be constructed with a looser JS type than they’d return when converted back to JS
 export type DTypeToJsLoose<T> = T extends DataType.Decimal
   ? number | bigint
   : T extends DataType.Float64
     ? number | bigint
-    : T extends DataType.Int64
+    : T extends DataType.Float32
       ? number | bigint
-      : T extends DataType.Int32
+      : T extends DataType.Int64
         ? number | bigint
-        : T extends DataType.Bool
-          ? boolean
-          : T extends DataType.Utf8
-            ? string
-            : never;
+        : T extends DataType.Int32
+          ? number | bigint
+          : T extends DataType.Int16
+            ? number | bigint
+            : T extends DataType.Int8
+              ? number | bigint
+              : T extends DataType.Bool
+                ? boolean
+                : T extends DataType.Utf8
+                  ? string
+                  : T extends DataType.String
+                    ? string
+                    : never;
 export type DtypeToJsName<T> = T extends DataType.Decimal
   ? "Decimal"
   : T extends DataType.Float64

@@ -1,7 +1,6 @@
 import { DataType } from "../../datatypes";
 import type { StringFunctions } from "../../shared_traits";
-import { ExprOrString, regexToString } from "../../utils";
-import { Expr, _Expr, exprToLitOrExpr } from "../expr";
+import { _Expr, Expr, exprToLitOrExpr } from "../expr";
 import { lit } from "../functions";
 
 /**

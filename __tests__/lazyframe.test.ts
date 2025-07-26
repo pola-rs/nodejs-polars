@@ -140,7 +140,7 @@ describe("lazyframe", () => {
   });
   // run this test 100 times to make sure it is deterministic.
   test("unique:maintainOrder", () => {
-    for (const x of Array.from({ length: 100 })) {
+    for (const _x of Array.from({ length: 100 })) {
       const actual = pl
         .DataFrame({
           foo: [0, 1, 2, 2, 2],
@@ -160,7 +160,7 @@ describe("lazyframe", () => {
   });
   // run this test 100 times to make sure it is deterministic.
   test("unique:maintainOrder:single subset", () => {
-    for (const x of Array.from({ length: 100 })) {
+    for (const _x of Array.from({ length: 100 })) {
       const actual = pl
         .DataFrame({
           foo: [0, 1, 2, 2, 2],
@@ -180,7 +180,7 @@ describe("lazyframe", () => {
   });
   // run this test 100 times to make sure it is deterministic.
   test("unique:maintainOrder:multi subset", () => {
-    for (const x of Array.from({ length: 100 })) {
+    for (const _x of Array.from({ length: 100 })) {
       const actual = pl
         .DataFrame({
           foo: [0, 1, 2, 2, 2],
@@ -1278,7 +1278,7 @@ describe("lazyframe", () => {
         pl.Series("bar", ["a", "b", "c"]),
       ])
       .lazy();
-    ldf.sinkCSV("./test.csv");
+    await ldf.sinkCSV("./test.csv").collect();
     const newDF: pl.DataFrame = pl.readCSV("./test.csv");
     const actualDf: pl.DataFrame = await ldf.collect({ streaming: true });
     expect(newDF.sort("foo")).toFrameEqual(actualDf);
@@ -1291,7 +1291,7 @@ describe("lazyframe", () => {
         pl.Series("column_2", ["a", "b", "c"]),
       ])
       .lazy();
-    ldf.sinkCSV("./test.csv", { includeHeader: false });
+    await ldf.sinkCSV("./test.csv", { includeHeader: false }).collect();
     const newDF: pl.DataFrame = pl.readCSV("./test.csv", { hasHeader: false });
     const actualDf: pl.DataFrame = await ldf.collect();
     expect(newDF.sort("column_1")).toFrameEqual(actualDf);
@@ -1304,7 +1304,7 @@ describe("lazyframe", () => {
         pl.Series("bar", ["a", "b", "c"]),
       ])
       .lazy();
-    ldf.sinkCSV("./test.csv", { separator: "|" });
+    await ldf.sinkCSV("./test.csv", { separator: "|" }).collect();
     const newDF: pl.DataFrame = pl.readCSV("./test.csv", { sep: "|" });
     const actualDf: pl.DataFrame = await ldf.collect();
     expect(newDF.sort("foo")).toFrameEqual(actualDf);
@@ -1317,7 +1317,7 @@ describe("lazyframe", () => {
         pl.Series("bar", ["a", "b", null]),
       ])
       .lazy();
-    ldf.sinkCSV("./test.csv", { nullValue: "BOOM" });
+    await ldf.sinkCSV("./test.csv", { nullValue: "BOOM" }).collect();
     const newDF: pl.DataFrame = pl.readCSV("./test.csv", { sep: "," });
     const actualDf: pl.DataFrame = await (await ldf.collect()).withColumn(
       pl.col("bar").fillNull("BOOM"),
@@ -1332,7 +1332,7 @@ describe("lazyframe", () => {
         pl.Series("bar", ["a", "b", "c"]),
       ])
       .lazy();
-    ldf.sinkParquet("./test.parquet");
+    await ldf.sinkParquet("./test.parquet").collect();
     const newDF: pl.DataFrame = pl.readParquet("./test.parquet");
     const actualDf: pl.DataFrame = await ldf.collect();
     expect(newDF.sort("foo")).toFrameEqual(actualDf);
@@ -1345,10 +1345,34 @@ describe("lazyframe", () => {
         pl.Series("bar", ["a", "b", "c"]),
       ])
       .lazy();
-    ldf.sinkParquet("./test.parquet", { compression: "gzip" });
+    await ldf.sinkParquet("./test.parquet", { compression: "gzip" }).collect();
     const newDF: pl.DataFrame = pl.readParquet("./test.parquet");
     const actualDf: pl.DataFrame = await ldf.collect();
     expect(newDF.sort("foo")).toFrameEqual(actualDf);
     fs.rmSync("./test.parquet");
+  });
+  test("unpivot renamed", () => {
+    const ldf = pl
+      .DataFrame({
+        id: [1],
+        asset_key_1: ["123"],
+        asset_key_2: ["456"],
+        asset_key_3: ["abc"],
+      })
+      .lazy();
+    const actual = ldf.unpivot(
+      "id",
+      ["asset_key_1", "asset_key_2", "asset_key_3"],
+      {
+        variableName: "foo",
+        valueName: "bar",
+      },
+    );
+    const expected = pl.DataFrame({
+      id: [1, 1, 1],
+      foo: ["asset_key_1", "asset_key_2", "asset_key_3"],
+      bar: ["123", "456", "abc"],
+    });
+    expect(actual.collectSync()).toFrameEqual(expected);
   });
 });

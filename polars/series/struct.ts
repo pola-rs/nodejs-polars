@@ -1,7 +1,7 @@
-import { type Series, _Series } from ".";
-import { DataFrame, _DataFrame } from "../dataframe";
+import { _DataFrame, DataFrame } from "../dataframe";
 import pli from "../internals/polars_internal";
 import { _Expr } from "../lazy/expr";
+import type { Series } from ".";
 
 /**
  * Struct Functions for Series

@@ -14,8 +14,8 @@ describe("struct", () => {
   test("pli.struct", () => {
     const expected = pl
       .DataFrame({
-        foo: [1],
-        bar: [2],
+        foo: [[1]],
+        bar: [[2]],
       })
       .toStruct("foo");
     const foo = pl.Series("foo", [1]);

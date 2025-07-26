@@ -1,12 +1,15 @@
-import { DataFrame, _DataFrame } from "../dataframe";
-import { DTYPE_TO_FFINAME, DataType, type Optional } from "../datatypes";
-import type {
-  DTypeToJs,
-  DTypeToJsLoose,
-  DtypeToJsName,
-  JsToDtype,
-  JsType,
-} from "../datatypes/datatype";
+import { _DataFrame, DataFrame } from "../dataframe";
+import {
+  type Bool,
+  DataType,
+  DTYPE_TO_FFINAME,
+  type DTypeToJs,
+  type DTypeToJsLoose,
+  type DtypeToJsName,
+  type JsToDtype,
+  type JsType,
+  type Optional,
+} from "../datatypes";
 import { InvalidOperationError } from "../error";
 import { arrayToJsSeries } from "../internals/construction";
 import pli from "../internals/polars_internal";
@@ -30,8 +33,8 @@ import { SeriesStructFunctions } from "./struct";
 
 // For documentation
 export type { SeriesDateFunctions as DatetimeSeries } from "./datetime";
-export type { SeriesStringFunctions as StringSeries } from "./string";
 export type { SeriesListFunctions as ListSeries } from "./list";
+export type { SeriesStringFunctions as StringSeries } from "./string";
 export type { SeriesStructFunctions as StructSeries } from "./struct";
 
 const inspect = Symbol.for("nodejs.util.inspect.custom");
@@ -142,12 +145,18 @@ export interface Series<T extends DataType = any, Name extends string = string>
   argSort({
     descending,
     nullsLast,
-  }: { descending?: boolean; nullsLast?: boolean }): Series<T, Name>;
+  }: {
+    descending?: boolean;
+    nullsLast?: boolean;
+  }): Series<T, Name>;
   /* @deprecated Use descending instead */
   argSort({
     reverse, // deprecated
     nullsLast,
-  }: { reverse?: boolean; nullsLast?: boolean }): Series<T, Name>;
+  }: {
+    reverse?: boolean;
+    nullsLast?: boolean;
+  }): Series<T, Name>;
   argSort(): Series<T, Name>;
   /**
    * __Rename this Series.__
@@ -273,16 +282,9 @@ export interface Series<T extends DataType = any, Name extends string = string>
    * Extend the Series with given number of values.
    * @param value The value to extend the Series with. This value may be null to fill with nulls.
    * @param n The number of values to extend.
-   * @deprecated
-   * @see {@link extendConstant}
-   */
-  extend(value: any, n: number): Series;
-  /**
-   * Extend the Series with given number of values.
-   * @param value The value to extend the Series with. This value may be null to fill with nulls.
-   * @param n The number of values to extend.
    */
   extendConstant(value: any, n: number): Series;
+  extendConstant(opt: { value: any; n: number }): Series;
   /**
    * __Fill null values with a filling strategy.__
    * ___
@@ -410,7 +412,7 @@ export interface Series<T extends DataType = any, Name extends string = string>
   /**
    * Check if this Series is a Boolean.
    */
-  isBoolean(): boolean;
+  isBoolean(): this is Series<Bool>;
   /**
    * Check if this Series is a DataTime.
    */
@@ -512,7 +514,19 @@ export interface Series<T extends DataType = any, Name extends string = string>
   /**
    * Check if this Series datatype is numeric.
    */
-  isNumeric(): boolean;
+  isNumeric(): this is Series<
+    | DataType.Int8
+    | DataType.Int16
+    | DataType.Int32
+    | DataType.Int64
+    | DataType.UInt8
+    | DataType.UInt16
+    | DataType.UInt32
+    | DataType.UInt64
+    | DataType.Float32
+    | DataType.Float64
+    | DataType.Decimal
+  >;
   /**
    * __Get mask of unique values.__
    * ___
@@ -799,7 +813,7 @@ export interface Series<T extends DataType = any, Name extends string = string>
    * false
    * ```
    */
-  seriesEqual<U1>(
+  seriesEqual<_U1>(
     other: Series,
     nullEqual?: boolean,
     strict?: boolean,
@@ -1369,11 +1383,11 @@ export function _Series(_s: any): Series {
     explode() {
       return wrap("explode");
     },
-    extend(value, n) {
-      return wrap("extendConstant", value, n);
-    },
-    extendConstant(value, n) {
-      return wrap("extendConstant", value, n);
+    extendConstant(o, n?) {
+      if (n !== null && typeof n === "number")
+        return wrap("extendConstant", o, n);
+
+      return wrap("extendConstant", o.value, o.n);
     },
     fillNull(strategy) {
       return typeof strategy === "string"
@@ -1464,10 +1478,10 @@ export function _Series(_s: any): Series {
         dtype.variant,
       );
     },
-    isIn(other) {
+    isIn(other, nullsEquals = false) {
       return Series.isSeries(other)
-        ? wrap("isIn", (other as any)._s)
-        : wrap("isIn", (Series("", other) as any)._s);
+        ? wrap("isIn", (other as any)._s, nullsEquals)
+        : wrap("isIn", (Series("", other) as any)._s, nullsEquals);
     },
     isInfinite() {
       const dtype = this.dtype;
@@ -1692,11 +1706,12 @@ export function _Series(_s: any): Series {
       return wrap("ceil");
     },
     round(opt): any {
+      const mode = "halftoeven";
       if (this.isNumeric()) {
         if (typeof opt === "number") {
-          return wrap("round", opt);
+          return wrap("round", opt, mode);
         }
-        return wrap("round", opt.decimals);
+        return wrap("round", opt.decimals, mode);
       }
       throw new InvalidOperationError("round", this.dtype);
     },
@@ -1725,7 +1740,6 @@ export function _Series(_s: any): Series {
       return dtypeWrap("SetWithMask", mask.inner(), value);
     },
     sample(opts?, frac?, withReplacement = false, seed?) {
-      // biome-ignore lint/style/noArguments: <explanation>
       if (arguments.length === 0) {
         return wrap("sampleN", 1, withReplacement, false, seed);
       }
@@ -1965,7 +1979,7 @@ const SeriesConstructor = (
 const isSeries = (anyVal: any): anyVal is Series => {
   try {
     return anyVal?.[Symbol.toStringTag]?.() === "Series";
-  } catch (err) {
+  } catch (_err) {
     return false;
   }
 };

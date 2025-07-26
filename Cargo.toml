@@ -21,11 +21,13 @@ napi = { version = "3.1.2", default-features = false, features = [
     "compat-mode"
 ] }
 napi-derive = { version = "3.1.1", default-features = false }
-polars-core = { git = "https://github.com/pola-rs/polars.git", rev = "f298ace880b238fb5793eaf0cdeb6b418e2ba583", default-features = false }
-polars-io = { git = "https://github.com/pola-rs/polars.git", rev = "f298ace880b238fb5793eaf0cdeb6b418e2ba583", default-features = false }
-polars-lazy = { git = "https://github.com/pola-rs/polars.git", rev = "f298ace880b238fb5793eaf0cdeb6b418e2ba583", default-features = false }
-polars-ops = { git = "https://github.com/pola-rs/polars.git", rev = "f298ace880b238fb5793eaf0cdeb6b418e2ba583", default-features = false }
-polars-arrow = { git = "https://github.com/pola-rs/polars.git", rev = "f298ace880b238fb5793eaf0cdeb6b418e2ba583", default-features = false }
+polars-core = { version = "0.49.1", default-features = false }
+polars-io = { version = "0.49.1", default-features = false }
+polars-lazy = { version = "0.49.1", default-features = false }
+polars-ops = { version = "0.49.1", default-features = false }
+polars-arrow = { version = "0.49.1", default-features = false }
+polars-utils = { version = "0.49.1", default-features = false }
+polars-compute = { version = "0.49.1", default-features = false }
 thiserror = "1"
 smartstring = { version = "1" }
 serde_json = { version = "1" }
@@ -164,8 +166,8 @@ features = [
   "gcp",
   "azure"
 ]
-git = "https://github.com/pola-rs/polars.git"
-rev = "f298ace880b238fb5793eaf0cdeb6b418e2ba583"
+
+version = "0.49.1"
 
 [build-dependencies]
 napi-build = "2.2.2"
