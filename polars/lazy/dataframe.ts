@@ -1,17 +1,26 @@
-import { type DataFrame, _DataFrame } from "../dataframe";
+import {
+  type DataFrame,
+  type JoinSchemas,
+  type Schema,
+  _DataFrame,
+} from "../dataframe";
 import pli from "../internals/polars_internal";
 import type { Series } from "../series";
 import type { Deserialize, GroupByOps, Serialize } from "../shared_traits";
 import type {
   CsvWriterOptions,
+  LazyCrossJoinOptions,
+  LazyDifferentNameColumnJoinOptions,
   LazyJoinOptions,
   LazyOptions,
+  LazySameNameColumnJoinOptions,
   SinkParquetOptions,
 } from "../types";
 import {
   type ColumnSelection,
   type ColumnsOrExpr,
   type ExprOrString,
+  type Simplify,
   type ValueOrArray,
   columnOrColumnsStrict,
   selectionToExprList,
@@ -24,7 +33,9 @@ const inspect = Symbol.for("nodejs.util.inspect.custom");
 /**
  * Representation of a Lazy computation graph / query.
  */
-export interface LazyDataFrame extends Serialize, GroupByOps<LazyGroupBy> {
+export interface LazyDataFrame<S extends Schema = any>
+  extends Serialize,
+    GroupByOps<LazyGroupBy> {
   /** @ignore */
   _ldf: any;
   [inspect](): string;
@@ -33,8 +44,8 @@ export interface LazyDataFrame extends Serialize, GroupByOps<LazyGroupBy> {
   /**
    * Cache the result once the execution of the physical plan hits this node.
    */
-  cache(): LazyDataFrame;
-  clone(): LazyDataFrame;
+  cache(): LazyDataFrame<S>;
+  clone(): LazyDataFrame<S>;
   /**
    *
    * Collect into a DataFrame.
@@ -57,8 +68,8 @@ export interface LazyDataFrame extends Serialize, GroupByOps<LazyGroupBy> {
    * @return DataFrame
    *
    */
-  collect(opts?: LazyOptions): Promise<DataFrame>;
-  collectSync(opts?: LazyOptions): DataFrame;
+  collect(opts?: LazyOptions): Promise<DataFrame<S>>;
+  collectSync(opts?: LazyOptions): DataFrame<S>;
   /**
    * A string representation of the optimized query plan.
    */
@@ -71,16 +82,21 @@ export interface LazyDataFrame extends Serialize, GroupByOps<LazyGroupBy> {
    * Remove one or multiple columns from a DataFrame.
    * @param name - column or list of columns to be removed
    */
-  drop(name: string): LazyDataFrame;
-  drop(names: string[]): LazyDataFrame;
-  drop(name: string, ...names: string[]): LazyDataFrame;
+  drop<U extends string>(name: U): LazyDataFrame<Simplify<Omit<S, U>>>;
+  drop<const U extends string[]>(
+    names: U,
+  ): LazyDataFrame<Simplify<Omit<S, U[number]>>>;
+  drop<U extends string, const V extends string[]>(
+    name: U,
+    ...names: V
+  ): LazyDataFrame<Simplify<Omit<S, U | V[number]>>>;
   /**
    * Drop rows with null values from this DataFrame.
    * This method only drops nulls row-wise if any single value of the row is null.
    */
-  dropNulls(column: string): LazyDataFrame;
-  dropNulls(columns: string[]): LazyDataFrame;
-  dropNulls(...columns: string[]): LazyDataFrame;
+  dropNulls(column: string): LazyDataFrame<S>;
+  dropNulls(columns: string[]): LazyDataFrame<S>;
+  dropNulls(...columns: string[]): LazyDataFrame<S>;
   /**
    * Explode lists to long format.
    */
@@ -109,16 +125,16 @@ export interface LazyDataFrame extends Serialize, GroupByOps<LazyGroupBy> {
                 at any point without it being considered a breaking change.
    *
    */
-  fetch(numRows: number, opts: LazyOptions): Promise<DataFrame>;
-  fetch(numRows?: number): Promise<DataFrame>;
+  fetch(numRows: number, opts: LazyOptions): Promise<DataFrame<S>>;
+  fetch(numRows?: number): Promise<DataFrame<S>>;
   /** Behaves the same as fetch, but will perform the actions synchronously */
-  fetchSync(numRows?: number): DataFrame;
-  fetchSync(numRows: number, opts: LazyOptions): DataFrame;
+  fetchSync(numRows?: number): DataFrame<S>;
+  fetchSync(numRows: number, opts: LazyOptions): DataFrame<S>;
   /**
    * Fill missing values
    * @param fillValue value to fill the missing values with
    */
-  fillNull(fillValue: string | number | Expr): LazyDataFrame;
+  fillNull(fillValue: string | number | Expr): LazyDataFrame<S>;
   /**
    * Filter the rows in the DataFrame based on a predicate expression.
    * @param predicate - Expression that evaluates to a boolean Series.
@@ -143,11 +159,11 @@ export interface LazyDataFrame extends Serialize, GroupByOps<LazyGroupBy> {
    * └─────┴─────┴─────┘
    * ```
    */
-  filter(predicate: Expr | string): LazyDataFrame;
+  filter(predicate: Expr | string): LazyDataFrame<S>;
   /**
    * Get the first row of the DataFrame.
    */
-  first(): DataFrame;
+  first(): DataFrame<S>;
   /**
    * Start a groupby operation.
    */
@@ -160,13 +176,11 @@ export interface LazyDataFrame extends Serialize, GroupByOps<LazyGroupBy> {
    * Consider using the `fetch` operation.
    * The `fetch` operation will truly load the first `n`rows lazily.
    */
-  head(length?: number): LazyDataFrame;
+  head(length?: number): LazyDataFrame<S>;
   inner(): any;
   /**
    *  __SQL like joins.__
    * @param other - DataFrame to join with.
-   * @param joinOptions.leftOn - Name(s) of the left join column(s).
-   * @param joinOptions.rightOn - Name(s) of the right join column(s).
    * @param joinOptions.on - Name(s) of the join columns in both DataFrames.
    * @param joinOptions.how - Join strategy
    * @param joinOptions.suffix - Suffix to append to columns with a duplicate name.
@@ -198,26 +212,102 @@ export interface LazyDataFrame extends Serialize, GroupByOps<LazyGroupBy> {
    * ╰─────┴─────┴─────┴───────╯
    * ```
    */
-  join(
-    other: LazyDataFrame,
-    joinOptions: { on: ValueOrArray<string | Expr> } & LazyJoinOptions,
-  ): LazyDataFrame;
-  join(
-    other: LazyDataFrame,
-    joinOptions: {
-      leftOn: ValueOrArray<string | Expr>;
-      rightOn: ValueOrArray<string | Expr>;
-    } & LazyJoinOptions,
-  ): LazyDataFrame;
-  join(
-    other: LazyDataFrame,
-    options: {
-      how: "cross";
-      suffix?: string;
-      allowParallel?: boolean;
-      forceParallel?: boolean;
-    },
-  ): LazyDataFrame;
+  join<
+    S2 extends Schema,
+    const Opts extends LazySameNameColumnJoinOptions<
+      Extract<keyof S, string>,
+      Extract<keyof S2, string>
+    >,
+  >(
+    other: LazyDataFrame<S2>,
+    // the right & part is only used for typedoc to understend which fields are used
+    joinOptions: Opts & LazySameNameColumnJoinOptions,
+  ): LazyDataFrame<JoinSchemas<S, S2, Opts>>;
+  /**
+   *  __SQL like joins with different names for left and right dataframes.__
+   * @param other - DataFrame to join with.
+   * @param joinOptions.leftOn - Name(s) of the left join column(s).
+   * @param joinOptions.rightOn - Name(s) of the right join column(s).
+   * @param joinOptions.how - Join strategy
+   * @param joinOptions.suffix - Suffix to append to columns with a duplicate name.
+   * @param joinOptions.allowParallel - Allow the physical plan to optionally evaluate the computation of both DataFrames up to the join in parallel.
+   * @param joinOptions.forceParallel - Force the physical plan to evaluate the computation of both DataFrames up to the join in parallel.
+   * @see {@link LazyJoinOptions}
+   * @example
+   * ```
+   * >>> const df = pl.DataFrame({
+   * >>>     foo: [1, 2, 3],
+   * >>>     bar: [6.0, 7.0, 8.0],
+   * >>>     ham: ['a', 'b', 'c'],
+   * >>>   }).lazy()
+   * >>>
+   * >>> const otherDF = pl.DataFrame({
+   * >>>     apple: ['x', 'y', 'z'],
+   * >>>     ham: ['a', 'b', 'd'],
+   * >>>   }).lazy();
+   * >>> const result = await df.join(otherDF, { leftOn: 'ham', rightOn: 'ham', how: 'inner' }).collect();
+   * shape: (2, 4)
+   * ╭─────┬─────┬─────┬───────╮
+   * │ foo ┆ bar ┆ ham ┆ apple │
+   * │ --- ┆ --- ┆ --- ┆ ---   │
+   * │ i64 ┆ f64 ┆ str ┆ str   │
+   * ╞═════╪═════╪═════╪═══════╡
+   * │ 1   ┆ 6   ┆ "a" ┆ "x"   │
+   * ├╌╌╌╌╌┼╌╌╌╌╌┼╌╌╌╌╌┼╌╌╌╌╌╌╌┤
+   * │ 2   ┆ 7   ┆ "b" ┆ "y"   │
+   * ╰─────┴─────┴─────┴───────╯
+   * ```
+   */
+  join<
+    S2 extends Schema,
+    const Opts extends LazyDifferentNameColumnJoinOptions<
+      Extract<keyof S, string>,
+      Extract<keyof S2, string>
+    >,
+  >(
+    other: LazyDataFrame<S2>,
+    // the right & part is only used for typedoc to understend which fields are used
+    joinOptions: Opts & LazyDifferentNameColumnJoinOptions,
+  ): LazyDataFrame<JoinSchemas<S, S2, Opts>>;
+  /**
+   *  __SQL like cross joins.__
+   * @param other - DataFrame to join with.
+   * @param joinOptions.how - Join strategy
+   * @param joinOptions.suffix - Suffix to append to columns with a duplicate name.
+   * @param joinOptions.allowParallel - Allow the physical plan to optionally evaluate the computation of both DataFrames up to the join in parallel.
+   * @param joinOptions.forceParallel - Force the physical plan to evaluate the computation of both DataFrames up to the join in parallel.
+   * @see {@link LazyJoinOptions}
+   * @example
+   * ```
+   * >>> const df = pl.DataFrame({
+   * >>>     foo: [1, 2],
+   * >>>     bar: [6.0, 7.0],
+   * >>>     ham: ['a', 'b'],
+   * >>>   }).lazy()
+   * >>>
+   * >>> const otherDF = pl.DataFrame({
+   * >>>     apple: ['x', 'y'],
+   * >>>     ham: ['a', 'b'],
+   * >>>   }).lazy();
+   * >>> const result = await df.join(otherDF, { how: 'cross' }).collect();
+   * shape: (4, 5)
+   * ╭─────┬─────┬─────┬───────┬───────────╮
+   * │ foo ┆ bar ┆ ham ┆ apple ┆ ham_right │
+   * │ --- ┆ --- ┆ --- ┆ ---   ┆ ---       │
+   * │ f64 ┆ f64 ┆ str ┆ str   ┆ str       │
+   * ╞═════╪═════╪═════╪═══════╪═══════════╡
+   * │ 1.0 ┆ 6.0 ┆ a   ┆ x     ┆ a         │
+   * │ 1.0 ┆ 6.0 ┆ a   ┆ y     ┆ b         │
+   * │ 2.0 ┆ 7.0 ┆ b   ┆ x     ┆ a         │
+   * │ 2.0 ┆ 7.0 ┆ b   ┆ y     ┆ b         │
+   * ╰─────┴─────┴─────┴───────┴───────────╯
+   * ```
+   */
+  join<S2 extends Schema, const Opts extends LazyCrossJoinOptions>(
+    other: LazyDataFrame<S2>,
+    // the right & part is only used for typedoc to understend which fields are used
+    joinOptions: Opts & LazyCrossJoinOptions,
+  ): LazyDataFrame<JoinSchemas<S, S2, Opts>>;
 
   /**
      * Perform an asof join. This is similar to a left-join except that we
@@ -331,23 +421,23 @@ export interface LazyDataFrame extends Serialize, GroupByOps<LazyGroupBy> {
   /**
    * Get the last row of the DataFrame.
    */
-  last(): LazyDataFrame;
+  last(): LazyDataFrame<S>;
   /**
    * @see {@link head}
    */
-  limit(n?: number): LazyDataFrame;
+  limit(n?: number): LazyDataFrame<S>;
   /**
    * @see {@link DataFrame.max}
    */
-  max(): LazyDataFrame;
+  max(): LazyDataFrame<S>;
   /**
    * @see {@link DataFrame.mean}
    */
-  mean(): LazyDataFrame;
+  mean(): LazyDataFrame<S>;
   /**
    * @see {@link DataFrame.median}
    */
-  median(): LazyDataFrame;
+  median(): LazyDataFrame<S>;
   /**
    * @see {@link DataFrame.unpivot}
    */
@@ -366,43 +456,44 @@ export interface LazyDataFrame extends Serialize, GroupByOps<LazyGroupBy> {
   /**
    * @see {@link DataFrame.min}
    */
-  min(): LazyDataFrame;
+  min(): LazyDataFrame<S>;
   /**
    * @see {@link DataFrame.quantile}
    */
-  quantile(quantile: number): LazyDataFrame;
+  quantile(quantile: number): LazyDataFrame<S>;
   /**
    * @see {@link DataFrame.rename}
    */
+  rename<const U extends Partial<Record<keyof S, string>>>(
+    mapping: U,
+  ): LazyDataFrame<{ [K in keyof S as U[K] extends string ? U[K] : K]: S[K] }>;
   rename(mapping: Record<string, string>): LazyDataFrame;
   /**
    * Reverse the DataFrame.
    */
-  reverse(): LazyDataFrame;
+  reverse(): LazyDataFrame<S>;
   /**
    * @see {@link DataFrame.select}
    */
+  select<U extends keyof S>(...columns: U[]): LazyDataFrame<{ [P in U]: S[P] }>;
   select(column: ExprOrString): LazyDataFrame;
   select(columns: ExprOrString[]): LazyDataFrame;
   select(...columns: ExprOrString[]): LazyDataFrame;
   /**
    * @see {@link DataFrame.shift}
    */
-  shift(periods: number): LazyDataFrame;
-  shift(opts: { periods: number }): LazyDataFrame;
+  shift(periods: number): LazyDataFrame<S>;
+  shift(opts: { periods: number }): LazyDataFrame<S>;
   /**
    * @see {@link DataFrame.shiftAndFill}
    */
-  shiftAndFill(n: number, fillValue: number): LazyDataFrame;
-  shiftAndFill(opts: {
-    n: number;
-    fillValue: number;
-  }): LazyDataFrame;
+  shiftAndFill(n: number, fillValue: number): LazyDataFrame<S>;
+  shiftAndFill(opts: { n: number; fillValue: number }): LazyDataFrame<S>;
   /**
    * @see {@link DataFrame.slice}
    */
-  slice(offset: number, length: number): LazyDataFrame;
-  slice(opts: { offset: number; length: number }): LazyDataFrame;
+  slice(offset: number, length: number): LazyDataFrame<S>;
+  slice(opts: { offset: number; length: number }): LazyDataFrame<S>;
   /**
    * @see {@link DataFrame.sort}
    */
@@ -411,26 +502,26 @@ export interface LazyDataFrame extends Serialize, GroupByOps<LazyGroupBy> {
     descending?: ValueOrArray<boolean>,
     nullsLast?: boolean,
     maintainOrder?: boolean,
-  ): LazyDataFrame;
+  ): LazyDataFrame<S>;
   sort(opts: {
     by: ColumnsOrExpr;
     descending?: ValueOrArray<boolean>;
     nullsLast?: boolean;
     maintainOrder?: boolean;
-  }): LazyDataFrame;
+  }): LazyDataFrame<S>;
   /**
    * @see {@link DataFrame.std}
    */
-  std(): LazyDataFrame;
+  std(): LazyDataFrame<S>;
   /**
    * Aggregate the columns in the DataFrame to their sum value.
    */
-  sum(): LazyDataFrame;
+  sum(): LazyDataFrame<S>;
   /**
    * Get the last `n` rows of the DataFrame.
    * @see {@link DataFrame.tail}
    */
-  tail(length?: number): LazyDataFrame;
+  tail(length?: number): LazyDataFrame<S>;
   /**
    * compatibility with `JSON.stringify`
    */
@@ -446,16 +537,16 @@ export interface LazyDataFrame extends Serialize, GroupByOps<LazyGroupBy> {
     maintainOrder?: boolean,
     subset?: ColumnSelection,
     keep?: "first" | "last",
-  ): LazyDataFrame;
+  ): LazyDataFrame<S>;
   unique(opts: {
     maintainOrder?: boolean;
     subset?: ColumnSelection;
     keep?: "first" | "last";
-  }): LazyDataFrame;
+  }): LazyDataFrame<S>;
   /**
    * Aggregate the columns in the DataFrame to their variance value.
    */
-  var(): LazyDataFrame;
+  var(): LazyDataFrame<S>;
   /**
    * Add or overwrite column in a DataFrame.
    * @param expr - Expression that evaluates to column.
@@ -468,6 +559,10 @@ export interface LazyDataFrame extends Serialize, GroupByOps<LazyGroupBy> {
    */
   withColumns(exprs: (Expr | Series)[]): LazyDataFrame;
   withColumns(...exprs: (Expr | Series)[]): LazyDataFrame;
+  withColumnRenamed<Existing extends keyof S, New extends string>(
+    existing: Existing,
+    replacement: New,
+  ): LazyDataFrame<{ [K in keyof S as K extends Existing ? New : K]: S[K] }>;
   withColumnRenamed(existing: string, replacement: string): LazyDataFrame;
   /**
    * Add a column at index 0 that counts the rows.

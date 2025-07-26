@@ -1,5 +1,6 @@
 import { DataFrame } from ".";
 import { LazyDataFrame } from "./lazy/dataframe";
+import type { ValueOrArray } from "./utils";
 
 /**
  * Downsample rules
@@ -188,33 +189,78 @@ export type InterpolationMethod =
  */
 export type JoinType = "left" | "inner" | "full" | "semi" | "anti" | "cross";
 
-/** @ignore */
-export type JoinBaseOptions = {
-  how?: JoinType;
+/**
+ * options for same named column join @see {@link DataFrame.join}
+ */
+export type SameNameColumnJoinOptions<
+  L extends string = string,
+  R extends string = string,
+> = {
+  /** Name(s) of the join columns in both DataFrames. */
+  on: ValueOrArray<L & R>;
+  /** Join strategy */
+  how?: Exclude<JoinType, "cross">;
+  /** Suffix to append to columns with a duplicate name. */
+  suffix?: string;
+};
+/**
+ * options for differently named column join @see {@link DataFrame.join}
+ */
+export type DifferentNameColumnJoinOptions<
+  L extends string = string,
+  R extends string = string,
+> = {
+  /** Name(s) of the left join column(s). */
+  leftOn: ValueOrArray<L>;
+  /** Name(s) of the right join column(s). */
+  rightOn: ValueOrArray<R>;
+  /** Join strategy */
+  how?: Exclude<JoinType, "cross">;
+  /** Suffix to append to columns with a duplicate name. */
+  suffix?: string;
+};
+/**
+ * options for cross join @see {@link DataFrame.join}
+ */
+export type CrossJoinOptions = {
+  /** Join strategy */
+  how: "cross";
+  /** Suffix to append to columns with a duplicate name. */
   suffix?: string;
 };
 /**
  * options for join operations @see {@link DataFrame.join}
  */
-export interface JoinOptions {
-  /** left join column */
-  leftOn?: string | Array<string>;
-  /** right join column */
-  rightOn?: string | Array<string>;
-  /** left and right join column */
-  on?: string | Array<string>;
-  /** join type */
-  how?: JoinType;
-  suffix?: string;
-}
+export type JoinOptions<L extends string = string, R extends string = string> =
+  | SameNameColumnJoinOptions<L, R>
+  | DifferentNameColumnJoinOptions<L, R>
+  | CrossJoinOptions;
 
+type LazyJoinBase = {
+  /** Allow the physical plan to optionally evaluate the computation of both DataFrames up to the join in parallel. */
+  allowParallel?: boolean;
+  /** Force the physical plan to evaluate the computation of both DataFrames up to the join in parallel. */
+  forceParallel?: boolean;
+};
+export type LazySameNameColumnJoinOptions<
+  L extends string = string,
+  R extends string = string,
+> = SameNameColumnJoinOptions<L, R> & LazyJoinBase;
+export type LazyDifferentNameColumnJoinOptions<
+  L extends string = string,
+  R extends string = string,
+> = DifferentNameColumnJoinOptions<L, R> & LazyJoinBase;
+export type LazyCrossJoinOptions = CrossJoinOptions & LazyJoinBase;
 /**
  * options for lazy join operations @see {@link LazyDataFrame.join}
  */
-export interface LazyJoinOptions extends JoinOptions {
-  allowParallel?: boolean;
-  forceParallel?: boolean;
-}
+export type LazyJoinOptions<
+  L extends string = string,
+  R extends string = string,
+> =
+  | LazySameNameColumnJoinOptions<L, R>
+  | LazyDifferentNameColumnJoinOptions<L, R>
+  | LazyCrossJoinOptions;
 
 /**
  * options for lazy operations @see {@link LazyDataFrame.collect}

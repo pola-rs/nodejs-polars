@@ -1,12 +1,15 @@
 import { DataFrame, _DataFrame } from "../dataframe";
-import { DTYPE_TO_FFINAME, DataType, type Optional } from "../datatypes";
-import type {
-  DTypeToJs,
-  DTypeToJsLoose,
-  DtypeToJsName,
-  JsToDtype,
-  JsType,
-} from "../datatypes/datatype";
+import {
+  type Bool,
+  DTYPE_TO_FFINAME,
+  type DTypeToJs,
+  type DTypeToJsLoose,
+  DataType,
+  type DtypeToJsName,
+  type JsToDtype,
+  type JsType,
+  type Optional,
+} from "../datatypes";
 import { InvalidOperationError } from "../error";
 import { arrayToJsSeries } from "../internals/construction";
 import pli from "../internals/polars_internal";
@@ -142,12 +145,18 @@ export interface Series<T extends DataType = any, Name extends string = string>
   argSort({
     descending,
     nullsLast,
-  }: { descending?: boolean; nullsLast?: boolean }): Series<T, Name>;
+  }: {
+    descending?: boolean;
+    nullsLast?: boolean;
+  }): Series<T, Name>;
   /* @deprecated Use descending instead */
   argSort({
     reverse, // deprecated
     nullsLast,
-  }: { reverse?: boolean; nullsLast?: boolean }): Series<T, Name>;
+  }: {
+    reverse?: boolean;
+    nullsLast?: boolean;
+  }): Series<T, Name>;
   argSort(): Series<T, Name>;
   /**
    * __Rename this Series.__
@@ -410,7 +419,7 @@ export interface Series<T extends DataType = any, Name extends string = string>
   /**
    * Check if this Series is a Boolean.
    */
-  isBoolean(): boolean;
+  isBoolean(): this is Series<Bool>;
   /**
    * Check if this Series is a DataTime.
    */
@@ -512,7 +521,19 @@ export interface Series<T extends DataType = any, Name extends string = string>
   /**
    * Check if this Series datatype is numeric.
    */
-  isNumeric(): boolean;
+  isNumeric(): this is Series<
+    | DataType.Int8
+    | DataType.Int16
+    | DataType.Int32
+    | DataType.Int64
+    | DataType.UInt8
+    | DataType.UInt16
+    | DataType.UInt32
+    | DataType.UInt64
+    | DataType.Float32
+    | DataType.Float64
+    | DataType.Decimal
+  >;
   /**
    * __Get mask of unique values.__
    * ___
