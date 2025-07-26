@@ -12,9 +12,12 @@ import { type LazyDataFrame, _LazyDataFrame } from "./lazy/dataframe";
 import { Expr } from "./lazy/expr";
 import { Series, _Series } from "./series";
 import type {
+  CrossJoinOptions,
   CsvWriterOptions,
+  DifferentNameColumnJoinOptions,
   FillNullStrategy,
   JoinOptions,
+  SameNameColumnJoinOptions,
   WriteAvroOptions,
   WriteIPCOptions,
   WriteParquetOptions,
@@ -27,7 +30,6 @@ import {
   type ColumnsOrExpr,
   type ExprOrString,
   type Simplify,
-  type ValueOrArray,
   columnOrColumns,
   columnOrColumnsStrict,
   isSeriesArray,
@@ -185,7 +187,7 @@ type SchemaToSeriesRecord<T extends Record<string, DataType>> = {
   [K in keyof T]: K extends string ? Series<T[K], K> : never;
 };
 type ArrayLikeLooseRecordToSchema<T extends Record<string, ArrayLike<any>>> = {
-  [K in keyof T]: K extends string
+  [K in keyof T]: K extends string | number
     ? T[K] extends ArrayLike<infer V>
       ? V extends DataType
         ? V
@@ -211,11 +213,11 @@ export type JoinSchemas<
     [K_SUFFIXED in keyof S1 &
       Exclude<
         keyof S2,
-        Opt extends { how: "cross" }
+        Opt extends CrossJoinOptions
           ? never
-          : Opt extends Pick<JoinOptions, "on">
+          : Opt extends SameNameColumnJoinOptions
             ? ExtractJoinKeys<Opt["on"]>
-            : Opt extends Pick<JoinOptions, "leftOn" | "rightOn">
+            : Opt extends DifferentNameColumnJoinOptions
               ? ExtractJoinKeys<Opt["rightOn"]>
               : never
       > as `${K_SUFFIXED extends string ? K_SUFFIXED : never}${ExtractSuffix<Opt>}`]: K_SUFFIXED extends string
@@ -823,12 +825,10 @@ export interface DataFrame<S extends Schema = any>
    *  __SQL like joins.__
    * @param other - DataFrame to join with.
    * @param options
-   * @param options.leftOn - Name(s) of the left join column(s).
-   * @param options.rightOn - Name(s) of the right join column(s).
    * @param options.on - Name(s) of the join columns in both DataFrames.
    * @param options.how - Join strategy
    * @param options.suffix - Suffix to append to columns with a duplicate name.
-   * @see {@link JoinOptions}
+   * @see {@link SameNameColumnJoinOptions}
    * @example
    * ```
    * > const df = pl.DataFrame({
@@ -855,21 +855,95 @@ export interface DataFrame<S extends Schema = any>
    */
   join<
     S2 extends Schema,
-    const Opts extends { on: ValueOrArray<keyof S & keyof S2> } & Omit<
-      JoinOptions,
-      "leftOn" | "rightOn"
+    const Opts extends SameNameColumnJoinOptions<
+      Extract<keyof S, string>,
+      Extract<keyof S2, string>
     >,
-  >(other: DataFrame<S2>, options: Opts): DataFrame<JoinSchemas<S, S2, Opts>>;
+  >(
+    other: DataFrame<S2>,
+    // the right & part is only used for typedoc to understend which fields are used
+    options: Opts & SameNameColumnJoinOptions,
+  ): DataFrame<JoinSchemas<S, S2, Opts>>;
+  /**
+   *  __SQL like joins with different names for left and right dataframes.__
+   * @param other - DataFrame to join with.
+   * @param options
+   * @param options.leftOn - Name(s) of the left join column(s).
+   * @param options.rightOn - Name(s) of the right join column(s).
+   * @param options.how - Join strategy
+   * @param options.suffix - Suffix to append to columns with a duplicate name.
+   * @see {@link DifferentNameColumnJoinOptions}
+   * @example
+   * ```
+   * > const df = pl.DataFrame({
+   * ...   "foo": [1, 2, 3],
+   * ...   "bar": [6.0, 7.0, 8.0],
+   * ...   "ham": ['a', 'b', 'c']
+   * ... });
+   * > const otherDF = pl.DataFrame({
+   * ...   "apple": ['x', 'y', 'z'],
+   * ...   "ham": ['a', 'b', 'd']
+   * ... });
+   * > df.join(otherDF, {leftOn: 'ham', rightOn: 'ham'})
+   * shape: (2, 4)
+   * ╭─────┬─────┬─────┬───────╮
+   * │ foo ┆ bar ┆ ham ┆ apple │
+   * │ --- ┆ --- ┆ --- ┆ ---   │
+   * │ i64 ┆ f64 ┆ str ┆ str   │
+   * ╞═════╪═════╪═════╪═══════╡
+   * │ 1   ┆ 6   ┆ "a" ┆ "x"   │
+   * ├╌╌╌╌╌┼╌╌╌╌╌┼╌╌╌╌╌┼╌╌╌╌╌╌╌┤
+   * │ 2   ┆ 7   ┆ "b" ┆ "y"   │
+   * ╰─────┴─────┴─────┴───────╯
+   * ```
+   */
   join<
     S2 extends Schema,
-    const Opts extends {
-      leftOn: ValueOrArray<keyof S>;
-      rightOn: ValueOrArray<keyof S2>;
-    } & Omit<JoinOptions, "on">,
-  >(other: DataFrame<S2>, options: Opts): DataFrame<JoinSchemas<S, S2, Opts>>;
-  join<S2 extends Schema, const Opts extends { how: "cross"; suffix?: string }>(
+    const Opts extends DifferentNameColumnJoinOptions<
+      Extract<keyof S, string>,
+      Extract<keyof S2, string>
+    >,
+  >(
     other: DataFrame<S2>,
-    options: Opts,
+    // the right & part is only used for typedoc to understend which fields are used
+    options: Opts & DifferentNameColumnJoinOptions,
+  ): DataFrame<JoinSchemas<S, S2, Opts>>;
+  /**
+   *  __SQL like cross joins.__
+   * @param other - DataFrame to join with.
+   * @param options
+   * @param options.how - Join strategy
+   * @param options.suffix - Suffix to append to columns with a duplicate name.
+   * @see {@link CrossJoinOptions}
+   * @example
+   * ```
+   * > const df = pl.DataFrame({
+   * ...   "foo": [1, 2],
+   * ...   "bar": [6.0, 7.0],
+   * ...   "ham": ['a', 'b']
+   * ... });
+   * > const otherDF = pl.DataFrame({
+   * ...   "apple": ['x', 'y'],
+   * ...   "ham": ['a', 'b']
+   * ... });
+   * > df.join(otherDF, {how: 'cross'})
+   * shape: (4, 5)
+   * ╭─────┬─────┬─────┬───────┬───────────╮
+   * │ foo ┆ bar ┆ ham ┆ apple ┆ ham_right │
+   * │ --- ┆ --- ┆ --- ┆ ---   ┆ ---       │
+   * │ f64 ┆ f64 ┆ str ┆ str   ┆ str       │
+   * ╞═════╪═════╪═════╪═══════╪═══════════╡
+   * │ 1.0 ┆ 6.0 ┆ a   ┆ x     ┆ a         │
+   * │ 1.0 ┆ 6.0 ┆ a   ┆ y     ┆ b         │
+   * │ 2.0 ┆ 7.0 ┆ b   ┆ x     ┆ a         │
+   * │ 2.0 ┆ 7.0 ┆ b   ┆ y     ┆ b         │
+   * ╰─────┴─────┴─────┴───────┴───────────╯
+   * ```
+   */
+  join<S2 extends Schema, const Opts extends CrossJoinOptions>(
+    other: DataFrame<S2>,
+    // the right & part is only used for typedoc to understend which fields are used
+    options: Opts & CrossJoinOptions,
   ): DataFrame<JoinSchemas<S, S2, Opts>>;
 
   /**

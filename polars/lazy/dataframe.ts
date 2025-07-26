@@ -9,8 +9,11 @@ import type { Series } from "../series";
 import type { Deserialize, GroupByOps, Serialize } from "../shared_traits";
 import type {
   CsvWriterOptions,
+  LazyCrossJoinOptions,
+  LazyDifferentNameColumnJoinOptions,
   LazyJoinOptions,
   LazyOptions,
+  LazySameNameColumnJoinOptions,
   SinkParquetOptions,
 } from "../types";
 import {
@@ -178,8 +181,6 @@ export interface LazyDataFrame<S extends Schema = any>
   /**
    *  __SQL like joins.__
    * @param other - DataFrame to join with.
-   * @param joinOptions.leftOn - Name(s) of the left join column(s).
-   * @param joinOptions.rightOn - Name(s) of the right join column(s).
    * @param joinOptions.on - Name(s) of the join columns in both DataFrames.
    * @param joinOptions.how - Join strategy
    * @param joinOptions.suffix - Suffix to append to columns with a duplicate name.
@@ -213,35 +214,99 @@ export interface LazyDataFrame<S extends Schema = any>
    */
   join<
     S2 extends Schema,
-    const Opts extends { on: ValueOrArray<string | Expr> } & Omit<
-      LazyJoinOptions,
-      "leftOn" | "rightOn"
+    const Opts extends LazySameNameColumnJoinOptions<
+      Extract<keyof S, string>,
+      Extract<keyof S2, string>
     >,
   >(
     other: LazyDataFrame<S2>,
-    joinOptions: Opts,
+    // the right & part is only used for typedoc to understend which fields are used
+    joinOptions: Opts & LazySameNameColumnJoinOptions,
   ): LazyDataFrame<JoinSchemas<S, S2, Opts>>;
+  /**
+   *  __SQL like joins with different names for left and right dataframes.__
+   * @param other - DataFrame to join with.
+   * @param joinOptions.leftOn - Name(s) of the left join column(s).
+   * @param joinOptions.rightOn - Name(s) of the right join column(s).
+   * @param joinOptions.how - Join strategy
+   * @param joinOptions.suffix - Suffix to append to columns with a duplicate name.
+   * @param joinOptions.allowParallel - Allow the physical plan to optionally evaluate the computation of both DataFrames up to the join in parallel.
+   * @param joinOptions.forceParallel - Force the physical plan to evaluate the computation of both DataFrames up to the join in parallel.
+   * @see {@link LazyJoinOptions}
+   * @example
+   * ```
+   * >>> const df = pl.DataFrame({
+   * >>>     foo: [1, 2, 3],
+   * >>>     bar: [6.0, 7.0, 8.0],
+   * >>>     ham: ['a', 'b', 'c'],
+   * >>>   }).lazy()
+   * >>>
+   * >>> const otherDF = pl.DataFrame({
+   * >>>     apple: ['x', 'y', 'z'],
+   * >>>     ham: ['a', 'b', 'd'],
+   * >>>   }).lazy();
+   * >>> const result = await df.join(otherDF, { leftOn: 'ham', rightOn: 'ham', how: 'inner' }).collect();
+   * shape: (2, 4)
+   * ╭─────┬─────┬─────┬───────╮
+   * │ foo ┆ bar ┆ ham ┆ apple │
+   * │ --- ┆ --- ┆ --- ┆ ---   │
+   * │ i64 ┆ f64 ┆ str ┆ str   │
+   * ╞═════╪═════╪═════╪═══════╡
+   * │ 1   ┆ 6   ┆ "a" ┆ "x"   │
+   * ├╌╌╌╌╌┼╌╌╌╌╌┼╌╌╌╌╌┼╌╌╌╌╌╌╌┤
+   * │ 2   ┆ 7   ┆ "b" ┆ "y"   │
+   * ╰─────┴─────┴─────┴───────╯
+   * ```
+   */
   join<
     S2 extends Schema,
-    const Opts extends {
-      leftOn: ValueOrArray<keyof S>;
-      rightOn: ValueOrArray<keyof S2>;
-    } & Omit<LazyJoinOptions, "on">,
+    const Opts extends LazyDifferentNameColumnJoinOptions<
+      Extract<keyof S, string>,
+      Extract<keyof S2, string>
+    >,
   >(
     other: LazyDataFrame<S2>,
-    joinOptions: Opts,
+    // the right & part is only used for typedoc to understend which fields are used
+    joinOptions: Opts & LazyDifferentNameColumnJoinOptions,
   ): LazyDataFrame<JoinSchemas<S, S2, Opts>>;
-  join<
-    S2 extends Schema,
-    const Opts extends {
-      how: "cross";
-      suffix?: string;
-      allowParallel?: boolean;
-      forceParallel?: boolean;
-    },
-  >(
+  /**
+   *  __SQL like cross joins.__
+   * @param other - DataFrame to join with.
+   * @param joinOptions.how - Join strategy
+   * @param joinOptions.suffix - Suffix to append to columns with a duplicate name.
+   * @param joinOptions.allowParallel - Allow the physical plan to optionally evaluate the computation of both DataFrames up to the join in parallel.
+   * @param joinOptions.forceParallel - Force the physical plan to evaluate the computation of both DataFrames up to the join in parallel.
+   * @see {@link LazyJoinOptions}
+   * @example
+   * ```
+   * >>> const df = pl.DataFrame({
+   * >>>     foo: [1, 2],
+   * >>>     bar: [6.0, 7.0],
+   * >>>     ham: ['a', 'b'],
+   * >>>   }).lazy()
+   * >>>
+   * >>> const otherDF = pl.DataFrame({
+   * >>>     apple: ['x', 'y'],
+   * >>>     ham: ['a', 'b'],
+   * >>>   }).lazy();
+   * >>> const result = await df.join(otherDF, { how: 'cross' }).collect();
+   * shape: (4, 5)
+   * ╭─────┬─────┬─────┬───────┬───────────╮
+   * │ foo ┆ bar ┆ ham ┆ apple ┆ ham_right │
+   * │ --- ┆ --- ┆ --- ┆ ---   ┆ ---       │
+   * │ f64 ┆ f64 ┆ str ┆ str   ┆ str       │
+   * ╞═════╪═════╪═════╪═══════╪═══════════╡
+   * │ 1.0 ┆ 6.0 ┆ a   ┆ x     ┆ a         │
+   * │ 1.0 ┆ 6.0 ┆ a   ┆ y     ┆ b         │
+   * │ 2.0 ┆ 7.0 ┆ b   ┆ x     ┆ a         │
+   * │ 2.0 ┆ 7.0 ┆ b   ┆ y     ┆ b         │
+   * ╰─────┴─────┴─────┴───────┴───────────╯
+   * ```
+   */
+  join<S2 extends Schema, const Opts extends LazyCrossJoinOptions>(
     other: LazyDataFrame<S2>,
-    options: Opts,
+    // the right & part is only used for typedoc to understend which fields are used
+    joinOptions: Opts & LazyCrossJoinOptions,
   ): LazyDataFrame<JoinSchemas<S, S2, Opts>>;
 
   /**
