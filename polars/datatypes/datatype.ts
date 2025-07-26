@@ -202,7 +202,7 @@ export class Float64 extends DataType<"Float64"> {
   declare __dtype: "Float64";
 }
 
-// biome-ignore lint/suspicious/noShadowRestrictedNames: <explanation>
+// biome-ignore lint/suspicious/noShadowRestrictedNames: Using Polars Date
 export class Date extends DataType<"Date"> {
   declare __dtype: "Date";
 }
@@ -215,7 +215,7 @@ export class Object_ extends DataType<"Object"> {
 export class Utf8 extends DataType<"Utf8"> {
   declare __dtype: "Utf8";
 }
-// biome-ignore lint/suspicious/noShadowRestrictedNames: <explanation>
+// biome-ignore lint/suspicious/noShadowRestrictedNames: Using Polars String
 export class String extends DataType<"String"> {
   declare __dtype: "String";
 }

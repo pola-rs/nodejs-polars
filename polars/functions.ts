@@ -1,9 +1,9 @@
-import { type DataFrame, _DataFrame } from "./dataframe";
+import { _DataFrame, type DataFrame } from "./dataframe";
 /* eslint-disable no-redeclare */
 import { jsTypeToPolarsType } from "./internals/construction";
 import pli from "./internals/polars_internal";
-import { type LazyDataFrame, _LazyDataFrame } from "./lazy/dataframe";
-import { type Series, _Series } from "./series";
+import { _LazyDataFrame, type LazyDataFrame } from "./lazy/dataframe";
+import { _Series, type Series } from "./series";
 import type { ConcatOptions } from "./types";
 import { isDataFrameArray, isLazyDataFrameArray, isSeriesArray } from "./utils";
 

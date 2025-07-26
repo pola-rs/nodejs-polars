@@ -3,7 +3,7 @@ import { DataType } from "../datatypes";
 import pli from "../internals/polars_internal";
 import { Series } from "../series";
 import { type ExprOrString, range, selectionToExprList } from "../utils";
-import { Expr, _Expr, exprToLitOrExpr } from "./expr";
+import { _Expr, Expr, exprToLitOrExpr } from "./expr";
 
 /**
  * __A column in a DataFrame.__
@@ -726,7 +726,7 @@ export function struct(
 
   if (Series.isSeries(exprs[0])) {
     return select(
-      _Expr(pli.asStruct(exprs.map((e) => pli.lit(e.inner())))),
+      _Expr(pli.asStruct(exprs.map((e) => pli.lit(e._s).alias(e.name)))),
     ).toSeries();
   }
   exprs = selectionToExprList(exprs);

@@ -61,6 +61,13 @@ export interface CsvWriterOptions {
   nullValue?: string;
   maintainOrder?: boolean;
 }
+
+export interface SinkOptions {
+  syncOnClose: any; // Call sync when closing the file.
+  maintainOrder: boolean; // The output file needs to maintain order of the data that comes in.
+  mkdir: boolean; // Recursively create all the directories in the path.
+}
+
 /**
  * Options for @see {@link LazyDataFrame.sinkParquet}
  * @category Options
@@ -80,6 +87,7 @@ export interface SinkParquetOptions {
   noOptimization?: boolean;
   cloudOptions?: Map<string, string>;
   retries?: number;
+  sinkOptions?: SinkOptions;
 }
 /**
  * Options for {@link DataFrame.writeJSON}

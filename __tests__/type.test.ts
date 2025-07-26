@@ -1,6 +1,5 @@
-import { expectType } from "ts-expect";
-
 import pl from "@polars/index";
+import { expectType } from "ts-expect";
 
 describe("type tests", () => {
   it("types the DataFrame from the input", () => {

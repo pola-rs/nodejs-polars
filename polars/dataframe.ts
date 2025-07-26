@@ -1,16 +1,27 @@
 import { Stream, Writable } from "node:stream";
+import { DataType, type DTypeToJs, type JsToDtype } from "./datatypes";
 import { concat } from "./functions";
 import {
+  _GroupBy,
   DynamicGroupBy,
   type GroupBy,
   RollingGroupBy,
-  _GroupBy,
 } from "./groupby";
+import { escapeHTML } from "./html";
 import { arrayToJsDataFrame } from "./internals/construction";
 import pli from "./internals/polars_internal";
-import { type LazyDataFrame, _LazyDataFrame } from "./lazy/dataframe";
+import { _LazyDataFrame, type LazyDataFrame } from "./lazy/dataframe";
 import { Expr } from "./lazy/expr";
-import { Series, _Series } from "./series";
+import { col, element } from "./lazy/functions";
+import { _Series, Series } from "./series";
+
+import type {
+  Arithmetic,
+  Deserialize,
+  GroupByOps,
+  Sample,
+  Serialize,
+} from "./shared_traits";
 import type {
   CrossJoinOptions,
   CsvWriterOptions,
@@ -22,30 +33,15 @@ import type {
   WriteIPCOptions,
   WriteParquetOptions,
 } from "./types";
-
-import { type DTypeToJs, DataType, type JsToDtype } from "./datatypes";
-
 import {
   type ColumnSelection,
   type ColumnsOrExpr,
-  type ExprOrString,
-  type Simplify,
   columnOrColumns,
   columnOrColumnsStrict,
+  type ExprOrString,
   isSeriesArray,
+  type Simplify,
 } from "./utils";
-
-import type {
-  Arithmetic,
-  Deserialize,
-  GroupByOps,
-  Sample,
-  Serialize,
-} from "./shared_traits";
-
-import { escapeHTML } from "./html";
-
-import { col, element } from "./lazy/functions";
 
 const inspect = Symbol.for("nodejs.util.inspect.custom");
 const jupyterDisplay = Symbol.for("Jupyter.display");
@@ -2557,7 +2553,6 @@ export const _DataFrame = <S extends Schema>(_df: any): DataFrame<S> => {
       return _df.toRows();
     },
     sample(opts?, frac?, withReplacement = false, seed?) {
-      // biome-ignore lint/style/noArguments: <explanation>
       if (arguments.length === 0) {
         return wrap(
           "sampleN",

@@ -1,22 +1,29 @@
 import * as df from "./dataframe";
-import { DataType, Field as _field } from "./datatypes";
+import { Field as _field, DataType } from "./datatypes";
 import * as series from "./series";
+
 export { DataType } from "./datatypes";
+
 import * as cfg from "./cfg";
 import * as func from "./functions";
 import pli from "./internals/polars_internal";
 import * as io from "./io";
 import * as ldf from "./lazy/dataframe";
-export * from "./series";
+
+export * from "./cfg";
 export * from "./dataframe";
 export * from "./functions";
 export * from "./io";
-export * from "./cfg";
-export * from "./lazy/dataframe";
 export * from "./lazy";
+export * from "./lazy/dataframe";
+export * from "./series";
+
 import * as lazy from "./lazy";
+
 export * from "./types";
+
 import * as sql from "./sql";
+
 export type { GroupBy } from "./groupby";
 
 export namespace pl {

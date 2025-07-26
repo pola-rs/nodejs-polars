@@ -1,4 +1,5 @@
 import pl from "@polars";
+
 describe("sql", () => {
   test("execute", () => {
     const df = pl.DataFrame({

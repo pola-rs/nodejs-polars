@@ -1,8 +1,8 @@
 import {
+  _DataFrame,
   type DataFrame,
   type JoinSchemas,
   type Schema,
-  _DataFrame,
 } from "../dataframe";
 import pli from "../internals/polars_internal";
 import type { Series } from "../series";
@@ -19,14 +19,14 @@ import type {
 import {
   type ColumnSelection,
   type ColumnsOrExpr,
+  columnOrColumnsStrict,
   type ExprOrString,
   type Simplify,
-  type ValueOrArray,
-  columnOrColumnsStrict,
   selectionToExprList,
+  type ValueOrArray,
 } from "../utils";
 import { Expr, exprToLitOrExpr } from "./expr";
-import { type LazyGroupBy, _LazyGroupBy } from "./groupby";
+import { _LazyGroupBy, type LazyGroupBy } from "./groupby";
 
 const inspect = Symbol.for("nodejs.util.inspect.custom");
 
@@ -603,14 +603,14 @@ export interface LazyDataFrame<S extends Schema = any>
     @param options.nullValue - A string representing null values (defaulting to the empty string).
     @param options.maintainOrder - Maintain the order in which data is processed.
         Setting this to `False` will  be slightly faster.
-
+    @return DataFrame
     Examples
     --------
     >>> const lf = pl.scanCsv("/path/to/my_larger_than_ram_file.csv")
-    >>> lf.sinkCsv("out.csv")
+    >>> lf.sinkCsv("out.csv").collect()
   */
 
-  sinkCSV(path: string, options?: CsvWriterOptions): void;
+  sinkCSV(path: string, options?: CsvWriterOptions): LazyDataFrame;
 
   /***
    *
@@ -660,12 +660,13 @@ export interface LazyDataFrame<S extends Schema = any>
         * `azure <https://docs.rs/object_store/latest/object_store/azure/enum.AzureConfigKey.html>`_
 
         If `cloudOptions` is not provided, Polars will try to infer the information from environment variables.
+    @return DataFrame
     Examples
     --------
     >>> const lf = pl.scanCsv("/path/to/my_larger_than_ram_file.csv")  # doctest: +SKIP
-    >>> lf.sinkParquet("out.parquet")  # doctest: +SKIP
+    >>> lf.sinkParquet("out.parquet").collect()  # doctest: +SKIP
    */
-  sinkParquet(path: string, options?: SinkParquetOptions): void;
+  sinkParquet(path: string, options?: SinkParquetOptions): LazyDataFrame;
 }
 
 const prepareGroupbyInputs = (by) => {
@@ -1162,12 +1163,21 @@ export const _LazyDataFrame = (_ldf: any): LazyDataFrame => {
     },
     sinkCSV(path, options: CsvWriterOptions = {}) {
       options.maintainOrder = options.maintainOrder ?? false;
-      _ldf.sinkCsv(path, options);
+      return _ldf.sinkCsv(path, options, {
+        syncOnClose: "all",
+        maintainOrder: false,
+        mkdir: true,
+      });
     },
     sinkParquet(path: string, options: SinkParquetOptions = {}) {
       options.compression = options.compression ?? "zstd";
       options.statistics = options.statistics ?? false;
-      _ldf.sinkParquet(path, options);
+      options.sinkOptions = options.sinkOptions ?? {
+        syncOnClose: "all",
+        maintainOrder: false,
+        mkdir: true,
+      };
+      return _ldf.sinkParquet(path, options);
     },
   };
 };
