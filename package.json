@@ -18,17 +18,17 @@
     "rust"
   ],
   "napi": {
-    "name": "nodejs-polars",
-    "triples": {
-      "defaults": true,
-      "additional": [
-        "aarch64-apple-darwin",
-        "aarch64-unknown-linux-gnu",
-        "aarch64-unknown-linux-musl",
-        "aarch64-linux-android",
-        "x86_64-unknown-linux-musl"
-      ]
-    }
+    "binaryName": "nodejs-polars",
+    "targets": [
+      "x86_64-unknown-linux-gnu",
+      "x86_64-pc-windows-msvc",
+      "x86_64-apple-darwin",
+      "x86_64-unknown-linux-musl",
+      "aarch64-apple-darwin",
+      "aarch64-unknown-linux-gnu",
+      "aarch64-unknown-linux-musl",
+      "aarch64-linux-android"
+    ]
   },
   "engines": {
     "node": ">= 18"
@@ -40,8 +40,8 @@
   "scripts": {
     "artifacts": "napi artifacts",
     "bench": "node -r @swc-node/register benchmark/bench.ts",
-    "build": "napi build --platform  --release polars",
-    "build:debug": "napi build --platform polars",
+    "build": "napi build --platform --release --output-dir polars",
+    "build:debug": "napi build --platform --output-dir polars",
     "build:ts": " rm -rf bin; tsc -p tsconfig.build.json",
     "cp:bin": "cp ./polars/*.node bin/",
     "format:rs": "cargo fmt",
@@ -55,7 +55,7 @@
   },
   "devDependencies": {
     "@biomejs/biome": "=2.1.2",
-    "@napi-rs/cli": "^2.18.4",
+    "@napi-rs/cli": "^3.0.4",
     "@types/chance": "^1.1.7",
     "@types/jest": "^30.0.0",
     "@types/node": "^24.1.0",
