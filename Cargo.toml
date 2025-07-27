@@ -19,7 +19,7 @@ napi = { version = "2.16.17", default-features = false, features = [
     "napi8",
     "serde-json",
 ] }
-napi-derive = { version = "2.16.13", default-features = false }
+napi-derive = { version = "2.16.13", features = ["type-def"] }
 polars-core = { version = "0.49.1", default-features = false }
 polars-io = { version = "0.49.1", default-features = false }
 polars-lazy = { version = "0.49.1", default-features = false }
