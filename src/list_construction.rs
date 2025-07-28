@@ -1,4 +1,5 @@
 use crate::prelude::*;
+use napi::bindgen_prelude::*;
 
 macro_rules! typed_to_chunked {
     ($arr:expr, $type:ty, $pl_type:ty) => {{
@@ -10,7 +11,7 @@ macro_rules! typed_to_chunked {
 }
 
 macro_rules! typed_option_or_null {
-    ($name:expr, $arr:expr, $type:ty, $dtype:expr, $pl_type:ty) => {{
+    ($name:expr, $arr:expr, $type:ty, $dtype:expr, $pl_type:ty, $arry_type:ty) => {{
         let len = $arr.len();
         let mut builder = ListPrimitiveChunkedBuilder::<$pl_type>::new(
             $name,
@@ -21,9 +22,8 @@ macro_rules! typed_option_or_null {
         for idx in 0..len {
             let obj: napi::Unknown = $arr.get(idx)?.unwrap();
             if obj.is_typedarray()? {
-                let buff: napi::JsTypedArray = unsafe { obj.cast()? };
-                let v = buff.into_value()?;
-                let ca = typed_to_chunked!(v, $type, $pl_type);
+                let buff: $arry_type = unsafe { obj.cast()? };
+                let ca = typed_to_chunked!(buff, $type, $pl_type);
                 builder.append_iter(ca.into_iter())
             } else {
                 let values: Either<Array, Null> = $arr.get(idx)?.unwrap();
@@ -50,7 +50,7 @@ macro_rules! typed_option_or_null {
     }};
 }
 macro_rules! build_list_with_downcast {
-    ($name:expr, $arr:expr, $type:ty, $dtype:expr, $pl_type:ty) => {{
+    ($name:expr, $arr:expr, $type:ty, $dtype:expr, $pl_type:ty, $arry_type:ty) => {{
         let len = $arr.len();
         let mut builder = ListPrimitiveChunkedBuilder::<$pl_type>::new(
             $name,
@@ -61,9 +61,8 @@ macro_rules! build_list_with_downcast {
         for idx in 0..len {
             let obj: napi::Unknown = $arr.get(idx)?.unwrap();
             if obj.is_typedarray()? {
-                let buff: napi::JsTypedArray = unsafe { obj.cast()? };
-                let v = buff.into_value()?;
-                let ca = typed_to_chunked!(v, $type, $pl_type);
+                let buff: $arry_type = unsafe { obj.cast()? };
+                let ca = typed_to_chunked!(buff, $type, $pl_type);
                 builder.append_iter(ca.into_iter())
             } else {
                 let values: Either<Array, Null> = $arr.get(idx)?.unwrap();
@@ -98,42 +97,48 @@ pub fn js_arr_to_list(name: &str, arr: &Array, dtype: &DataType) -> napi::Result
             arr,
             i8,
             DataType::Int8,
-            Int8Type
+            Int8Type,
+            Int8Array
         ),
         DataType::UInt8 => build_list_with_downcast!(
             PlSmallStr::from_str(name),
             arr,
             u8,
             DataType::UInt8,
-            UInt8Type
+            UInt8Type,
+            Uint8Array
         ),
         DataType::Int16 => build_list_with_downcast!(
             PlSmallStr::from_str(name),
             arr,
             i16,
             DataType::Int16,
-            Int16Type
+            Int16Type,
+            Int16Array
         ),
         DataType::UInt16 => build_list_with_downcast!(
             PlSmallStr::from_str(name),
             arr,
             u16,
             DataType::UInt16,
-            UInt16Type
+            UInt16Type,
+            Uint16Array
         ),
         DataType::Int32 => typed_option_or_null!(
             PlSmallStr::from_str(name),
             arr,
             i32,
             DataType::Int32,
-            Int32Type
+            Int32Type,
+            Int32Array
         ),
         DataType::UInt32 => typed_option_or_null!(
             PlSmallStr::from_str(name),
             arr,
             u32,
             DataType::UInt32,
-            UInt32Type
+            UInt32Type,
+            Uint32Array
         ),
         DataType::Float32 => {
             build_list_with_downcast!(
@@ -141,7 +146,8 @@ pub fn js_arr_to_list(name: &str, arr: &Array, dtype: &DataType) -> napi::Result
                 arr,
                 f32,
                 DataType::Float32,
-                Float32Type
+                Float32Type,
+                Float32Array
             )
         }
         DataType::Int64 => typed_option_or_null!(
@@ -149,21 +155,24 @@ pub fn js_arr_to_list(name: &str, arr: &Array, dtype: &DataType) -> napi::Result
             arr,
             i64,
             DataType::Int64,
-            Int64Type
+            Int64Type,
+            BigInt64Array
         ),
         DataType::Float64 => typed_option_or_null!(
             PlSmallStr::from_str(name),
             arr,
             f64,
             DataType::Float64,
-            Float64Type
+            Float64Type,
+            Float64Array
         ),
         DataType::UInt64 => build_list_with_downcast!(
             PlSmallStr::from_str(name),
             arr,
             u64,
             DataType::UInt64,
-            UInt64Type
+            UInt64Type,
+            BigUint64Array
         ),
         DataType::String => {
             let mut builder = ListStringChunkedBuilder::new(
