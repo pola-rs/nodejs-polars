@@ -19,7 +19,7 @@ napi = { version = "2.16.17", default-features = false, features = [
     "napi8",
     "serde-json",
 ] }
-napi-derive = { version = "2.16.13", features = ["type-def"] }
+napi-derive = { version = "2.16.13", default-features = false }
 polars-core = { version = "0.49.1", default-features = false }
 polars-io = { version = "0.49.1", default-features = false }
 polars-lazy = { version = "0.49.1", default-features = false }
@@ -169,7 +169,7 @@ features = [
 version = "0.49.1"
 
 [build-dependencies]
-napi-build = "2.2.2"
+napi-build = "2.2.3"
 
 [profile.release]
 codegen-units = 1
