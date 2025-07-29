@@ -175,20 +175,7 @@ pub fn js_arr_to_list(name: &str, arr: &Array, dtype: &DataType) -> napi::Result
             BigUint64Array
         ),
         DataType::String => {
-            let mut builder = ListStringChunkedBuilder::new(
-                PlSmallStr::from_str(name),
-                len as usize,
-                (len as usize) * 5,
-            );
-            // for idx in 0..len {
-            //     let values: Either<Vec<Option<String>>, Null> = arr.get(idx)?.unwrap();
-
-            //     match values {
-            //         Either::A(inner_arr) => builder.append_trusted_len_iter(inner_arr.into_iter().into()),
-            //         Either::B(_) => builder.append_null(),
-            //     }
-            // }
-            builder.finish().into_series()
+            unsafe { arr.to_series() }
         }
         DataType::Boolean => {
             let mut builder = ListBooleanChunkedBuilder::new(

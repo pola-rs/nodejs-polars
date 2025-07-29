@@ -12,6 +12,7 @@ use std::fs::File;
 use std::hash::BuildHasher;
 use std::io::{BufReader, BufWriter, Cursor};
 use std::num::NonZeroUsize;
+use napi::bindgen_prelude::Object;
 
 #[napi]
 #[repr(transparent)]
@@ -1409,7 +1410,7 @@ impl JsDataFrame {
                     .map_err(JsPolarsErr::from)?;
             }
             ValueType::Object => {
-                let inner: napi::bindgen_prelude::Object = unsafe { path_or_buffer.cast()? };
+                let inner: Object = unsafe { path_or_buffer.cast()? };
                 let writeable = JsWriteStream { inner, env: &env };
 
                 ParquetWriter::new(writeable)
@@ -1440,7 +1441,7 @@ impl JsDataFrame {
                     .map_err(JsPolarsErr::from)?;
             }
             ValueType::Object => {
-                let inner: napi::bindgen_prelude::Object = unsafe { path_or_buffer.cast()? };
+                let inner: Object = unsafe { path_or_buffer.cast()? };
                 let writeable = JsWriteStream { inner, env: &env };
                 IpcWriter::new(writeable)
                     .with_compression(compression.0)
@@ -1470,7 +1471,7 @@ impl JsDataFrame {
                     .map_err(JsPolarsErr::from)?;
             }
             ValueType::Object => {
-                let inner: napi::bindgen_prelude::Object = unsafe { path_or_buffer.cast()? };
+                let inner: Object = unsafe { path_or_buffer.cast()? };
                 let writeable = JsWriteStream { inner, env: &env };
                 IpcStreamWriter::new(writeable)
                     .with_compression(compression.0)
@@ -1511,7 +1512,7 @@ impl JsDataFrame {
                     .map_err(JsPolarsErr::from)?;
             }
             ValueType::Object => {
-                let inner: napi::bindgen_prelude::Object = unsafe { path_or_buffer.cast()? };
+                let inner: Object = unsafe { path_or_buffer.cast()? };
                 let writeable = JsWriteStream { inner, env: &env };
                 JsonWriter::new(writeable)
                     .with_json_format(json_format)
@@ -1550,7 +1551,7 @@ impl JsDataFrame {
                     .map_err(JsPolarsErr::from)?;
             }
             ValueType::Object => {
-                let inner: napi::bindgen_prelude::Object = unsafe { path_or_buffer.cast()? };
+                let inner: Object = unsafe { path_or_buffer.cast()? };
                 let writeable = JsWriteStream { inner, env: &env };
 
                 AvroWriter::new(writeable)
@@ -1645,7 +1646,7 @@ fn obj_to_type(value: Option<Unknown>) -> DataType {
                 ValueType::String => DataType::String,
                 ValueType::Object => {
                     if val.is_array().unwrap() {
-                        let arr: napi::bindgen_prelude::Object = unsafe { val.cast().expect("REASON") };
+                        let arr: Object = unsafe { val.cast().expect("REASON") };
                         let len = arr.get_array_length().unwrap();
                         if len == 0 {
                             DataType::List(DataType::Null.into())
@@ -1667,7 +1668,7 @@ fn obj_to_type(value: Option<Unknown>) -> DataType {
                     } else if val.is_date().unwrap() {
                         DataType::Datetime(TimeUnit::Milliseconds, None)
                     } else {
-                        let inner_val: napi::bindgen_prelude::Object = unsafe { val.cast().expect("REASON") };
+                        let inner_val: Object = unsafe { val.cast().expect("REASON") };
                         let inner_keys = Object::keys(&inner_val).unwrap();
                         let mut fldvec: Vec<Field> = Vec::with_capacity(inner_keys.len() as usize);
 
