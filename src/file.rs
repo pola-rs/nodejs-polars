@@ -1,7 +1,8 @@
 use napi::bindgen_prelude::{Buffer, BufferSlice, Function, JsObjectValue, Null, Object};
 use napi::bindgen_prelude::ToNapiValue;
-use napi::threadsafe_function::*;
+use napi::threadsafe_function::{ThreadsafeFunction, ThreadsafeFunctionCallMode};
 use napi::Either;
+use std::io::{Error, ErrorKind};
 use std::io;
 use std::io::Write;
 
@@ -62,11 +63,16 @@ impl Write for JsFileLike<'_> {
 
 impl Write for JsWriteStream<'_> {
     fn write(&mut self, buf: &[u8]) -> Result<usize, io::Error> {
-        let stream_write: Function = self.inner.get_named_property("write").unwrap();
+        let stream_write: Function = self.inner.get_named_property("write").unwrap();        
         let bytes = BufferSlice::from_data(self.env, buf.to_owned()).unwrap();
-        let js_buff = bytes.into_unknown(self.env).unwrap();
-        stream_write.call(js_buff).unwrap();
-        Ok(buf.len())
+        let js_buff: Buffer = bytes.into_buffer(self.env).unwrap();
+        let js_buff = js_buff.into_unknown(self.env).unwrap();
+        let result = stream_write.apply(Some(&self.inner),js_buff);
+
+        match result {
+            Ok(_) => Ok(buf.len()),
+            Err(e) => return Err(Error::new(ErrorKind::InvalidData, format!("Error writing: {:?}", e))),       
+        }
     }
 
     fn flush(&mut self) -> Result<(), io::Error> {
