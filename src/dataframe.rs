@@ -1,6 +1,7 @@
 use crate::file::*;
 use crate::prelude::*;
 use crate::series::JsSeries;
+use napi::bindgen_prelude::Object;
 use polars::frame::row::{infer_schema, Row};
 use polars_io::csv::write::CsvWriterOptions;
 use polars_io::mmap::MmapBytesReader;
@@ -12,7 +13,6 @@ use std::fs::File;
 use std::hash::BuildHasher;
 use std::io::{BufReader, BufWriter, Cursor};
 use std::num::NonZeroUsize;
-use napi::bindgen_prelude::Object;
 
 #[napi]
 #[repr(transparent)]
@@ -459,9 +459,8 @@ pub fn from_rows(
                     let key: &PlSmallStr = fld.name();
                     if let Ok(unknown) = obj.get::<Unknown>(key) {
                         match unknown {
-                            Some(unknown) => {
-                                coerce_js_anyvalue(unknown, dtype.clone(), env).unwrap_or(AnyValue::Null)
-                            }
+                            Some(unknown) => coerce_js_anyvalue(unknown, dtype.clone(), env)
+                                .unwrap_or(AnyValue::Null),
                             _ => AnyValue::Null,
                         }
                     } else {
@@ -1621,7 +1620,10 @@ fn coerce_data_type<A: Borrow<DataType>>(datatypes: &[A]) -> DataType {
     };
 }
 
-fn obj_to_pairs<'a>(rows: &'a Array<'a>, len: usize) -> impl 'a + Iterator<Item = Vec<(String, DataType)>> {
+fn obj_to_pairs<'a>(
+    rows: &'a Array<'a>,
+    len: usize,
+) -> impl 'a + Iterator<Item = Vec<(String, DataType)>> {
     let len = std::cmp::min(len, rows.len() as usize);
     (0..len).map(move |idx| {
         let obj = rows.get::<Object>(idx as u32).unwrap().unwrap();
@@ -1791,12 +1793,10 @@ fn coerce_js_anyvalue<'a>(val: Unknown, dtype: DataType, env: Env) -> JsResult<A
             })?;
 
             let inner_val: napi::bindgen_prelude::Object = unsafe { val.cast()? };
-            let mut val_vec: Vec<polars::prelude::AnyValue<'_>> = Vec::with_capacity(number_of_fields as usize);
+            let mut val_vec: Vec<polars::prelude::AnyValue<'_>> =
+                Vec::with_capacity(number_of_fields as usize);
             fields.iter().for_each(|fld| {
-                let single_val = inner_val
-                    .get::<napi::Unknown>(&fld.name)
-                    .unwrap()
-                    .unwrap();
+                let single_val = inner_val.get::<napi::Unknown>(&fld.name).unwrap().unwrap();
                 let vv = match &fld.dtype {
                     DataType::Boolean => {
                         AnyValue::Boolean(single_val.coerce_to_bool().unwrap().try_into().unwrap())

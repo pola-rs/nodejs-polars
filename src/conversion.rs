@@ -886,7 +886,7 @@ impl FromNapiValue for Wrap<SortOptions> {
             .unwrap_or(false);
         let multithreaded = obj.get::<bool>("multithreaded")?.unwrap_or(false);
         let maintain_order: bool = obj.get::<bool>("maintainOrder")?.unwrap_or(true);
-        let limit = obj.get::< _>("limit")?.unwrap();
+        let limit = obj.get::<_>("limit")?.unwrap();
         let options = SortOptions {
             descending,
             nulls_last,

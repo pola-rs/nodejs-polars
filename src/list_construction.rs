@@ -69,7 +69,8 @@ macro_rules! build_list_with_downcast {
                 match values {
                     Either::A(inner_arr) => {
                         let inner_len = inner_arr.len();
-                        let mut inner_builder = PrimitiveChunkedBuilder::<$pl_type>::new($name, inner_len as usize);
+                        let mut inner_builder =
+                            PrimitiveChunkedBuilder::<$pl_type>::new($name, inner_len as usize);
                         for inner_idx in 0..inner_len {
                             let item: Option<Wrap<$type>> = inner_arr.get(inner_idx)?.unwrap();
                             match item {
@@ -174,9 +175,7 @@ pub fn js_arr_to_list(name: &str, arr: &Array, dtype: &DataType) -> napi::Result
             UInt64Type,
             BigUint64Array
         ),
-        DataType::String => {
-            arr.to_series(name)
-        }
+        DataType::String => arr.to_series(name),
         DataType::Boolean => {
             let mut builder = ListBooleanChunkedBuilder::new(
                 PlSmallStr::from_str(name),
