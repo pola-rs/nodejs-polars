@@ -38,24 +38,24 @@ impl TypeName for Wrap<StringChunked> {
 /// Safety.
 /// it is up to the consumer to make sure the item is valid
 pub(crate) trait ToSeries {
-    unsafe fn to_series(&self) -> Series;
+    fn to_series(&self, name: &str) -> Series;
 }
 
 impl ToSeries for Array<'_> {
-    unsafe fn to_series(&self) -> Series {
+    fn to_series(&self, name: &str) -> Series {
         let len = self.len();
         let mut v: Vec<AnyValue> = Vec::with_capacity(len as usize);
         for i in 0..len {
             let av: Wrap<AnyValue> = self.get(i).unwrap().unwrap_or(Wrap(AnyValue::Null));
             v.push(av.0);
         }
-        Series::new(PlSmallStr::EMPTY, v)
+        Series::new(name.into(), v)
     }
 }
 
 impl ToSeries for Unknown<'_> {
-    unsafe fn to_series(&self) -> Series {
-        let obj = self.cast::<Object>();
+    fn to_series(&self, name: &str) -> Series {
+        let obj = unsafe { self.cast::<Object>() };
         let len = obj.as_ref().unwrap().get_array_length_unchecked().unwrap();
         let mut v: Vec<AnyValue> = Vec::with_capacity(len as usize);
         for i in 0..len {
@@ -63,7 +63,7 @@ impl ToSeries for Unknown<'_> {
             let av = AnyValue::from_js(unknown).unwrap();
             v.push(av);
         }
-        Series::new(PlSmallStr::EMPTY, v)
+        Series::new(name.into(), v)
     }
 }
 

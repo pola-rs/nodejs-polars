@@ -175,7 +175,7 @@ pub fn js_arr_to_list(name: &str, arr: &Array, dtype: &DataType) -> napi::Result
             BigUint64Array
         ),
         DataType::String => {
-            unsafe { arr.to_series() }
+            arr.to_series(name)
         }
         DataType::Boolean => {
             let mut builder = ListBooleanChunkedBuilder::new(

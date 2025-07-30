@@ -1780,7 +1780,7 @@ fn coerce_js_anyvalue<'a>(val: Unknown, dtype: DataType, env: Env) -> JsResult<A
             }
         }
         (ValueType::Object, DataType::List(_)) => {
-            let s = unsafe { val.to_series() };
+            let s = val.to_series("");
             Ok(AnyValue::List(s))
         }
         (ValueType::Object, DataType::Struct(fields)) => {

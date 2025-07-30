@@ -1356,24 +1356,11 @@ impl_get!(series_get_i8, i8, i8, i32);
 impl_get!(series_get_i16, i16, i16, i32);
 impl_get!(series_get_i32, i32, i32, i32);
 impl_get!(series_get_i64, i64, i64, i32);
-// impl_get!(series_get_str, utf8, &str);
+impl_get!(series_get_str, str, utf8, &str);
 impl_get!(series_get_date, date, i32, i32);
 impl_get!(series_get_datetime, datetime, i64, i64);
 impl_get!(series_get_duration, duration, i64, i64);
 
-#[napi(catch_unwind)]
-pub fn series_get_str(s: &JsSeries, index: i64) -> Option<String> {
-    if let Ok(ca) = s.series.str() {
-        let index = if index < 0 {
-            (ca.len() as i64 + index) as usize
-        } else {
-            index as usize
-        };
-        ca.get(index).map(|s| s.to_owned())
-    } else {
-        None
-    }
-}
 macro_rules! impl_arithmetic {
   ($name:ident, $type:ty, $operand:tt) => {
       #[napi(catch_unwind)]
