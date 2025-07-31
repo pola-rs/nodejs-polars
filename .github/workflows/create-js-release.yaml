@@ -32,8 +32,7 @@ jobs:
             build: |-
               set -e &&
               rustup target add x86_64-unknown-linux-gnu &&
-              yarn build --target x86_64-unknown-linux-gnu --zig --zig-abi-suffix 2.12 &&
-              llvm-strip -x polars/*.node
+              yarn build -x --target x86_64-unknown-linux-gnu && llvm-strip -x polars/*.node
 
           - host: ubuntu-latest
             architecture: x64
