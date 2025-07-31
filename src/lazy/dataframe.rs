@@ -47,7 +47,7 @@ impl JsLazyGroupBy {
 #[napi]
 impl JsLazyFrame {
     #[napi(catch_unwind)]
-    pub fn to_js(&self, env: Env) -> napi::Result<napi::JsUnknown> {
+    pub fn to_js(&self, env: Env) -> napi::Result<napi::Unknown<'_>> {
         env.to_js_value(&self.ldf.logical_plan)
     }
 
@@ -293,8 +293,8 @@ impl JsLazyFrame {
         other: &JsLazyFrame,
         left_on: &JsExpr,
         right_on: &JsExpr,
-        left_by: Option<Vec<&str>>,
-        right_by: Option<Vec<&str>>,
+        left_by: Option<Vec<String>>,
+        right_by: Option<Vec<String>>,
         allow_parallel: bool,
         force_parallel: bool,
         suffix: String,
@@ -506,10 +506,10 @@ impl JsLazyFrame {
     #[napi(catch_unwind)]
     pub fn unpivot(
         &self,
-        id_vars: Vec<&str>,
-        value_vars: Vec<&str>,
-        variable_name: Option<&str>,
-        value_name: Option<&str>,
+        id_vars: Vec<String>,
+        value_vars: Vec<String>,
+        variable_name: Option<String>,
+        value_name: Option<String>,
     ) -> JsLazyFrame {
         let args = UnpivotArgsDSL {
             on: strings_to_selector(value_vars),

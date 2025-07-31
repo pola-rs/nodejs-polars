@@ -26,7 +26,7 @@ impl From<Series> for JsSeries {
 #[napi]
 impl JsSeries {
     #[napi(catch_unwind)]
-    pub fn to_js(&self, env: Env) -> napi::Result<napi::JsUnknown> {
+    pub fn to_js(&'_ self, env: Env) -> napi::Result<napi::Unknown<'_>> {
         env.to_js_value(&self.series)
     }
 
@@ -161,7 +161,7 @@ impl JsSeries {
     #[napi(factory, catch_unwind)]
     pub fn new_opt_date(
         name: String,
-        values: Vec<napi::JsUnknown>,
+        values: Vec<napi::Unknown>,
         strict: Option<bool>,
     ) -> napi::Result<JsSeries> {
         let len = values.len();
@@ -170,9 +170,9 @@ impl JsSeries {
         for item in values.into_iter() {
             match item.get_type()? {
                 ValueType::Object => {
-                    let obj: &napi::JsObject = unsafe { &item.cast() };
+                    let obj: &Object = unsafe { &item.cast()? };
                     if obj.is_date()? {
-                        let d: &napi::JsDate = unsafe { &item.cast() };
+                        let d: &napi::JsDate = unsafe { &item.cast()? };
                         match d.value_of() {
                             Ok(v) => builder.append_value(v as i64),
                             Err(e) => {
@@ -1028,12 +1028,12 @@ impl JsSeries {
     #[napi(catch_unwind)]
     pub fn to_dummies(
         &self,
-        separator: Option<&str>,
+        separator: Option<String>,
         drop_first: bool,
     ) -> napi::Result<JsDataFrame> {
         let df = self
             .series
-            .to_dummies(separator, drop_first)
+            .to_dummies(separator.as_deref(), drop_first)
             .map_err(JsPolarsErr::from)?;
         Ok(df.into())
     }
@@ -1316,7 +1316,7 @@ macro_rules! impl_set_with_mask {
     };
 }
 
-impl_set_with_mask!(series_set_with_mask_str, &str, str);
+// impl_set_with_mask!(series_set_with_mask_str, String, str);
 impl_set_with_mask!(series_set_with_mask_f64, f64, f64);
 impl_set_with_mask_wrap!(series_set_with_mask_f32, f32, f32);
 impl_set_with_mask_wrap!(series_set_with_mask_u8, u8, u8);
@@ -1356,24 +1356,11 @@ impl_get!(series_get_i8, i8, i8, i32);
 impl_get!(series_get_i16, i16, i16, i32);
 impl_get!(series_get_i32, i32, i32, i32);
 impl_get!(series_get_i64, i64, i64, i32);
-// impl_get!(series_get_str, utf8, &str);
+impl_get!(series_get_str, str, utf8, &str);
 impl_get!(series_get_date, date, i32, i32);
 impl_get!(series_get_datetime, datetime, i64, i64);
 impl_get!(series_get_duration, duration, i64, i64);
 
-#[napi(catch_unwind)]
-pub fn series_get_str(s: &JsSeries, index: i64) -> Option<String> {
-    if let Ok(ca) = s.series.str() {
-        let index = if index < 0 {
-            (ca.len() as i64 + index) as usize
-        } else {
-            index as usize
-        };
-        ca.get(index).map(|s| s.to_owned())
-    } else {
-        None
-    }
-}
 macro_rules! impl_arithmetic {
   ($name:ident, $type:ty, $operand:tt) => {
       #[napi(catch_unwind)]

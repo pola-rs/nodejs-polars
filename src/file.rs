@@ -1,37 +1,39 @@
-use napi::bindgen_prelude::{Buffer, Null};
-use napi::threadsafe_function::*;
-use napi::{Either, JsFunction, JsObject};
+use napi::bindgen_prelude::ToNapiValue;
+use napi::bindgen_prelude::{Buffer, BufferSlice, Function, JsObjectValue, Null, Object};
+use napi::threadsafe_function::{ThreadsafeFunction, ThreadsafeFunctionCallMode};
+use napi::Either;
 use std::io;
 use std::io::Write;
+use std::io::{Error, ErrorKind};
 
 pub struct JsFileLike<'a> {
-    pub inner: JsObject,
+    pub inner: Object<'a>,
     pub env: &'a napi::Env,
 }
 
 pub struct JsWriteStream<'a> {
-    pub inner: JsObject,
+    pub inner: Object<'a>,
     pub env: &'a napi::Env,
 }
 
 impl<'a> JsFileLike<'a> {
-    pub fn new(inner: JsObject, env: &'a napi::Env) -> Self {
+    pub fn new(inner: Object<'a>, env: &'a napi::Env) -> Self {
         JsFileLike { inner, env }
     }
 }
 
 impl<'a> JsWriteStream<'a> {
-    pub fn new(inner: JsObject, env: &'a napi::Env) -> Self {
+    pub fn new(inner: Object<'a>, env: &'a napi::Env) -> Self {
         JsWriteStream { inner, env }
     }
 }
 pub struct ThreadsafeWriteable {
-    pub inner: ThreadsafeFunction<Either<Buffer, Null>, ErrorStrategy::CalleeHandled>,
+    pub inner: ThreadsafeFunction<Either<Buffer, Null>>,
 }
 
 impl Write for ThreadsafeWriteable {
     fn write(&mut self, buf: &[u8]) -> Result<usize, io::Error> {
-        let tsfn = self.inner.clone();
+        let tsfn = &self.inner;
         tsfn.call(
             Ok(Either::A(buf.into())),
             ThreadsafeFunctionCallMode::Blocking,
@@ -46,10 +48,10 @@ impl Write for ThreadsafeWriteable {
 }
 impl Write for JsFileLike<'_> {
     fn write(&mut self, buf: &[u8]) -> Result<usize, io::Error> {
-        let stream_write: JsFunction = self.inner.get_named_property("push").unwrap();
-        let bytes = self.env.create_buffer_with_data(buf.to_owned()).unwrap();
-        let js_buff = bytes.into_raw();
-        stream_write.call(Some(&self.inner), &[js_buff]).unwrap();
+        let stream_write: Function = self.inner.get_named_property("push").unwrap();
+        let bytes = BufferSlice::from_data(self.env, buf.to_owned()).unwrap();
+        let js_buff = bytes.into_unknown(self.env).unwrap();
+        stream_write.call(js_buff).unwrap();
         Ok(buf.len())
     }
 
@@ -61,11 +63,21 @@ impl Write for JsFileLike<'_> {
 
 impl Write for JsWriteStream<'_> {
     fn write(&mut self, buf: &[u8]) -> Result<usize, io::Error> {
-        let stream_write: JsFunction = self.inner.get_named_property("write").unwrap();
-        let bytes = self.env.create_buffer_with_data(buf.to_owned()).unwrap();
-        let js_buff = bytes.into_raw();
-        stream_write.call(Some(&self.inner), &[js_buff]).unwrap();
-        Ok(buf.len())
+        let stream_write: Function = self.inner.get_named_property("write").unwrap();
+        let bytes = BufferSlice::from_data(self.env, buf.to_owned()).unwrap();
+        let js_buff: Buffer = bytes.into_buffer(self.env).unwrap();
+        let js_buff = js_buff.into_unknown(self.env).unwrap();
+        let result = stream_write.apply(Some(&self.inner), js_buff);
+
+        match result {
+            Ok(_) => Ok(buf.len()),
+            Err(e) => {
+                return Err(Error::new(
+                    ErrorKind::InvalidData,
+                    format!("Error writing: {:?}", e),
+                ))
+            }
+        }
     }
 
     fn flush(&mut self) -> Result<(), io::Error> {
