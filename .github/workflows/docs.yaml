@@ -19,7 +19,7 @@ jobs:
       - name: Install ghp-import
         uses: actions/setup-python@v5
         with:
-          python-version: 3.12
+          python-version: 3.13
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
@@ -27,7 +27,7 @@ jobs:
       - name: Set up Node
         uses: actions/setup-node@v4
         with: 
-          node-version: 22
+          node-version: 24
       - name: Build node reference
         run: | 
           npm install

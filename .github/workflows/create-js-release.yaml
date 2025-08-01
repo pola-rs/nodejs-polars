@@ -2,7 +2,7 @@ name: nodejs-polars
 env:
   DEBUG: napi:*
   APP_NAME: nodejs-polars
-  MACOSX_DEPLOYMENT_TARGET: "12.0"
+  MACOSX_DEPLOYMENT_TARGET: "15.0"
 "on":
   push:
     # Sequence of patterns matched against refs/tags
@@ -32,7 +32,7 @@ jobs:
             build: |-
               set -e &&
               rustup target add x86_64-unknown-linux-gnu &&
-              yarn build -x --target x86_64-unknown-linux-gnu && llvm-strip -x polars/*.node
+              yarn build --use-napi-cross --target x86_64-unknown-linux-gnu && llvm-strip -x polars/*.node
 
           - host: ubuntu-latest
             architecture: x64
@@ -59,7 +59,7 @@ jobs:
               cp -r /usr/aarch64-unknown-linux-gnu/lib/gcc /usr/aarch64-unknown-linux-gnu/aarch64-unknown-linux-gnu/sysroot/lib/
               export LDFLAGS="--sysroot=/usr/aarch64-unknown-linux-gnu/aarch64-unknown-linux-gnu/sysroot -L/usr/aarch64-unknown-linux-gnu/lib/gcc/aarch64-unknown-linux-gnu/4.8.5"
               export CFLAGS="-fuse-ld=lld --sysroot=/usr/aarch64-unknown-linux-gnu/aarch64-unknown-linux-gnu/sysroot -L/usr/aarch64-unknown-linux-gnu/lib/gcc/aarch64-unknown-linux-gnu/4.8.5"
-              yarn build --target aarch64-unknown-linux-gnu
+              yarn build --use-napi-cross --target aarch64-unknown-linux-gnu
               llvm-strip polars/*.node
           # Disabled until a simd-json fallback can be implemented. see https://github.com/simd-lite/simd-json/issues/263 and https://github.com/simd-lite/simd-json/issues/218
           # - host: ubuntu-latest
@@ -95,7 +95,7 @@ jobs:
               yarn build --target=aarch64-unknown-linux-musl
               /aarch64-linux-musl-cross/bin/aarch64-linux-musl-strip polars/*.node
 
-    name: ${{ matrix.settings.target }} - node@20
+    name: ${{ matrix.settings.target }} - node@24
     runs-on: ${{ matrix.settings.host }}
     steps:
       - uses: actions/checkout@v4
@@ -103,7 +103,7 @@ jobs:
         uses: actions/setup-node@v4
         if: ${{ !matrix.settings.docker }}
         with:
-          node-version: 20
+          node-version: 24
           check-latest: true
           cache: yarn
       - name: Copy rust-toolchain to root
@@ -115,7 +115,7 @@ jobs:
           override: true
           target: ${{ matrix.settings.target }}
       - name: Cache cargo
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             ~/.cargo/registry/index/
@@ -125,10 +125,10 @@ jobs:
             target/
           key: ${{ matrix.settings.target }}-cargo-${{ matrix.settings.host }}
       - name: Cache NPM dependencies
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: .yarn/cache
-          key: npm-cache-build-${{ matrix.settings.target }}-node@20
+          key: npm-cache-build-${{ matrix.settings.target }}-node@24
       - name: Setup toolchain
         run: ${{ matrix.settings.setup }}
         if: ${{ matrix.settings.setup }}
@@ -176,7 +176,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: 24
           registry-url: "https://registry.npmjs.org"
           cache: yarn
           cache-dependency-path: yarn.lock
