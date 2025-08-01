@@ -1985,6 +1985,19 @@ describe("io", () => {
     const actual = df.toRecords();
     expect(JSON.stringify(actual)).toEqual(JSON.stringify(expected));
   });
+  test("toRecords:quoteChar:emptyHeader", () => {
+    const csv = `|name|,||
+|John|,|green|
+|Anna|,|red|
+`;
+    const df = pl.readCSV(csv, { quoteChar: "|" });
+    const actual = df.toRecords();
+    const expected = [
+      { name: "John", "": "green" },
+      { name: "Anna", "": "red" },
+    ];
+    expect(actual).toEqual(expected);
+  });
   test("toObject", () => {
     const expected = {
       foo: [1],
