@@ -1083,6 +1083,7 @@ export interface Series<T extends DataType = any, Name extends string = string>
    * Get dummy/indicator variables.
    * @param separator str = "_",
    * @param dropFirst bool = False
+   * @param dropNulls bool = False,
    *
    * @example
    * const s = pl.Series("a", [1, 2, 3])
@@ -1111,7 +1112,7 @@ export interface Series<T extends DataType = any, Name extends string = string>
     └─────┴─────┘
    *
    */
-  toDummies(separator?: string, dropFirst?: boolean): DataFrame;
+  toDummies(separator?: string, dropFirst?: boolean, dropNulls?: boolean): DataFrame;
 
   /**
    * _Returns a Javascript object representation of Series_
@@ -1822,8 +1823,8 @@ export function _Series(_s: any): Series {
       }
       throw new Error("data contains nulls, unable to convert to TypedArray");
     },
-    toDummies(separator = "_", dropFirst = false) {
-      return _DataFrame(_s.toDummies(separator, dropFirst));
+    toDummies(separator = "_", dropFirst = false, dropNulls = false) {
+      return _DataFrame(_s.toDummies(separator, dropFirst, dropNulls));
     },
     toFrame() {
       return _DataFrame(new pli.JsDataFrame([_s]));

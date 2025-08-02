@@ -15,19 +15,19 @@ crate-type = ["cdylib", "lib"]
 [dependencies]
 ahash = "0.8.12"
 bincode = "1.3.3"
-napi = { version = "3.1.4", default-features = false, features = [
+napi = { version = "3.1.6", default-features = false, features = [
     "napi8",
     "serde-json",
     "compat-mode"
 ] }
 napi-derive = { version = "3.1.2", default-features = false }
-polars-core = { version = "0.49.1", default-features = false }
-polars-io = { version = "0.49.1", default-features = false }
-polars-lazy = { version = "0.49.1", default-features = false }
-polars-ops = { version = "0.49.1", default-features = false }
-polars-arrow = { version = "0.49.1", default-features = false }
-polars-utils = { version = "0.49.1", default-features = false }
-polars-compute = { version = "0.49.1", default-features = false }
+polars-core = { version = "0.50.0", default-features = false }
+polars-io = { version = "0.50.0", default-features = false }
+polars-lazy = { version = "0.50.0", default-features = false }
+polars-ops = { version = "0.50.0", default-features = false }
+polars-arrow = { version = "0.50.0", default-features = false }
+polars-utils = { version = "0.50.0", default-features = false }
+polars-compute = { version = "0.50.0", default-features = false }
 thiserror = "1"
 smartstring = { version = "1" }
 serde_json = { version = "1" }
@@ -167,7 +167,7 @@ features = [
   "azure"
 ]
 
-version = "0.49.1"
+version = "0.50.0"
 
 [build-dependencies]
 napi-build = "2.2.3"

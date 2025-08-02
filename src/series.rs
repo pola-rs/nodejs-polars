@@ -992,22 +992,24 @@ impl JsSeries {
             .into_series();
         Ok(s.into())
     }
-    #[napi(catch_unwind)]
-    pub fn str_pad_start(&self, length: i64, fill_char: String) -> napi::Result<JsSeries> {
-        let ca = self.series.str().map_err(JsPolarsErr::from)?;
-        let s = ca
-            .pad_start(length as usize, fill_char.chars().nth(0).unwrap())
-            .into_series();
-        Ok(s.into())
-    }
-    #[napi(catch_unwind)]
-    pub fn str_pad_end(&self, length: i64, fill_char: String) -> napi::Result<JsSeries> {
-        let ca = self.series.str().map_err(JsPolarsErr::from)?;
-        let s = ca
-            .pad_end(length as usize, fill_char.chars().nth(0).unwrap())
-            .into_series();
-        Ok(s.into())
-    }
+
+    // TODO Fix this
+    // #[napi(catch_unwind)]
+    // pub fn str_pad_start(&self, length: i64, fill_char: String) -> napi::Result<JsSeries> {
+    //     let ca = self.series.str().map_err(JsPolarsErr::from)?;
+    //     let s = ca
+    //         .pad_start(length, fill_char.chars().nth(0).unwrap())
+    //         .into_series();
+    //     Ok(s.into())
+    // }
+    // #[napi(catch_unwind)]
+    // pub fn str_pad_end(&self, length: i64, fill_char: String) -> napi::Result<JsSeries> {
+    //     let ca = self.series.str().map_err(JsPolarsErr::from)?;
+    //     let s = ca
+    //         .pad_end(length.into(), fill_char.chars().nth(0).unwrap())
+    //         .into_series();
+    //     Ok(s.into())
+    // }
 
     #[napi(catch_unwind)]
     pub fn strftime(&self, fmt: String) -> napi::Result<JsSeries> {
@@ -1030,10 +1032,11 @@ impl JsSeries {
         &self,
         separator: Option<String>,
         drop_first: bool,
+        drop_nulls: bool,
     ) -> napi::Result<JsDataFrame> {
         let df = self
             .series
-            .to_dummies(separator.as_deref(), drop_first)
+            .to_dummies(separator.as_deref(), drop_first, drop_nulls)
             .map_err(JsPolarsErr::from)?;
         Ok(df.into())
     }
@@ -1357,9 +1360,9 @@ impl_get!(series_get_i16, i16, i16, i32);
 impl_get!(series_get_i32, i32, i32, i32);
 impl_get!(series_get_i64, i64, i64, i32);
 impl_get!(series_get_str, str, utf8, &str);
-impl_get!(series_get_date, date, i32, i32);
-impl_get!(series_get_datetime, datetime, i64, i64);
-impl_get!(series_get_duration, duration, i64, i64);
+// impl_get!(series_get_date, date, i32, i32);
+// impl_get!(series_get_datetime, datetime, i64, i64);
+// impl_get!(series_get_duration, duration, i64, i64);
 
 macro_rules! impl_arithmetic {
   ($name:ident, $type:ty, $operand:tt) => {

@@ -721,7 +721,7 @@ describe("series", () => {
       expect(actual).toFrameEqual(expected);
     }
     {
-      const actual = s.toDummies(":", true);
+      const actual = s.toDummies(":", true, false);
       const expected = pl.DataFrame(
         { "a:2.0": [0, 1, 0], "a:3.0": [0, 0, 1] },
         { schema: { "a:2.0": pl.UInt8, "a:3.0": pl.UInt8 } },

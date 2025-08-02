@@ -1,5 +1,3 @@
-import pli from "./native-polars";
-
 /**
  * Configure polars; offers options for table formatting and more.
  */
@@ -14,10 +12,6 @@ export interface Config {
   setTblRows(n: number): Config;
   /** Set the number of columns used to print tables */
   setTblCols(n: number): Config;
-  /** Turn on the global string cache */
-  setGlobalStringCache(): Config;
-  /** Turn off the global string cache */
-  unsetGlobalStringCache(): Config;
 }
 
 /**
@@ -26,37 +20,22 @@ export interface Config {
 export const Config: Config = {
   setUtf8Tables() {
     process.env["POLARS_FMT_NO_UTF8"] = undefined;
-
     return this;
   },
   setAsciiTables() {
     process.env["POLARS_FMT_NO_UTF8"] = "1";
-
     return this;
   },
   setTblWidthChars(width) {
     process.env["POLARS_TABLE_WIDTH"] = String(width);
-
     return this;
   },
   setTblRows(n) {
     process.env["POLARS_FMT_MAX_ROWS"] = String(n);
-
     return this;
   },
   setTblCols(n) {
     process.env["POLARS_FMT_MAX_COLS"] = String(n);
-
-    return this;
-  },
-  setGlobalStringCache() {
-    pli.toggleStringCache(true);
-
-    return this;
-  },
-  unsetGlobalStringCache() {
-    pli.toggleStringCache(false);
-
     return this;
   },
 };

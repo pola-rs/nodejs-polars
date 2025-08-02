@@ -258,25 +258,17 @@ export interface Expr
   argMin(): Expr;
   /**
    * Get the index values that would sort this column.
-   * @param descending
-   *     - false -> order from small to large.
-   *     - true -> order from large to small.
-   * @returns UInt32 Series
+   * @param descending Sort in descending (descending) order. Deault false
+     @param nullsLast  Place null values last instead of first. Deault false
+   * @returns Expression of data type :class:`UInt32`
    */
-  argSort(descending?: boolean, maintainOrder?: boolean): Expr;
-  argSort({
-    reverse, // deprecated
-    maintainOrder,
-  }: {
-    reverse?: boolean;
-    maintainOrder?: boolean;
-  }): Expr;
+  argSort(descending?: boolean, nullsLast?: boolean): Expr;
   argSort({
     descending,
-    maintainOrder,
+    nullsLast,
   }: {
     descending?: boolean;
-    maintainOrder?: boolean;
+    nullsLast?: boolean;
   }): Expr;
   /** Get index of first unique value. */
   argUnique(): Expr;
@@ -1303,10 +1295,10 @@ export const _Expr = (_expr: any): Expr => {
     argMin() {
       return _Expr(_expr.argMin());
     },
-    argSort(descending: any = false, maintainOrder?: boolean) {
+    argSort(descending: any = false, nullsLast: boolean = false) {
       descending = descending?.descending ?? descending?.reverse ?? descending;
-      maintainOrder = descending?.maintainOrder ?? maintainOrder;
-      return _Expr(_expr.argSort(descending, false, false, maintainOrder));
+      nullsLast = descending?.nullsLast ?? nullsLast;
+      return _Expr(_expr.argSort(descending, nullsLast));
     },
     argUnique() {
       return _Expr(_expr.argUnique());
