@@ -1,10 +1,11 @@
-use super::dsl::*;
 use crate::dataframe::JsDataFrame;
+use crate::lazy::dsl::{JsExpr, ToExprs};
 use crate::prelude::*;
 use polars::prelude::{lit, ClosedWindow, JoinType};
 use polars_io::{HiveOptions, RowIndex};
 use std::collections::HashMap;
 use std::num::NonZeroUsize;
+use std::ops::BitOrAssign;
 
 #[napi]
 #[repr(transparent)]
@@ -469,13 +470,12 @@ impl JsLazyFrame {
     }
 
     #[napi(catch_unwind)]
-    pub fn explode(&self, _column: Vec<&JsExpr>) -> JsLazyFrame {
-        let ldf = self.ldf.clone();
-
-        // let sel = Selector::ByName { names: column.to_exprs().into_iter().map(|s| PlSmallStr::from_str(s.str())).collect(), strict: true };
-        // TODO: Fix this
-        ldf.explode(Selector::Empty).into()
-        // ldf.explode(column.to_exprs()).into()
+    pub fn explode(&self, column: Vec<&JsExpr>) -> JsLazyFrame {
+        let mut column_selector: Selector = Selector::Empty;
+        column.to_exprs().into_iter().for_each( |expr|{
+            column_selector.bitor_assign(expr.into_selector().unwrap().into());
+        });
+        self.ldf.clone().explode(column_selector).into()
     }
     #[napi(catch_unwind)]
     pub fn unique(
