@@ -472,7 +472,7 @@ impl JsLazyFrame {
     #[napi(catch_unwind)]
     pub fn explode(&self, column: Vec<&JsExpr>) -> JsLazyFrame {
         let mut column_selector: Selector = Selector::Empty;
-        column.to_exprs().into_iter().for_each( |expr|{
+        column.to_exprs().into_iter().for_each(|expr| {
             column_selector.bitor_assign(expr.into_selector().unwrap().into());
         });
         self.ldf.clone().explode(column_selector).into()
@@ -486,19 +486,16 @@ impl JsLazyFrame {
     ) -> JsLazyFrame {
         let ldf = self.ldf.clone();
         match maintain_order {
-            true => ldf.unique_stable(
-                subset.map(|x| strings_to_selector(x)),
-                keep.0,
-            ),
-            false => ldf.unique(subset.map(|x| strings_to_selector(x)),
-                keep.0),
+            true => ldf.unique_stable(subset.map(|x| strings_to_selector(x)), keep.0),
+            false => ldf.unique(subset.map(|x| strings_to_selector(x)), keep.0),
         }
         .into()
     }
     #[napi(catch_unwind)]
     pub fn drop_nulls(&self, subset: Option<Vec<String>>) -> JsLazyFrame {
         let ldf = self.ldf.clone();
-        ldf.drop_nulls(subset.map(|v| strings_to_selector(v))).into()
+        ldf.drop_nulls(subset.map(|v| strings_to_selector(v)))
+            .into()
     }
     #[napi(catch_unwind)]
     pub fn slice(&self, offset: i64, length: u32) -> JsLazyFrame {

@@ -992,25 +992,26 @@ impl JsSeries {
             .into_series();
         Ok(s.into())
     }
-
-    // TODO Fix this
-    // #[napi(catch_unwind)]
-    // pub fn str_pad_start(&self, length: i64, fill_char: String) -> napi::Result<JsSeries> {
-    //     let ca = self.series.str().map_err(JsPolarsErr::from)?;
-    //     let s = ca
-    //         .pad_start(length, fill_char.chars().nth(0).unwrap())
-    //         .into_series();
-    //     Ok(s.into())
-    // }
-    // #[napi(catch_unwind)]
-    // pub fn str_pad_end(&self, length: i64, fill_char: String) -> napi::Result<JsSeries> {
-    //     let ca = self.series.str().map_err(JsPolarsErr::from)?;
-    //     let s = ca
-    //         .pad_end(length.into(), fill_char.chars().nth(0).unwrap())
-    //         .into_series();
-    //     Ok(s.into())
-    // }
-
+    #[napi(catch_unwind)]
+    pub fn str_pad_start(&self, length: Vec<i64>, fill_char: String) -> napi::Result<JsSeries> {
+        let vec_ulen = length.into_iter().map(|x| x as u64).collect();
+        let chunked_len = UInt64Chunked::from_vec("str_pad_start_length".into(), vec_ulen);
+        let ca = self.series.str().map_err(JsPolarsErr::from)?;
+        let s = ca
+            .pad_start(&chunked_len, fill_char.chars().nth(0).unwrap())
+            .into_series();
+        Ok(s.into())
+    }
+    #[napi(catch_unwind)]
+    pub fn str_pad_end(&self, length: Vec<i64>, fill_char: String) -> napi::Result<JsSeries> {
+        let vec_ulen = length.into_iter().map(|x| x as u64).collect();
+        let chunked_len = UInt64Chunked::from_vec("str_pad_start_length".into(), vec_ulen);
+        let ca = self.series.str().map_err(JsPolarsErr::from)?;
+        let s = ca
+            .pad_end(&chunked_len, fill_char.chars().nth(0).unwrap())
+            .into_series();
+        Ok(s.into())
+    }
     #[napi(catch_unwind)]
     pub fn strftime(&self, fmt: String) -> napi::Result<JsSeries> {
         let s = self.series.strftime(&fmt).map_err(JsPolarsErr::from)?;

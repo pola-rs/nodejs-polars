@@ -1112,7 +1112,11 @@ export interface Series<T extends DataType = any, Name extends string = string>
     └─────┴─────┘
    *
    */
-  toDummies(separator?: string, dropFirst?: boolean, dropNulls?: boolean): DataFrame;
+  toDummies(
+    separator?: string,
+    dropFirst?: boolean,
+    dropNulls?: boolean,
+  ): DataFrame;
 
   /**
    * _Returns a Javascript object representation of Series_

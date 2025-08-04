@@ -319,10 +319,7 @@ impl JsExpr {
 
     #[napi(catch_unwind)]
     pub fn arg_sort(&self, descending: bool, nulls_last: bool) -> JsExpr {
-        self.clone()
-            .inner
-            .arg_sort(descending, nulls_last)
-            .into()
+        self.clone().inner.arg_sort(descending, nulls_last).into()
     }
     #[napi(catch_unwind)]
     pub fn arg_max(&self) -> JsExpr {
@@ -1158,14 +1155,26 @@ impl JsExpr {
     }
     #[napi(catch_unwind)]
     pub fn exclude(&self, columns: Vec<String>) -> JsExpr {
-        self.inner.clone().into_selector().unwrap().exclude_cols(columns).as_expr().into()
+        self.inner
+            .clone()
+            .into_selector()
+            .unwrap()
+            .exclude_cols(columns)
+            .as_expr()
+            .into()
     }
     #[napi(catch_unwind)]
     pub fn exclude_dtype(&self, dtypes: Vec<Wrap<DataType>>) -> JsExpr {
         // Safety:
         // Wrap is transparent.
         let dtypes: Vec<DataType> = unsafe { std::mem::transmute(dtypes) };
-        self.inner.clone().into_selector().unwrap().exclude_dtype(&dtypes).as_expr().into()
+        self.inner
+            .clone()
+            .into_selector()
+            .unwrap()
+            .exclude_dtype(&dtypes)
+            .as_expr()
+            .into()
     }
     #[napi(catch_unwind)]
     pub fn interpolate(&self, method: Wrap<InterpolationMethod>) -> JsExpr {

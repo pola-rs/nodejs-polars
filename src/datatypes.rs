@@ -402,10 +402,14 @@ impl Into<DataType> for JsDataType {
             JsDataType::Datetime => Datetime(TimeUnit::Milliseconds, None),
             JsDataType::Time => Time,
             JsDataType::Object => Object("object"),
-            JsDataType::Categorical => { 
-                let categories = Categories::new(PlSmallStr::EMPTY, PlSmallStr::EMPTY,CategoricalPhysical::U32);
+            JsDataType::Categorical => {
+                let categories = Categories::new(
+                    PlSmallStr::EMPTY,
+                    PlSmallStr::EMPTY,
+                    CategoricalPhysical::U32,
+                );
                 DataType::Categorical(categories.clone(), categories.clone().mapping())
-            },
+            }
             JsDataType::Struct => Struct(vec![]),
         }
     }

@@ -748,9 +748,13 @@ impl FromNapiValue for Wrap<DataType> {
                     "Time" => DataType::Time,
                     "Object" => DataType::Object("object"),
                     "Categorical" => {
-                        let categories = Categories::new(PlSmallStr::EMPTY, PlSmallStr::EMPTY,CategoricalPhysical::U32);
+                        let categories = Categories::new(
+                            PlSmallStr::EMPTY,
+                            PlSmallStr::EMPTY,
+                            CategoricalPhysical::U32,
+                        );
                         DataType::Categorical(categories.clone(), categories.clone().mapping())
-                    },
+                    }
                     "Struct" => {
                         let inner = obj.get::<Array>("fields")?.unwrap();
                         let mut fldvec: Vec<Field> = Vec::with_capacity(inner.len() as usize);
@@ -952,7 +956,7 @@ impl FromNapiValue for Wrap<CsvWriterOptions> {
             null: null_value,
             line_terminator,
             quote_style,
-            decimal_comma: false
+            decimal_comma: false,
         };
 
         let options = CsvWriterOptions {
@@ -1409,7 +1413,13 @@ where
     I: IntoIterator<Item = S>,
     S: AsRef<str>,
 {
-    Selector::ByName { names: container.into_iter().map(|s| PlSmallStr::from_str(s.as_ref())).collect(), strict: true }
+    Selector::ByName {
+        names: container
+            .into_iter()
+            .map(|s| PlSmallStr::from_str(s.as_ref()))
+            .collect(),
+        strict: true,
+    }
 }
 
 pub(crate) fn parse_parquet_compression(
