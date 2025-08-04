@@ -30,6 +30,23 @@ describe("expr", () => {
     const actual = df.select(col("a").as("abs").abs()).getColumn("abs");
     expect(actual).toSeriesEqual(expected);
   });
+  test("aggGroups", () => {
+    const df = pl.DataFrame({
+      a: [1, 2, 3],
+      b: ["a", "b", "c"],
+    });
+    const expected = pl
+      .DataFrame({
+        a: [1, 2, 3],
+        b: [[0], [1], [2]],
+      })
+      .withColumn(pl.col("b").cast(pl.List(pl.UInt32)));
+    const actual = df
+      .groupBy("a")
+      .agg(col("b").list().aggGroups())
+      .sort({ by: "a" });
+    expect(actual).toFrameEqual(expected);
+  });
   test("alias", () => {
     const name = "alias";
     const actual = pl.select(lit("a").alias(name));
@@ -754,7 +771,6 @@ describe("expr", () => {
     const actual = df.withColumn(col("a").reverse().prefix("reversed_"));
     expect(actual).toFrameEqual(expected);
   });
-
   test("round", () => {
     const df = pl.DataFrame({ a: [1.00123, 2.32878, 3.3349999] });
     const expected = pl.DataFrame({ rounded: [1, 2.33, 3.33] });
@@ -965,8 +981,11 @@ describe("expr", () => {
   });
   test("tan", () => {
     const df = pl.DataFrame({ a: [1, 2, 3] });
-    const expected = pl.DataFrame({ tan: [1.557408, -2.18504, -0.142547] });
-    const actual = df.select(col("a").tan().round(6).as("tan"));
+    let expected = pl.DataFrame({ tan: [1.557408, -2.18504, -0.142547] });
+    let actual = df.select(col("a").tan().round(6).as("tan"));
+    expect(actual).toFrameEqual(expected);
+    expected = pl.DataFrame({ tan: [0.761594, 0.964028, 0.995055] });
+    actual = df.select(col("a").tanh().round(6).as("tan"));
     expect(actual).toFrameEqual(expected);
   });
   test("unique", () => {

@@ -1771,10 +1771,10 @@ export function _Series(_s: any): Series {
     shrinkToFit(inPlace?: boolean) {
       if (inPlace) {
         _s.shrinkToFit();
+        return _s;
       } else {
         const s = this.clone();
-        s.shrinkToFit();
-
+        s.shrinkToFit(true);
         return s as any;
       }
     },
@@ -1833,9 +1833,6 @@ export function _Series(_s: any): Series {
     toFrame() {
       return _DataFrame(new pli.JsDataFrame([_s]));
     },
-    toBinary() {
-      return _s.toBinary();
-    },
     toJSON(...args: any[]) {
       // this is passed by `JSON.stringify` when calling `toJSON()`
       if (args[0] === "") {
@@ -1887,7 +1884,6 @@ export function _Series(_s: any): Series {
     set: (series, prop, input): any => {
       if (typeof prop !== "symbol" && !Number.isNaN(Number(prop))) {
         series.scatter([Number(prop)], input);
-
         return true;
       }
     },
@@ -1961,10 +1957,6 @@ export interface SeriesConstructor extends Deserialize<Series> {
   of<T3 extends JsType>(...items: T3[]): Series<JsToDtype<T3>>;
   of<T3>(...items: T3[]): Series;
   isSeries(arg: any): arg is Series;
-  /**
-   * @param binary used to serialize/deserialize series. This will only work with the output from series.toBinary().
-   */
-  // fromBinary(binary: Buffer): Series
 }
 
 const SeriesConstructor = (
@@ -1991,7 +1983,7 @@ const isSeries = (anyVal: any): anyVal is Series => {
 
 const from = (name, values?: ArrayLike<any>): Series => {
   if (Array.isArray(name)) {
-    return SeriesConstructor("", values);
+    return SeriesConstructor("", name);
   }
   return SeriesConstructor(name, values);
 };
