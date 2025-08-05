@@ -1224,8 +1224,12 @@ export function _Series(_s: any): Series {
     abs() {
       return wrap("abs");
     },
-    add(field) {
-      return dtypeWrap("Add", field);
+    add(other) {
+      if (typeof other === "number") return dtypeWrap("Add", other);
+      if (Series.isSeries(other)) {
+        return wrap("add", (other as any)._s);
+      }
+      throw new Error("Not a number nor a series");
     },
     alias(name: string) {
       const s = _s.clone();
