@@ -744,6 +744,49 @@ describe("series functions", () => {
   });
 });
 describe("comparators & math", () => {
+  test("plus/series", () => {
+    const s = pl.Series([1, 2, 3]);
+    const expected = pl.Series([2, 4, 6]);
+    expect(s.plus(s)).toSeriesEqual(expected);
+  });
+  test("minus/series", () => {
+    const s = pl.Series([1, 2, 3]);
+    expect(s.plus(s).minus(s)).toSeriesEqual(s);
+    expect(s.plus(s).sub(s)).toSeriesEqual(s);
+  });
+  test("eq/series", () => {
+    const s = pl.Series([1, 2, 3]);
+    const s2 = pl.Series([1, 3, 3]);
+    const expected = pl.Series([true, false, true]);
+    expect(s.eq(s2)).toSeriesEqual(expected);
+    expect(s.equals(s2)).toSeriesEqual(expected);
+  });
+  test("gt/series", () => {
+    const s = pl.Series([1, 2, 3]);
+    const s2 = pl.Series([2, 2, 4]);
+    const expected = pl.Series([true, false, true]);
+    expect(s2.gt(s)).toSeriesEqual(expected);
+    expect(s2.greaterThan(s)).toSeriesEqual(expected);
+  });
+  test("gteq/series", () => {
+    const s = pl.Series([1, 2, 3]);
+    const s2 = pl.Series([2, 2, 4]);
+    const expected = pl.Series([true, true, true]);
+    expect(s2.gtEq(s)).toSeriesEqual(expected);
+    expect(s2.greaterThanEquals(s)).toSeriesEqual(expected);
+  });
+  test("rem/modulo/series", () => {
+    const s = pl.Series([1, 2, 3]);
+    const s2 = pl.Series([2, 3, 4]);
+    expect(s.rem(s2)).toSeriesEqual(s);
+    expect(s.modulo(s2)).toSeriesEqual(s);
+  });
+  test("div/series", () => {
+    const s = pl.Series([1, 2, 3]);
+    const expected = pl.Series([2, 2, 2]);
+    expect(s.plus(s).div(s)).toSeriesEqual(expected);
+    expect(s.plus(s).divideBy(s)).toSeriesEqual(expected);
+  });
   test("add/plus", () => {
     const s = pl.Series([1, 2]);
     const expected = pl.Series([2, 3]);
