@@ -622,7 +622,7 @@ impl JsDataFrame {
             "full" => JoinType::Full,
             "semi" => JoinType::Semi,
             "anti" => JoinType::Anti,
-            "asof" => JoinType::AsOf(AsOfOptions {
+            "asof" => JoinType::AsOf(Box::new(AsOfOptions {
                 strategy: AsofStrategy::Backward,
                 left_by: None,
                 right_by: None,
@@ -630,7 +630,7 @@ impl JsDataFrame {
                 tolerance_str: None,
                 allow_eq: true,
                 check_sortedness: true,
-            }),
+            })),
             "cross" => JoinType::Cross,
             _ => panic!("not supported"),
         };
@@ -1067,10 +1067,11 @@ impl JsDataFrame {
         &self,
         separator: Option<String>,
         drop_first: bool,
+        drop_nulls: bool,
     ) -> napi::Result<JsDataFrame> {
         let df = self
             .df
-            .to_dummies(separator.as_deref(), drop_first)
+            .to_dummies(separator.as_deref(), drop_first, drop_nulls)
             .map_err(JsPolarsErr::from)?;
         Ok(df.into())
     }

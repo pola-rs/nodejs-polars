@@ -133,7 +133,6 @@ impl<'a> ToNapiValue for Wrap<AnyValue<'a>> {
                     napi::sys::napi_create_date(env, epoch_time, &mut ptr),
                     "Failed to convert rust type `AnyValue::Date` into napi value",
                 )?;
-
                 Ok(ptr)
             }
             AnyValue::Datetime(v, _, _) => {
@@ -142,33 +141,29 @@ impl<'a> ToNapiValue for Wrap<AnyValue<'a>> {
 
                 Ok(js_value)
             }
-            AnyValue::Categorical(idx, rev, arr) => {
-                let s = if arr.is_null() {
-                    rev.get(idx)
-                } else {
-                    arr.deref_unchecked().value(idx as usize)
-                };
+            AnyValue::Categorical(cat, &ref lmap) | AnyValue::CategoricalOwned(cat, ref lmap) => {
+                let s = unsafe { lmap.cat_to_str_unchecked(cat) };
                 let ptr = String::to_napi_value(env, s.to_string());
                 Ok(ptr.unwrap())
-            }
+            },
             AnyValue::Duration(v, _) => i64::to_napi_value(env, v),
             AnyValue::Time(v) => i64::to_napi_value(env, v),
             AnyValue::List(ser) => Wrap::<&Series>::to_napi_value(env, Wrap(&ser)),
             ref av @ AnyValue::Struct(_, _, flds) => struct_dict(env, av._iter_struct_av(), flds),
             AnyValue::Array(ser, _) => Wrap::<&Series>::to_napi_value(env, Wrap(&ser)),
-            AnyValue::Enum(_, _, _) => Err(napi::Error::from_reason("Enum is not a supported, please convert to string or number before collecting to js")),
+            AnyValue::Enum(_, _) => Err(napi::Error::from_reason("Enum is not a supported, please convert to string or number before collecting to js")),
             AnyValue::Object(_) => Err(napi::Error::from_reason("Object is not a supported, please convert to string or number before collecting to js")),
             AnyValue::ObjectOwned(_) => Err(napi::Error::from_reason("ObjectOwned is not a supported, please convert to string or number before collecting to js")),
             AnyValue::StructOwned(_) => Err(napi::Error::from_reason("StructOwned is not a supported, please convert to string or number before collecting to js")),
             AnyValue::Binary(_) => Err(napi::Error::from_reason("Binary is not a supported, please convert to string or number before collecting to js")),
             AnyValue::BinaryOwned(_) => Err(napi::Error::from_reason("BinaryOwned is not a supported, please convert to string or number before collecting to js")),
             AnyValue::Decimal(_, _) => Err(napi::Error::from_reason("Decimal is not a supported type in javascript, please convert to string or number before collecting to js")),
-            AnyValue::CategoricalOwned(_,_,_) => Err(napi::Error::from_reason("CategoricalOwned is not a supported, please convert to string or number before collecting to js")),
             AnyValue::DatetimeOwned(_,_,_) => Err(napi::Error::from_reason("DatetimeOwned is not a supported, please convert to string or number before collecting to js")),
-            AnyValue::EnumOwned(_,_,_) => Err(napi::Error::from_reason("EnumOwned is not a supported, please convert to string or number before collecting to js")),
+            AnyValue::EnumOwned(_,_) => Err(napi::Error::from_reason("EnumOwned is not a supported, please convert to string or number before collecting to js")),
         }
     }
 }
+
 impl FromNapiValue for Wrap<StringChunked> {
     unsafe fn from_napi_value(env: sys::napi_env, napi_val: sys::napi_value) -> JsResult<Self> {
         let arr = Array::from_napi_value(env, napi_val)?;
@@ -752,7 +747,14 @@ impl FromNapiValue for Wrap<DataType> {
                     }
                     "Time" => DataType::Time,
                     "Object" => DataType::Object("object"),
-                    "Categorical" => DataType::Categorical(None, Default::default()),
+                    "Categorical" => {
+                        let categories = Categories::new(
+                            PlSmallStr::EMPTY,
+                            PlSmallStr::EMPTY,
+                            CategoricalPhysical::U32,
+                        );
+                        DataType::Categorical(categories.clone(), categories.clone().mapping())
+                    }
                     "Struct" => {
                         let inner = obj.get::<Array>("fields")?.unwrap();
                         let mut fldvec: Vec<Field> = Vec::with_capacity(inner.len() as usize);
@@ -954,6 +956,7 @@ impl FromNapiValue for Wrap<CsvWriterOptions> {
             null: null_value,
             line_terminator,
             quote_style,
+            decimal_comma: false,
         };
 
         let options = CsvWriterOptions {
@@ -1405,12 +1408,18 @@ where
         .collect()
 }
 
-pub(crate) fn strings_to_selector<I, S>(container: I) -> Vec<Selector>
+pub(crate) fn strings_to_selector<I, S>(container: I) -> Selector
 where
     I: IntoIterator<Item = S>,
     S: AsRef<str>,
 {
-    container.into_iter().map(|s| s.as_ref().into()).collect()
+    Selector::ByName {
+        names: container
+            .into_iter()
+            .map(|s| PlSmallStr::from_str(s.as_ref()))
+            .collect(),
+        strict: true,
+    }
 }
 
 pub(crate) fn parse_parquet_compression(
@@ -1424,7 +1433,6 @@ pub(crate) fn parse_parquet_compression(
             compression_level
                 .map(|lvl| {
                     GzipLevel::try_new(lvl as u8)
-                        // .map_err(|e| JsValueErr::new_err(format!("{e:?}")))
                         .map_err(|e| napi::Error::from_reason(format!("{:?}", e)))
                 })
                 .transpose()?,

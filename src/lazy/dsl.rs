@@ -318,11 +318,8 @@ impl JsExpr {
     }
 
     #[napi(catch_unwind)]
-    pub fn arg_sort(&self, descending: bool) -> JsExpr {
-        self.clone()
-            .inner
-            .arg_sort(SortOptions::default().with_order_descending(descending))
-            .into()
+    pub fn arg_sort(&self, descending: bool, nulls_last: bool) -> JsExpr {
+        self.clone().inner.arg_sort(descending, nulls_last).into()
     }
     #[napi(catch_unwind)]
     pub fn arg_max(&self) -> JsExpr {
@@ -739,33 +736,20 @@ impl JsExpr {
     }
 
     #[napi(catch_unwind)]
-    pub fn str_pad_start(&self, length: i64, fill_char: String) -> JsExpr {
-        let function = move |s: Column| {
-            let ca = s.str()?;
-            Ok(Some(
-                ca.pad_start(length as usize, fill_char.chars().nth(0).unwrap())
-                    .into_column(),
-            ))
-        };
-        self.clone()
-            .inner
-            .map(function, GetOutput::from_type(DataType::String))
+    pub fn str_pad_start(&self, length: &JsExpr, fill_char: String) -> Self {
+        self.inner
+            .clone()
+            .str()
+            .pad_start(length.inner.clone(), fill_char.chars().nth(0).unwrap())
             .into()
     }
 
     #[napi(catch_unwind)]
-    pub fn str_pad_end(&self, length: i64, fill_char: String) -> JsExpr {
-        let function = move |s: Column| {
-            let ca = s.str()?;
-            Ok(Some(
-                ca.pad_end(length as usize, fill_char.chars().nth(0).unwrap())
-                    .into_column(),
-            ))
-        };
-
-        self.clone()
-            .inner
-            .map(function, GetOutput::from_type(DataType::String))
+    pub fn str_pad_end(&self, length: &JsExpr, fill_char: String) -> Self {
+        self.inner
+            .clone()
+            .str()
+            .pad_end(length.inner.clone(), fill_char.chars().nth(0).unwrap())
             .into()
     }
 
@@ -1169,18 +1153,28 @@ impl JsExpr {
     pub fn suffix(&self, suffix: String) -> JsExpr {
         self.inner.clone().name().suffix(&suffix).into()
     }
-
     #[napi(catch_unwind)]
     pub fn exclude(&self, columns: Vec<String>) -> JsExpr {
-        self.inner.clone().exclude(&columns).into()
+        self.inner
+            .clone()
+            .into_selector()
+            .unwrap()
+            .exclude_cols(columns)
+            .as_expr()
+            .into()
     }
-
     #[napi(catch_unwind)]
     pub fn exclude_dtype(&self, dtypes: Vec<Wrap<DataType>>) -> JsExpr {
         // Safety:
         // Wrap is transparent.
         let dtypes: Vec<DataType> = unsafe { std::mem::transmute(dtypes) };
-        self.inner.clone().exclude_dtype(&dtypes).into()
+        self.inner
+            .clone()
+            .into_selector()
+            .unwrap()
+            .exclude_dtype(&dtypes)
+            .as_expr()
+            .into()
     }
     #[napi(catch_unwind)]
     pub fn interpolate(&self, method: Wrap<InterpolationMethod>) -> JsExpr {
@@ -1413,19 +1407,19 @@ impl JsExpr {
             .join(&separator, ignore_nulls)
             .into()
     }
-    #[napi(catch_unwind)]
-    pub fn cat_set_ordering(&self, ordering: String) -> JsExpr {
-        let ordering = match ordering.as_ref() {
-            "physical" => CategoricalOrdering::Physical,
-            "lexical" => CategoricalOrdering::Lexical,
-            _ => panic!("expected one of {{'physical', 'lexical'}}"),
-        };
+    // #[napi(catch_unwind)]
+    // pub fn cat_set_ordering(&self, ordering: String) -> JsExpr {
+    //     let ordering = match ordering.as_ref() {
+    //         "physical" => CategoricalOrdering::Physical,
+    //         "lexical" => CategoricalOrdering::Lexical,
+    //         _ => panic!("expected one of {{'physical', 'lexical'}}"),
+    //     };
 
-        self.inner
-            .clone()
-            .cast(DataType::Categorical(None, ordering))
-            .into()
-    }
+    //     self.inner
+    //         .clone()
+    //         .cast(DataType::Categorical(None, ordering))
+    //         .into()
+    // }
     #[napi(catch_unwind)]
     pub fn reshape(&self, dims: Vec<i64>) -> JsExpr {
         self.inner.clone().reshape(&dims).into()
@@ -1555,8 +1549,6 @@ impl JsExpr {
             .clone()
             .struct_()
             .with_fields(fields.to_exprs())
-            .map_err(JsPolarsErr::from)
-            .unwrap()
             .into()
     }
     #[napi(catch_unwind)]
@@ -1687,30 +1679,30 @@ pub fn col(name: String) -> JsExpr {
 
 #[napi(catch_unwind)]
 pub fn first() -> JsExpr {
-    dsl::first().into()
+    dsl::first().as_expr().into()
 }
 
 #[napi(catch_unwind)]
 pub fn last() -> JsExpr {
-    dsl::last().into()
+    dsl::last().as_expr().into()
 }
 
 #[napi(catch_unwind)]
 pub fn nth(n: i64) -> JsExpr {
-    Expr::Nth(n).into()
+    dsl::nth(n).as_expr().into()
 }
 
 #[napi(catch_unwind)]
 pub fn cols(names: Vec<String>) -> JsExpr {
-    dsl::cols(names).into()
+    dsl::cols(names).as_expr().into()
 }
 
 #[napi(catch_unwind)]
-pub fn dtype_cols(dtypes: Vec<Wrap<DataType>>) -> crate::lazy::dsl::JsExpr {
+pub fn dtype_cols(dtypes: Vec<Wrap<DataType>>) -> JsExpr {
     // Safety
     // Wrap is transparent
     let dtypes: Vec<DataType> = unsafe { std::mem::transmute(dtypes) };
-    dsl::dtype_cols(dtypes).into()
+    dsl::dtype_cols(dtypes).as_selector().as_expr().into()
 }
 
 #[napi(catch_unwind)]

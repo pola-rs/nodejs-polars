@@ -1,10 +1,11 @@
-use super::dsl::*;
 use crate::dataframe::JsDataFrame;
+use crate::lazy::dsl::{JsExpr, ToExprs};
 use crate::prelude::*;
-use polars::prelude::{col, lit, ClosedWindow, JoinType};
+use polars::prelude::{lit, ClosedWindow, JoinType};
 use polars_io::{HiveOptions, RowIndex};
 use std::collections::HashMap;
 use std::num::NonZeroUsize;
+use std::ops::BitOrAssign;
 
 #[napi]
 #[repr(transparent)]
@@ -193,15 +194,15 @@ impl JsLazyFrame {
     }
 
     #[napi(ts_return_type = "Promise<JsDataFrame>", catch_unwind)]
-    pub fn fetch(&self, n_rows: i64) -> AsyncTask<AsyncFetch> {
+    pub fn fetch(&self, n_rows: u32) -> AsyncTask<AsyncFetch> {
         let ldf = self.ldf.clone();
-        AsyncTask::new(AsyncFetch((ldf, n_rows as usize)))
+        AsyncTask::new(AsyncFetch((ldf, n_rows)))
     }
 
     #[napi(catch_unwind)]
-    pub fn fetch_sync(&self, n_rows: i64) -> napi::Result<JsDataFrame> {
+    pub fn fetch_sync(&self, n_rows: u32) -> napi::Result<JsDataFrame> {
         let ldf = self.ldf.clone();
-        let df = ldf.fetch(n_rows as usize).map_err(JsPolarsErr::from)?;
+        let df = ldf.limit(n_rows).collect().map_err(JsPolarsErr::from)?;
         Ok(df.into())
     }
 
@@ -318,15 +319,19 @@ impl JsLazyFrame {
             .right_on([right_on])
             .allow_parallel(allow_parallel)
             .force_parallel(force_parallel)
-            .how(JoinType::AsOf(AsOfOptions {
+            .how(JoinType::AsOf(Box::new(AsOfOptions {
                 strategy,
                 left_by: left_by.map(strings_to_pl_smallstr),
                 right_by: right_by.map(strings_to_pl_smallstr),
-                tolerance: tolerance.map(|t| t.0.into_static()),
+                tolerance: tolerance.map(|t| {
+                    let av = t.0.into_static();
+                    let dtype = av.dtype();
+                    Scalar::new(dtype, av)
+                }),
                 tolerance_str: tolerance_str.map(|s| s.into()),
                 allow_eq: true,
                 check_sortedness: true,
-            }))
+            })))
             .suffix(suffix)
             .finish()
             .into()
@@ -466,9 +471,11 @@ impl JsLazyFrame {
 
     #[napi(catch_unwind)]
     pub fn explode(&self, column: Vec<&JsExpr>) -> JsLazyFrame {
-        let ldf = self.ldf.clone();
-
-        ldf.explode(column.to_exprs()).into()
+        let mut column_selector: Selector = Selector::Empty;
+        column.to_exprs().into_iter().for_each(|expr| {
+            column_selector.bitor_assign(expr.into_selector().unwrap().into());
+        });
+        self.ldf.clone().explode(column_selector).into()
     }
     #[napi(catch_unwind)]
     pub fn unique(
@@ -479,18 +486,15 @@ impl JsLazyFrame {
     ) -> JsLazyFrame {
         let ldf = self.ldf.clone();
         match maintain_order {
-            true => ldf.unique_stable(
-                subset.map(|x| x.into_iter().map(PlSmallStr::from_string).collect()),
-                keep.0,
-            ),
-            false => ldf.unique(subset, keep.0),
+            true => ldf.unique_stable(subset.map(|x| strings_to_selector(x)), keep.0),
+            false => ldf.unique(subset.map(|x| strings_to_selector(x)), keep.0),
         }
         .into()
     }
     #[napi(catch_unwind)]
     pub fn drop_nulls(&self, subset: Option<Vec<String>>) -> JsLazyFrame {
         let ldf = self.ldf.clone();
-        ldf.drop_nulls(subset.map(|v| v.into_iter().map(|s| col(&s)).collect()))
+        ldf.drop_nulls(subset.map(|v| strings_to_selector(v)))
             .into()
     }
     #[napi(catch_unwind)]
@@ -530,7 +534,7 @@ impl JsLazyFrame {
     #[napi(catch_unwind)]
     pub fn drop_columns(&self, colss: Vec<String>) -> JsLazyFrame {
         let ldf = self.ldf.clone();
-        ldf.drop(colss).into()
+        ldf.drop(strings_to_selector(colss)).into()
     }
     #[napi(js_name = "clone", catch_unwind)]
     pub fn clone(&self) -> JsLazyFrame {
@@ -550,7 +554,7 @@ impl JsLazyFrame {
 
     #[napi(catch_unwind)]
     pub fn unnest(&self, colss: Vec<String>) -> JsLazyFrame {
-        self.ldf.clone().unnest(colss).into()
+        self.ldf.clone().unnest(strings_to_selector(colss)).into()
     }
 
     #[napi(catch_unwind)]
@@ -563,7 +567,7 @@ impl JsLazyFrame {
         max_retries: Option<u32>,
     ) -> napi::Result<JsLazyFrame> {
         let cloud_options = parse_cloud_options(&path, cloud_options, max_retries);
-        let sink_target = SinkTarget::Path(Arc::new(path.into()));
+        let sink_target = SinkTarget::Path(PlPath::new(&path));
         let ldf = self.ldf.clone().with_comm_subplan_elim(false);
         let rldf = ldf
             .sink_csv(sink_target, options.0, cloud_options, sink_options.into())
@@ -598,7 +602,7 @@ impl JsLazyFrame {
             field_overwrites: Vec::new(),
         };
 
-        let sink_target = SinkTarget::Path(Arc::new(path.into()));
+        let sink_target = SinkTarget::Path(PlPath::new(&path));
         let ldf = self.ldf.clone().with_comm_subplan_elim(false);
         let rldf = ldf
             .sink_parquet(sink_target, options, cloud_options, sink_options)
@@ -663,7 +667,7 @@ pub fn scan_csv(path: String, options: ScanCsvOptions) -> napi::Result<JsLazyFra
         e => return Err(JsPolarsErr::Other(format!("encoding not {} not implemented.", e)).into()),
     };
 
-    let r = LazyCsvReader::new(path)
+    let r = LazyCsvReader::new(PlPath::new(&path))
         .with_infer_schema_length(Some(options.infer_schema_length.unwrap_or(100) as usize))
         .with_separator(options.sep.unwrap_or(",".to_owned()).as_bytes()[0])
         .with_has_header(options.has_header.unwrap_or(true))
@@ -743,7 +747,7 @@ pub fn scan_parquet(path: String, options: ScanParquetOptions) -> napi::Result<J
         include_file_paths: include_file_paths.map(PlSmallStr::from),
         allow_missing_columns,
     };
-    let lf = LazyFrame::scan_parquet(path, args).map_err(JsPolarsErr::from)?;
+    let lf = LazyFrame::scan_parquet(PlPath::new(&path), args).map_err(JsPolarsErr::from)?;
     Ok(lf.into())
 }
 
@@ -770,7 +774,7 @@ pub fn scan_ipc(path: String, options: ScanIPCOptions) -> napi::Result<JsLazyFra
         hive_options: Default::default(),
         include_file_paths: None,
     };
-    let lf = LazyFrame::scan_ipc(path, args).map_err(JsPolarsErr::from)?;
+    let lf = LazyFrame::scan_ipc(PlPath::new(&path), args).map_err(JsPolarsErr::from)?;
     Ok(lf.into())
 }
 
@@ -789,7 +793,7 @@ pub struct JsonScanOptions {
 pub fn scan_json(path: String, options: JsonScanOptions) -> napi::Result<JsLazyFrame> {
     let batch_size = options.batch_size as usize;
     let batch_size = NonZeroUsize::new(batch_size);
-    LazyJsonLineReader::new(path)
+    LazyJsonLineReader::new(PlPath::new(&path))
         .with_batch_size(batch_size)
         .low_memory(options.low_memory.unwrap_or(false))
         .with_row_index(options.row_count.map(|rc| rc.into()))
@@ -799,7 +803,7 @@ pub fn scan_json(path: String, options: JsonScanOptions) -> napi::Result<JsLazyF
         .map(|lf| lf.into())
 }
 
-pub struct AsyncFetch((LazyFrame, usize));
+pub struct AsyncFetch((LazyFrame, u32));
 
 impl Task for AsyncFetch {
     type Output = DataFrame;
@@ -808,7 +812,7 @@ impl Task for AsyncFetch {
     fn compute(&mut self) -> napi::Result<Self::Output> {
         let (ldf, n_rows) = &self.0;
         let ldf = ldf.clone();
-        let df = ldf.fetch(*n_rows).map_err(JsPolarsErr::from)?;
+        let df = ldf.limit(*n_rows).collect().map_err(JsPolarsErr::from)?;
         Ok(df)
     }
 

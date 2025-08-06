@@ -23,6 +23,13 @@ describe("from lists", () => {
     const actual = pl.Series(expected).toArray();
     expect(actual).toEqual(expected);
   });
+  test("fromArray", () => {
+    const actual = pl.Series.from("foo", [1, 2, 3]);
+    const expected = pl.Series("foo", [1, 2, 3]);
+    expect(actual).toSeriesEqual(expected);
+    const actual2 = pl.Series.from([1, 2, 3]);
+    expect(actual2).toSeriesEqual(expected);
+  });
 });
 describe("typedArrays", () => {
   test("int8", () => {
@@ -246,20 +253,12 @@ describe("series", () => {
     });
   });
 });
-describe("series", () => {
+describe("series functions", () => {
   const numSeries = () => pl.Series("foo", [1, 2, 3], pl.Int32);
   const fltSeries = () => pl.Series("float", [1, 2, 3], pl.Float64);
   const boolSeries = () => pl.Series("bool", [true, false, false]);
   const other = () => pl.Series("bar", [3, 4, 5], pl.Int32);
-
   const chance = new Chance();
-
-  // test("to/fromBinary round trip", () => {
-  //   const s = pl.Series("serde", [1, 2, 3, 4, 5, 2]);
-  //   const buf = s.toBinary();
-  //   const actual = pl.Series.fromBinary(buf);
-  //   expect(s).toStrictEqual(actual);
-  // });
   it.each`
     series         | getter
     ${numSeries()} | ${"dtype"}
@@ -297,6 +296,7 @@ describe("series", () => {
     ${numSeries()}  | ${"diff"}            | ${[1, "drop"]}
     ${numSeries()}  | ${"dot"}             | ${[other()]}
     ${numSeries()}  | ${"dropNulls"}       | ${[]}
+    ${numSeries()}  | ${"explode"}         | ${[]}
     ${numSeries()}  | ${"fillNull"}        | ${["zero"]}
     ${numSeries()}  | ${"fillNull"}        | ${[{ strategy: "zero" }]}
     ${numSeries()}  | ${"filter"}          | ${[boolSeries()]}
@@ -390,6 +390,7 @@ describe("series", () => {
     ${numSeries()}  | ${"rollingSum"}      | ${[1, [0.11]]}
     ${numSeries()}  | ${"rollingSum"}      | ${[1, [0.11], 1]}
     ${numSeries()}  | ${"rollingSum"}      | ${[1, [0.23], 1, true]}
+    ${numSeries()}  | ${"rollingStd"}      | ${[1, [0.23], 1, true]}
     ${numSeries()}  | ${"rollingVar"}      | ${[{ windowSize: 1 }]}
     ${numSeries()}  | ${"rollingVar"}      | ${[{ windowSize: 1, weights: [0.33] }]}
     ${numSeries()}  | ${"rollingVar"}      | ${[{ windowSize: 1, weights: [0.11], minPeriods: 1 }]}
@@ -418,6 +419,7 @@ describe("series", () => {
     ${numSeries()}  | ${"shift"}           | ${[1]}
     ${numSeries()}  | ${"shiftAndFill"}    | ${[1, 2]}
     ${numSeries()}  | ${"shiftAndFill"}    | ${[{ periods: 1, fillValue: 2 }]}
+    ${numSeries()}  | ${"shrinkToFit"}     | ${[1, 2]}
     ${numSeries()}  | ${"skew"}            | ${[]}
     ${numSeries()}  | ${"skew"}            | ${[true]}
     ${numSeries()}  | ${"skew"}            | ${[false]}
@@ -482,6 +484,7 @@ describe("series", () => {
     ${"dropNulls"}       | ${pl.Series([1, null, 2]).dropNulls()}                                                 | ${pl.Series([1, 2])}
     ${"dropNulls"}       | ${pl.Series([1, undefined, 2]).dropNulls()}                                            | ${pl.Series([1, 2])}
     ${"dropNulls"}       | ${pl.Series(["a", null, "f"]).dropNulls()}                                             | ${pl.Series(["a", "f"])}
+    ${"explode"}         | ${pl.Series.from("foo", [[1n, 2n], [3n, 4n], [null], []]).explode()}                   | ${pl.Series([1, 2, 3, 4, null, null])}
     ${"fillNull:zero"}   | ${pl.Series([1, null, 2]).fillNull("zero")}                                            | ${pl.Series([1, 0, 2])}
     ${"fillNull:one"}    | ${pl.Series([1, null, 2]).fillNull("one")}                                             | ${pl.Series([1, 1, 2])}
     ${"fillNull:max"}    | ${pl.Series([1, null, 5]).fillNull("max")}                                             | ${pl.Series([1, 5, 5])}
@@ -504,6 +507,7 @@ describe("series", () => {
     ${"isDateTime"}      | ${pl.Series([new Date(Date.now())]).isDateTime()}                                      | ${true}
     ${"isDuplicated"}    | ${pl.Series([1, 3, 3]).isDuplicated()}                                                 | ${pl.Series([false, true, true])}
     ${"isFinite"}        | ${pl.Series([1.0, 3.1]).isFinite()}                                                    | ${pl.Series([true, true])}
+    ${"isFinite"}        | ${pl.Series([1, 1 / 0]).isFinite()}                                                    | ${pl.Series([true, false])}
     ${"isInfinite"}      | ${pl.Series([1.0, 2]).isInfinite()}                                                    | ${pl.Series([false, false])}
     ${"isNotNull"}       | ${pl.Series([1, null, undefined, 2]).isNotNull()}                                      | ${pl.Series([true, false, false, true])}
     ${"isNull"}          | ${pl.Series([1, null, undefined, 2]).isNull()}                                         | ${pl.Series([false, true, true, false])}
@@ -531,6 +535,8 @@ describe("series", () => {
     ${"rollingSum"}      | ${pl.Series([1, 2, 3, 2, 1]).rollingSum(2)}                                            | ${pl.Series("", [null, 3, 5, 5, 3], pl.Float64)}
     ${"rollingMean"}     | ${pl.Series([1, 2, 3, 2, 1]).rollingMean(2)}                                           | ${pl.Series("", [null, 1.5, 2.5, 2.5, 1.5], pl.Float64)}
     ${"rollingVar"}      | ${pl.Series([1, 2, 3, 2, 1]).rollingVar(2)[1]}                                         | ${0.5}
+    ${"rollingStd"}      | ${pl.Series([1, 2, 3, 2, 1]).rollingStd(2).round(2)[1]}                                | ${0.71}
+    ${"rollingSkew"}     | ${pl.Series([1, 2, 3, 2, 1]).rollingSkew(2).round(2)[1]}                               | ${0}
     ${"rollingMedian"}   | ${pl.Series([1, 2, 3, 3, 2, 10, 8]).rollingMedian({ windowSize: 2 })}                  | ${pl.Series([null, 1.5, 2.5, 3, 2.5, 6, 9])}
     ${"rollingQuantile"} | ${pl.Series([1, 2, 3, 3, 2, 10, 8]).rollingQuantile({ windowSize: 2, quantile: 0.5 })} | ${pl.Series([null, 2, 3, 3, 3, 10, 10])}
     ${"sample:n"}        | ${pl.Series([1, 2, 3, 4, 5]).sample(2).len()}                                          | ${2}
@@ -554,6 +560,7 @@ describe("series", () => {
     ${"unique"}          | ${pl.Series([1, 2, 3, 3]).unique().sort()}                                             | ${pl.Series([1, 2, 3])}
     ${"cumCount"}        | ${pl.Series([1, 2, 3, 3]).cumCount()}                                                  | ${pl.Series([1, 2, 3, 4])}
     ${"shiftAndFill"}    | ${pl.Series("foo", [1, 2, 3]).shiftAndFill(1, 99)}                                     | ${pl.Series("foo", [99, 1, 2])}
+    ${"shrinkToFit"}     | ${pl.Series("foo", [1, 2, 3]).shrinkToFit()}                                           | ${pl.Series("foo", [1, 2, 3])}
     ${"bitand"}          | ${pl.Series("bit", [1, 2, 3], pl.Int32).bitand(pl.Series("bit", [0, 1, 1], pl.Int32))} | ${pl.Series("bit", [0, 0, 1])}
     ${"bitor"}           | ${pl.Series("bit", [1, 2, 3], pl.Int32).bitor(pl.Series("bit", [0, 1, 1], pl.Int32))}  | ${pl.Series("bit", [1, 3, 3])}
     ${"bitxor"}          | ${pl.Series("bit", [1, 2, 3], pl.Int32).bitxor(pl.Series("bit", [0, 1, 1], pl.Int32))} | ${pl.Series("bit", [1, 3, 2])}
@@ -710,6 +717,12 @@ describe("series", () => {
       new Uint8Array([1, 2, 3, 5]),
     );
   });
+  test("values()", () => {
+    const s = pl.Series.from("foo", [1, 2, 3]);
+    const actual = s.values().next();
+    const expected = { done: false, value: 1 };
+    expect(actual).toEqual(expected);
+  });
   test("toDummies", () => {
     const s = pl.Series("a", [1, 2, 3]);
     {
@@ -721,7 +734,7 @@ describe("series", () => {
       expect(actual).toFrameEqual(expected);
     }
     {
-      const actual = s.toDummies(":", true);
+      const actual = s.toDummies(":", true, false);
       const expected = pl.DataFrame(
         { "a:2.0": [0, 1, 0], "a:3.0": [0, 0, 1] },
         { schema: { "a:2.0": pl.UInt8, "a:3.0": pl.UInt8 } },
@@ -731,6 +744,50 @@ describe("series", () => {
   });
 });
 describe("comparators & math", () => {
+  test("add/plus/series", () => {
+    const s = pl.Series([1, 2, 3]);
+    const expected = pl.Series([2, 4, 6]);
+    expect(s.add(s)).toSeriesEqual(expected);
+    expect(s.plus(s)).toSeriesEqual(expected);
+  });
+  test("minus/series", () => {
+    const s = pl.Series([1, 2, 3]);
+    expect(s.plus(s).minus(s)).toSeriesEqual(s);
+    expect(s.add(s).sub(s)).toSeriesEqual(s);
+  });
+  test("eq/series", () => {
+    const s = pl.Series([1, 2, 3]);
+    const s2 = pl.Series([1, 3, 3]);
+    const expected = pl.Series([true, false, true]);
+    expect(s.eq(s2)).toSeriesEqual(expected);
+    expect(s.equals(s2)).toSeriesEqual(expected);
+  });
+  test("gt/series", () => {
+    const s = pl.Series([1, 2, 3]);
+    const s2 = pl.Series([2, 2, 4]);
+    const expected = pl.Series([true, false, true]);
+    expect(s2.gt(s)).toSeriesEqual(expected);
+    expect(s2.greaterThan(s)).toSeriesEqual(expected);
+  });
+  test("gteq/series", () => {
+    const s = pl.Series([1, 2, 3]);
+    const s2 = pl.Series([2, 2, 4]);
+    const expected = pl.Series([true, true, true]);
+    expect(s2.gtEq(s)).toSeriesEqual(expected);
+    expect(s2.greaterThanEquals(s)).toSeriesEqual(expected);
+  });
+  test("rem/modulo/series", () => {
+    const s = pl.Series([1, 2, 3]);
+    const s2 = pl.Series([2, 3, 4]);
+    expect(s.rem(s2)).toSeriesEqual(s);
+    expect(s.modulo(s2)).toSeriesEqual(s);
+  });
+  test("div/series", () => {
+    const s = pl.Series([1, 2, 3]);
+    const expected = pl.Series([2, 2, 2]);
+    expect(s.plus(s).div(s)).toSeriesEqual(expected);
+    expect(s.plus(s).divideBy(s)).toSeriesEqual(expected);
+  });
   test("add/plus", () => {
     const s = pl.Series([1, 2]);
     const expected = pl.Series([2, 3]);
@@ -802,6 +859,10 @@ describe("comparators & math", () => {
     const expected = pl.Series([true, false]);
     expect(s.ltEq(1)).toSeriesEqual(expected);
     expect(s.lessThanEquals(1)).toSeriesEqual(expected);
+    let fn = () => s.ltEq("1");
+    expect(fn).toThrow("Not a number nor a series");
+    fn = () => s.lessThanEquals("1");
+    expect(fn).toThrow("Not a number nor a series");
   });
 });
 describe("StringFunctions", () => {
@@ -922,21 +983,13 @@ describe("series struct", () => {
 });
 describe("generics", () => {
   const series = pl.Series([1, 2, 3]);
-
   test("dtype", () => {
     expect(series.dtype).toStrictEqual(DataType.Float64);
   });
   test("to array", () => {
     const arr = series.toArray();
     expect<number[]>(arr).toStrictEqual([1, 2, 3]);
-
     const arr2 = [...series];
     expect<number[]>(arr2).toStrictEqual([1, 2, 3]);
-  });
-  test.skip("to object", () => {
-    const obj = series.toObject();
-    expect<{ name: string; datatype: "Float64"; values: number[] }>(
-      obj,
-    ).toMatchObject({ name: "", datatype: "Float64", values: [1, 2, 3] });
   });
 });

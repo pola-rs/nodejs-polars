@@ -639,7 +639,7 @@ export const ExprStringFunctions = (_expr: any): ExprString => {
       return wrap("strRstrip");
     },
     padStart(length: number, fillChar: string) {
-      return wrap("strPadStart", length, fillChar);
+      return wrap("strPadStart", lit(length)._expr, fillChar);
     },
     zFill(length: number | Expr) {
       if (!Expr.isExpr(length)) {
@@ -648,7 +648,7 @@ export const ExprStringFunctions = (_expr: any): ExprString => {
       return wrap("zfill", length);
     },
     padEnd(length: number, fillChar: string) {
-      return wrap("strPadEnd", length, fillChar);
+      return wrap("strPadEnd", lit(length)._expr, fillChar);
     },
     slice(start, length?) {
       if (!Expr.isExpr(start)) {

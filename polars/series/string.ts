@@ -364,7 +364,7 @@ export const SeriesStringFunctions = (_s: any): SeriesStringFunctions => {
       return wrap("strReplace", /^\s*/.source, "");
     },
     padStart(length: number, fillChar: string) {
-      return wrap("strPadStart", length, fillChar);
+      return wrap("strPadStart", [length], fillChar);
     },
     zFill(length) {
       return _Series(_s)
@@ -373,7 +373,7 @@ export const SeriesStringFunctions = (_s: any): SeriesStringFunctions => {
         .getColumn(_s.name);
     },
     padEnd(length: number, fillChar: string) {
-      return wrap("strPadEnd", length, fillChar);
+      return wrap("strPadEnd", [length], fillChar);
     },
     replace(pat: string | RegExp, val: string) {
       return wrap("strReplace", regexToString(pat as RegExp), val);
