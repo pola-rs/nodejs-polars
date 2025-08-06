@@ -68,6 +68,7 @@ export interface Series<T extends DataType = any, Name extends string = string>
    * Take absolute values
    */
   abs(): Series<T, Name>;
+  add(other: number|Series): Series;
   /**
    * __Rename this Series.__
    *
@@ -124,6 +125,12 @@ export interface Series<T extends DataType = any, Name extends string = string>
   argMax(): Optional<number>;
   /**
    * Get the index of the minimal value.
+   * @return int
+   * @example
+   * ```
+   * const s = pl.Series("a", [3, 2, 1]);
+   * s.arg_min()
+   * ```
    */
   argMin(): Optional<number>;
   /**
@@ -1177,6 +1184,14 @@ export function _Series(_s: any): Series {
       .getColumn(_s.name);
   };
 
+  const numberOrSeriesFunc = (other: number | Series, numFunc: string, srFunc?: string): Series => {
+      if (typeof other === "number") return dtypeWrap(numFunc, other);
+      if (Series.isSeries(other)) {
+        return wrap(srFunc ?? numFunc.toLowerCase(), (other as any)._s);
+      }
+      throw new Error("Not a number nor a series");
+  }
+
   const series = {
     _s,
     [inspect]() {
@@ -1224,12 +1239,8 @@ export function _Series(_s: any): Series {
     abs() {
       return wrap("abs");
     },
-    add(other) {
-      if (typeof other === "number") return dtypeWrap("Add", other);
-      if (Series.isSeries(other)) {
-        return wrap("add", (other as any)._s);
-      }
-      throw new Error("Not a number nor a series");
+    add(other: number | Series) {
+      return numberOrSeriesFunc(other, "Add");
     },
     alias(name: string) {
       const s = _s.clone();
@@ -1362,14 +1373,10 @@ export function _Series(_s: any): Series {
         ? _Series(_s.diff(n, nullBehavior))
         : _Series(_s.diff(n?.n ?? 1, n.nullBehavior ?? nullBehavior));
     },
-    div(other: Series) {
-      if (typeof other === "number") return dtypeWrap("Div", other);
-      if (Series.isSeries(other)) {
-        return wrap("div", (other as any)._s);
-      }
-      throw new Error("Not a number nor a series");
+    div(other: number|Series) {
+      return numberOrSeriesFunc(other, "Div");
     },
-    divideBy(field: Series) {
+    divideBy(field: number|Series) {
       return this.div(field);
     },
     dot(other: Series) {
@@ -1378,14 +1385,10 @@ export function _Series(_s: any): Series {
     dropNulls() {
       return wrap("dropNulls");
     },
-    eq(other) {
-      if (typeof other === "number") return dtypeWrap("Eq", other);
-      if (Series.isSeries(other)) {
-        return wrap("eq", (other as any)._s);
-      }
-      throw new Error("Not a number nor a series");
+    eq(other: number|Series) {
+      return numberOrSeriesFunc(other, "Eq");
     },
-    equals(field: Series) {
+    equals(field: number|Series) {
       return this.eq(field);
     },
     ewmMean(...args) {
@@ -1422,22 +1425,14 @@ export function _Series(_s: any): Series {
     getIndex(idx) {
       return _s.getIdx(idx);
     },
-    gt(other) {
-      if (typeof other === "number") return dtypeWrap("Gt", other);
-      if (Series.isSeries(other)) {
-        return wrap("gt", (other as any)._s);
-      }
-      throw new Error("Not a number nor a series");
+    gt(other: number|Series) {
+      return numberOrSeriesFunc(other, "Gt");
     },
-    greaterThan(field) {
+    greaterThan(field: number|Series) {
       return this.gt(field);
     },
-    gtEq(other) {
-      if (typeof other === "number") return dtypeWrap("GtEq", other);
-      if (Series.isSeries(other)) {
-        return wrap("gtEq", (other as any)._s);
-      }
-      throw new Error("Not a number nor a series");
+    gtEq(other: number|Series) {
+      return numberOrSeriesFunc(other, "GtEq", "gtEq");
     },
     greaterThanEquals(field) {
       return this.gtEq(field);
@@ -1475,7 +1470,6 @@ export function _Series(_s: any): Series {
     },
     isDateTime() {
       const dtype = this.dtype;
-
       return [DataType.Date.variant, "Datetime"].includes(dtype.variant);
     },
     isDuplicated() {
@@ -1497,10 +1491,8 @@ export function _Series(_s: any): Series {
       return wrap("isFirstDistinct");
     },
     isFloat() {
-      const dtype = this.dtype;
-
       return [DataType.Float32.variant, DataType.Float64.variant].includes(
-        dtype.variant,
+        this.dtype.variant,
       );
     },
     isIn(other, nullsEquals = false) {
@@ -1571,33 +1563,17 @@ export function _Series(_s: any): Series {
     len() {
       return this.length;
     },
-    lt(field) {
-      if (typeof field === "number") return dtypeWrap("Lt", field);
-      if (Series.isSeries(field)) {
-        return wrap("lt", (field as any)._s);
-      }
-      throw new Error("Not a number nor a series");
+    lt(other: number|Series) {
+      return numberOrSeriesFunc(other, "Lt");
     },
-    lessThan(field) {
-      if (typeof field === "number") return dtypeWrap("Lt", field);
-      if (Series.isSeries(field)) {
-        return wrap("lt", (field as any)._s);
-      }
-      throw new Error("Not a number nor a series");
+    lessThan(other: number|Series) {
+      return numberOrSeriesFunc(other, "Lt");
     },
-    ltEq(field) {
-      if (typeof field === "number") return dtypeWrap("LtEq", field);
-      if (Series.isSeries(field)) {
-        return wrap("ltEq", (field as any)._s);
-      }
-      throw new Error("Not a number nor a series");
+    ltEq(other: number|Series) {
+      return numberOrSeriesFunc(other, "LtEq", "ltEq");
     },
-    lessThanEquals(field) {
-      if (typeof field === "number") return dtypeWrap("LtEq", field);
-      if (Series.isSeries(field)) {
-        return wrap("ltEq", (field as any)._s);
-      }
-      throw new Error("Not a number nor a series");
+    lessThanEquals(other: number|Series) {
+      return numberOrSeriesFunc(other, "LtEq", "ltEq");
     },
     limit(n = 10) {
       return wrap("limit", n);
@@ -1617,29 +1593,17 @@ export function _Series(_s: any): Series {
     mode() {
       return wrap("mode");
     },
-    minus(other) {
-      if (typeof other === "number") return dtypeWrap("Sub", other);
-      if (Series.isSeries(other)) {
-        return wrap("sub", (other as any)._s);
-      }
-      throw new Error("Not a number nor a series");
+    minus(other: number|Series) {
+      return numberOrSeriesFunc(other, "Sub");
     },
-    mul(other) {
-      if (typeof other === "number") return dtypeWrap("Mul", other);
-      if (Series.isSeries(other)) {
-        return wrap("mul", (other as any)._s);
-      }
-      throw new Error("Not a number nor a series");
+    mul(other: number|Series) {
+      return numberOrSeriesFunc(other, "Mul");
     },
     nChunks() {
       return _s.nChunks();
     },
-    neq(other) {
-      if (typeof other === "number") return dtypeWrap("Neq", other);
-      if (Series.isSeries(other)) {
-        return wrap("neq", (other as any)._s);
-      }
-      throw new Error("Not a number nor a series");
+    neq(other: number|Series) {
+      return numberOrSeriesFunc(other, "Neq");
     },
     notEquals(other) {
       return this.neq(other);
@@ -1656,12 +1620,8 @@ export function _Series(_s: any): Series {
     peakMin() {
       return expr_op("peakMin");
     },
-    plus(other) {
-      if (typeof other === "number") return dtypeWrap("Add", other);
-      if (Series.isSeries(other)) {
-        return wrap("add", (other as any)._s);
-      }
-      throw new Error("Not a number nor a series");
+    plus(other: number|Series) {
+      return numberOrSeriesFunc(other, "Add");
     },
     quantile(quantile, interpolation = "nearest") {
       return _s.quantile(quantile, interpolation);
@@ -1669,7 +1629,7 @@ export function _Series(_s: any): Series {
     rank(method = "average", descending = false) {
       return wrap("rank", method, descending);
     },
-    rechunk(inPlace = false) {
+    rechunk(inPlace: boolean = false) {
       return wrap("rechunk", inPlace);
     },
     reinterpret(signed = true) {
@@ -1683,14 +1643,10 @@ export function _Series(_s: any): Series {
       }
       throw new InvalidOperationError("reinterpret", dtype);
     },
-    rem(other) {
-      if (typeof other === "number") return dtypeWrap("Rem", other);
-      if (Series.isSeries(other)) {
-        return wrap("rem", (other as any)._s);
-      }
-      throw new Error("Not a number nor a series");
+    rem(other: number|Series) {
+      return numberOrSeriesFunc(other, "Rem");
     },
-    modulo(field) {
+    modulo(field: number|Series) {
       return this.rem(field);
     },
     rename(obj: any, inPlace = false): any {
@@ -1823,12 +1779,8 @@ export function _Series(_s: any): Series {
         options.nullsLast,
       );
     },
-    sub(other) {
-      if (typeof other === "number") return dtypeWrap("Sub", other);
-      if (Series.isSeries(other)) {
-        return wrap("sub", (other as any)._s);
-      }
-      throw new Error("Not a number nor a series");
+    sub(other: number|Series) {
+      return numberOrSeriesFunc(other, "Sub");
     },
     sum() {
       return _s.sum() as any;
@@ -1842,7 +1794,7 @@ export function _Series(_s: any): Series {
     gatherEvery(n, offset?) {
       return wrap("gatherEvery", n, offset ?? 0);
     },
-    multiplyBy(field) {
+    multiplyBy(field: number|Series) {
       return this.mul(field);
     },
     toArray() {
@@ -1870,11 +1822,8 @@ export function _Series(_s: any): Series {
     toObject() {
       return _s.toJs();
     },
-    unique(maintainOrder?) {
-      if (maintainOrder) {
-        return wrap("uniqueStable");
-      }
-      return wrap("unique");
+    unique(maintainOrder?: boolean) {
+      return maintainOrder ? wrap("uniqueStable") : wrap("unique");
     },
     valueCounts(
       sort?: boolean,
