@@ -68,7 +68,7 @@ export interface Series<T extends DataType = any, Name extends string = string>
    * Take absolute values
    */
   abs(): Series<T, Name>;
-  add(other: number|Series): Series;
+  add(other: number | Series): Series;
   /**
    * __Rename this Series.__
    *
@@ -1184,13 +1184,17 @@ export function _Series(_s: any): Series {
       .getColumn(_s.name);
   };
 
-  const numberOrSeriesFunc = (other: number | Series, numFunc: string, srFunc?: string): Series => {
-      if (typeof other === "number") return dtypeWrap(numFunc, other);
-      if (Series.isSeries(other)) {
-        return wrap(srFunc ?? numFunc.toLowerCase(), (other as any)._s);
-      }
-      throw new Error("Not a number nor a series");
-  }
+  const numberOrSeriesFunc = (
+    other: number | Series,
+    numFunc: string,
+    srFunc?: string,
+  ): Series => {
+    if (typeof other === "number") return dtypeWrap(numFunc, other);
+    if (Series.isSeries(other)) {
+      return wrap(srFunc ?? numFunc.toLowerCase(), (other as any)._s);
+    }
+    throw new Error("Not a number nor a series");
+  };
 
   const series = {
     _s,
@@ -1373,10 +1377,10 @@ export function _Series(_s: any): Series {
         ? _Series(_s.diff(n, nullBehavior))
         : _Series(_s.diff(n?.n ?? 1, n.nullBehavior ?? nullBehavior));
     },
-    div(other: number|Series) {
+    div(other: number | Series) {
       return numberOrSeriesFunc(other, "Div");
     },
-    divideBy(field: number|Series) {
+    divideBy(field: number | Series) {
       return this.div(field);
     },
     dot(other: Series) {
@@ -1385,10 +1389,10 @@ export function _Series(_s: any): Series {
     dropNulls() {
       return wrap("dropNulls");
     },
-    eq(other: number|Series) {
+    eq(other: number | Series) {
       return numberOrSeriesFunc(other, "Eq");
     },
-    equals(field: number|Series) {
+    equals(field: number | Series) {
       return this.eq(field);
     },
     ewmMean(...args) {
@@ -1425,13 +1429,13 @@ export function _Series(_s: any): Series {
     getIndex(idx) {
       return _s.getIdx(idx);
     },
-    gt(other: number|Series) {
+    gt(other: number | Series) {
       return numberOrSeriesFunc(other, "Gt");
     },
-    greaterThan(field: number|Series) {
+    greaterThan(field: number | Series) {
       return this.gt(field);
     },
-    gtEq(other: number|Series) {
+    gtEq(other: number | Series) {
       return numberOrSeriesFunc(other, "GtEq", "gtEq");
     },
     greaterThanEquals(field) {
@@ -1563,16 +1567,16 @@ export function _Series(_s: any): Series {
     len() {
       return this.length;
     },
-    lt(other: number|Series) {
+    lt(other: number | Series) {
       return numberOrSeriesFunc(other, "Lt");
     },
-    lessThan(other: number|Series) {
+    lessThan(other: number | Series) {
       return numberOrSeriesFunc(other, "Lt");
     },
-    ltEq(other: number|Series) {
+    ltEq(other: number | Series) {
       return numberOrSeriesFunc(other, "LtEq", "ltEq");
     },
-    lessThanEquals(other: number|Series) {
+    lessThanEquals(other: number | Series) {
       return numberOrSeriesFunc(other, "LtEq", "ltEq");
     },
     limit(n = 10) {
@@ -1593,16 +1597,16 @@ export function _Series(_s: any): Series {
     mode() {
       return wrap("mode");
     },
-    minus(other: number|Series) {
+    minus(other: number | Series) {
       return numberOrSeriesFunc(other, "Sub");
     },
-    mul(other: number|Series) {
+    mul(other: number | Series) {
       return numberOrSeriesFunc(other, "Mul");
     },
     nChunks() {
       return _s.nChunks();
     },
-    neq(other: number|Series) {
+    neq(other: number | Series) {
       return numberOrSeriesFunc(other, "Neq");
     },
     notEquals(other) {
@@ -1620,7 +1624,7 @@ export function _Series(_s: any): Series {
     peakMin() {
       return expr_op("peakMin");
     },
-    plus(other: number|Series) {
+    plus(other: number | Series) {
       return numberOrSeriesFunc(other, "Add");
     },
     quantile(quantile, interpolation = "nearest") {
@@ -1643,10 +1647,10 @@ export function _Series(_s: any): Series {
       }
       throw new InvalidOperationError("reinterpret", dtype);
     },
-    rem(other: number|Series) {
+    rem(other: number | Series) {
       return numberOrSeriesFunc(other, "Rem");
     },
-    modulo(field: number|Series) {
+    modulo(field: number | Series) {
       return this.rem(field);
     },
     rename(obj: any, inPlace = false): any {
@@ -1779,7 +1783,7 @@ export function _Series(_s: any): Series {
         options.nullsLast,
       );
     },
-    sub(other: number|Series) {
+    sub(other: number | Series) {
       return numberOrSeriesFunc(other, "Sub");
     },
     sum() {
@@ -1794,7 +1798,7 @@ export function _Series(_s: any): Series {
     gatherEvery(n, offset?) {
       return wrap("gatherEvery", n, offset ?? 0);
     },
-    multiplyBy(field: number|Series) {
+    multiplyBy(field: number | Series) {
       return this.mul(field);
     },
     toArray() {
