@@ -511,7 +511,37 @@ export interface Bincode<T> {
  * Functions that can be applied to dtype List
  */
 export interface ListFunctions<T> {
+  /**
+   * Retrieve the index of the minimal value in every sublist.
+   * @returns Expression of data type :class:`UInt32` or :class:`UInt64`
+   * @example
+   * --------
+   * ```
+   * const s0 = pl.Series("a", [[1, 2], [2, 1]]);
+   * s0.lst.argMax();
+   * Series: 'a' [u32]
+   * [
+   *   0
+   *   1
+   * ]
+   * ```
+   */
   argMin(): T;
+  /**
+   * Retrieve the index of the maximum value in every sublist.
+   * @returns Expression of data type :class:`UInt32` or :class:`UInt64`
+   * @example
+   * --------
+   * ```
+   * const s0 = pl.Series("a", [[1, 2], [2, 1]]);
+   * s0.lst.argMax();
+   * Series: 'a' [u32]
+   * [
+   *   1
+   *   0
+   * ]
+   * ```
+   */
   argMax(): T;
   /**
    * Concat the arrays in a Series dtype List in linear time.
@@ -541,6 +571,7 @@ export interface ListFunctions<T> {
   /**
    * Check if sublists contain the given item.
    * @param item Item that will be checked for membership
+   * @param nullBehavior - bool, default True If True, treat null as a distinct value. Null values will not propagate.
    * @example
    * --------
    * ```
@@ -561,7 +592,7 @@ export interface ListFunctions<T> {
    * ```
    * @category List
    */
-  contains(item: any): T;
+  contains(item: any, nullBehavior?: boolean): T;
   /**
    * Calculate the n-th discrete difference of every sublist.
    * @param n number of slots to shift
@@ -582,22 +613,30 @@ export interface ListFunctions<T> {
   diff(n?: number, nullBehavior?: "ignore" | "drop"): T;
   /**
    * Get the value by index in the sublists.
-   * So index `0` would return the first item of every sublist
-   * and index `-1` would return the last item of every sublist
-   * if an index is out of bounds, it will return a `null`.
+   * @param index - Index to return per sublist
+   * @param nullOnOob - Behavior if an index is out of bounds:
+                      * True -> set as null
+                      * False -> raise an error
+   * @example
+   * -------
+   * ```
+   * const s0 = pl.Series("a", [[1, 2], [2, 1]]);
+   * s0.lst.get(0);
+   * Series: 'a' [f64]
+    [
+      1.0
+      2.0
+    ]
+   * ```
    * @category List
    */
-  get(index: number | Expr): T;
+  get(index: number | Expr, nullOnOob?: boolean): T;
   /**
    *  Run any polars expression against the lists' elements
    *  Parameters
    *  ----------
    * @param expr
    *   Expression to run. Note that you can select an element with `pl.first()`, or `pl.col()`
-   * @param parallel
-   *   Run all expression parallel. Don't activate this blindly.
-   *   Parallelism is worth it if there is enough work to do per thread.
-   *   This likely should not be use in the groupby context, because we already parallel execution per group
    * @example
    *  >df = pl.DataFrame({"a": [1, 8, 3], "b": [4, 5, 2]})
    *  >df.withColumn(
@@ -617,7 +656,7 @@ export interface ListFunctions<T> {
    *  └─────┴─────┴────────────┘
    * @category List
    */
-  eval(expr: Expr, parallel?: boolean): T;
+  eval(expr: Expr): T;
   /**
    * Get the first value of the sublists.
    * @category List
@@ -797,7 +836,7 @@ export interface DateFunctions<T> {
    */
   second(): T;
   /**
-   * Format Date/datetime with a formatting rule: See [chrono strftime/strptime](https://docs.rs/chrono/0.4.19/chrono/format/strftime/index.html).
+   * Format Date/datetime with a formatting rule: See [chrono strftime/strptime](https://docs.rs/chrono/0.4.41/chrono/format/strftime/index.html).
    */
   strftime(fmt: string): T;
   /** Return timestamp in ms as Int64 type. */

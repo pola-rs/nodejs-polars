@@ -8,7 +8,6 @@ import { concatList } from "../functions";
  * List functions for Lazy dataframes
  */
 export interface ExprList extends ListFunctions<Expr> {}
-// export interface ListNamespace extends ListFunctions<Expr> {}
 
 export const ExprListFunctions = (_expr: any): ExprList => {
   const wrap = (method, ...args: any[]): Expr => {
@@ -43,17 +42,21 @@ export const ExprListFunctions = (_expr: any): ExprList => {
 
       return concatList(otherList);
     },
-    contains(item) {
-      return wrap("listContains", exprToLitOrExpr(item)._expr, false);
+    contains(item, nullsEqual?: boolean) {
+      return wrap(
+        "listContains",
+        exprToLitOrExpr(item)._expr,
+        nullsEqual ?? true,
+      );
     },
     diff(n = 1, nullBehavior = "ignore") {
       return wrap("listDiff", n, nullBehavior);
     },
-    get(index: number | Expr) {
+    get(index: number | Expr, nullOnOob?: boolean) {
       if (Expr.isExpr(index)) {
-        return wrap("listGet", index._expr, true);
+        return wrap("listGet", index._expr, nullOnOob ?? true);
       }
-      return wrap("listGet", pli.lit(index), true);
+      return wrap("listGet", pli.lit(index), nullOnOob ?? true);
     },
     head(n = 5) {
       return this.slice(0, n);
