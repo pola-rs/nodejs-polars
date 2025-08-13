@@ -410,14 +410,14 @@ export const SeriesStringFunctions = (_s: any): SeriesStringFunctions => {
         .select(col(s.name).str.strip().as(s.name))
         .getColumn(s.name);
     },
-    strptime(dtype, fmt?) {
+    strptime: ((dtype: any, fmt?: any) => {
       const s = _Series(_s);
 
       return s
         .toFrame()
         .select(col(s.name).str.strptime(dtype, fmt).as(s.name))
         .getColumn(s.name);
-    },
+    }) as SeriesStringFunctions["strptime"],
     toLowerCase() {
       return wrap("strToLowercase");
     },

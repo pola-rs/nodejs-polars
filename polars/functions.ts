@@ -82,7 +82,7 @@ export function repeat<V>(value: V, n: number, name = ""): Series {
  *
  */
 export function concat(
-  items: Array<DataFrame>,
+  items: Array<DataFrame<any>>,
   options?: ConcatOptions,
 ): DataFrame;
 export function concat(
@@ -90,7 +90,7 @@ export function concat(
   options?: { rechunk: boolean },
 ): Series;
 export function concat(
-  items: Array<LazyDataFrame>,
+  items: Array<LazyDataFrame<any>>,
   options?: ConcatOptions,
 ): LazyDataFrame;
 export function concat(

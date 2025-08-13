@@ -1,6 +1,7 @@
 import path from "node:path";
 import { isRegExp } from "node:util/types";
 import { DataFrame } from "./dataframe";
+import type { DataType } from "./datatypes";
 import { LazyDataFrame } from "./lazy/dataframe";
 import { Expr, exprToLitOrExpr } from "./lazy/expr";
 import { Series } from "./series";
@@ -14,6 +15,13 @@ export type ExpressionSelection = ValueOrArray<Expr>;
 export type ColumnsOrExpr = ColumnSelection | ExpressionSelection;
 /** @ignore */
 export type ExprOrString = Expr | string;
+
+// Transitional types (no-ops now that Expr<T,Name> is generic)
+export type TypedExpr<T extends DataType> = Expr<T>;
+export type NamedExpr<
+  Name extends string,
+  T extends DataType = DataType,
+> = Expr<T, Name>;
 
 /**
  * @typeParam StartBy - The strategy to determine the start of the first window by.
@@ -91,3 +99,78 @@ export const regexToString = (r: string | RegExp): string => {
 export const INSPECT_SYMBOL = Symbol.for("nodejs.util.inspect.custom");
 
 export type Simplify<T> = { [K in keyof T]: T[K] } & {};
+
+// Type utilities for Expr/Series dtype inference and promotion
+export type DTypeOf<V> = V extends import("./lazy/expr").Expr<
+  infer DT extends DataType,
+  any
+>
+  ? DT
+  : V extends import("./series").Series<infer DT extends DataType, any>
+    ? DT
+    : V extends number
+      ? DataType.Float64
+      : V extends bigint
+        ? DataType.UInt64
+        : V extends boolean
+          ? DataType.Bool
+          : V extends string
+            ? DataType.String
+            : DataType;
+
+// Simple numeric promotion: any float/decimal -> Float64; otherwise -> Int64.
+export type Promote<A extends DataType, B extends DataType> = A extends
+  | DataType.Float64
+  | DataType.Float32
+  | DataType.Decimal
+  ? DataType.Float64
+  : B extends DataType.Float64 | DataType.Float32 | DataType.Decimal
+    ? DataType.Float64
+    : DataType.Int64;
+
+// Aggregation result types
+export type SumResult<T extends DataType> =
+  // small ints and bool -> Int64
+  T extends
+    | DataType.Int8
+    | DataType.Int16
+    | DataType.Int32
+    | DataType.UInt8
+    | DataType.UInt16
+    | DataType.UInt32
+    | DataType.Bool
+    ? DataType.Int64
+    : // big ints/floats/decimal remain
+      T extends
+          | DataType.Int64
+          | DataType.UInt64
+          | DataType.Float32
+          | DataType.Float64
+          | DataType.Decimal
+      ? T
+      : DataType;
+
+export type FloatAggResult = DataType.Float64;
+
+// Map Expr/Series tuple to a schema
+export type NameOf<V> = V extends import("./lazy/expr").Expr<
+  any,
+  infer Name extends string
+>
+  ? Name
+  : V extends import("./series").Series<any, infer Name2 extends string>
+    ? Name2
+    : never;
+
+export type DTypeOfExprSeries<V> = V extends import("./lazy/expr").Expr<
+  infer DT extends DataType,
+  any
+>
+  ? DT
+  : V extends import("./series").Series<infer DT2 extends DataType, any>
+    ? DT2
+    : DataType;
+
+export type SchemaFromTuple<T extends ReadonlyArray<any>> = {
+  [K in T[number] as NameOf<K>]: DTypeOfExprSeries<K>;
+};

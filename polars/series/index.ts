@@ -31,6 +31,8 @@ import { SeriesListFunctions } from "./list";
 import { SeriesStringFunctions } from "./string";
 import { SeriesStructFunctions } from "./struct";
 
+// keep Series internals permissive for now; tighten in a later pass
+
 // For documentation
 export type { SeriesDateFunctions as DatetimeSeries } from "./datetime";
 export type { SeriesListFunctions as ListSeries } from "./list";
@@ -68,7 +70,7 @@ export interface Series<T extends DataType = any, Name extends string = string>
    * Take absolute values
    */
   abs(): Series<T, Name>;
-  add(other: number | Series): Series;
+  add(other: number | Series): Series<T, Name>;
   /**
    * __Rename this Series.__
    *
@@ -1971,9 +1973,12 @@ const of = (...values: any[]): Series => {
   return Series.from(values);
 };
 
-export const Series: SeriesConstructor = Object.assign(SeriesConstructor, {
-  isSeries,
-  from,
-  of,
-  deserialize: (buf, fmt) => _Series(pli.JsSeries.deserialize(buf, fmt)),
-});
+export const Series: SeriesConstructor = Object.assign(
+  SeriesConstructor as unknown as SeriesConstructor,
+  {
+    isSeries,
+    from,
+    of,
+    deserialize: (buf, fmt) => _Series(pli.JsSeries.deserialize(buf, fmt)),
+  },
+);

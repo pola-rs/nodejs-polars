@@ -1,12 +1,14 @@
 import { DataType } from "../../datatypes";
-import type { StringFunctions } from "../../shared_traits";
 import { _Expr, Expr, exprToLitOrExpr } from "../expr";
 import { lit } from "../functions";
 
 /**
  * String functions for Lazy dataframes
  */
-export interface ExprString extends StringFunctions<Expr> {
+export interface ExprString<
+  _T extends DataType = DataType,
+  Name extends string | undefined = undefined,
+> {
   /**
    * Vertically concat the values in the Expression to a single string value.
    * @example
@@ -24,7 +26,7 @@ export interface ExprString extends StringFunctions<Expr> {
    * └──────────┘
    * ```
    */
-  concat(delimiter: string, ignoreNulls?: boolean): Expr;
+  concat(delimiter: string, ignoreNulls?: boolean): Expr<DataType.String, Name>;
   /**
    * Check if strings in Expression contain a substring that matches a pattern.
    * @param pat A valid regular expression pattern, compatible with the `regex crate
@@ -56,7 +58,7 @@ export interface ExprString extends StringFunctions<Expr> {
     pat: string | RegExp | Expr,
     literal?: boolean,
     strict?: boolean,
-  ): Expr;
+  ): Expr<DataType.Bool, Name>;
   /**
    * Decodes a value in Expression using the provided encoding
    * @param encoding - hex | base64
@@ -82,8 +84,14 @@ export interface ExprString extends StringFunctions<Expr> {
    * └─────────┘
    * ```
    */
-  decode(encoding: "hex" | "base64", strict?: boolean): Expr;
-  decode(options: { encoding: "hex" | "base64"; strict?: boolean }): Expr;
+  decode(
+    encoding: "hex" | "base64",
+    strict?: boolean,
+  ): Expr<DataType.String, Name>;
+  decode(options: {
+    encoding: "hex" | "base64";
+    strict?: boolean;
+  }): Expr<DataType.String, Name>;
   /**
    * Encodes a value in Expression using the provided encoding
    * @param encoding - hex | base64
@@ -105,7 +113,7 @@ export interface ExprString extends StringFunctions<Expr> {
    * └─────────┘
    * ```
    */
-  encode(encoding: "hex" | "base64"): Expr;
+  encode(encoding: "hex" | "base64"): Expr<DataType.String, Name>;
   /** Check if string values in Expression ends with a substring.
    * @param suffix - Suffix substring or expression
    * @example
@@ -155,7 +163,7 @@ export interface ExprString extends StringFunctions<Expr> {
    * └────────┴────────┘
    * ```
    */
-  endsWith(suffix: string | Expr): Expr;
+  endsWith(suffix: string | Expr): Expr<DataType.Bool, Name>;
   /**
    * Extract the target capture group from provided patterns.
    * @param pattern A valid regex pattern
@@ -186,7 +194,10 @@ export interface ExprString extends StringFunctions<Expr> {
    * └─────────┘
    * ```
    */
-  extract(pattern: string | RegExp | Expr, groupIndex: number): Expr;
+  extract(
+    pattern: string | RegExp | Expr,
+    groupIndex: number,
+  ): Expr<DataType.String, Name>;
   /**
    * Parse string values in Expression as JSON.
    * Throw errors if encounter invalid JSON strings.
@@ -211,7 +222,10 @@ export interface ExprString extends StringFunctions<Expr> {
    * ----------
    * jsonPathMatch : Extract the first match of json string with provided JSONPath expression.
    */
-  jsonDecode(dtype?: DataType, inferSchemaLength?: number): Expr;
+  jsonDecode<D extends DataType>(
+    dtype?: D,
+    inferSchemaLength?: number,
+  ): D extends DataType ? Expr<D, Name> : Expr<DataType, Name>;
   /**
    * Extract the first match of json string in Expression with provided JSONPath expression.
    * Throw errors if encounter invalid json strings.
@@ -245,7 +259,7 @@ export interface ExprString extends StringFunctions<Expr> {
    *└──────────┘
    * ```
    */
-  jsonPathMatch(pat: string): Expr;
+  jsonPathMatch(pat: string): Expr<DataType.String, Name>;
   /**  Get number of chars of the string values in Expression.
    * ```
    * df = pl.DataFrame({"a": ["Café", "345", "東京", null]})
@@ -265,9 +279,9 @@ export interface ExprString extends StringFunctions<Expr> {
    * └──────┴─────────┴─────────┘
    * ```
    */
-  lengths(): Expr;
+  lengths(): Expr<DataType.UInt32, Name>;
   /** Remove leading whitespace of the string values in Expression. */
-  lstrip(): Expr;
+  lstrip(): Expr<DataType.String, Name>;
   /** Replace first match with a string value in Expression.
    * @param pattern - A valid regex pattern, string or expression
    * @param value Substring or expression to replace.
@@ -297,7 +311,7 @@ export interface ExprString extends StringFunctions<Expr> {
     value: string | Expr,
     literal?: boolean,
     n?: number,
-  ): Expr;
+  ): Expr<DataType.String, Name>;
   /** Replace all regex matches with a string value in Expression.
    * @param pattern - A valid regex pattern, string or expression
    * @param value Substring or expression to replace.
@@ -327,13 +341,13 @@ export interface ExprString extends StringFunctions<Expr> {
     pattern: string | RegExp | Expr,
     value: string | Expr,
     literal?: boolean,
-  ): Expr;
+  ): Expr<DataType.String, Name>;
   /** Modify the string in Expression to their lowercase equivalent. */
-  toLowerCase(): Expr;
+  toLowerCase(): Expr<DataType.String, Name>;
   /** Modify the string in Expression to their uppercase equivalent. */
-  toUpperCase(): Expr;
+  toUpperCase(): Expr<DataType.String, Name>;
   /** Remove trailing whitespace. */
-  rstrip(): Expr;
+  rstrip(): Expr<DataType.String, Name>;
   /**
    *  Add a leading fillChar to a string in Expression until string length is reached.
    * If string is longer or equal to given length no modifications will be done
@@ -366,7 +380,7 @@ export interface ExprString extends StringFunctions<Expr> {
    * └──────────┘
    * ```
    */
-  padStart(length: number, fillChar: string): Expr;
+  padStart(length: number, fillChar: string): Expr<DataType.String, Name>;
   /**
    *  Add  leading "0" to a string until string length is reached.
    * If string is longer or equal to given length no modifications will be done
@@ -398,7 +412,7 @@ export interface ExprString extends StringFunctions<Expr> {
    * └──────────┘
    * ```
    */
-  zFill(length: number | Expr): Expr;
+  zFill(length: number | Expr): Expr<DataType.String, Name>;
   /**
    *  Add a trailing fillChar to a string until string length is reached.
    * If string is longer or equal to given length no modifications will be done
@@ -431,19 +445,25 @@ export interface ExprString extends StringFunctions<Expr> {
    * └──────────┘
    * ```
    */
-  padEnd(length: number, fillChar: string): Expr;
+  padEnd(length: number, fillChar: string): Expr<DataType.String, Name>;
   /**
    * Create subslices of the string values of a Utf8 Series.
    * @param start - Start of the slice (negative indexing may be used).
    * @param length - Optional length of the slice.
    */
-  slice(start: number | Expr, length?: number | Expr): Expr;
+  slice(
+    start: number | Expr,
+    length?: number | Expr,
+  ): Expr<DataType.String, Name>;
   /**
    * Split a string into substrings using the specified separator and return them as a Series.
    * @param by — A string that identifies character or characters to use in separating the string.
    * @param options.inclusive Include the split character/string in the results
    */
-  split(by: string, options?: { inclusive?: boolean } | boolean): Expr;
+  split(
+    by: string,
+    options?: { inclusive?: boolean } | boolean,
+  ): Expr<DataType.List, Name>;
   /** Check if string values start with a substring.
    * @param prefix - Prefix substring or expression
    * @example
@@ -493,17 +513,23 @@ export interface ExprString extends StringFunctions<Expr> {
    * └────────┴────────┘
    * ```
    */
-  startsWith(prefix: string | Expr): Expr;
+  startsWith(prefix: string | Expr): Expr<DataType.Bool, Name>;
   /** Remove leading and trailing whitespace. */
-  strip(): Expr;
+  strip(): Expr<DataType.String, Name>;
   /**
    * Parse a Series of dtype Utf8 to a Date/Datetime Series.
    * @param datatype Date or Datetime.
    * @param fmt formatting syntax. [Read more](https://docs.rs/chrono/0.4.19/chrono/format/strftime/index.html)
    */
-  strptime(datatype: DataType.Date, fmt?: string): Expr;
-  strptime(datatype: DataType.Datetime, fmt?: string): Expr;
-  strptime(datatype: typeof DataType.Datetime, fmt?: string): Expr;
+  strptime(datatype: DataType.Date, fmt?: string): Expr<DataType.Date, Name>;
+  strptime(
+    datatype: DataType.Datetime,
+    fmt?: string,
+  ): Expr<DataType.Datetime, Name>;
+  strptime(
+    datatype: typeof DataType.Datetime,
+    fmt?: string,
+  ): Expr<DataType.Datetime, Name>;
 
   /** Remove leading and trailing whitespace.
    * @param prefix - Prefix substring or expression (null means whitespace)
@@ -534,17 +560,17 @@ export interface ExprString extends StringFunctions<Expr> {
    *      └──────────────┘
    * ```
    */
-  stripChars(prefix: string | Expr): Expr;
+  stripChars(prefix: string | Expr): Expr<DataType.String, Name>;
   /** Remove trailing characters.
    * @param prefix - Prefix substring or expression (null means whitespace)
    * @see stripChars
    */
-  stripCharsEnd(prefix: string | Expr): Expr;
+  stripCharsEnd(prefix: string | Expr): Expr<DataType.String, Name>;
   /** Remove leading characters.
    * @param prefix - Prefix substring or expression (null means whitespace)
    * @see stripChars
    */
-  stripCharsStart(prefix: string | Expr): Expr;
+  stripCharsStart(prefix: string | Expr): Expr<DataType.String, Name>;
 }
 
 export const ExprStringFunctions = (_expr: any): ExprString => {
@@ -565,49 +591,54 @@ export const ExprStringFunctions = (_expr: any): ExprString => {
 
   return {
     concat(delimiter: string, ignoreNulls = true) {
-      return wrap("strConcat", delimiter, ignoreNulls);
+      return wrap("strConcat", delimiter, ignoreNulls) as any;
     },
     contains(pat: string | RegExp | Expr, literal = false, strict = true) {
-      return wrap("strContains", exprToLitOrExpr(pat)._expr, literal, strict);
+      return wrap(
+        "strContains",
+        exprToLitOrExpr(pat)._expr,
+        literal,
+        strict,
+      ) as any;
     },
     decode(arg, strict = false) {
       if (typeof arg === "string") {
-        return handleDecode(arg, strict);
+        return handleDecode(arg, strict) as any;
       }
 
-      return handleDecode(arg.encoding, arg.strict);
+      return handleDecode(arg.encoding, arg.strict) as any;
     },
     encode(encoding) {
       switch (encoding) {
         case "hex":
-          return wrap("strHexEncode");
+          return wrap("strHexEncode") as any;
         case "base64":
-          return wrap("strBase64Encode");
+          return wrap("strBase64Encode") as any;
         default:
           throw new RangeError("supported encodings are 'hex' and 'base64'");
       }
     },
     endsWith(suffix: string | Expr) {
-      return wrap("strEndsWith", exprToLitOrExpr(suffix)._expr);
+      return wrap("strEndsWith", exprToLitOrExpr(suffix)._expr) as any;
     },
     extract(pattern: RegExp | Expr, groupIndex: number) {
       return wrap(
         "strExtract",
         exprToLitOrExpr(pattern, true)._expr,
         groupIndex,
-      );
+      ) as any;
     },
     jsonDecode(dtype?: DataType, inferSchemaLength?: number) {
-      return wrap("strJsonDecode", dtype, inferSchemaLength);
+      return wrap("strJsonDecode", dtype, inferSchemaLength) as any;
     },
     jsonPathMatch(pat: string) {
-      return wrap("strJsonPathMatch", [pat]);
+      return wrap("strJsonPathMatch", [pat]) as any;
     },
     lengths() {
-      return wrap("strLengths");
+      return wrap("strLengths") as any;
     },
     lstrip() {
-      return wrap("strLstrip");
+      return wrap("strLstrip") as any;
     },
     replace(
       pat: string | RegExp | Expr,
@@ -621,7 +652,7 @@ export const ExprStringFunctions = (_expr: any): ExprString => {
         exprToLitOrExpr(val)._expr,
         literal,
         n,
-      );
+      ) as any;
     },
     replaceAll(
       pat: string | RegExp | Expr,
@@ -633,22 +664,22 @@ export const ExprStringFunctions = (_expr: any): ExprString => {
         exprToLitOrExpr(pat)._expr,
         exprToLitOrExpr(val)._expr,
         literal,
-      );
+      ) as any;
     },
     rstrip() {
-      return wrap("strRstrip");
+      return wrap("strRstrip") as any;
     },
     padStart(length: number, fillChar: string) {
-      return wrap("strPadStart", lit(length)._expr, fillChar);
+      return wrap("strPadStart", lit(length)._expr, fillChar) as any;
     },
     zFill(length: number | Expr) {
       if (!Expr.isExpr(length)) {
         length = lit(length)._expr;
       }
-      return wrap("zfill", length);
+      return wrap("zfill", length) as any;
     },
     padEnd(length: number, fillChar: string) {
-      return wrap("strPadEnd", lit(length)._expr, fillChar);
+      return wrap("strPadEnd", lit(length)._expr, fillChar) as any;
     },
     slice(start, length?) {
       if (!Expr.isExpr(start)) {
@@ -658,27 +689,42 @@ export const ExprStringFunctions = (_expr: any): ExprString => {
         length = lit(length)._expr;
       }
 
-      return wrap("strSlice", start, length);
+      return wrap("strSlice", start, length) as any;
     },
     split(by: string, options?) {
       const inclusive =
         typeof options === "boolean" ? options : options?.inclusive;
-      return wrap("strSplit", exprToLitOrExpr(by)._expr, inclusive);
+      return wrap("strSplit", exprToLitOrExpr(by)._expr, inclusive) as any;
     },
     startsWith(prefix: string | Expr) {
-      return wrap("strStartsWith", exprToLitOrExpr(prefix)._expr);
+      return wrap("strStartsWith", exprToLitOrExpr(prefix)._expr) as any;
     },
     strip() {
-      return wrap("strStrip");
+      return wrap("strStrip") as any;
     },
     stripChars(pattern: string | Expr) {
-      return wrap("strStripChars", exprToLitOrExpr(pattern)._expr, true, true);
+      return wrap(
+        "strStripChars",
+        exprToLitOrExpr(pattern)._expr,
+        true,
+        true,
+      ) as any;
     },
     stripCharsEnd(pattern: string | Expr) {
-      return wrap("strStripChars", exprToLitOrExpr(pattern)._expr, false, true);
+      return wrap(
+        "strStripChars",
+        exprToLitOrExpr(pattern)._expr,
+        false,
+        true,
+      ) as any;
     },
     stripCharsStart(pattern: string | Expr) {
-      return wrap("strStripChars", exprToLitOrExpr(pattern)._expr, true, false);
+      return wrap(
+        "strStripChars",
+        exprToLitOrExpr(pattern)._expr,
+        true,
+        false,
+      ) as any;
     },
     strptime(
       dtype: DataType.Date | DataType.Datetime | typeof DataType.Datetime,
@@ -686,7 +732,7 @@ export const ExprStringFunctions = (_expr: any): ExprString => {
     ) {
       const dt = dtype instanceof DataType ? dtype : dtype();
       if (dt.equals(DataType.Date)) {
-        return wrap("strToDate", format, false, false, false);
+        return wrap("strToDate", format, false, false, false) as any;
       }
       if (dt.equals(DataType.Datetime("ms"))) {
         return wrap(
@@ -698,17 +744,17 @@ export const ExprStringFunctions = (_expr: any): ExprString => {
           false,
           false,
           undefined,
-        );
+        ) as any;
       }
       throw new Error(
         `only "DataType.Date" and "DataType.Datetime" are supported`,
       );
     },
     toLowerCase() {
-      return wrap("strToLowercase");
+      return wrap("strToLowercase") as any;
     },
     toUpperCase() {
-      return wrap("strToUppercase");
+      return wrap("strToUppercase") as any;
     },
   };
 };

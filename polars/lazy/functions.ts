@@ -98,7 +98,11 @@ import { _Expr, Expr, exprToLitOrExpr } from "./expr";
  * ╰───────────┴─────╯
  * ```
  */
-export function col(col: string | string[] | Series | DataType): Expr {
+export function col<Name extends string = string>(
+  col: Name,
+): Expr<DataType, Name>;
+export function col(col: string | string[] | Series | DataType): Expr;
+export function col(col: any): any {
   if (Series.isSeries(col)) {
     col = col.toArray() as string[];
   }

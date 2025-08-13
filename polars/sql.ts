@@ -1,4 +1,4 @@
-import { _LazyDataFrame, DataFrame, type LazyDataFrame } from ".";
+import { _LazyDataFrame, DataFrame, type LazyDataFrame, type Schema } from ".";
 import pli from "./internals/polars_internal";
 
 const INSPECT = Symbol.for("nodejs.util.inspect.custom");
@@ -114,7 +114,10 @@ export interface SQLContext {
    * │ world │
    * └───────┘
    */
-  register(name: string, frame: DataFrame | LazyDataFrame | null): SQLContext;
+  register(
+    name: string,
+    frame: DataFrame<any> | LazyDataFrame<any> | null,
+  ): SQLContext;
 
   /**
    * Register multiple DataFrames as tables, using the associated names.
@@ -233,20 +236,38 @@ export class SQLContext implements SQLContext {
     return `SQLContext: {${this.#ctx.getTables().join(", ")}}`;
   }
 
-  constructor(frames?: Record<string, DataFrame | LazyDataFrame>) {
+  constructor(frames?: Record<string, DataFrame<any> | LazyDataFrame<any>>) {
     this.#ctx = new pli.SqlContext();
     for (const [name, frame] of Object.entries(frames ?? {})) {
+      let ldf: any;
       if (DataFrame.isDataFrame(frame)) {
-        this.#ctx.register(name, frame._df.lazy());
+        ldf = frame.lazy();
       } else {
-        this.#ctx.register(name, frame._ldf);
+        ldf = frame; // LazyDataFrame<any>
       }
+      this.#ctx.register(name, ldf._ldf);
     }
   }
 
   execute(query: string): LazyDataFrame;
   execute(query: string, { eager }: { eager: true }): DataFrame;
   execute(query: string, { eager }: { eager: false }): LazyDataFrame;
+  execute<TSchema extends Schema>(
+    query: string,
+    { eager, schema }: { eager: true; schema: TSchema },
+  ): DataFrame<TSchema>;
+  execute<TSchema extends Schema>(
+    query: string,
+    { eager, schema }: { eager: false; schema: TSchema },
+  ): LazyDataFrame<TSchema>;
+  execute<TSchema extends Schema>(
+    query: string,
+    { eager, schema }: { eager: true; schema: TSchema },
+  ): DataFrame<TSchema>;
+  execute<TSchema extends Schema>(
+    query: string,
+    { eager, schema }: { eager: false; schema: TSchema },
+  ): LazyDataFrame<TSchema>;
   execute(
     this: SQLContext,
     query: string,
@@ -264,20 +285,23 @@ export class SQLContext implements SQLContext {
   register(
     this: SQLContext,
     name: string,
-    frame: DataFrame | LazyDataFrame | null,
+    frame: DataFrame<any> | LazyDataFrame<any> | null,
   ): SQLContext {
+    let ldf: any;
     if (frame == null) {
-      frame = DataFrame().lazy();
+      ldf = DataFrame().lazy();
     } else if (DataFrame.isDataFrame(frame)) {
-      frame = frame.lazy();
+      ldf = frame.lazy();
+    } else {
+      ldf = frame;
     }
-    this.#ctx.register(name, frame._ldf);
+    this.#ctx.register(name, ldf._ldf);
     return this;
   }
 
   registerMany(
     this: SQLContext,
-    frames: Record<string, DataFrame | LazyDataFrame>,
+    frames: Record<string, DataFrame<any> | LazyDataFrame<any>>,
   ): SQLContext {
     for (const [name, frame] of Object.entries(frames)) {
       this.register(name, frame);

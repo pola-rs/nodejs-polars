@@ -118,10 +118,10 @@ function readCSVBuffer(buff, options) {
   );
 }
 
-export function readRecords(
+export function readRecords<T extends Record<string, DataType>>(
   records: Record<string, any>[],
-  options?: { schema: Record<string, DataType> },
-): DataFrame;
+  options: { schema: T },
+): DataFrame<T>;
 export function readRecords(
   records: Record<string, any>[],
   options?: { inferSchemaLength?: number },
@@ -180,6 +180,10 @@ export function readCSV(
   pathOrBody: string | Buffer,
   options?: Partial<ReadCsvOptions>,
 ): DataFrame;
+export function readCSV<TSchema extends Record<string, DataType>>(
+  pathOrBody: string | Buffer,
+  options: Partial<ReadCsvOptions> & { schema: TSchema },
+): DataFrame<TSchema>;
 export function readCSV(pathOrBody, options?) {
   options = { ...readCsvDefaultOptions, ...options };
   const extensions = [".tsv", ".csv"];
@@ -274,6 +278,10 @@ export function scanCSV(
   path: string,
   options?: Partial<ScanCsvOptions>,
 ): LazyDataFrame;
+export function scanCSV<TSchema extends Record<string, DataType>>(
+  path: string,
+  options: Partial<ScanCsvOptions> & { schema: TSchema },
+): LazyDataFrame<TSchema>;
 export function scanCSV(path, options?) {
   options = { ...scanCsvDefaultOptions, ...options };
 

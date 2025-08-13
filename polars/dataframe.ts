@@ -9,10 +9,11 @@ import {
 } from "./groupby";
 import { escapeHTML } from "./html";
 import { arrayToJsDataFrame } from "./internals/construction";
+import type { NativeDataFrame } from "./internals/native_types";
 import pli from "./internals/polars_internal";
 import { _LazyDataFrame, type LazyDataFrame } from "./lazy/dataframe";
 import { Expr } from "./lazy/expr";
-import { col, element } from "./lazy/functions";
+import { col, element, lit } from "./lazy/functions";
 import { _Series, Series } from "./series";
 
 import type {
@@ -300,13 +301,25 @@ export interface DataFrame<S extends Schema = any>
     Serialize,
     GroupByOps<RollingGroupBy> {
   /** @ignore */
-  _df: any;
+  _df: NativeDataFrame;
   dtypes: DataType[];
   height: number;
   shape: { height: number; width: number };
   width: number;
   get columns(): string[];
   set columns(cols: string[]);
+  /** Schema-bound expression builder */
+  get $(): {
+    col<K extends Extract<keyof S, string>>(
+      name: K,
+    ): import("./lazy/expr").Expr<S[K], K>;
+    col<Name extends string, D extends DataType>(
+      name: Name,
+      dtype: D,
+    ): import("./lazy/expr").Expr<D, Name>;
+  };
+  /** Cast the compile-time schema of this DataFrame without changing runtime */
+  typed<S2 extends Schema>(): DataFrame<S2>;
   [inspect](): string;
   [Symbol.iterator](): Generator<any, void, any>;
   /**
@@ -501,7 +514,7 @@ export interface DataFrame<S extends Schema = any>
 
    * @param other DataFrame to vertically add.
    */
-  extend(other: DataFrame<S>): DataFrame<S>;
+  extend(other: DataFrame<any>): DataFrame<S>;
   /**
    * Fill null/missing values by a filling strategy
    *
@@ -657,8 +670,8 @@ export interface DataFrame<S extends Schema = any>
    * false
    * ```
    */
-  frameEqual(other: DataFrame, nullEqual: boolean): boolean;
-  frameEqual(other: DataFrame): boolean;
+  frameEqual(other: DataFrame<any>, nullEqual: boolean): boolean;
+  frameEqual(other: DataFrame<any>): boolean;
   /**
    * Get a single column as Series by name.
    *
@@ -706,7 +719,7 @@ export interface DataFrame<S extends Schema = any>
    * ___
    * @param by - Column(s) to group by.
    */
-  groupBy(...by: ColumnSelection[]): GroupBy;
+  groupBy<By extends Extract<keyof S, string>>(...by: By[]): GroupBy<S, By>;
   /**
    * Hash and combine the rows in this DataFrame. _(Hash value is UInt64)_
    * @param k0 - seed parameter
@@ -1032,7 +1045,7 @@ export interface DataFrame<S extends Schema = any>
    * ```
    */
   joinAsof(
-    other: DataFrame,
+    other: DataFrame<any>,
     options: {
       leftOn?: string;
       rightOn?: string;
@@ -1491,6 +1504,64 @@ export interface DataFrame<S extends Schema = any>
    * ```
    */
   select<U extends keyof S>(...columns: U[]): DataFrame<{ [P in U]: S[P] }>;
+  select<R extends Record<string, Expr | Series>>(
+    columns: R,
+  ): DataFrame<{
+    [K in keyof R & string]: R[K] extends Series<infer DT, any>
+      ? DT
+      : R[K] extends import("./lazy/expr").Expr<infer ET extends DataType, any>
+        ? ET
+        : R[K] extends import("./utils").TypedExpr<infer ET2 extends DataType>
+          ? ET2
+          : DataType;
+  }>;
+  // Builder-callback returning an array of Exprs (array form)
+  select<const R extends ReadonlyArray<import("./lazy/expr").Expr<any, any>>>(
+    build: (b: {
+      col<K extends Extract<keyof S, string>>(
+        name: K,
+      ): import("./lazy/expr").Expr<S[K], K>;
+      col<Name extends string, D extends DataType>(
+        name: Name,
+        dtype: D,
+      ): import("./lazy/expr").Expr<D, Name>;
+    }) => R,
+  ): DataFrame<{
+    [K in R[number] as K extends import("./lazy/expr").Expr<
+      any,
+      infer Name extends string | undefined
+    >
+      ? Name extends string
+        ? Name
+        : never
+      : never]: K extends import("./lazy/expr").Expr<
+      infer DT extends DataType,
+      any
+    >
+      ? DT
+      : DataType;
+  }>;
+  // Builder-callback for select (record form)
+  select<R extends Record<string, Expr | Series>>(
+    build: (b: {
+      col<K extends Extract<keyof S, string>>(
+        name: K,
+      ): import("./lazy/expr").Expr<S[K], K>;
+      col<Name extends string, D extends DataType>(
+        name: Name,
+        dtype: D,
+      ): import("./lazy/expr").Expr<D, Name>;
+    }) => R,
+  ): DataFrame<{
+    [K in keyof R & string]: R[K] extends Series<infer DT, any>
+      ? DT
+      : R[K] extends import("./lazy/expr").Expr<infer ET extends DataType, any>
+        ? ET
+        : R[K] extends import("./utils").TypedExpr<infer ET2 extends DataType>
+          ? ET2
+          : DataType;
+  }>;
+  select(columns: (Expr | Series)[]): DataFrame<S>;
   select(...columns: ExprOrString[]): DataFrame<S>;
   /**
    * Shift the values by a given period and fill the parts that will be empty due to this operation
@@ -1967,7 +2038,7 @@ export interface DataFrame<S extends Schema = any>
    * ╰─────┴─────┴─────╯
    * ```
    */
-  vstack(df: DataFrame<S>): DataFrame<S>;
+  vstack(df: DataFrame<any>): DataFrame<S>;
   /**
    * Return a new DataFrame with the column added or replaced.
    * @param column - Series, where the name of the Series refers to the column in the DataFrame.
@@ -1975,7 +2046,84 @@ export interface DataFrame<S extends Schema = any>
   withColumn<SeriesTypeT extends DataType, SeriesNameT extends string>(
     column: Series<SeriesTypeT, SeriesNameT>,
   ): DataFrame<Simplify<S & { [K in SeriesNameT]: SeriesTypeT }>>;
-  withColumn(column: Series | Expr): DataFrame;
+  withColumn<Name extends string, T extends DataType = DataType>(
+    column: import("./lazy/expr").Expr<T, Name>,
+  ): DataFrame<Simplify<S & { [K in Name]: T }>>;
+  // Builder-callback overloads for a single column
+  withColumn<Name extends string, T extends DataType = DataType>(
+    build: (b: {
+      col<K extends Extract<keyof S, string>>(
+        name: K,
+      ): import("./lazy/expr").Expr<S[K], K>;
+      col<Name2 extends string, D extends DataType>(
+        name: Name2,
+        dtype: D,
+      ): import("./lazy/expr").Expr<D, Name2>;
+    }) => import("./lazy/expr").Expr<T, Name>,
+  ): DataFrame<Simplify<S & { [K in Name]: T }>>;
+  withColumn<DT extends DataType, Name extends string>(
+    build: (b: {
+      col<K extends Extract<keyof S, string>>(
+        name: K,
+      ): import("./lazy/expr").Expr<S[K], K>;
+      col<Name2 extends string, D extends DataType>(
+        name: Name2,
+        dtype: D,
+      ): import("./lazy/expr").Expr<D, Name2>;
+    }) => Series<DT, Name>,
+  ): DataFrame<Simplify<S & { [K in Name]: DT }>>;
+  withColumn(column: Expr): DataFrame<S>;
+  withColumn(column: Series): DataFrame<S>;
+  // Builder-callback: create columns using a schema-bound builder without an intermediate var
+  withColumns<R extends Record<string, Expr | Series>>(
+    columns: (b: {
+      col<K extends Extract<keyof S, string>>(
+        name: K,
+      ): import("./lazy/expr").Expr<S[K], K>;
+      col<Name extends string, D extends DataType>(
+        name: Name,
+        dtype: D,
+      ): import("./lazy/expr").Expr<D, Name>;
+    }) => R,
+  ): DataFrame<
+    Simplify<
+      S & {
+        [K in keyof R & string]: R[K] extends Series<infer DT, any>
+          ? DT
+          : R[K] extends import("./lazy/expr").Expr<
+                infer ET extends DataType,
+                any
+              >
+            ? ET
+            : R[K] extends import("./utils").TypedExpr<
+                  infer ET2 extends DataType
+                >
+              ? ET2
+              : DataType;
+      }
+    >
+  >;
+  // Record/object form
+  withColumns<R extends Record<string, Expr | Series>>(
+    columns: R,
+  ): DataFrame<
+    Simplify<
+      S & {
+        [K in keyof R & string]: R[K] extends Series<infer DT, any>
+          ? DT
+          : R[K] extends import("./lazy/expr").Expr<
+                infer ET extends DataType,
+                any
+              >
+            ? ET
+            : R[K] extends import("./utils").TypedExpr<
+                  infer ET2 extends DataType
+                >
+              ? ET2
+              : DataType;
+      }
+    >
+  >;
   withColumns(...columns: (Expr | Series)[]): DataFrame;
   /**
    * Return a new DataFrame with the column renamed.
@@ -1997,7 +2145,10 @@ export interface DataFrame<S extends Schema = any>
    * Add a column at index 0 that counts the rows.
    * @param name - name of the column to add
    */
-  withRowCount(name?: string): DataFrame;
+  withRowCount(): DataFrame<Simplify<S & { row_nr: DataType.UInt32 }>>;
+  withRowCount<Name extends string>(
+    name: Name,
+  ): DataFrame<Simplify<S & { [K in Name]: DataType.UInt32 }>>;
   /** @see {@link filter} */
   where(predicate: any): DataFrame<S>;
   /**
@@ -2164,6 +2315,16 @@ export const _DataFrame = <S extends Schema>(_df: any): DataFrame<S> => {
     get [Symbol.toStringTag]() {
       return "DataFrame";
     },
+    get $() {
+      return {
+        col(name: string, _dtype?: any) {
+          return col(name).alias(name) as any;
+        },
+      } as any;
+    },
+    typed() {
+      return this as any;
+    },
     get dtypes() {
       return _df.dtypes().map(DataType.deserialize);
     },
@@ -2282,6 +2443,19 @@ export const _DataFrame = <S extends Schema>(_df: any): DataFrame<S> => {
       return wrap("extend", (other as any).inner());
     },
     filter(predicate) {
+      if (typeof predicate === "function") {
+        const build = predicate as (b: {
+          col(name: string, dtype?: any): Expr;
+        }) => Expr;
+        const b = {
+          col(name: string, dtype?: any) {
+            const e = col(name);
+            return dtype ? (e as any).cast(dtype) : e;
+          },
+        };
+        const expr = build(b);
+        return this.lazy().filter(expr).collectSync();
+      }
       return this.lazy().filter(predicate).collectSync();
     },
     fillNull(strategy) {
@@ -2297,7 +2471,7 @@ export const _DataFrame = <S extends Schema>(_df: any): DataFrame<S> => {
 
       return this.getColumns().reduce((acc, curr) => fn(acc, curr));
     },
-    frameEqual(other, nullEqual = true) {
+    frameEqual(other: DataFrame<any>, nullEqual = true) {
       return unwrap("frameEqual", other._df, nullEqual);
     },
     getColumn(name) {
@@ -2419,7 +2593,7 @@ export const _DataFrame = <S extends Schema>(_df: any): DataFrame<S> => {
       }
       return wrap("join", other._df, leftOn, rightOn, how, suffix);
     },
-    joinAsof(other, options) {
+    joinAsof(other: DataFrame<any>, options) {
       return this.lazy()
         .joinAsof(other.lazy(), options as any)
         .collectSync();
@@ -2586,9 +2760,65 @@ export const _DataFrame = <S extends Schema>(_df: any): DataFrame<S> => {
       throw new TypeError("must specify either 'frac' or 'n'");
     },
     select(...selection) {
-      const hasExpr = selection.flat().some((s) => Expr.isExpr(s));
+      // Builder-callback form
+      if (selection.length === 1 && typeof selection[0] === "function") {
+        const build = selection[0] as (b: {
+          col(name: string, dtype?: any): Expr;
+        }) => Record<string, Expr | Series> | ReadonlyArray<Expr>;
+        const b = {
+          col(name: string, dtype?: any) {
+            const e = col(name);
+            return dtype ? (e as any).cast(dtype) : e;
+          },
+        };
+        const built = build(b);
+        if (Array.isArray(built)) {
+          return _DataFrame(_df)
+            .lazy()
+            .select(...(built as Expr[]))
+            .collectSync();
+        }
+        const exprs: Array<Expr> = Object.entries(built).map(([name, value]) =>
+          Expr.isExpr(value)
+            ? value.alias(name)
+            : (lit(value) as any).alias(name),
+        );
+        return _DataFrame(_df)
+          .lazy()
+          .select(...exprs)
+          .collectSync();
+      }
+      // Record form: df.select({ new: expr, ... })
+      if (
+        selection.length === 1 &&
+        selection[0] &&
+        typeof selection[0] === "object" &&
+        !Array.isArray(selection[0]) &&
+        !Expr.isExpr(selection[0]) &&
+        !Series.isSeries(selection[0])
+      ) {
+        const record = selection[0] as Record<string, Expr | Series>;
+        const exprs: Array<Expr> = Object.entries(record).map(
+          ([name, value]) =>
+            Expr.isExpr(value)
+              ? value.alias(name)
+              : (lit(value) as any).alias(name),
+        );
+        return _DataFrame(_df)
+          .lazy()
+          .select(...exprs)
+          .collectSync();
+      }
+      const flat = selection.flat();
+      const hasExpr = flat.some((s) => Expr.isExpr(s));
       if (hasExpr) {
-        return _DataFrame(_df).lazy().select(selection).collectSync();
+        const exprs = flat.map((v) =>
+          Series.isSeries(v) ? (lit(v) as any) : v,
+        );
+        return _DataFrame(_df)
+          .lazy()
+          .select(...(exprs as any))
+          .collectSync();
       }
       return wrap("select", columnOrColumnsStrict(selection as any));
     },
@@ -2839,22 +3069,81 @@ export const _DataFrame = <S extends Schema>(_df: any): DataFrame<S> => {
       return _df.toRow(idx);
     },
     vstack: (other) => wrap("vstack", (other as any).inner()),
-    withColumn(column: Series | Expr) {
+    withColumn(...args: any[]) {
+      if (args.length === 1 && typeof args[0] === "function") {
+        const build = args[0] as (b: {
+          col(name: string, dtype?: any): Expr | Series;
+        }) => Expr | Series;
+        const b = {
+          col(name: string, dtype?: any) {
+            const e = col(name);
+            return dtype ? (e as any).cast(dtype) : e;
+          },
+        };
+        const value = build(b);
+        if (Series.isSeries(value)) {
+          return wrap("withColumn", value.inner());
+        }
+        return (this as any).withColumns(value);
+      }
+      const column = args[0] as Series | Expr;
       if (Series.isSeries(column)) {
         return wrap("withColumn", column.inner());
       }
       return this.withColumns(column);
     },
-    withColumns(...columns: (Expr | Series)[]) {
+    withColumns(...args: any[]) {
+      if (args.length === 1) {
+        const arg0 = args[0];
+        // Builder callback
+        if (typeof arg0 === "function") {
+          const build = arg0 as (b: {
+            col(name: string, dtype?: any): Expr;
+          }) =>
+            | Record<string, Expr | Series>
+            | Readonly<Record<string, Expr | Series>>;
+          const b = {
+            col(name: string, dtype?: any) {
+              const e = col(name);
+              return dtype ? (e as any).cast(dtype) : e;
+            },
+          };
+          const record = build(b) as Record<string, Expr | Series>;
+          const exprsFromRecord: Array<Expr | Series> = Object.entries(
+            record,
+          ).map(([name, value]) =>
+            Expr.isExpr(value) ? value.alias(name) : value.rename(name),
+          );
+          return (this as any).withColumns(...exprsFromRecord);
+        }
+        // Record form
+        if (
+          arg0 &&
+          typeof arg0 === "object" &&
+          !Array.isArray(arg0) &&
+          !Expr.isExpr(arg0) &&
+          !Series.isSeries(arg0)
+        ) {
+          const record = arg0 as Record<string, Expr | Series>;
+          const exprsFromRecord: Array<Expr | Series> = Object.entries(
+            record,
+          ).map(([name, value]) =>
+            Expr.isExpr(value) ? value.alias(name) : value.rename(name),
+          );
+          return (this as any).withColumns(...exprsFromRecord);
+        }
+      }
+      const columns = args as Array<Expr | Series>;
       if (isSeriesArray(columns)) {
-        return columns.reduce(
-          (acc, curr) => acc.withColumn(curr),
-          _DataFrame(_df),
-        );
+        let acc = _DataFrame(_df) as any;
+        for (const curr of columns) {
+          acc = acc.withColumn(curr);
+        }
+        return acc;
       }
       return this.lazy()
-        .withColumns(columns)
-        .collectSync({ noOptimization: true });
+        .withColumns(...columns)
+        .collectSync();
     },
     withColumnRenamed(opt, replacement?): any {
       if (typeof opt === "string") {
@@ -2881,7 +3170,7 @@ export const _DataFrame = <S extends Schema>(_df: any): DataFrame<S> => {
     modulo: (other) => wrap("rem", prepareOtherArg(other).inner()),
   } as DataFrame<S>;
 
-  return new Proxy(df, {
+  return new Proxy(df as unknown as DataFrame<any>, {
     get(target: DataFrame<S>, prop, receiver) {
       if (typeof prop === "string" && target.columns.includes(prop)) {
         return target.getColumn(prop);
@@ -3060,7 +3349,7 @@ function objToDF(
         }
       }
       return Series(name, values).inner();
-    });
+    }) as unknown as DataFrame<any>;
   }
 
   return new pli.JsDataFrame(columns);

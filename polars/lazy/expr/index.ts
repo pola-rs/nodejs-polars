@@ -10,6 +10,7 @@ export type { ExprStruct as StructNamespace } from "./struct";
 
 import { isRegExp } from "node:util/types";
 import type { DataType } from "../../datatypes";
+import type { NativeExpr } from "../../internals/native_types";
 import pli from "../../internals/polars_internal";
 import { Series } from "../../series";
 import type {
@@ -28,6 +29,7 @@ import type {
   InterpolationMethod,
   RankMethod,
 } from "../../types";
+import type { DTypeOf, FloatAggResult, Promote, SumResult } from "../../utils";
 import {
   type ExprOrString,
   INSPECT_SYMBOL,
@@ -37,8 +39,10 @@ import {
 /**
  * Expressions that can be used in various contexts.
  */
-export interface Expr
-  extends Rolling<Expr>,
+export interface Expr<
+  T extends DataType = DataType,
+  Name extends string | undefined = undefined,
+> extends Rolling<Expr>,
     Arithmetic<Expr>,
     Comparison<Expr>,
     Cumulative<Expr>,
@@ -46,7 +50,7 @@ export interface Expr
     Round<Expr>,
     EwmOps<Expr>,
     Serialize {
-  _expr: any;
+  _expr: NativeExpr;
   /**
    * Datetime namespace
    */
@@ -69,7 +73,11 @@ export interface Expr
   /** compat with `JSON.stringify` */
   toJSON(): string;
   /** Take absolute values */
-  abs(): Expr;
+  abs(): Expr<T, Name>;
+  /** Strong type guard */
+  // eslint-disable-next-line @typescript-eslint/method-signature-style
+  // deno-lint-ignore no-explicit-any
+  isExpr(arg: any): arg is Expr;
   /**
    * Get the group indexes of the group by operation.
    * Should be used in aggregation context only.
@@ -142,8 +150,56 @@ export interface Expr
    * ╰─────┴──────╯
    *```
    */
-  alias(name: string): Expr;
-  and(other: any): Expr;
+  alias<Name extends string = string>(name: Name): Expr<T, Name>;
+  // Boolean ops
+  and(other: any): Expr<DataType.Bool, Name>;
+  or(other: any): Expr<DataType.Bool, Name>;
+  not(): Expr<DataType.Bool, Name>;
+  // Arithmetic ops (overrides)
+  add<V extends Expr<any, any> | Series<any, any> | number | bigint>(
+    other: V,
+  ): Expr<Promote<T, DTypeOf<V>>, Name>;
+  sub<V extends Expr<any, any> | Series<any, any> | number | bigint>(
+    other: V,
+  ): Expr<Promote<T, DTypeOf<V>>, Name>;
+  mul<V extends Expr<any, any> | Series<any, any> | number | bigint>(
+    other: V,
+  ): Expr<Promote<T, DTypeOf<V>>, Name>;
+  rem<V extends Expr<any, any> | Series<any, any> | number | bigint>(
+    other: V,
+  ): Expr<Promote<T, DTypeOf<V>>, Name>;
+  plus<V extends Expr<any, any> | Series<any, any> | number | bigint>(
+    other: V,
+  ): Expr<Promote<T, DTypeOf<V>>, Name>;
+  minus<V extends Expr<any, any> | Series<any, any> | number | bigint>(
+    other: V,
+  ): Expr<Promote<T, DTypeOf<V>>, Name>;
+  multiplyBy<V extends Expr<any, any> | Series<any, any> | number | bigint>(
+    other: V,
+  ): Expr<Promote<T, DTypeOf<V>>, Name>;
+  modulo<V extends Expr<any, any> | Series<any, any> | number | bigint>(
+    other: V,
+  ): Expr<Promote<T, DTypeOf<V>>, Name>;
+  // Division always yields Float64
+  div<V extends Expr<any, any> | Series<any, any> | number | bigint>(
+    other: V,
+  ): Expr<DataType.Float64, Name>;
+  divideBy<V extends Expr<any, any> | Series<any, any> | number | bigint>(
+    other: V,
+  ): Expr<DataType.Float64, Name>;
+  // Comparison ops (boolean results)
+  eq(other: any): Expr<DataType.Bool, Name>;
+  equals(other: any): Expr<DataType.Bool, Name>;
+  gt(other: any): Expr<DataType.Bool, Name>;
+  greaterThan(other: any): Expr<DataType.Bool, Name>;
+  gtEq(other: any): Expr<DataType.Bool, Name>;
+  greaterThanEquals(other: any): Expr<DataType.Bool, Name>;
+  lt(other: any): Expr<DataType.Bool, Name>;
+  lessThan(other: any): Expr<DataType.Bool, Name>;
+  ltEq(other: any): Expr<DataType.Bool, Name>;
+  lessThanEquals(other: any): Expr<DataType.Bool, Name>;
+  neq(other: any): Expr<DataType.Bool, Name>;
+  notEquals(other: any): Expr<DataType.Bool, Name>;
   /**
    * Compute the element-wise value for the inverse cosine.
    * @returns Expression of data type :class:`Float64`.
@@ -161,7 +217,7 @@ export interface Expr
       └──────────┘
    * ```
    */
-  arccos(): Expr;
+  arccos(): Expr<DataType.Float64, Name>;
   /**
    * Compute the element-wise value for the inverse hyperbolic cosine.
    * @returns Expression of data type :class:`Float64`.
@@ -179,7 +235,7 @@ export interface Expr
       └─────┘
    * ```
    */
-  arccosh(): Expr;
+  arccosh(): Expr<DataType.Float64, Name>;
   /**
    * Compute the element-wise value for the inverse sine.
    * @returns Expression of data type :class:`Float64`.
@@ -197,7 +253,7 @@ export interface Expr
   └──────────┘
   * ```
   */
-  arcsin(): Expr;
+  arcsin(): Expr<DataType.Float64, Name>;
   /**
    * Compute the element-wise value for the inverse hyperbolic sine.
    * @returns Expression of data type :class:`Float64`.
@@ -215,7 +271,7 @@ export interface Expr
     └──────────┘
     * ```
     */
-  arcsinh(): Expr;
+  arcsinh(): Expr<DataType.Float64, Name>;
   /**
    * Compute the element-wise value for the inverse tangent.
    * @returns Expression of data type :class:`Float64`.
@@ -233,7 +289,7 @@ export interface Expr
     └──────────┘
    * ```
    */
-  arctan(): Expr;
+  arctan(): Expr<DataType.Float64, Name>;
   /**
    * Compute the element-wise value for the inverse hyperbolic tangent.
    * @returns Expression of data type :class:`Float64`.
@@ -251,7 +307,7 @@ export interface Expr
     └─────┘
    * ```
    */
-  arctanh(): Expr;
+  arctanh(): Expr<DataType.Float64, Name>;
   /** Get the index of the maximal value. */
   argMax(): Expr;
   /** Get the index of the minimal value. */
@@ -273,11 +329,11 @@ export interface Expr
   /** Get index of first unique value. */
   argUnique(): Expr;
   /** @see {@link Expr.alias} */
-  as(name: string): Expr;
+  as<Name extends string = string>(name: Name): Expr<T, Name>;
   /** Fill missing values with the next to be seen values */
   backwardFill(): Expr;
   /** Cast between data types. */
-  cast(dtype: DataType, strict?: boolean): Expr;
+  cast<D extends DataType>(dtype: D, strict?: boolean): Expr<D, Name>;
   /**
    * Compute the element-wise value for the cosine.
    * @returns Expression of data type :class:`Float64`.
@@ -295,7 +351,7 @@ export interface Expr
       └─────┘
    * ```
    */
-  cos(): Expr;
+  cos(): Expr<DataType.Float64, Name>;
   /**
    * Compute the element-wise value for the hyperbolic cosine.
    * @returns Expression of data type :class:`Float64`.
@@ -313,7 +369,7 @@ export interface Expr
       └──────────┘
    * ```
    */
-  cosh(): Expr;
+  cosh(): Expr<DataType.Float64, Name>;
   /**
    * Compute the element-wise value for the cotangent.
    * @returns Expression of data type :class:`Float64`.
@@ -331,7 +387,7 @@ export interface Expr
     └──────┘
    * ```
    */
-  cot(): Expr;
+  cot(): Expr<DataType.Float64, Name>;
   /** Count the number of values in this expression */
   count(): Expr;
   /** Calculate the first discrete difference between shifted items.
@@ -450,7 +506,7 @@ export interface Expr
     └──────────┘
    * ```
    */
-  exp(): Expr;
+  exp(): Expr<DataType.Float64, Name>;
   /**
    * Explode a list or utf8 Series.
    *
@@ -636,7 +692,7 @@ export interface Expr
     └──────────┘
    * ```
    */
-  log1p(): Expr;
+  log1p(): Expr<DataType.Float64, Name>;
   /**
    * Compute the logarithm to a given base.
    * @param base - Given base, defaults to `e`
@@ -656,26 +712,26 @@ export interface Expr
     └──────────┘
    * ```
    */
-  log(base?: number): Expr;
+  log(base?: number): Expr<DataType.Float64, Name>;
   /** Returns a unit Series with the lowest value possible for the dtype of this expression. */
   lowerBound(): Expr;
   peakMax(): Expr;
   peakMin(): Expr;
   /** Compute the max value of the arrays in the list */
-  max(): Expr;
+  max(): Expr<T, Name>;
   /** Compute the mean value of the arrays in the list */
-  mean(): Expr;
+  mean(): Expr<FloatAggResult, Name>;
   /** Get median value. */
-  median(): Expr;
+  median(): Expr<FloatAggResult, Name>;
   /** Get minimum value. */
-  min(): Expr;
+  min(): Expr<T, Name>;
   /** Compute the most occurring value(s). Can return multiple Values */
   mode(): Expr;
   /** Negate a boolean expression. */
-  not(): Expr;
+  not(): Expr<DataType.Bool, Name>;
   /** Count unique values. */
   nUnique(): Expr;
-  or(other: any): Expr;
+  or(other: any): Expr<DataType.Bool, Name>;
   /**
    * Apply window function over a subgroup.
    *
@@ -1042,7 +1098,7 @@ export interface Expr
     └─────┘
    *```
    */
-  sin(): Expr;
+  sin(): Expr<DataType.Float64, Name>;
   /**
    * Compute the element-wise value for the hyperbolic sine.
    * @returns Expression of data type :class:`Float64`.
@@ -1060,7 +1116,7 @@ export interface Expr
     └──────────┘
    *```
    */
-  sinh(): Expr;
+  sinh(): Expr<DataType.Float64, Name>;
   /**
    * Compute the sample skewness of a data set.
    * For normally distributed data, the skewness should be about zero. For
@@ -1127,14 +1183,14 @@ export interface Expr
     reverse?: boolean | boolean[];
   }): Expr;
   /** Get standard deviation. */
-  std(): Expr;
+  std(): Expr<FloatAggResult, Name>;
   /** Add a suffix the to root column name of the expression. */
   suffix(suffix: string): Expr;
   /**
    * Get sum value.
    * Dtypes in {Int8, UInt8, Int16, UInt16} are cast to Int64 before summing to prevent overflow issues.
    */
-  sum(): Expr;
+  sum(): Expr<SumResult<T>, Name>;
   /** Take the last n values. */
   tail(length?: number): Expr;
   tail({ length }: { length: number }): Expr;
@@ -1155,7 +1211,7 @@ export interface Expr
     └──────┘
    *```
    */
-  tan(): Expr;
+  tan(): Expr<DataType.Float64, Name>;
   /**
    * Compute the element-wise value for the hyperbolic tangent.
    * @returns Expression of data type :class:`Float64`.
@@ -1173,19 +1229,19 @@ export interface Expr
     └──────────┘
    *```
    */
-  tanh(): Expr;
+  tanh(): Expr<DataType.Float64, Name>;
   /**
    * Get the unique values of this expression;
    * @param maintainOrder Maintain order of data. This requires more work.
    */
-  unique(maintainOrder?: boolean): Expr;
-  unique(opt: { maintainOrder: boolean }): Expr;
+  unique(maintainOrder?: boolean): Expr<T, Name>;
+  unique(opt: { maintainOrder: boolean }): Expr<T, Name>;
   /** Returns a unit Series with the highest value possible for the dtype of this expression. */
-  upperBound(): Expr;
+  upperBound(): Expr<T, Name>;
   /** Get variance. */
-  var(): Expr;
+  var(): Expr<FloatAggResult, Name>;
   /** Alias for filter: @see {@link filter} */
-  where(predicate: Expr): Expr;
+  where(predicate: Expr): Expr<T, Name>;
 }
 /** @ignore */
 export const _Expr = (_expr: any): Expr => {
@@ -1196,7 +1252,7 @@ export const _Expr = (_expr: any): Expr => {
     return _Expr(unwrap(method, ...args));
   };
 
-  const wrapExprArg =
+  const _wrapExprArg =
     (method: string, lit = false) =>
     (other: any) => {
       const expr = exprToLitOrExpr(other, lit).inner();
@@ -1228,6 +1284,9 @@ export const _Expr = (_expr: any): Expr => {
     },
     [INSPECT_SYMBOL]() {
       return _expr.toString();
+    },
+    isExpr(arg: any): arg is Expr {
+      return Boolean(arg?._expr);
     },
     serialize(format): any {
       return _expr.serialize(format);
@@ -1262,32 +1321,32 @@ export const _Expr = (_expr: any): Expr => {
       return _Expr(_expr.aggGroups());
     },
     alias(name) {
-      return _Expr(_expr.alias(name));
+      return _Expr(_expr.alias(name)) as any;
     },
     inner() {
       return _expr;
     },
     and(other) {
       const expr = (exprToLitOrExpr(other, false) as any).inner();
-      return _Expr(_expr.and(expr));
+      return _Expr(_expr.and(expr)) as any;
     },
     arccos() {
-      return _Expr(_expr.arccos());
+      return _Expr(_expr.arccos()) as any;
     },
     arccosh() {
-      return _Expr(_expr.arccosh());
+      return _Expr(_expr.arccosh()) as any;
     },
     arcsin() {
-      return _Expr(_expr.arcsin());
+      return _Expr(_expr.arcsin()) as any;
     },
     arcsinh() {
-      return _Expr(_expr.arcsinh());
+      return _Expr(_expr.arcsinh()) as any;
     },
     arctan() {
-      return _Expr(_expr.arctan());
+      return _Expr(_expr.arctan()) as any;
     },
     arctanh() {
-      return _Expr(_expr.arctanh());
+      return _Expr(_expr.arctanh()) as any;
     },
     argMax() {
       return _Expr(_expr.argMax());
@@ -1304,7 +1363,7 @@ export const _Expr = (_expr: any): Expr => {
       return _Expr(_expr.argUnique());
     },
     as(name) {
-      return _Expr(_expr.alias(name));
+      return _Expr(_expr.alias(name)) as any;
     },
     backwardFill() {
       return _Expr(_expr.backwardFill());
@@ -1329,13 +1388,13 @@ export const _Expr = (_expr: any): Expr => {
       );
     },
     cos() {
-      return _Expr(_expr.cos());
+      return _Expr(_expr.cos()) as any;
     },
     cosh() {
-      return _Expr(_expr.cosh());
+      return _Expr(_expr.cosh()) as any;
     },
     cot() {
-      return _Expr(_expr.cot());
+      return _Expr(_expr.cot()) as any;
     },
     count() {
       return _Expr(_expr.count());
@@ -1488,7 +1547,7 @@ export const _Expr = (_expr: any): Expr => {
       return _Expr(_expr.explode());
     },
     exp() {
-      return _Expr(_expr.exp());
+      return _Expr(_expr.exp()) as any;
     },
     extendConstant(o, n?) {
       if (n !== null && typeof n === "number") {
@@ -1621,10 +1680,10 @@ export const _Expr = (_expr: any): Expr => {
     },
     log1p() {
       console.log(_expr.log1p);
-      return _Expr(_expr.log1p());
+      return _Expr(_expr.log1p()) as any;
     },
     log(base?: number) {
-      return _Expr(_expr.log(base ?? Math.E));
+      return _Expr(_expr.log(base ?? Math.E)) as any;
     },
     lowerBound() {
       return _Expr(_expr.lowerBound());
@@ -1651,7 +1710,7 @@ export const _Expr = (_expr: any): Expr => {
       return _Expr(_expr.mode());
     },
     not() {
-      return _Expr(_expr.not());
+      return _Expr(_expr.not()) as any;
     },
     nUnique() {
       return _Expr(_expr.nUnique());
@@ -1659,7 +1718,7 @@ export const _Expr = (_expr: any): Expr => {
     or(other) {
       const expr = exprToLitOrExpr(other).inner();
 
-      return _Expr(_expr.or(expr));
+      return _Expr(_expr.or(expr)) as any;
     },
     over(...exprs) {
       const partitionBy = selectionToExprList(exprs, false);
@@ -1673,13 +1732,8 @@ export const _Expr = (_expr: any): Expr => {
       return _Expr(_expr.prefix(prefix));
     },
     quantile(quantile, interpolation: InterpolationMethod = "nearest") {
-      if (Expr.isExpr(quantile)) {
-        quantile = quantile._expr;
-      } else {
-        quantile = pli.lit(quantile);
-      }
-
-      return _Expr(_expr.quantile(quantile, interpolation));
+      const q = Expr.isExpr(quantile) ? quantile._expr : pli.lit(quantile);
+      return _Expr(_expr.quantile(q, interpolation));
     },
     rank(method: any = "average", descending = false) {
       return _Expr(
@@ -1815,10 +1869,10 @@ export const _Expr = (_expr: any): Expr => {
       return wrap("skew", bias?.bias ?? bias ?? true);
     },
     sin() {
-      return _Expr(_expr.sin());
+      return _Expr(_expr.sin()) as any;
     },
     sinh() {
-      return _Expr(_expr.sinh());
+      return _Expr(_expr.sinh()) as any;
     },
     slice(arg, len?) {
       if (typeof arg === "number") {
@@ -1865,10 +1919,10 @@ export const _Expr = (_expr: any): Expr => {
       return _Expr(_expr.tail(length));
     },
     tan() {
-      return _Expr(_expr.tan());
+      return _Expr(_expr.tan()) as any;
     },
     tanh() {
-      return _Expr(_expr.tanh());
+      return _Expr(_expr.tanh()) as any;
     },
     unique(opt?) {
       if (opt || opt?.maintainOrder) {
@@ -1885,30 +1939,97 @@ export const _Expr = (_expr: any): Expr => {
     var() {
       return _Expr(_expr.var());
     },
-    add: wrapExprArg("add"),
-    sub: wrapExprArg("sub"),
-    div: wrapExprArg("div"),
-    mul: wrapExprArg("mul"),
-    rem: wrapExprArg("rem"),
+    add(other) {
+      const expr = (exprToLitOrExpr(other, false) as any).inner();
+      return _Expr(_expr.add(expr)) as any;
+    },
+    sub(other) {
+      const expr = (exprToLitOrExpr(other, false) as any).inner();
+      return _Expr(_expr.sub(expr)) as any;
+    },
+    mul(other) {
+      const expr = (exprToLitOrExpr(other, false) as any).inner();
+      return _Expr(_expr.mul(expr)) as any;
+    },
+    rem(other) {
+      const expr = (exprToLitOrExpr(other, false) as any).inner();
+      return _Expr(_expr.rem(expr)) as any;
+    },
 
-    plus: wrapExprArg("add"),
-    minus: wrapExprArg("sub"),
-    divideBy: wrapExprArg("div"),
-    multiplyBy: wrapExprArg("mul"),
-    modulo: wrapExprArg("rem"),
+    plus(other) {
+      const expr = (exprToLitOrExpr(other, false) as any).inner();
+      return _Expr(_expr.add(expr)) as any;
+    },
+    minus(other) {
+      const expr = (exprToLitOrExpr(other, false) as any).inner();
+      return _Expr(_expr.sub(expr)) as any;
+    },
+    divideBy(other) {
+      const expr = (exprToLitOrExpr(other, false) as any).inner();
+      return _Expr(_expr.div(expr)) as any;
+    },
+    multiplyBy(other) {
+      const expr = (exprToLitOrExpr(other, false) as any).inner();
+      return _Expr(_expr.mul(expr)) as any;
+    },
+    modulo(other) {
+      const expr = (exprToLitOrExpr(other, false) as any).inner();
+      return _Expr(_expr.rem(expr)) as any;
+    },
 
-    eq: wrapExprArg("eq"),
-    equals: wrapExprArg("eq"),
-    gtEq: wrapExprArg("gtEq"),
-    greaterThanEquals: wrapExprArg("gtEq"),
-    gt: wrapExprArg("gt"),
-    greaterThan: wrapExprArg("gt"),
-    ltEq: wrapExprArg("ltEq"),
-    lessThanEquals: wrapExprArg("ltEq"),
-    lt: wrapExprArg("lt"),
-    lessThan: wrapExprArg("lt"),
-    neq: wrapExprArg("neq"),
-    notEquals: wrapExprArg("neq"),
+    div(other) {
+      const expr = (exprToLitOrExpr(other, false) as any).inner();
+      return _Expr(_expr.div(expr)) as any;
+    },
+
+    eq(other) {
+      const expr = (exprToLitOrExpr(other, false) as any).inner();
+      return _Expr(_expr.eq(expr)) as any;
+    },
+    equals(other) {
+      const expr = (exprToLitOrExpr(other, false) as any).inner();
+      return _Expr(_expr.eq(expr)) as any;
+    },
+    gtEq(other) {
+      const expr = (exprToLitOrExpr(other, false) as any).inner();
+      return _Expr(_expr.gtEq(expr)) as any;
+    },
+    greaterThanEquals(other) {
+      const expr = (exprToLitOrExpr(other, false) as any).inner();
+      return _Expr(_expr.gtEq(expr)) as any;
+    },
+    gt(other) {
+      const expr = (exprToLitOrExpr(other, false) as any).inner();
+      return _Expr(_expr.gt(expr)) as any;
+    },
+    greaterThan(other) {
+      const expr = (exprToLitOrExpr(other, false) as any).inner();
+      return _Expr(_expr.gt(expr)) as any;
+    },
+    ltEq(other) {
+      const expr = (exprToLitOrExpr(other, false) as any).inner();
+      return _Expr(_expr.ltEq(expr)) as any;
+    },
+    lessThanEquals(other) {
+      const expr = (exprToLitOrExpr(other, false) as any).inner();
+      return _Expr(_expr.ltEq(expr)) as any;
+    },
+    lt(other) {
+      const expr = (exprToLitOrExpr(other, false) as any).inner();
+      return _Expr(_expr.lt(expr)) as any;
+    },
+    lessThan(other) {
+      const expr = (exprToLitOrExpr(other, false) as any).inner();
+      return _Expr(_expr.lt(expr)) as any;
+    },
+    neq(other) {
+      const expr = (exprToLitOrExpr(other, false) as any).inner();
+      return _Expr(_expr.neq(expr)) as any;
+    },
+    notEquals(other) {
+      const expr = (exprToLitOrExpr(other, false) as any).inner();
+      return _Expr(_expr.neq(expr)) as any;
+    },
   } as Expr;
 };
 

@@ -16,10 +16,10 @@ export const ExprListFunctions = (_expr: any): ExprList => {
 
   return {
     argMax() {
-      return wrap("listArgMax");
+      return wrap("listArgMax") as any;
     },
     argMin() {
-      return wrap("listArgMin");
+      return wrap("listArgMin") as any;
     },
     concat(other) {
       if (
@@ -40,38 +40,38 @@ export const ExprListFunctions = (_expr: any): ExprList => {
       }
       otherList = [_Expr(_expr), ...otherList];
 
-      return concatList(otherList);
+      return concatList(otherList) as any;
     },
     contains(item, nullsEqual?: boolean) {
       return wrap(
         "listContains",
         exprToLitOrExpr(item)._expr,
         nullsEqual ?? true,
-      );
+      ) as any;
     },
     diff(n = 1, nullBehavior = "ignore") {
-      return wrap("listDiff", n, nullBehavior);
+      return wrap("listDiff", n, nullBehavior) as any;
     },
     get(index: number | Expr, nullOnOob?: boolean) {
       if (Expr.isExpr(index)) {
-        return wrap("listGet", index._expr, nullOnOob ?? true);
+        return wrap("listGet", index._expr, nullOnOob ?? true) as any;
       }
-      return wrap("listGet", pli.lit(index), nullOnOob ?? true);
+      return wrap("listGet", pli.lit(index), nullOnOob ?? true) as any;
     },
     head(n = 5) {
-      return this.slice(0, n);
+      return this.slice(0, n) as any;
     },
     tail(n = 5) {
-      return this.slice(-n, n);
+      return this.slice(-n, n) as any;
     },
     eval(expr) {
       if (Expr.isExpr(expr)) {
-        return wrap("listEval", expr._expr);
+        return wrap("listEval", expr._expr) as any;
       }
-      return wrap("listEval", expr);
+      return wrap("listEval", expr) as any;
     },
     first() {
-      return this.get(0);
+      return this.get(0) as any;
     },
     join(options?) {
       if (typeof options === "string") {
@@ -85,46 +85,48 @@ export const ExprListFunctions = (_expr: any): ExprList => {
         separator = pli.lit(separator);
       }
 
-      return wrap("listJoin", separator, ignoreNulls);
+      return wrap("listJoin", separator, ignoreNulls) as any;
     },
     last() {
-      return this.get(-1);
+      return this.get(-1) as any;
     },
     lengths() {
-      return wrap("listLengths");
+      return wrap("listLengths") as any;
     },
     max() {
-      return wrap("listMax");
+      return wrap("listMax") as any;
     },
     mean() {
-      return wrap("listMean");
+      return wrap("listMean") as any;
     },
     min() {
-      return wrap("listMin");
+      return wrap("listMin") as any;
     },
     reverse() {
-      return wrap("listReverse");
+      return wrap("listReverse") as any;
     },
     shift(n) {
-      return wrap("listShift", exprToLitOrExpr(n)._expr);
+      return wrap("listShift", exprToLitOrExpr(n)._expr) as any;
     },
     slice(offset, length) {
       return wrap(
         "listSlice",
         exprToLitOrExpr(offset)._expr,
         exprToLitOrExpr(length)._expr,
-      );
+      ) as any;
     },
     sort(descending: any = false) {
-      return typeof descending === "boolean"
-        ? wrap("listSort", descending)
-        : wrap("listSort", descending.descending);
+      return (
+        typeof descending === "boolean"
+          ? wrap("listSort", descending)
+          : wrap("listSort", descending.descending)
+      ) as any;
     },
     sum() {
-      return wrap("listSum");
+      return wrap("listSum") as any;
     },
     unique() {
-      return wrap("listUnique");
+      return wrap("listUnique") as any;
     },
   };
 };

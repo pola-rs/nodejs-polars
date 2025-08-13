@@ -26,7 +26,7 @@ export type Optional<T> = T | undefined | null;
 /**
  * @ignore
  */
-export type JsDataFrame = any;
+export type JsDataFrame = unknown;
 export type NullValues = string | Array<string> | Record<string, string>;
 
 /**

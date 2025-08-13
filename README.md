@@ -22,6 +22,44 @@ Documentation: [Node.js](https://pola-rs.github.io/nodejs-polars/index.html)
 
 ## Usage
 
+### Type-safe API (TypeScript)
+
+Polars for Node provides a strongly typed public API so dtypes and column names flow through your code.
+
+Key features:
+- Schema-aware builder: `df.$.col<K>(name: K)` returns `Expr<S[K], K>` typed to the DataFrame’s schema.
+- withColumns overloads:
+  - Record: `df.withColumns({ newCol: df.$.col("a").cast(pl.Int64), ... })`
+  - Builder-callback: `df.withColumns(b => ({ x: b.col("a"), y: b.col("b").cast(pl.Int64) }))`
+- groupBy.agg overloads:
+  - Array builder: `.agg(g => [ g.col("x").sum().alias("x_sum"), ... ])`
+  - Record builder: `.agg(g => ({ x_sum: g.col("x").sum(), ... }))`
+  Both infer output names and dtypes.
+- Expr typing: arithmetic/comparison/boolean/math/string/list/datetime/struct ops preserve dtype/name (e.g. `alias`, `cast`).
+
+Example:
+
+```ts
+import pl, { DataType } from "nodejs-polars";
+
+const df = pl.DataFrame({
+  strings: ["a", "a", "b"],
+  ints: [1, 2, 3],
+  bools: [true, false, true],
+})
+  .withColumns(b => ({
+    newColumns: b.col("bools").cast(DataType.Int64),
+    someOtherNewColumns: b.col("ints").cast(DataType.Int64),
+  }))
+  .groupBy("strings", "bools")
+  .agg(g => ({
+    newColumns_sum: g.col("alnewColumnsps").sum(),
+    someOtherNewColumns_sum: g.col("someOtherNewColumns").sum(),
+  }));
+
+// df: DataFrame<{ strings: String; bools: Bool; alps_sum: Int64; sara_sum: Int64 }>
+```
+
 ### Importing
 
 ```js
@@ -186,7 +224,7 @@ Want to know about all the features Polars supports? Read the [docs](https://doc
 
 #### Node
 
-  * Installation guide: `$ yarn install nodejs-polars`
+  * Installation guide: `$ yarn add nodejs-polars`
   * [Node documentation](https://pola-rs.github.io/nodejs-polars/)
 
 ## Contribution

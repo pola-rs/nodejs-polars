@@ -1,6 +1,8 @@
 import util from "node:util";
 import { _DataFrame, type DataFrame } from "./dataframe";
+import type { DataType } from "./datatypes";
 import type { Expr } from "./lazy/expr";
+import { Expr as ExprValue } from "./lazy/expr";
 import { col, exclude } from "./lazy/functions";
 import type { ColumnsOrExpr, StartBy } from "./utils";
 import * as utils from "./utils";
@@ -11,7 +13,10 @@ const inspectOpts = { colors: true, depth: null };
 /**
  * Starts a new GroupBy operation.
  */
-export interface GroupBy {
+export interface GroupBy<
+  S extends import("./dataframe").Schema = any,
+  Keys extends string = string,
+> {
   [inspect](): string;
   /**
    * Aggregate the groups into Series.
@@ -42,7 +47,68 @@ export interface GroupBy {
    *
    * ```
    */
-  agg(...columns: Expr[]): DataFrame;
+  agg<const Aggs extends ReadonlyArray<Expr<DataType, string>>>(
+    ...columns: Aggs
+  ): DataFrame<
+    import("./utils").Simplify<
+      Pick<S, Keys> & {
+        [K in Aggs[number] as K extends Expr<any, infer Name>
+          ? Name extends string
+            ? Name
+            : never
+          : never]: K extends Expr<infer DT extends DataType, any>
+          ? DT
+          : DataType;
+      }
+    >
+  >;
+  // Builder-callback: reference the current grouped frame's schema for typed exprs
+  agg<const R extends ReadonlyArray<Expr<DataType, string>>>(
+    build: (b: {
+      col<K extends Extract<keyof S, string>>(
+        name: K,
+      ): import("./lazy/expr").Expr<S[K], K>;
+      col<Name extends string, D extends DataType>(
+        name: Name,
+        dtype: D,
+      ): import("./lazy/expr").Expr<D, Name>;
+    }) => R,
+  ): DataFrame<
+    import("./utils").Simplify<
+      Pick<S, Keys> & {
+        [K in R[number] as K extends Expr<any, infer Name>
+          ? Name extends string
+            ? Name
+            : never
+          : never]: K extends Expr<infer DT extends DataType, any>
+          ? DT
+          : DataType;
+      }
+    >
+  >;
+  // Builder-callback returning a record for precise column names
+  agg<R extends Record<string, Expr<DataType, string>>>(
+    build: (b: {
+      col<K extends Extract<keyof S, string>>(
+        name: K,
+      ): import("./lazy/expr").Expr<S[K], K>;
+      col<Name extends string, D extends DataType>(
+        name: Name,
+        dtype: D,
+      ): import("./lazy/expr").Expr<D, Name>;
+    }) => R,
+  ): DataFrame<
+    import("./utils").Simplify<
+      Pick<S, Keys> & {
+        [K in keyof R & string]: R[K] extends Expr<
+          infer DT extends DataType,
+          any
+        >
+          ? DT
+          : DataType;
+      }
+    >
+  >;
   agg(columns: Record<string, keyof Expr | (keyof Expr)[]>): DataFrame;
   /**
    * Return the number of rows in each group.
@@ -184,6 +250,34 @@ export function _GroupBy(df: any, by: string[], maintainOrder = false) {
   };
 
   const agg = (...aggs): DataFrame => {
+    // builder-callback form: gb.agg(b => [b.col("x").sum(), ...])
+    if (aggs.length === 1 && typeof aggs[0] === "function") {
+      const build = aggs[0] as (b: {
+        col(name: string, dtype?: any): Expr;
+      }) => ReadonlyArray<Expr> | Array<Expr> | Record<string, Expr>;
+      const b = {
+        col(name: string, dtype?: any) {
+          const e = col(name);
+          return dtype ? (e as any).cast(dtype) : e;
+        },
+      };
+      const built = build(b);
+      let exprs: Expr[];
+      if (Array.isArray(built)) {
+        exprs = built as Expr[];
+      } else {
+        exprs = Object.entries(built).map(([name, value]) =>
+          (ExprValue.isExpr(value) ? value : (value as any)).alias(name),
+        ) as Expr[];
+      }
+      return _DataFrame(df)
+        .lazy()
+        .groupBy(by, maintainOrder)
+        .agg(...exprs)
+        .collectSync({ noOptimization: true });
+    }
+
+    // array-style exprs
     if (utils.isExprArray(aggs)) {
       aggs = [aggs].flat(2);
 
@@ -193,6 +287,7 @@ export function _GroupBy(df: any, by: string[], maintainOrder = false) {
         .agg(...aggs)
         .collectSync({ noOptimization: true });
     }
+    // mapping form
     const pairs = Object.entries(aggs[0]).flatMap(([key, values]) => {
       return [values].flat(2).map((v) => col(key)[v as any]());
     });

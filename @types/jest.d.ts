@@ -6,7 +6,7 @@ declare global {
     interface Matchers<R> {
       toSeriesEqual(b: Series<any>): R;
       toSeriesStrictEqual(b: Series<any>): R;
-      toFrameEqual(b: DataFrame, nullEqual?: boolean): R;
+      toFrameEqual(b: DataFrame<any>, nullEqual?: boolean): R;
       /**
        * Compares two DataFrames, including the dtypes
        *
@@ -19,8 +19,8 @@ declare global {
        * > expect(df).toFrameStrictEqual(other) // fails
        * ```
        */
-      toFrameStrictEqual(b: DataFrame): R;
-      toFrameEqualIgnoringOrder(b: DataFrame): R;
+      toFrameStrictEqual(b: DataFrame<any>): R;
+      toFrameEqualIgnoringOrder(b: DataFrame<any>): R;
     }
   }
 }

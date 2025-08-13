@@ -157,7 +157,7 @@ export namespace pl {
    * considered stable. It may be changed at any point without it being considered a breaking change.
    */
   export function SQLContext(
-    frames?: Record<string, DataFrame | LazyDataFrame>,
+    frames?: Record<string, DataFrame<any> | LazyDataFrame<any>>,
   ): sql.SQLContext {
     return new sql.SQLContext(frames);
   }
@@ -300,7 +300,7 @@ export const Decimal = DataType.Decimal;
  * considered stable. It may be changed at any point without it being considered a breaking change.
  */
 export function SQLContext(
-  frames?: Record<string, DataFrame | LazyDataFrame>,
+  frames?: Record<string, DataFrame<any> | LazyDataFrame<any>>,
 ): sql.SQLContext {
   return new sql.SQLContext(frames);
 }
