@@ -476,9 +476,9 @@ export interface LazyDataFrame<S extends Schema = any>
    * @see {@link DataFrame.select}
    */
   select<U extends keyof S>(...columns: U[]): LazyDataFrame<{ [P in U]: S[P] }>;
-  select(column: ExprOrString): LazyDataFrame;
-  select(columns: ExprOrString[]): LazyDataFrame;
-  select(...columns: ExprOrString[]): LazyDataFrame;
+  select(column: ExprOrString | Series): LazyDataFrame;
+  select(columns: (ExprOrString | Series)[]): LazyDataFrame;
+  select(...columns: (ExprOrString | Series)[]): LazyDataFrame;
   /**
    * @see {@link DataFrame.shift}
    */
@@ -551,13 +551,12 @@ export interface LazyDataFrame<S extends Schema = any>
    * Add or overwrite column in a DataFrame.
    * @param expr - Expression that evaluates to column.
    */
-  withColumn(expr: Expr): LazyDataFrame;
+  withColumn(expr: Expr | Series): LazyDataFrame;
   /**
    * Add or overwrite multiple columns in a DataFrame.
    * @param exprs - List of Expressions that evaluate to columns.
    *
    */
-  withColumns(exprs: (Expr | Series)[]): LazyDataFrame;
   withColumns(...exprs: (Expr | Series)[]): LazyDataFrame;
   withColumnRenamed<Existing extends keyof S, New extends string>(
     existing: Existing,
@@ -853,15 +852,12 @@ export const _LazyDataFrame = (_ldf: any): LazyDataFrame => {
 
       return _LazyDataFrame(_ldf.filter(predicate));
     },
-    groupBy(opt, maintainOrder: any = true): LazyGroupBy {
-      if (opt?.by !== undefined) {
-        const by = selectionToExprList([opt.by], false);
-
-        return _LazyGroupBy(_ldf.groupby(by, opt.maintainOrder));
+    groupBy(by, maintainOrder: any = true): LazyGroupBy {
+      if (maintainOrder?.maintainOrder !== undefined) {
+        maintainOrder = maintainOrder.maintainOrder;
       }
-      const by = selectionToExprList([opt], false);
-
-      return _LazyGroupBy(_ldf.groupby(by, maintainOrder));
+      const expr = selectionToExprList([by], false);
+      return _LazyGroupBy(_ldf.groupby(expr, maintainOrder));
     },
     groupByRolling({ indexColumn, by, period, offset, closed }) {
       offset = offset ?? `-${period}`;
@@ -1091,7 +1087,6 @@ export const _LazyDataFrame = (_ldf: any): LazyDataFrame => {
     },
     select(...exprs) {
       const selections = selectionToExprList(exprs, false);
-
       return _LazyDataFrame(_ldf.select(selections));
     },
     shift(periods) {
@@ -1147,12 +1142,11 @@ export const _LazyDataFrame = (_ldf: any): LazyDataFrame => {
     serialize(format) {
       return _ldf.serialize(format);
     },
-    withColumn(expr) {
-      return _LazyDataFrame(_ldf.withColumn(expr._expr));
+    withColumn(column: Expr | Series) {
+      return this.withColumns(column);
     },
-    withColumns(...columns) {
+    withColumns(...columns: (Expr | Series)[]) {
       const exprs = selectionToExprList(columns, false);
-
       return _LazyDataFrame(_ldf.withColumns(exprs));
     },
     withColumnRenamed(existing, replacement) {
