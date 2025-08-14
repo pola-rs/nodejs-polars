@@ -609,6 +609,62 @@ impl JsLazyFrame {
             .map_err(JsPolarsErr::from)?;
         Ok(rldf.into())
     }
+
+    #[napi(catch_unwind)]
+    pub fn sink_json(&self, path: String, options: SinkJsonOptions) -> napi::Result<JsLazyFrame> {
+        let cloud_options = parse_cloud_options(&path, options.cloud_options, options.retries);
+        let sink_options: SinkOptions = SinkOptions {
+            maintain_order: options.maintain_order.unwrap_or(true),
+            sync_on_close: options.sync_on_close.0,
+            mkdir: options.mkdir.unwrap_or(true),
+        };
+        let sink_target = SinkTarget::Path(PlPath::new(&path));
+        let rldf = self
+            .ldf
+            .clone()
+            .sink_json(
+                sink_target,
+                JsonWriterOptions {},
+                cloud_options,
+                sink_options,
+            )
+            .map_err(JsPolarsErr::from)?;
+        Ok(rldf.into())
+    }
+
+    #[napi(catch_unwind)]
+    pub fn sink_ipc(&self, path: String, options: SinkIpcOptions) -> napi::Result<JsLazyFrame> {
+        let cloud_options = parse_cloud_options(&path, options.cloud_options, options.retries);
+        let sink_options: SinkOptions = SinkOptions {
+            maintain_order: options.maintain_order.unwrap_or(true),
+            sync_on_close: options.sync_on_close.0,
+            mkdir: options.mkdir.unwrap_or(true),
+        };
+
+        let compat_level: CompatLevel = match options.compat_level.unwrap().as_str() {
+            "newest" => CompatLevel::newest(),
+            "oldest" => CompatLevel::oldest(),
+            _ => {
+                return Err(napi::Error::from_reason(
+                    "use one of {'newest', 'oldest'}".to_owned(),
+                ))
+            }
+        };
+
+        let ipc_options = IpcWriterOptions {
+            compression: options.compression.0,
+            compat_level: compat_level,
+            ..Default::default()
+        };
+
+        let sink_target = SinkTarget::Path(PlPath::new(&path));
+        let rldf = self
+            .ldf
+            .clone()
+            .sink_ipc(sink_target, ipc_options, cloud_options, sink_options)
+            .map_err(JsPolarsErr::from)?;
+        Ok(rldf.into())
+    }
 }
 
 #[napi(object)]

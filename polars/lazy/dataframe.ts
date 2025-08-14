@@ -14,6 +14,8 @@ import type {
   LazyJoinOptions,
   LazyOptions,
   LazySameNameColumnJoinOptions,
+  SinkIpcOptions,
+  SinkJsonOptions,
   SinkParquetOptions,
 } from "../types";
 import {
@@ -616,10 +618,6 @@ export interface LazyDataFrame<S extends Schema = any>
    *
    * Evaluate the query in streaming mode and write to a Parquet file.
 
-    .. warning::
-        Streaming mode is considered **unstable**. It may be changed
-        at any point without it being considered a breaking change.
-
     This allows streaming results that are larger than RAM to be written to disk.
 
     Parameters
@@ -667,6 +665,82 @@ export interface LazyDataFrame<S extends Schema = any>
     >>> lf.sinkParquet("out.parquet").collect()  # doctest: +SKIP
    */
   sinkParquet(path: string, options?: SinkParquetOptions): LazyDataFrame;
+
+  /**
+   * 
+   * Evaluate the query in streaming mode and write to an NDJSON file.
+   * This allows streaming results that are larger than RAM to be written to disk.
+   * 
+   * Parameters
+    @param path - File path to which the file should be written.
+    @param options.maintainOrder - Maintain the order in which data is processed. Default -> true
+        Setting this to `False` will  be slightly faster.
+    @param options.mkdir - Recursively create all the directories in the path. Default -> false
+    @param options.retries - Number of retries if accessing a cloud instance fails. Default = 2
+    @param options.syncOnClose - { None, 'data', 'all' } Default -> 'all'
+            Sync to disk when before closing a file.
+
+            * `None` does not sync.
+            * `data` syncs the file contents.
+            * `all` syncs the file contents and metadata.
+    @param options.cloudOptions - Options that indicate how to connect to a cloud provider.
+        If the cloud provider is not supported by Polars, the storage options are passed to `fsspec.open()`.
+
+        The cloud providers currently supported are AWS, GCP, and Azure.
+        See supported keys here:
+
+        * `aws <https://docs.rs/object_store/latest/object_store/aws/enum.AmazonS3ConfigKey.html>`_
+        * `gcp <https://docs.rs/object_store/latest/object_store/gcp/enum.GoogleConfigKey.html>`_
+        * `azure <https://docs.rs/object_store/latest/object_store/azure/enum.AzureConfigKey.html>`_
+
+        If `cloudOptions` is not provided, Polars will try to infer the information from environment variables.
+    @return DataFrame
+    Examples
+    --------
+    >>> const lf = pl.scanCsv("/path/to/my_larger_than_ram_file.csv")  # doctest: +SKIP
+    >>> lf.sinkNdJson("out.ndjson").collect()
+   */
+  sinkNdJson(path: string, options?: SinkJsonOptions): LazyDataFrame;
+  /**
+   * 
+   * Evaluate the query in streaming mode and write to an IPC file.
+   * This allows streaming results that are larger than RAM to be written to disk.
+   * 
+   * Parameters
+    @param path - File path to which the file should be written.
+    @param options.compression : {'uncompressed', 'lz4', 'zstd'}
+            Choose "zstd" for good compression performance.
+            Choose "lz4" for fast compression/decompression.
+    @param options.compatLevel : { 'newest', 'oldest' } Default -> newest
+            Use a specific compatibility level when exporting Polars' internal data structures.
+    @param options.maintainOrder - Maintain the order in which data is processed. Default -> true
+        Setting this to `False` will  be slightly faster.
+    @param options.mkdir - Recursively create all the directories in the path. Default -> false
+    @param options.retries - Number of retries if accessing a cloud instance fails. Default = 2
+    @param options.syncOnClose - { None, 'data', 'all' } Default -> 'all'
+            Sync to disk when before closing a file.
+
+            * `None` does not sync.
+            * `data` syncs the file contents.
+            * `all` syncs the file contents and metadata.
+    @param options.cloudOptions - Options that indicate how to connect to a cloud provider.
+        If the cloud provider is not supported by Polars, the storage options are passed to `fsspec.open()`.
+
+        The cloud providers currently supported are AWS, GCP, and Azure.
+        See supported keys here:
+
+        * `aws <https://docs.rs/object_store/latest/object_store/aws/enum.AmazonS3ConfigKey.html>`_
+        * `gcp <https://docs.rs/object_store/latest/object_store/gcp/enum.GoogleConfigKey.html>`_
+        * `azure <https://docs.rs/object_store/latest/object_store/azure/enum.AzureConfigKey.html>`_
+
+        If `cloudOptions` is not provided, Polars will try to infer the information from environment variables.
+    @return DataFrame
+    Examples
+    --------
+    >>> const lf = pl.scanCsv("/path/to/my_larger_than_ram_file.csv")  # doctest: +SKIP
+    >>> lf.sinkIpc("out.arrow").collect()
+   */
+  sinkIpc(path: string, options?: SinkIpcOptions): LazyDataFrame;
 }
 
 const prepareGroupbyInputs = (by) => {
@@ -1178,6 +1252,22 @@ export const _LazyDataFrame = (_ldf: any): LazyDataFrame => {
         mkdir: true,
       };
       return _ldf.sinkParquet(path, options);
+    },
+    sinkNdJson(path: string, options: SinkJsonOptions = {}) {
+      options.retries = options.retries ?? 2;
+      options.syncOnClose = options.syncOnClose ?? "all";
+      options.maintainOrder = options.maintainOrder ?? true;
+      options.mkdir = options.mkdir ?? true;
+      return _ldf.sinkJson(path, options);
+    },
+    sinkIpc(path: string, options: SinkIpcOptions = {}) {
+      options.compatLevel = options.compatLevel ?? "newest";
+      options.compression = options.compression ?? "uncompressed";
+      options.retries = options.retries ?? 2;
+      options.syncOnClose = options.syncOnClose ?? "all";
+      options.maintainOrder = options.maintainOrder ?? true;
+      options.mkdir = options.mkdir ?? true;
+      return _ldf.sinkIpc(path, options);
     },
   };
 };

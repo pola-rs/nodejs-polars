@@ -1351,6 +1351,52 @@ describe("lazyframe", () => {
     expect(newDF.sort("foo")).toFrameEqual(actualDf);
     fs.rmSync("./test.parquet");
   });
+  test("sinkNdJson:path", async () => {
+    const ldf = pl
+      .DataFrame([
+        pl.Series("foo", [1, 2, 3], pl.Int64),
+        pl.Series("bar", ["a", "b", "c"]),
+      ])
+      .lazy();
+    await ldf.sinkNdJson("./test.ndjson").collect();
+    let df = pl.scanJson("./test.ndjson").collectSync();
+    expect(df.shape).toEqual({ height: 3, width: 2 });
+
+    await ldf
+      .sinkNdJson("./test.ndjson", {
+        retries: 1,
+        syncOnClose: "all",
+        maintainOrder: false,
+      })
+      .collect();
+    df = pl.scanJson("./test.ndjson").collectSync();
+    expect(df.shape).toEqual({ height: 3, width: 2 });
+
+    fs.rmSync("./test.ndjson");
+  });
+  test("sinkIpc:path", async () => {
+    const ldf = pl
+      .DataFrame([
+        pl.Series("foo", [1, 2, 3], pl.Int64),
+        pl.Series("bar", ["a", "b", "c"]),
+      ])
+      .lazy();
+    await ldf.sinkIpc("./test.ipc").collect();
+    let df = pl.scanIPC("./test.ipc").collectSync();
+    expect(df.shape).toEqual({ height: 3, width: 2 });
+
+    await ldf
+      .sinkIpc("./test.ipc", {
+        retries: 1,
+        syncOnClose: "all",
+        maintainOrder: false,
+        compression: "lz4",
+      })
+      .collect();
+    df = pl.scanIPC("./test.ipc").collectSync();
+    expect(df.shape).toEqual({ height: 3, width: 2 });
+    fs.rmSync("./test.ipc");
+  });
   test("unpivot renamed", () => {
     const ldf = pl
       .DataFrame({

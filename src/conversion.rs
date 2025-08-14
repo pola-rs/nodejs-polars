@@ -414,6 +414,16 @@ impl FromNapiValue for Wrap<Option<IpcCompression>> {
     }
 }
 
+impl ToNapiValue for Wrap<Option<IpcCompression>> {
+    unsafe fn to_napi_value(env: sys::napi_env, val: Self) -> Result<sys::napi_value> {
+        let s = match val.0.unwrap() {
+            IpcCompression::LZ4 => "lz4",
+            IpcCompression::ZSTD => "zstd",
+        };
+        String::to_napi_value(env, s.to_owned())
+    }
+}
+
 impl FromNapiValue for Wrap<UniqueKeepStrategy> {
     unsafe fn from_napi_value(env: sys::napi_env, napi_val: sys::napi_value) -> JsResult<Self> {
         let method = String::from_napi_value(env, napi_val)?;
@@ -646,6 +656,26 @@ pub struct SinkParquetOptions {
     pub cloud_options: Option<HashMap<String, String>>,
     pub retries: Option<u32>,
     pub sink_options: JsSinkOptions,
+}
+
+#[napi(object)]
+pub struct SinkJsonOptions {
+    pub maintain_order: Option<bool>,
+    pub cloud_options: Option<HashMap<String, String>>,
+    pub retries: Option<u32>,
+    pub sync_on_close: Wrap<SyncOnCloseType>,
+    pub mkdir: Option<bool>,
+}
+
+#[napi(object)]
+pub struct SinkIpcOptions {
+    pub compat_level: Option<String>,
+    pub compression: Wrap<Option<IpcCompression>>,
+    pub maintain_order: Option<bool>,
+    pub cloud_options: Option<HashMap<String, String>>,
+    pub retries: Option<u32>,
+    pub sync_on_close: Wrap<SyncOnCloseType>,
+    pub mkdir: Option<bool>,
 }
 
 #[napi(object)]
