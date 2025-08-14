@@ -69,7 +69,7 @@ export interface SinkOptions {
 }
 
 /**
- * Options for @see {@link LazyDataFrame.sinkParquet}
+ * Options for @see {@link LazyDataFrame.sinkParquet }
  * @category Options
  */
 export interface SinkParquetOptions {
@@ -88,6 +88,30 @@ export interface SinkParquetOptions {
   cloudOptions?: Map<string, string>;
   retries?: number;
   sinkOptions?: SinkOptions;
+}
+/**
+ * Options for @see {@link LazyDataFrame.sinkNdJson}
+ * @category Options
+ */
+export interface SinkJsonOptions {
+  cloudOptions?: Map<string, string>;
+  retries?: number;
+  syncOnClose?: string; // Call sync when closing the file.
+  maintainOrder?: boolean; // The output file needs to maintain order of the data that comes in.
+  mkdir?: boolean; // Recursively create all the directories in the path.
+}
+/**
+ * Options for @see {@link LazyDataFrame.sinkIpc}
+ * @category Options
+ */
+export interface SinkIpcOptions {
+  compression?: string;
+  compatLevel?: string;
+  cloudOptions?: Map<string, string>;
+  retries?: number;
+  syncOnClose?: string; // Call sync when closing the file.
+  maintainOrder?: boolean; // The output file needs to maintain order of the data that comes in.
+  mkdir?: boolean; // Recursively create all the directories in the path.
 }
 /**
  * Options for {@link DataFrame.writeJSON}
