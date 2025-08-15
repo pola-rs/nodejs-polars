@@ -2192,7 +2192,7 @@ export const _DataFrame = <S extends Schema>(_df: any): DataFrame<S> => {
     [jupyterDisplay]() {
       let rows = 50;
       if (process.env.POLARS_FMT_MAX_ROWS) {
-        rows = Number.parseInt(process.env.POLARS_FMT_MAX_ROWS);
+        rows = Number.parseInt(process.env.POLARS_FMT_MAX_ROWS, 10);
       }
 
       const limited = this.limit(rows);
