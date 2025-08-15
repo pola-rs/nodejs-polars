@@ -1138,7 +1138,7 @@ describe("lazyframe", () => {
     ]);
     expect(actual).toFrameEqualIgnoringOrder(expected);
   });
-  test("withColumn/series", async () => {
+  test("withColumn:series", async () => {
     const actual: pl.DataFrame = pl
       .DataFrame()
       .lazy()
@@ -1149,7 +1149,7 @@ describe("lazyframe", () => {
     ]);
     expect(actual).toFrameEqual(expected);
   });
-  test("withColumns/series", async () => {
+  test("withColumns:series", async () => {
     const actual: pl.DataFrame = pl
       .DataFrame()
       .lazy()
@@ -1164,8 +1164,8 @@ describe("lazyframe", () => {
     ]);
     expect(actual).toFrameEqual(expected);
   });
-  test("select/series", async () => {
-    const actual: pl.DataFrame = pl
+  test("select:series", async () => {
+    let actual: pl.DataFrame = pl
       .DataFrame()
       .lazy()
       .select(
@@ -1173,20 +1173,36 @@ describe("lazyframe", () => {
         pl.Series("series2", [1, 2, 3, 4], pl.Int32),
       )
       .collectSync();
-    const expected: pl.DataFrame = pl.DataFrame([
+    let expected: pl.DataFrame = pl.DataFrame([
       pl.Series("series1", [1, 2, 3, 4], pl.Int16),
       pl.Series("series2", [1, 2, 3, 4], pl.Int32),
     ]);
     expect(actual).toFrameEqual(expected);
+    actual = pl
+      .DataFrame({ text: ["hello"] })
+      .lazy()
+      .select(pl.Series("series", [1, 2, 3]))
+      .collectSync();
+
+    expected = pl.DataFrame([pl.Series("series", [1, 2, 3])]);
+    expect(actual).toFrameEqual(expected);
+
+    actual = pl
+      .DataFrame({ text: ["hello"] })
+      .lazy()
+      .select("text", pl.Series("series", [1]))
+      .collectSync();
+    expected = pl.DataFrame({ text: ["hello"], series: [1] });
+    expect(actual).toFrameEqual(expected);
   });
   test("inspect", () => {
-    const _actual = pl
+    const actual = pl
       .DataFrame({
         foo: [1, 2, 9],
         bar: [6, 2, 8],
       })
       .lazy();
-    // actual();
+    expect(actual).toBeDefined();
   });
   test("withColumns", () => {
     const actual = pl
