@@ -1195,6 +1195,24 @@ describe("lazyframe", () => {
     expected = pl.DataFrame({ text: ["hello"], series: [1] });
     expect(actual).toFrameEqual(expected);
   });
+  test("select:lit", () => {
+    const df = pl.DataFrame({ a: [1] }, { schema: { a: pl.Float32 } });
+    let actual = df.lazy().select(pl.col("a"), pl.lit(1)).collectSync();
+    const expected = pl.DataFrame({
+      a: [1],
+      literal: [1],
+    });
+    expect(actual).toFrameEqual(expected);
+    actual = df
+      .lazy()
+      .select(pl.col("a").mul(2).alias("b"), pl.lit(2))
+      .collectSync();
+    const expected2 = pl.DataFrame({
+      b: [2],
+      literal: [2],
+    });
+    expect(actual).toFrameEqual(expected2);
+  });
   test("inspect", () => {
     const actual = pl
       .DataFrame({
