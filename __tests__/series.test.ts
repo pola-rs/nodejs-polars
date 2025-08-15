@@ -79,7 +79,9 @@ describe("typedArrays", () => {
     const int64Array = new BigInt64Array([1n, 2n, 3n]);
     const actual = pl.Series(int64Array).toArray();
 
-    const expected = Array.from(int64Array).map((v: any) => Number.parseInt(v));
+    const expected = Array.from(int64Array).map((v: any) =>
+      Number.parseInt(v, 10),
+    );
 
     expect(actual).toEqual(expected);
   });
