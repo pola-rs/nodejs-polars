@@ -1944,7 +1944,7 @@ export const exprToLitOrExpr = (expr: any, stringToLit = true): Expr => {
     return expr;
   }
   if (Series.isSeries(expr)) {
-    return _Expr(pli.lit((expr as any)._s));
+    return _Expr(pli.litSeries((expr as any)._s));
   }
   return _Expr(pli.lit(expr));
 };

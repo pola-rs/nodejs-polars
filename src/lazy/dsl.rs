@@ -1,5 +1,6 @@
 use crate::conversion::Wrap;
 use crate::prelude::*;
+use crate::series::JsSeries;
 use crate::utils::reinterpret;
 use polars::lazy::dsl;
 use polars::lazy::dsl::Expr;
@@ -1758,6 +1759,12 @@ pub fn arg_sort_by(by: Vec<&JsExpr>, descending: Vec<bool>) -> JsExpr {
     )
     .into()
 }
+
+#[napi(catch_unwind)]
+pub fn lit_series(s: &JsSeries) -> JsResult<JsExpr> {
+    Ok(s.clone().series.lit().into())
+}
+
 
 #[napi(catch_unwind)]
 pub fn lit(value: Wrap<AnyValue>) -> JsResult<JsExpr> {
