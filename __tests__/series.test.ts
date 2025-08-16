@@ -198,6 +198,7 @@ describe("typedArrays", () => {
   test("decimal", () => {
     const expected = [1n, 2n, 3n];
     const expectedDtype = pl.Decimal(10, 2);
+    expect(expectedDtype.equals(expectedDtype)).toBeTruthy();
     const actual = pl.Series("", expected, expectedDtype);
     expect(actual.dtype).toEqual(expectedDtype);
     try {
@@ -219,6 +220,9 @@ describe("typedArrays", () => {
     expect(actual.dtype).toEqual(expectedDtype);
     const actualValues = actual.toArray();
     expect(actualValues).toEqual(expected);
+    const lst = expectedDtype.asFixedSizeList();
+    expect(lst?.inner[0]).toEqual(pl.Float32);
+    expect(expectedDtype.equals(expectedDtype)).toBeTruthy();
   });
 });
 describe("series", () => {
@@ -949,7 +953,7 @@ describe("series struct", () => {
     const expectedFields = [...expectedKeys];
     expect(actualFields).toEqual(expectedFields);
   });
-  test.skip("struct:field", () => {
+  test("struct:field", () => {
     const expected = [{ foo: 1, bar: 2, ham: "c" }];
     const actual = pl.Series(expected).struct.field("foo").toArray();
     expect(actual).toEqual([expected[0]["foo"]]);
@@ -964,7 +968,7 @@ describe("series struct", () => {
     });
     expect(actual).toFrameEqual(expected);
   });
-  test.skip("struct:renameFields", () => {
+  test("struct:renameFields", () => {
     const expected = [{ foo: 1, bar: 2, ham: "c" }];
     const actual = pl
       .Series(expected)
@@ -972,7 +976,7 @@ describe("series struct", () => {
       .toArray();
     expect(actual).toEqual(expected);
   });
-  test.skip("struct:nth", () => {
+  test("struct:nth", () => {
     const arr = [
       { foo: 1, bar: 2, ham: "c" },
       { foo: null, bar: 10, ham: null },
