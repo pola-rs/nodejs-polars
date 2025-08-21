@@ -2853,7 +2853,7 @@ export const _DataFrame = <S extends Schema>(_df: any): DataFrame<S> => {
         );
       }
       return this.lazy()
-        .withColumns(columns)
+        .withColumns(...columns)
         .collectSync({ noOptimization: true });
     },
     withColumnRenamed(opt, replacement?): any {

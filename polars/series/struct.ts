@@ -47,17 +47,17 @@ export const SeriesStructFunctions = (_s: any): SeriesStructFunctions => {
     },
     field(name) {
       return DataFrame({})
-        .select(_Expr(pli.lit(_s).structFieldByName(name)))
+        .select(_Expr(pli.litSeries(_s).structFieldByName(name)))
         .toSeries();
     },
     renameFields(names) {
       return DataFrame({})
-        .select(_Expr(pli.lit(_s).structRenameFields(names)))
+        .select(_Expr(pli.litSeries(_s).structRenameFields(names)))
         .toSeries();
     },
     nth(index) {
       return DataFrame({})
-        .select(_Expr(pli.lit(_s).structFieldByIndex(index)))
+        .select(_Expr(pli.litSeries(_s).structFieldByIndex(index)))
         .toSeries();
     },
   };

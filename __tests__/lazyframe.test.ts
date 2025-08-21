@@ -276,7 +276,10 @@ describe("lazyframe", () => {
       foo: [1],
       bar: ["a"],
     });
-    const actual = await df.lazy().select("*").fetch(1);
+    const actual = await df
+      .lazy()
+      .select("*")
+      .fetch(1, { noOptimization: true });
     expect(actual).toFrameEqual(expected);
   });
   test("fetchSync", () => {
@@ -357,7 +360,46 @@ describe("lazyframe", () => {
     });
     expect(actual).toFrameEqual(expected);
   });
-  describe("groupby", () => {});
+  describe("groupby", () => {
+    test("groupBy", () => {
+      let actual = pl
+        .DataFrame({
+          foo: [1, 2, 3],
+          ham: ["a", "a", "b"],
+        })
+        .lazy()
+        .groupBy("ham")
+        .agg(pl.col("foo").sum())
+        .collectSync();
+      const expected = pl.DataFrame({
+        ham: ["a", "b"],
+        foo: [3, 3],
+      });
+      expect(actual).toFrameEqual(expected);
+
+      actual = pl
+        .DataFrame({
+          foo: [1, 2, 3],
+          ham: ["a", "a", "b"],
+        })
+        .lazy()
+        .groupBy("ham", true)
+        .agg(pl.col("foo").sum())
+        .collectSync();
+      expect(actual).toFrameEqual(expected);
+
+      actual = pl
+        .DataFrame({
+          foo: [1, 2, 3],
+          ham: ["a", "a", "b"],
+        })
+        .lazy()
+        .groupBy("ham", { maintainOrder: true })
+        .agg(pl.col("foo").sum())
+        .collectSync();
+      expect(actual).toFrameEqual(expected);
+    });
+  });
   test("head", () => {
     const actual = pl
       .DataFrame({
@@ -1096,6 +1138,90 @@ describe("lazyframe", () => {
     ]);
     expect(actual).toFrameEqualIgnoringOrder(expected);
   });
+  test("withColumn:series", async () => {
+    const actual: pl.DataFrame = pl
+      .DataFrame()
+      .lazy()
+      .withColumn(pl.Series("series1", [1, 2, 3, 4], pl.Int16))
+      .collectSync();
+    const expected: pl.DataFrame = pl.DataFrame([
+      pl.Series("series1", [1, 2, 3, 4], pl.Int16),
+    ]);
+    expect(actual).toFrameEqual(expected);
+  });
+  test("withColumns:series", async () => {
+    const actual: pl.DataFrame = pl
+      .DataFrame()
+      .lazy()
+      .withColumns(
+        pl.Series("series1", [1, 2, 3, 4], pl.Int16),
+        pl.Series("series2", [1, 2, 3, 4], pl.Int32),
+      )
+      .collectSync();
+    const expected: pl.DataFrame = pl.DataFrame([
+      pl.Series("series1", [1, 2, 3, 4], pl.Int16),
+      pl.Series("series2", [1, 2, 3, 4], pl.Int32),
+    ]);
+    expect(actual).toFrameEqual(expected);
+  });
+  test("select:series", async () => {
+    let actual: pl.DataFrame = pl
+      .DataFrame()
+      .lazy()
+      .select(
+        pl.Series("series1", [1, 2, 3, 4], pl.Int16),
+        pl.Series("series2", [1, 2, 3, 4], pl.Int32),
+      )
+      .collectSync();
+    let expected: pl.DataFrame = pl.DataFrame([
+      pl.Series("series1", [1, 2, 3, 4], pl.Int16),
+      pl.Series("series2", [1, 2, 3, 4], pl.Int32),
+    ]);
+    expect(actual).toFrameEqual(expected);
+    actual = pl
+      .DataFrame({ text: ["hello"] })
+      .lazy()
+      .select(pl.Series("series", [1, 2, 3]))
+      .collectSync();
+
+    expected = pl.DataFrame([pl.Series("series", [1, 2, 3])]);
+    expect(actual).toFrameEqual(expected);
+
+    actual = pl
+      .DataFrame({ text: ["hello"] })
+      .lazy()
+      .select("text", pl.Series("series", [1]))
+      .collectSync();
+    expected = pl.DataFrame({ text: ["hello"], series: [1] });
+    expect(actual).toFrameEqual(expected);
+  });
+  test("select:lit", () => {
+    const df = pl.DataFrame({ a: [1] }, { schema: { a: pl.Float32 } });
+    let actual = df.lazy().select(pl.col("a"), pl.lit(1)).collectSync();
+    const expected = pl.DataFrame({
+      a: [1],
+      literal: [1],
+    });
+    expect(actual).toFrameEqual(expected);
+    actual = df
+      .lazy()
+      .select(pl.col("a").mul(2).alias("b"), pl.lit(2))
+      .collectSync();
+    const expected2 = pl.DataFrame({
+      b: [2],
+      literal: [2],
+    });
+    expect(actual).toFrameEqual(expected2);
+  });
+  test("inspect", () => {
+    const actual = pl
+      .DataFrame({
+        foo: [1, 2, 9],
+        bar: [6, 2, 8],
+      })
+      .lazy();
+    expect(actual).toBeDefined();
+  });
   test("withColumns", () => {
     const actual = pl
       .DataFrame({
@@ -1120,7 +1246,7 @@ describe("lazyframe", () => {
         bar: [6, 2, 8],
       })
       .lazy()
-      .withColumns([pl.lit("a").alias("col_a"), pl.lit("b").alias("col_b")])
+      .withColumns(pl.lit("a").alias("col_a"), pl.lit("b").alias("col_b"))
       .collectSync();
     const expected = pl.DataFrame([
       pl.Series("foo", [1, 2, 9], pl.Int16),
@@ -1280,7 +1406,10 @@ describe("lazyframe", () => {
       .lazy();
     await ldf.sinkCSV("./test.csv").collect();
     const newDF: pl.DataFrame = pl.readCSV("./test.csv");
-    const actualDf: pl.DataFrame = await ldf.collect({ streaming: true });
+    const actualDf: pl.DataFrame = await ldf.collect({
+      streaming: true,
+      noOptimization: true,
+    });
     expect(newDF.sort("foo")).toFrameEqual(actualDf);
     fs.rmSync("./test.csv");
   });
