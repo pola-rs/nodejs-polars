@@ -804,9 +804,7 @@ describe("expr", () => {
       col("n").sample({ n: 3, withReplacement: true, seed: 1 }).alias("sample"),
     );
     expected = pl.DataFrame({ n: [1, 2, 3], sample: [3, 3, 1] });
-    actual = df.withColumns(
-      col("n").sample(3).alias("sample"),
-    );
+    actual = df.withColumns(col("n").sample(3).alias("sample"));
     expected = pl.DataFrame({ n: [1, 2, 3], sample: [1, 2, 3] });
     expect(actual).toFrameEqual(expected);
   });
