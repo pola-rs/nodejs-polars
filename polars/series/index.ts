@@ -1934,8 +1934,8 @@ export interface SeriesConstructor extends Deserialize<Series> {
    * Returns a new Series from a set of elements.
    * @param items — A set of elements to include in the new Series object.
    */
-  of<T3 extends JsType>(...items: T3[]): Series<JsToDtype<T3>>;
-  of<T3>(...items: T3[]): Series;
+  of<T3 extends JsType>(items: T3[]): Series<JsToDtype<T3>>;
+  of<T3>(items: T3[]): Series;
   isSeries(arg: any): arg is Series;
 }
 
@@ -1961,13 +1961,13 @@ const isSeries = (anyVal: any): anyVal is Series => {
   }
 };
 
-const from = (name, values?: ArrayLike<any>): Series => {
+const from = (name: string | object, values?: ArrayLike<any>): Series => {
   if (Array.isArray(name)) {
     return SeriesConstructor("", name);
   }
   return SeriesConstructor(name, values);
 };
-const of = (...values: any[]): Series => {
+const of = (values: any[]): Series => {
   return Series.from(values);
 };
 

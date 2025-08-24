@@ -30,6 +30,11 @@ describe("from lists", () => {
     const actual2 = pl.Series.from([1, 2, 3]);
     expect(actual2).toSeriesEqual(expected);
   });
+  test("of", () => {
+    const actual = pl.Series.of([1, 2, 3]);
+    const expected = pl.Series("", [1, 2, 3]);
+    expect(actual).toSeriesEqual(expected);
+  });
 });
 describe("typedArrays", () => {
   test("int8", () => {
@@ -728,6 +733,14 @@ describe("series functions", () => {
     const actual = s.values().next();
     const expected = { done: false, value: 1 };
     expect(actual).toEqual(expected);
+  });
+  test("from:Uint8ClampedArray", () => {
+    const actual: pl.Series = pl.Series.from(
+      "Uint8ClampedArray",
+      new Uint8ClampedArray([3, 2, 1]),
+    );
+    const expected = pl.Series("Uint8ClampedArray", [3, 2, 1], pl.UInt8);
+    expect(actual).toSeriesEqual(expected);
   });
   test("toDummies", () => {
     const s = pl.Series("a", [1, 2, 3]);

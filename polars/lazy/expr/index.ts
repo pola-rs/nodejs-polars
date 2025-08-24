@@ -1494,12 +1494,10 @@ export const _Expr = (_expr: any): Expr => {
       if (n !== null && typeof n === "number") {
         return _Expr(_expr.extendConstant(o, n));
       }
-
       return _Expr(_expr.extendConstant(o.value, o.n));
     },
     fillNan(other) {
       const expr = (exprToLitOrExpr(other, true) as any).inner();
-
       return _Expr(_expr.fillNan(expr));
     },
     fillNull(fillValue) {
@@ -1510,9 +1508,7 @@ export const _Expr = (_expr: any): Expr => {
       ) {
         return _Expr(_expr.fillNullWithStrategy(fillValue));
       }
-
       const expr = exprToLitOrExpr(fillValue).inner();
-
       return _Expr(_expr.fillNull(expr));
     },
     filter(predicate) {
@@ -1534,7 +1530,7 @@ export const _Expr = (_expr: any): Expr => {
     },
     gather(indices) {
       if (Array.isArray(indices)) {
-        indices = pli.lit(Series("", indices, pli.Int64).inner());
+        indices = pli.litSeries(Series("", indices, pli.Int64).inner());
       } else {
         indices = indices.inner();
       }
@@ -1620,7 +1616,6 @@ export const _Expr = (_expr: any): Expr => {
       return _Expr(_expr.list());
     },
     log1p() {
-      console.log(_expr.log1p);
       return _Expr(_expr.log1p());
     },
     log(base?: number) {
@@ -1791,14 +1786,26 @@ export const _Expr = (_expr: any): Expr => {
           opts.n,
           opts.frac,
           opts.withReplacement,
-          seed,
+          opts.seed,
         );
       }
       if (typeof opts === "number") {
-        throw new Error("sample_n is not yet supported for expr");
+        return wrap(
+          "sampleN",
+          exprToLitOrExpr(opts),
+          withReplacement,
+          false,
+          seed,
+        );
       }
       if (typeof frac === "number") {
-        return wrap("sampleFrac", frac, withReplacement, false, seed);
+        return wrap(
+          "sampleFrac",
+          exprToLitOrExpr(frac),
+          withReplacement,
+          false,
+          seed,
+        );
       }
       throw new TypeError("must specify either 'frac' or 'n'");
     },

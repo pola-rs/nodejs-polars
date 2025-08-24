@@ -149,7 +149,28 @@ describe("groupby", () => {
     });
     expect(actual).toFrameEqual(expected);
   });
-  test.todo("groups");
+  test("quantile", () => {
+    const actual = df.groupBy("name").quantile(1).sort("name");
+    const expected = pl.DataFrame({
+      name: ["a", "b", "c"],
+      foo: [3, 7, 5],
+      bar: [4, 8, 6],
+    });
+    expect(actual).toFrameEqual(expected);
+  });
+  test("groups", () => {
+    const actual = df.groupBy("name").groups().sort("name");
+    const expected = pl.DataFrame({
+      name: ["a", "b", "c"],
+      groups: [[0, 2], [1, 4], [3]],
+    });
+    expect(actual).toFrameEqual(expected);
+  });
+  test("inspect", () => {
+    const _actual = df
+      .groupBy("grb")
+      [Symbol.for("nodejs.util.inspect.custom")]();
+  });
 });
 describe("groupby ops", () => {
   test("rolling", () => {
