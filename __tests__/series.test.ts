@@ -729,6 +729,14 @@ describe("series functions", () => {
     const expected = { done: false, value: 1 };
     expect(actual).toEqual(expected);
   });
+  test("from:Uint8ClampedArray", () => {
+    const actual: pl.Series = pl.Series.from(
+      "Uint8ClampedArray",
+      new Uint8ClampedArray([3, 2, 1]),
+    );
+    const expected = pl.Series("Uint8ClampedArray", [3, 2, 1], pl.UInt8);
+    expect(actual).toSeriesEqual(expected);
+  });
   test("toDummies", () => {
     const s = pl.Series("a", [1, 2, 3]);
     {

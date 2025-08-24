@@ -332,7 +332,10 @@ impl JsExpr {
     }
     #[napi(catch_unwind)]
     pub fn gather(&self, idx: &JsExpr) -> JsExpr {
-        self.clone().inner.gather(idx.inner.clone()).into()
+        self.clone()
+            .inner
+            .gather(idx.inner.clone().cast(DataType::UInt32))
+            .into()
     }
     #[napi(catch_unwind)]
     pub fn sort_by(&self, by: Vec<&JsExpr>, reverse: Vec<bool>) -> JsExpr {
@@ -1460,6 +1463,20 @@ impl JsExpr {
             .into()
     }
     #[napi(catch_unwind)]
+    pub fn sample_n(
+        &self,
+        n: Wrap<Expr>,
+        with_replacement: bool,
+        shuffle: bool,
+        seed: Option<i64>,
+    ) -> JsExpr {
+        let seed = seed.map(|s| s as u64);
+        self.inner
+            .clone()
+            .sample_n(n.0, with_replacement, shuffle, seed)
+            .into()
+    }
+    #[napi(catch_unwind)]
     pub fn ewm_mean(
         &self,
         alpha: f64,
@@ -1764,7 +1781,6 @@ pub fn arg_sort_by(by: Vec<&JsExpr>, descending: Vec<bool>) -> JsExpr {
 pub fn lit_series(s: &JsSeries) -> JsResult<JsExpr> {
     Ok(s.clone().series.lit().into())
 }
-
 
 #[napi(catch_unwind)]
 pub fn lit(value: Wrap<AnyValue>) -> JsResult<JsExpr> {

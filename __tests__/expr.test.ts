@@ -299,6 +299,12 @@ describe("expr", () => {
     const actual = df.withColumn(other.extendConstant({ value: null, n: 2 }));
     expect(actual).toFrameEqual(expected);
   });
+  test("extend:expr", () => {
+    const df = pl.DataFrame({ a: [1, 2, 3, 4, 5] });
+    const actual = df.select(col("a").extendConstant({ value: 1, n: 2 }));
+    const expected = pl.DataFrame({ a: [1, 2, 3, 4, 5, 1, 1] });
+    expect(actual).toFrameEqual(expected);
+  });
   test("extend:positional", () => {
     const df = pl.DataFrame({
       a: [1, 2, 3, 4, 5],
@@ -390,6 +396,14 @@ describe("expr", () => {
     const df = pl.DataFrame({ a: [0, 1, 2, -1] });
     const expected = pl.DataFrame({ a: [true, true, true, false] });
     const actual = df.select(col("a").gtEq(0));
+    expect(actual).toFrameEqual(expected);
+  });
+  test("gather", () => {
+    const df = pl.DataFrame({ a: [1, 2, 2, 3, 3, 8, null, 1] });
+    const expected = pl.DataFrame({
+      "gather:array": [1, 2, 3, 8],
+    });
+    const actual = df.select(col("a").gather([0, 2, 3, 5]).as("gather:array"));
     expect(actual).toFrameEqual(expected);
   });
   test("gatherEvery", () => {
@@ -777,6 +791,25 @@ describe("expr", () => {
     const actual = df.select(col("a").round({ decimals: 2 }).as("rounded"));
     expect(actual).toFrameStrictEqual(expected);
   });
+  test("sample", () => {
+    const df = pl.DataFrame({ n: [1, 2, 3] });
+    let actual = df.withColumns(
+      col("n")
+        .sample({ frac: 1, withReplacement: true, seed: 1 })
+        .alias("sample"),
+    );
+    let expected = pl.DataFrame({ n: [1, 2, 3], sample: [3, 3, 1] });
+    expect(actual).toFrameEqual(expected);
+    actual = df.withColumns(
+      col("n").sample({ n: 3, withReplacement: true, seed: 1 }).alias("sample"),
+    );
+    expected = pl.DataFrame({ n: [1, 2, 3], sample: [3, 3, 1] });
+    actual = df.withColumns(
+      col("n").sample(3).alias("sample"),
+    );
+    expected = pl.DataFrame({ n: [1, 2, 3], sample: [1, 2, 3] });
+    expect(actual).toFrameEqual(expected);
+  });
   test("shift", () => {
     const df = pl.DataFrame({ a: [1, 2, 3, 4] });
     const expected = pl.DataFrame({
@@ -816,6 +849,12 @@ describe("expr", () => {
     const df = pl.DataFrame({ a: [1, 2, 3] });
     const expected = pl.DataFrame({ sin: [0.841471, 0.909297, 0.14112] });
     const actual = df.select(col("a").sin().round(6).as("sin"));
+    expect(actual).toFrameEqual(expected);
+  });
+  test("sinh", () => {
+    const df = pl.DataFrame({ a: [1, 2, 3] });
+    const expected = pl.DataFrame({ sinh: [1.175201, 3.62686, 10.017875] });
+    const actual = df.select(col("a").sinh().round(6).as("sinh"));
     expect(actual).toFrameEqual(expected);
   });
   test("skew", () => {
@@ -963,20 +1002,6 @@ describe("expr", () => {
       tail3: [8, null, 1],
     });
     const actual = df.select(col("a").tail(3).as("tail3"));
-    expect(actual).toFrameEqual(expected);
-  });
-  test.skip("take", () => {
-    const df = pl.DataFrame({ a: [1, 2, 2, 3, 3, 8, null, 1] });
-    const expected = pl.DataFrame({
-      "take:array": [1, 2, 3, 8],
-      "take:list": [1, 2, 2, 3],
-    });
-    const actual = df.select(
-      col("a").gather([0, 2, 3, 5]).as("take:array"),
-      col("a")
-        .gather(lit([0, 1, 2, 3]))
-        .as("take:list"),
-    );
     expect(actual).toFrameEqual(expected);
   });
   test("tan", () => {
