@@ -30,6 +30,11 @@ describe("from lists", () => {
     const actual2 = pl.Series.from([1, 2, 3]);
     expect(actual2).toSeriesEqual(expected);
   });
+  test("of", () => {
+    const actual = pl.Series.of([1, 2, 3]);
+    const expected = pl.Series("", [1, 2, 3]);
+    expect(actual).toSeriesEqual(expected);
+  });
 });
 describe("typedArrays", () => {
   test("int8", () => {

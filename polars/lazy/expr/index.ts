@@ -1616,7 +1616,6 @@ export const _Expr = (_expr: any): Expr => {
       return _Expr(_expr.list());
     },
     log1p() {
-      console.log(_expr.log1p);
       return _Expr(_expr.log1p());
     },
     log(base?: number) {

@@ -362,41 +362,47 @@ describe("lazyframe", () => {
   });
   describe("groupby", () => {
     test("groupBy", () => {
-      let actual = pl
+      const ldf = pl
         .DataFrame({
-          foo: [1, 2, 3],
-          ham: ["a", "a", "b"],
+          foo: [1, 2, 3, 4],
+          ham: ["a", "a", "b", "b"],
         })
-        .lazy()
-        .groupBy("ham")
-        .agg(pl.col("foo").sum())
-        .collectSync();
-      const expected = pl.DataFrame({
+        .lazy();
+
+      let actual = ldf.groupBy("ham").agg(pl.col("foo").sum()).collectSync();
+      let expected = pl.DataFrame({
         ham: ["a", "b"],
-        foo: [3, 3],
+        foo: [3, 7],
       });
       expect(actual).toFrameEqual(expected);
 
-      actual = pl
-        .DataFrame({
-          foo: [1, 2, 3],
-          ham: ["a", "a", "b"],
-        })
-        .lazy()
-        .groupBy("ham", true)
+      actual = ldf.groupBy("ham", true).agg(pl.col("foo").sum()).collectSync();
+      expect(actual).toFrameEqual(expected);
+
+      actual = ldf
+        .groupBy("ham", { maintainOrder: true })
         .agg(pl.col("foo").sum())
         .collectSync();
       expect(actual).toFrameEqual(expected);
 
-      actual = pl
-        .DataFrame({
-          foo: [1, 2, 3],
-          ham: ["a", "a", "b"],
-        })
-        .lazy()
+      actual = ldf
         .groupBy("ham", { maintainOrder: true })
-        .agg(pl.col("foo").sum())
+        .head(1)
         .collectSync();
+      expected = pl.DataFrame({
+        ham: ["a", "b"],
+        foo: [1, 3],
+      });
+      expect(actual).toFrameEqual(expected);
+
+      actual = ldf
+        .groupBy("ham", { maintainOrder: true })
+        .tail(1)
+        .collectSync();
+      expected = pl.DataFrame({
+        ham: ["a", "b"],
+        foo: [2, 4],
+      });
       expect(actual).toFrameEqual(expected);
     });
   });
