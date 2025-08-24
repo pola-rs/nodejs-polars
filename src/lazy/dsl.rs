@@ -1765,7 +1765,6 @@ pub fn lit_series(s: &JsSeries) -> JsResult<JsExpr> {
     Ok(s.clone().series.lit().into())
 }
 
-
 #[napi(catch_unwind)]
 pub fn lit(value: Wrap<AnyValue>) -> JsResult<JsExpr> {
     let lit: LiteralValue = value
