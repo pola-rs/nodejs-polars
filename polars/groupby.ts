@@ -180,7 +180,7 @@ export function _GroupBy(df: any, by: string[], maintainOrder = false) {
       throw new Error("must specify both pivotCol and valuesCol");
     }
 
-    return PivotOps(df, by, opts.pivotCol, opts.valuesCol);
+    return PivotOps(_DataFrame(df), by, opts.pivotCol, opts.valuesCol);
   };
 
   const agg = (...aggs): DataFrame => {
@@ -231,13 +231,13 @@ export function _GroupBy(df: any, by: string[], maintainOrder = false) {
 }
 
 function PivotOps(
-  df: any,
+  df: DataFrame,
   by: string | string[],
   pivotCol: string,
   valueCol: string,
 ): PivotOps {
   const pivot = (agg) => () =>
-    _DataFrame(df.pivot([by].flat(), [pivotCol], [valueCol], agg));
+    df.pivot(valueCol, { on: pivotCol, index: by, aggregateFunc: agg });
   const customInspect = () =>
     util.formatWithOptions(inspectOpts, "PivotOps {by: %O}", by);
 

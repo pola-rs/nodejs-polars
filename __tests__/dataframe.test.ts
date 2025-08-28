@@ -1539,6 +1539,41 @@ Series: 'attributes' [struct[5]]
       });
       expect(actual).toFrameEqual(expected, true);
     }
+    {
+      const df = pl.DataFrame({
+        idx: ["a", "b", "b", "a", "b", "b", "a", "b"],
+        val: [0, 1, 2, 3, 4, 5, 6, 7],
+        grb: [1, 1, 1, 1, 2, 2, 2, 2],
+      });
+      let actual = df.groupBy("grb").pivot("idx", "val").sum();
+      let expected = `shape: (2, 3)
+┌─────┬─────┬──────┐
+│ grb ┆ a   ┆ b    │
+│ --- ┆ --- ┆ ---  │
+│ f64 ┆ f64 ┆ f64  │
+╞═════╪═════╪══════╡
+│ 1.0 ┆ 3.0 ┆ 3.0  │
+│ 2.0 ┆ 6.0 ┆ 16.0 │
+└─────┴─────┴──────┘`;
+      expect(actual.toString()).toStrictEqual(expected);
+      actual = df.groupBy("grb").pivot("idx", "val").first();
+      expected = `shape: (2, 3)
+┌─────┬─────┬─────┐
+│ grb ┆ a   ┆ b   │
+│ --- ┆ --- ┆ --- │
+│ f64 ┆ f64 ┆ f64 │
+╞═════╪═════╪═════╡
+│ 1.0 ┆ 0.0 ┆ 1.0 │
+│ 2.0 ┆ 6.0 ┆ 4.0 │
+└─────┴─────┴─────┘`;
+      expect(actual.toString()).toStrictEqual(expected);
+      const _iactual = df
+        .groupBy("grb")
+        .pivot("idx", "val")
+        [Symbol.for("nodejs.util.inspect.custom")]();
+      const fn = () => df.groupBy("grb").pivot("idx", "").first();
+      expect(fn).toThrow("must specify both pivotCol and valuesCol");
+    }
   });
   test("pivot:options-only", () => {
     {
@@ -1611,7 +1646,6 @@ Series: 'attributes' [struct[5]]
         on: "bar",
         aggregateFunc: "first",
       });
-
       const expected = pl.DataFrame({
         foo: ["A", "B", "C"],
         k: [1, null, null],
