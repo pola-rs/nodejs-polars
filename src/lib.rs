@@ -10,6 +10,7 @@ pub fn version() -> &'static str {
     VERSION
 }
 
+pub mod cfg;
 pub mod conversion;
 pub mod dataframe;
 pub mod datatypes;
@@ -23,7 +24,6 @@ pub mod series;
 pub mod set;
 pub mod sql;
 pub mod utils;
-pub mod cfg;
 
 pub use polars_core;
 
