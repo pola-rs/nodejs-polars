@@ -74,4 +74,44 @@ describe("config", () => {
     pl.Config.setTblCols(-1);
     expect(df.toString().length).toEqual(233);
   });
+  test("setTblColumnDataTypeInline", () => {
+    const df = pl.DataFrame({
+      abc: [1.0, 2.5, 3.5, 5.0],
+      def: ["d", "e", "f", "g"],
+      xyz: [true, false, true, false],
+    });
+    pl.Config.setTblColumnDataTypeInline(true);
+    expect(df.toString().length).toEqual(325);
+    pl.Config.setTblColumnDataTypeInline();
+    expect(df.toString().length).toEqual(233);
+  });
+  test("setTblHideColumnDataTypes", () => {
+    const df = pl.DataFrame({
+      abc: [1.0, 2.5, 3.5, 5.0],
+      def: ["d", "e", "f", "g"],
+      xyz: [true, false, true, false],
+    });
+    pl.Config.setTblHideColumnDataTypes(true);
+    expect(df.toString().length).toEqual(189);
+    pl.Config.setTblHideColumnDataTypes();
+    expect(df.toString().length).toEqual(233);
+  });
+  test("setVerbose", () => {
+    pl.Config.setVerbose(true);
+    pl.Config.setVerbose(false);
+  });
+  test("setThousandsSeparator", () => {
+    const df = pl.DataFrame({
+      x: [1234567, -987654, 10101],
+      y: [1234.5, 100000.0, -7654321.25],
+    });
+    pl.Config.setThousandsSeparator(true);
+    expect(df.toString().length).toEqual(292);
+    pl.Config.setThousandsSeparator("x");
+    expect(df.toString().length).toEqual(292);
+    const fn = () => pl.Config.setThousandsSeparator("xx");
+    expect(fn).toThrow(TypeError);
+    pl.Config.setThousandsSeparator();
+    expect(df.toString().length).toEqual(256);
+  });
 });

@@ -10,7 +10,7 @@ export interface Config {
    * @example
    * const df = pl.DataFrame({abc: [1.0, 2.5, 5.0], xyz: [true, false, true]})
      pl.Config.setAsciiTables(true)
-     console.log(df.toString());
+     
     # shape: (3, 2)        shape: (3, 2)
     # ┌─────┬───────┐      +-----+-------+
     # │ abc ┆ xyz   │      | abc | xyz   |
@@ -63,9 +63,9 @@ export interface Config {
    * @param n - Number of rows to display; if `n < 0` (eg: -1), display all rows (DataFrame) and all elements (Series).
    * 
    * @example
-    const df = pl.DataFrame( {abc: [1.0, 2.5, 3.5, 5.0], xyz: [True, False, True, False]} );
+    const df = pl.DataFrame({abc: [1.0, 2.5, 5.0], xyz: [true, false, true]})
     pl.Config.setTblRows(2);
-    console.log(df.toString());
+    
     shape: (4, 2)
     ┌─────┬───────┐
     │ abc ┆ xyz   │
@@ -87,6 +87,7 @@ export interface Config {
     const df = pl.DataFrame( {abc: [1.0, 2.5, 3.5, 5.0], def: ["d", "e", "f", "g"], xyz: [true, false, true, false] } );
     // Set number of displayed columns to a low value
     pl.Config.setTblCols(2);
+    
     shape: (4, 3)
     ┌─────┬───┬───────┐
     │ abc ┆ … ┆ xyz   │
@@ -99,9 +100,65 @@ export interface Config {
     │ 5.0 ┆ … ┆ false │
     └─────┴───┴───────┘
   */
-  setTblCols(): Config;
-  setTblCols(n: number): Config;
+  setTblCols(n?: number): Config;
 
+  /**
+   * Display the data type next to the column name (to the right, in parentheses).
+   * @param active - true / false Default - true
+   * 
+   * @example
+    --------
+    const df = pl.DataFrame({abc: [1.0, 2.5, 5.0], xyz: [true, false, true]})
+    pl.Config.setTblColumnDataTypeInline(true)
+
+    # shape: (3, 2)        shape: (3, 2)
+    # ┌─────┬───────┐      ┌───────────┬────────────┐
+    # │ abc ┆ xyz   │      │ abc (f64) ┆ xyz (bool) │
+    # │ --- ┆ ---   │      ╞═══════════╪════════════╡
+    # │ f64 ┆ bool  │      │ 1.0       ┆ true       │
+    # ╞═════╪═══════╡  >>  │ 2.5       ┆ false      │
+    # │ 1.0 ┆ true  │      │ 5.0       ┆ true       │
+    # │ 2.5 ┆ false │      └───────────┴────────────┘
+    # │ 5.0 ┆ true  │
+    # └─────┴───────┘
+   */
+
+  setTblColumnDataTypeInline(active?: boolean): Config;
+
+  /**
+   * Hide table column data types (i64, f64, str etc.).
+   * @param active - true / false Default - true
+
+   * @example
+    const df = pl.DataFrame({abc: [1.0, 2.5, 5.0], xyz: [true, false, true]})
+    pl.Config.setTblHideColumnDataTypes(true)
+        
+    # shape: (3, 2)        shape: (3, 2)
+    # ┌─────┬───────┐      ┌─────┬───────┐
+    # │ abc ┆ xyz   │      │ abc ┆ xyz   │
+    # │ --- ┆ ---   │      ╞═════╪═══════╡
+    # │ f64 ┆ bool  │      │ 1.0 ┆ true  │
+    # ╞═════╪═══════╡  >>  │ 2.5 ┆ false │
+    # │ 1.0 ┆ true  │      │ 5.0 ┆ true  │
+    # │ 2.5 ┆ false │      └─────┴───────┘
+    # │ 5.0 ┆ true  │
+    # └─────┴───────┘
+   */
+  setTblHideColumnDataTypes(active?: boolean): Config;
+
+  /**
+   * Enable additional verbose/debug logging.
+   * @param active - true / false Default - true
+   */
+  setVerbose(active?: boolean): Config;
+
+  /**
+   * Set the thousands grouping separator character.
+   * @param separator : string | bool
+        Set True to use the default "," (thousands) and "." (decimal) separators.
+        Can also set a custom char, or set ``None`` to omit the separator.
+   */
+  setThousandsSeparator(separator?: string | boolean): Config;
   // TODO: Implement these methods
   // set_auto_structify
   // set_decimal_separator
@@ -113,16 +170,12 @@ export interface Config {
   //   set_streaming_chunk_size
   //   set_tbl_cell_alignment
   //   set_tbl_cell_numeric_alignment
-  //   set_tbl_column_data_type_inline
   //   set_tbl_dataframe_shape_below
   //   set_tbl_formatting
-  //   set_tbl_hide_column_data_types
   //   set_tbl_hide_column_names
   //   set_tbl_hide_dataframe_shape
   //   set_tbl_hide_dtype_separator
-  //   set_thousands_separator
   //   set_trim_decimal_zeros
-  //   set_verbose
 }
 
 export const Config: Config = {
@@ -140,6 +193,31 @@ export const Config: Config = {
   },
   setTblCols(n?: number) {
     pli.setTblCols(n);
+    return this;
+  },
+  setTblColumnDataTypeInline(active?: boolean) {
+    pli.setTblColumnDataTypeInline(active ? 1 : 0);
+    return this;
+  },
+  setTblHideColumnDataTypes(active?: boolean) {
+    pli.setTblHideColumnDataTypes(active ? 1 : 0);
+    return this;
+  },
+  setVerbose(active?: boolean) {
+    pli.setVerbose(active ? 1 : 0);
+    return this;
+  },
+  setThousandsSeparator(separator?: string | boolean) {
+    if (typeof separator === "boolean" && separator) {
+      pli.setDecimalSeparator(".");
+      pli.setThousandsSeparator(",");
+    } else if (typeof separator === "string") {
+      if (separator.length > 1)
+        throw new TypeError("separator must be a single character;");
+      pli.setThousandsSeparator(separator);
+    } else {
+      pli.setThousandsSeparator();
+    }
     return this;
   },
 };
