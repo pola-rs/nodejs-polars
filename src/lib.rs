@@ -10,6 +10,7 @@ pub fn version() -> &'static str {
     VERSION
 }
 
+pub mod cfg;
 pub mod conversion;
 pub mod dataframe;
 pub mod datatypes;
