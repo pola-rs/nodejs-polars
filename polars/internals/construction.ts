@@ -124,29 +124,29 @@ const fromTypedArray = (name, value) => {
  * Construct an internal `JsSeries` from an array
  */
 export function arrayToJsSeries(
-  name = "",
+  name: string = "",
   values: any[] = [],
-  dtype?: any,
-  strict = false,
+  dtype?: DataType,
+  strict: boolean = false,
 ): any {
   if (isTypedArray(values)) {
     return fromTypedArray(name, values);
   }
 
-  //Empty sequence defaults to Float64 type
+  // Empty sequence defaults to Float64 type
   if (!(values?.length || dtype)) {
     dtype = DataType.Float64;
   }
   const firstValue = firstNonNull(values);
   if (Array.isArray(firstValue) || isTypedArray(firstValue)) {
-    const listDtype = jsTypeToPolarsType(firstValue);
-    const ctor = polarsTypeToConstructor(DataType.List(listDtype));
-    const s = ctor(name, values, strict, listDtype);
+    const arrayDtype: DataType =
+      dtype ?? DataType.List(jsTypeToPolarsType(firstValue));
+    const ctor = polarsTypeToConstructor(arrayDtype);
+    const s = ctor(name, values, strict, arrayDtype);
     if (dtype instanceof FixedSizeList) {
       // TODO: build a FixedSizeList natively in Rust
       return s.cast(dtype, strict);
     }
-
     return s;
   }
 
