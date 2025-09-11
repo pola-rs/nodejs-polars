@@ -1943,10 +1943,9 @@ const SeriesConstructor = (
   arg0: any,
   arg1?: any,
   dtype?: any,
-  strict?: any,
 ): Series => {
   if (typeof arg0 === "string") {
-    const _s = arrayToJsSeries(arg0, arg1, dtype, strict);
+    const _s = arrayToJsSeries(arg0, arg1, dtype);
 
     return _Series(_s) as any;
   }

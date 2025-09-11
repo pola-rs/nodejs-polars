@@ -115,44 +115,44 @@ impl JsSeries {
         JsSeries::new(s)
     }
     #[napi(factory, catch_unwind)]
-    pub fn new_opt_bool(name: String, val: Wrap<BooleanChunked>, _strict: bool) -> JsSeries {
+    pub fn new_opt_bool(name: String, val: Wrap<BooleanChunked>) -> JsSeries {
         let mut s = val.0.into_series();
         s.rename(PlSmallStr::from_string(name));
         JsSeries::new(s)
     }
     #[napi(factory, catch_unwind)]
-    pub fn new_opt_i32(name: String, val: Wrap<Int32Chunked>, _strict: bool) -> JsSeries {
+    pub fn new_opt_i32(name: String, val: Wrap<Int32Chunked>) -> JsSeries {
         let mut s = val.0.into_series();
         s.rename(PlSmallStr::from_string(name));
         JsSeries::new(s)
     }
     #[napi(factory, catch_unwind)]
-    pub fn new_opt_i64(name: String, val: Wrap<Int64Chunked>, _strict: bool) -> JsSeries {
+    pub fn new_opt_i64(name: String, val: Wrap<Int64Chunked>) -> JsSeries {
         let mut s = val.0.into_series();
         s.rename(PlSmallStr::from_string(name));
         JsSeries::new(s)
     }
     #[napi(factory, catch_unwind)]
-    pub fn new_opt_u64(name: String, val: Wrap<UInt64Chunked>, _strict: bool) -> JsSeries {
+    pub fn new_opt_u64(name: String, val: Wrap<UInt64Chunked>) -> JsSeries {
         let mut s = val.0.into_series();
         s.rename(PlSmallStr::from_string(name));
         JsSeries::new(s)
     }
     #[napi(factory, catch_unwind)]
-    pub fn new_opt_u32(name: String, val: Wrap<UInt32Chunked>, _strict: bool) -> JsSeries {
+    pub fn new_opt_u32(name: String, val: Wrap<UInt32Chunked>) -> JsSeries {
         let mut s = val.0.into_series();
         s.rename(PlSmallStr::from_string(name));
         JsSeries::new(s)
     }
     #[napi(factory, catch_unwind)]
-    pub fn new_opt_f32(name: String, val: Wrap<Float32Chunked>, _strict: bool) -> JsSeries {
+    pub fn new_opt_f32(name: String, val: Wrap<Float32Chunked>) -> JsSeries {
         let mut s = val.0.into_series();
         s.rename(PlSmallStr::from_string(name));
         JsSeries::new(s)
     }
 
     #[napi(factory, catch_unwind)]
-    pub fn new_opt_f64(name: String, val: Wrap<Float64Chunked>, _strict: bool) -> JsSeries {
+    pub fn new_opt_f64(name: String, val: Wrap<Float64Chunked>) -> JsSeries {
         let mut s = val.0.into_series();
         s.rename(PlSmallStr::from_string(name));
         JsSeries::new(s)
@@ -198,11 +198,10 @@ impl JsSeries {
     }
 
     #[napi(factory, catch_unwind)]
-    pub fn new_anyvalue(
+    pub fn new_any_value(
         name: String,
         values: Vec<Wrap<AnyValue>>,
         dtype: Wrap<DataType>,
-        strict: bool,
     ) -> napi::Result<JsSeries> {
         let values = values.into_iter().map(|v| v.0).collect::<Vec<_>>();
 
@@ -210,7 +209,7 @@ impl JsSeries {
             PlSmallStr::from_string(name),
             &values,
             &dtype.0,
-            strict,
+            false,
         )
         .map_err(JsPolarsErr::from)?;
 
