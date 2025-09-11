@@ -1939,11 +1939,7 @@ export interface SeriesConstructor extends Deserialize<Series> {
   isSeries(arg: any): arg is Series;
 }
 
-const SeriesConstructor = (
-  arg0: any,
-  arg1?: any,
-  dtype?: any,
-): Series => {
+const SeriesConstructor = (arg0: any, arg1?: any, dtype?: any): Series => {
   if (typeof arg0 === "string") {
     const _s = arrayToJsSeries(arg0, arg1, dtype);
 
