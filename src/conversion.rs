@@ -3,6 +3,7 @@ use crate::prelude::*;
 use napi::bindgen_prelude::*;
 use polars::prelude::NullStrategy;
 use polars::prelude::*;
+use polars_arrow::temporal_conversions::time64ns_to_time;
 use polars_core::series::ops::NullBehavior;
 use polars_io::cloud::CloudOptions;
 use polars_io::utils::sync_on_close::SyncOnCloseType;
@@ -158,7 +159,7 @@ impl<'a> ToNapiValue for Wrap<AnyValue<'a>> {
                 Ok(ptr.unwrap())
             },
             AnyValue::Duration(v, _) => i64::to_napi_value(env, v),
-            AnyValue::Time(v) => i64::to_napi_value(env, v),
+            AnyValue::Time(v) => String::to_napi_value(env, time64ns_to_time(v).format("%T%.f").to_string()),
             AnyValue::List(ser) => Wrap::<&Series>::to_napi_value(env, Wrap(&ser)),
             ref av @ AnyValue::Struct(_, _, flds) => struct_dict(env, av._iter_struct_av(), flds),
             AnyValue::Array(ser, _) => Wrap::<&Series>::to_napi_value(env, Wrap(&ser)),

@@ -3,7 +3,7 @@ export * from "./datatype";
 export { Field } from "./field";
 
 import pli from "../internals/polars_internal";
-import type { DataType } from "./datatype";
+import { type DataType, Time } from "./datatype";
 
 /** @ignore */
 export type TypedArray =
@@ -91,6 +91,9 @@ const POLARS_TYPE_TO_CONSTRUCTOR: Record<string, any> = {
   },
   Datetime(name, values) {
     return pli.JsSeries.newOptI64(name, values);
+  },
+  Time(name, values) {
+    return pli.JsSeries.newAnyValue(name, values, Time);
   },
   Bool(name, values) {
     return pli.JsSeries.newOptBool(name, values);

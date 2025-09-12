@@ -2030,6 +2030,16 @@ describe("io", () => {
       expect(JSON.stringify(actual)).toEqual(JSON.stringify(expected));
     });
   });
+  test("toRecords:time", () => {
+    const expected = [
+      { time: "00:00:00.000000001" },
+      { time: "04:43:20.000000001" },
+    ];
+    const timeUnits = [1, 17000000000001];
+    const df = pl.DataFrame([pl.Series("time", timeUnits, pl.Time)]);
+    const actual = df.toRecords();
+    expect(JSON.stringify(actual)).toEqual(JSON.stringify(expected));
+  });
   test("toRecords:quoteChar:emptyHeader", () => {
     const csv = `|name|,||
 |John|,|green|
