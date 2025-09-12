@@ -135,11 +135,22 @@ impl<'a> ToNapiValue for Wrap<AnyValue<'a>> {
                 )?;
                 Ok(ptr)
             }
-            AnyValue::Datetime(v, _, _) => {
-                let mut js_value = std::ptr::null_mut();
-                napi::sys::napi_create_date(env, v as f64, &mut js_value);
+            AnyValue::Datetime(v, time_unit, _) => {
+                let mut ptr = std::ptr::null_mut();
 
-                Ok(js_value)
+                let div = match time_unit {
+                    TimeUnit::Milliseconds => 1.0,
+                    TimeUnit::Microseconds => 1_000.0,
+                    TimeUnit::Nanoseconds => 1_000_000.0,
+                };
+
+                // Value representing the number of milliseconds since January 1, 1970, 00:00:00 UTC.
+                let epoch_time: f64 = (v as f64) / div;
+                check_status!(
+                    napi::sys::napi_create_date(env, epoch_time, &mut ptr),
+                    "Failed to convert rust type `AnyValue::Date` into napi value",
+                )?;
+                Ok(ptr)
             }
             AnyValue::Categorical(cat, &ref lmap) | AnyValue::CategoricalOwned(cat, ref lmap) => {
                 let s = unsafe { lmap.cat_to_str_unchecked(cat) };

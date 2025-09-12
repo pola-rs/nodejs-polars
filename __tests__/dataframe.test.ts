@@ -2019,6 +2019,17 @@ describe("io", () => {
     const actual = df.toRecords();
     expect(JSON.stringify(actual)).toEqual(JSON.stringify(expected));
   });
+  test("toRecords:datetime", () => {
+    const dt = new Date(Date.UTC(2014, 0, 1, 6, 0, 0));
+    const expected = [{ datetime: dt }];
+    const timeUnits = ["us", "ns", "ms"];
+
+    timeUnits.forEach((unit: any) => {
+      const df = pl.DataFrame([pl.Series("datetime", [dt], pl.Datetime(unit))]);
+      const actual = df.toRecords();
+      expect(JSON.stringify(actual)).toEqual(JSON.stringify(expected));
+    });
+  });
   test("toRecords:quoteChar:emptyHeader", () => {
     const csv = `|name|,||
 |John|,|green|
