@@ -22,8 +22,8 @@ export interface Config {
     # │ 5.0 ┆ true  │      | 5.0 | true  |
     # └─────┴───────┘      +-----+-------+
    */
-  setAsciiTables(): Config;
   setAsciiTables(active: boolean): Config;
+  setAsciiTables(): Config;
   /** Set the maximum width of a table in characters.
    * @param width - Maximum table width in characters; if n < 0 (eg: -1), display full width.
    * 
@@ -57,8 +57,8 @@ export interface Config {
       │     ┆ ATA │
       └─────┴─────┘
   */
-  setTblWidthChars(): Config;
   setTblWidthChars(width: number): Config;
+  setTblWidthChars(): Config;
   /** Set the max number of rows used to draw the table (both Dataframe and Series).
    * @param n - Number of rows to display; if `n < 0` (eg: -1), display all rows (DataFrame) and all elements (Series).
    * 
@@ -77,8 +77,8 @@ export interface Config {
     │ 5.0 ┆ false │
     └─────┴───────┘
   */
-  setTblRows(): Config;
   setTblRows(n: number): Config;
+  setTblRows(): Config;
   /** Set the number of columns that are visible when displaying tables.
    * @param n -  Number of columns to display; if `n < 0` (eg: -1), display all columns.
    * 
