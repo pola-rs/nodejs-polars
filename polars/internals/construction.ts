@@ -150,18 +150,20 @@ export function arrayToJsSeries(
   }
 
   dtype = dtype ?? jsTypeToPolarsType(firstValue);
-  let series: Series;
-  if (dtype?.variant === "Struct") {
-    const df = pli.fromRows(values, null, 1);
-    return df.toStruct(name);
+
+  switch (dtype?.variant) {
+    case "Struct":
+      return pli.fromRows(values, null, 1).toStruct(name);
+    case "Decimal":
+      if (typeof firstValue !== "bigint") {
+        throw new Error("Decimal type can only be constructed from BigInt");
+      }
+      return pli.JsSeries.newAnyValue(name, values, dtype);
+    case "Time":
+      return pli.JsSeries.newAnyValue(name, values, dtype);
   }
 
-  if (dtype?.variant === "Decimal") {
-    if (typeof firstValue !== "bigint") {
-      throw new Error("Decimal type can only be constructed from BigInt");
-    }
-    return pli.JsSeries.newAnyValue(name, values, dtype);
-  }
+  let series: Series;
   if (firstValue instanceof Date) {
     series = pli.JsSeries.newOptDate(name, values);
   } else {
@@ -173,6 +175,7 @@ export function arrayToJsSeries(
     [
       "Datetime",
       "Date",
+      "Time",
       "Categorical",
       "Int8",
       "Int16",
