@@ -124,29 +124,28 @@ const fromTypedArray = (name, value) => {
  * Construct an internal `JsSeries` from an array
  */
 export function arrayToJsSeries(
-  name = "",
+  name: string = "",
   values: any[] = [],
-  dtype?: any,
-  strict = false,
+  dtype?: DataType,
 ): any {
   if (isTypedArray(values)) {
     return fromTypedArray(name, values);
   }
 
-  //Empty sequence defaults to Float64 type
+  // Empty sequence defaults to Float64 type
   if (!(values?.length || dtype)) {
     dtype = DataType.Float64;
   }
   const firstValue = firstNonNull(values);
   if (Array.isArray(firstValue) || isTypedArray(firstValue)) {
-    const listDtype = jsTypeToPolarsType(firstValue);
-    const ctor = polarsTypeToConstructor(DataType.List(listDtype));
-    const s = ctor(name, values, strict, listDtype);
+    const arrayDtype: DataType =
+      dtype ?? DataType.List(jsTypeToPolarsType(firstValue));
+    const ctor = polarsTypeToConstructor(arrayDtype);
+    const s = ctor(name, values, arrayDtype);
     if (dtype instanceof FixedSizeList) {
       // TODO: build a FixedSizeList natively in Rust
-      return s.cast(dtype, strict);
+      return s.cast(dtype);
     }
-
     return s;
   }
 
@@ -154,7 +153,6 @@ export function arrayToJsSeries(
   let series: Series;
   if (dtype?.variant === "Struct") {
     const df = pli.fromRows(values, null, 1);
-
     return df.toStruct(name);
   }
 
@@ -162,13 +160,13 @@ export function arrayToJsSeries(
     if (typeof firstValue !== "bigint") {
       throw new Error("Decimal type can only be constructed from BigInt");
     }
-    return pli.JsSeries.newAnyvalue(name, values, dtype, strict);
+    return pli.JsSeries.newAnyValue(name, values, dtype);
   }
   if (firstValue instanceof Date) {
-    series = pli.JsSeries.newOptDate(name, values, strict);
+    series = pli.JsSeries.newOptDate(name, values);
   } else {
     const ctor = polarsTypeToConstructor(dtype);
-    series = ctor(name, values, strict);
+    series = ctor(name, values);
   }
 
   if (
@@ -183,7 +181,7 @@ export function arrayToJsSeries(
       "Float32",
     ].includes(dtype.variant)
   ) {
-    series = series.cast(dtype, strict);
+    series = series.cast(dtype);
   }
 
   return series;

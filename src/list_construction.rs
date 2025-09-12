@@ -231,9 +231,9 @@ pub fn js_arr_to_list(name: &str, arr: &Array, dtype: &DataType) -> napi::Result
             }
             builder.finish().into_series()
         }
-        dt => {
-            panic!("cannot create list array from {:?}", dt);
-        }
+        DataType::List(box_dt) => js_arr_to_list(name, arr, &box_dt)?,
+        DataType::Array(box_dt, _size) => js_arr_to_list(name, arr, &box_dt)?,
+        dt => panic!("cannot create list array from {:?}", dt),
     };
     Ok(s)
 }
