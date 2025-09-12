@@ -2025,9 +2025,7 @@ describe("io", () => {
     const timeUnits = ["us", "ns", "ms"];
 
     timeUnits.forEach((unit: any) => {
-      const df = pl.DataFrame([
-        pl.Series("datetime", [dt], pl.Datetime(unit)),
-      ]);
+      const df = pl.DataFrame([pl.Series("datetime", [dt], pl.Datetime(unit))]);
       const actual = df.toRecords();
       expect(JSON.stringify(actual)).toEqual(JSON.stringify(expected));
     });
