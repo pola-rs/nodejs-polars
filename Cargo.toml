@@ -33,6 +33,7 @@ smartstring = { version = "1" }
 serde_json = { version = "1" }
 either = "1.15.0"
 hashbrown = { version = "0.15.5", features = ["rayon", "serde"] }
+fastexcel = { version = "0.15.1", features = ["polars"] }
 
 [dependencies.polars]
 features = [

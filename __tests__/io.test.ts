@@ -21,6 +21,8 @@ const ipcpath = path.resolve(__dirname, "./examples/foods.ipc");
 const jsonpath = path.resolve(__dirname, "./examples/foods.json");
 // eslint-disable-next-line no-undef
 const singlejsonpath = path.resolve(__dirname, "./examples/single_foods.json");
+const excelpath = path.resolve(__dirname, "./examples/datasets/example.xlsx");
+
 describe("read:csv", () => {
   it("can read from a csv file", () => {
     const df = pl.readCSV(csvpath);
@@ -555,5 +557,24 @@ describe("stream", () => {
     await expect(
       pl.readJSONStream(readStream, { format: "lines" }),
     ).rejects.toBeDefined();
+  });
+});
+
+describe("read:excel", () => {
+  it("can read from a excel file with defauls", () => {
+    let df = pl.readExcel(excelpath);
+    expect(df.shape).toEqual({ height: 2, width: 1 });
+    df = pl.readExcel(excelpath, { sheetName: "test5" });
+    expect(df.shape).toEqual({ height: 2, width: 3 });
+  });
+  it("can read from a excel file with header", () => {
+    let df = pl.readExcel(excelpath, { hasHeader: true, idxOrName: 0 });
+    expect(df.shape).toEqual({ height: 2, width: 1 });
+    df = pl.readExcel(excelpath, { hasHeader: true, sheetName: "test1" });
+    expect(df.shape).toEqual({ height: 2, width: 1 });
+  });
+  it("can read from a excel file with no header", () => {
+    const df = pl.readExcel(excelpath, { hasHeader: false, idxOrName: 0 });
+    expect(df.shape).toEqual({ height: 3, width: 1 });
   });
 });

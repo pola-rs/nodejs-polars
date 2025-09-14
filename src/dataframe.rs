@@ -1,6 +1,7 @@
 use crate::file::*;
 use crate::prelude::*;
 use crate::series::JsSeries;
+use fastexcel::{IdxOrName, LoadSheetOrTableOptions};
 use napi::bindgen_prelude::Object;
 use polars::frame::row::{infer_schema, Row};
 use polars_io::csv::write::CsvWriterOptions;
@@ -13,6 +14,7 @@ use std::fs::File;
 use std::hash::BuildHasher;
 use std::io::{BufReader, BufWriter, Cursor};
 use std::num::NonZeroUsize;
+use std::path::Path;
 
 #[napi]
 #[repr(transparent)]
@@ -426,6 +428,81 @@ pub fn read_avro(
         }
     };
     let df = result.map_err(JsPolarsErr::from)?;
+    Ok(JsDataFrame::new(df))
+}
+
+#[napi(object)]
+pub struct ReadExcelOptions {
+    pub sheet_id: Option<u32>,
+    pub idx_or_name: Option<JsAnyValue>,
+    pub sheet_name: Option<String>,
+    pub header_row: Option<u32>,
+}
+
+#[napi(catch_unwind)]
+pub fn read_excel(source: String, options: ReadExcelOptions) -> napi::Result<JsDataFrame> {
+    let excel_path = Path::new(&source);
+
+    if !excel_path.exists() {
+        return Err(JsPolarsErr::Other(format!("Excel source does not exists: {}", source)).into());
+    }
+
+    let mut excel = fastexcel::read_excel(&source)
+        .map_err(|err| {
+            JsPolarsErr::Other(format!(
+                "Error reading excel file: {:?} {:?}",
+                excel_path,
+                err.to_string()
+            ))
+        })
+        .unwrap();
+
+    let load_sheet_or_table_options: LoadSheetOrTableOptions = LoadSheetOrTableOptions {
+        header_row: options.header_row.map(|x| x as usize),
+        column_names: Default::default(),
+        skip_rows: Default::default(),
+        n_rows: Default::default(),
+        schema_sample_rows: Default::default(),
+        dtype_coercion: Default::default(),
+        selected_columns: Default::default(),
+        dtypes: Default::default(),
+    };
+
+    let idx_or_name: IdxOrName = match options.idx_or_name {
+        Some(JsAnyValue::Utf8(s)) => IdxOrName::Name(s),
+        Some(JsAnyValue::UInt32(idx)) => IdxOrName::Idx(idx as usize),
+        Some(JsAnyValue::Float64(idx)) => IdxOrName::Idx(idx as usize),
+        None => IdxOrName::Idx(0), // use the first sheet
+        Some(_) => {
+            return Err(JsPolarsErr::Other(format!(
+                "No idx_or_name type supported: {:?}",
+                options.idx_or_name
+            ))
+            .into())
+        }
+    };
+
+    let sheet = excel
+        .load_sheet(idx_or_name.clone(), load_sheet_or_table_options)
+        .map_err(|err| {
+            JsPolarsErr::Other(format!(
+                "Error reading sheet: {:?} {:?}",
+                idx_or_name,
+                err.to_string()
+            ))
+        })
+        .unwrap();
+
+    let df = sheet
+        .to_polars()
+        .map_err(|err| {
+            JsPolarsErr::Other(format!(
+                "Error converting to Polars DF: {:?}",
+                err.to_string()
+            ))
+        })
+        .unwrap();
+
     Ok(JsDataFrame::new(df))
 }
 
