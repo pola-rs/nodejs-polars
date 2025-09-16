@@ -1,7 +1,7 @@
 use crate::file::*;
 use crate::prelude::*;
 use crate::series::JsSeries;
-use fastexcel::{IdxOrName, LoadSheetOrTableOptions};
+use fastexcel::{IdxOrName, LoadSheetOrTableOptions, SkipRows};
 use napi::bindgen_prelude::Object;
 use polars::frame::row::{infer_schema, Row};
 use polars_io::csv::write::CsvWriterOptions;
@@ -433,10 +433,14 @@ pub fn read_avro(
 
 #[napi(object)]
 pub struct ReadExcelOptions {
-    pub sheet_id: Option<u32>,
     pub idx_or_name: Option<JsAnyValue>,
+    pub sheet_id: Option<u32>,
     pub sheet_name: Option<String>,
+    pub table_name: Option<String>,
     pub header_row: Option<u32>,
+    pub n_rows: Option<u32>,
+    pub skip_rows: Option<u32>,
+    pub schema_sample_rows: Option<u32>,
 }
 
 #[napi(catch_unwind)]
@@ -457,12 +461,18 @@ pub fn read_excel(source: String, options: ReadExcelOptions) -> napi::Result<JsD
         })
         .unwrap();
 
+    let skip_rows: SkipRows = if options.skip_rows.is_some() {
+        SkipRows::Simple(options.skip_rows.unwrap().try_into().unwrap())
+    } else {
+        SkipRows::SkipEmptyRowsAtBeginning
+    };
+
     let load_sheet_or_table_options: LoadSheetOrTableOptions = LoadSheetOrTableOptions {
         header_row: options.header_row.map(|x| x as usize),
         column_names: Default::default(),
-        skip_rows: Default::default(),
-        n_rows: Default::default(),
-        schema_sample_rows: Default::default(),
+        skip_rows,
+        n_rows: options.n_rows.map(|x| x as usize),
+        schema_sample_rows: options.schema_sample_rows.map(|x| x as usize),
         dtype_coercion: Default::default(),
         selected_columns: Default::default(),
         dtypes: Default::default(),
@@ -482,26 +492,52 @@ pub fn read_excel(source: String, options: ReadExcelOptions) -> napi::Result<JsD
         }
     };
 
-    let sheet = excel
-        .load_sheet(idx_or_name.clone(), load_sheet_or_table_options)
-        .map_err(|err| {
-            JsPolarsErr::Other(format!(
-                "Error reading sheet: {:?} {:?}",
-                idx_or_name,
-                err.to_string()
-            ))
-        })
-        .unwrap();
+    let df = if options.table_name.is_some() {
+        let table = excel
+            .load_table(
+                &options.table_name.clone().unwrap(),
+                load_sheet_or_table_options,
+            )
+            .map_err(|err| {
+                JsPolarsErr::Other(format!(
+                    "Error reading table: {:?} {:?}",
+                    options.table_name.unwrap().clone(),
+                    err.to_string()
+                ))
+            })
+            .unwrap();
 
-    let df = sheet
-        .to_polars()
-        .map_err(|err| {
-            JsPolarsErr::Other(format!(
-                "Error converting to Polars DF: {:?}",
-                err.to_string()
-            ))
-        })
-        .unwrap();
+        table
+            .to_polars()
+            .map_err(|err| {
+                JsPolarsErr::Other(format!(
+                    "Error converting to Polars DF: {:?}",
+                    err.to_string()
+                ))
+            })
+            .unwrap()
+    } else {
+        let sheet = excel
+            .load_sheet(idx_or_name.clone(), load_sheet_or_table_options)
+            .map_err(|err| {
+                JsPolarsErr::Other(format!(
+                    "Error reading sheet: {:?} {:?}",
+                    idx_or_name,
+                    err.to_string()
+                ))
+            })
+            .unwrap();
+
+        sheet
+            .to_polars()
+            .map_err(|err| {
+                JsPolarsErr::Other(format!(
+                    "Error converting to Polars DF: {:?}",
+                    err.to_string()
+                ))
+            })
+            .unwrap()
+    };
 
     Ok(JsDataFrame::new(df))
 }

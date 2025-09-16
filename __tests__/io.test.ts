@@ -574,7 +574,11 @@ describe("read:excel", () => {
     expect(df.shape).toEqual({ height: 2, width: 1 });
   });
   it("can read from a excel file with no header", () => {
-    const df = pl.readExcel(excelpath, { hasHeader: false, idxOrName: 0 });
-    expect(df.shape).toEqual({ height: 3, width: 1 });
+    const df = pl.readExcel(excelpath, { hasHeader: false, idxOrName: 0, nRows: 2 });
+    expect(df.shape).toEqual({ height: 2, width: 1 });
+  });
+  it("can read from a excel file with table", () => {
+    const df = pl.readExcel(excelpath, { tableName: "TemporalData", skipRows: 1 });
+    expect(df.shape).toEqual({ height: 2, width: 6 });
   });
 });
