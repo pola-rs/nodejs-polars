@@ -191,7 +191,6 @@ export interface ExprString extends StringFunctions<Expr> {
    * Parse string values in Expression as JSON.
    * Throw errors if encounter invalid JSON strings.
    * @param dtype The dtype to cast the extracted value to. If None, the dtype will be inferred from the JSON value.
-   * @param inferSchemaLength The maximum number of rows to scan for schema inference.
    * @returns DF with struct
    * @example
    * ```
