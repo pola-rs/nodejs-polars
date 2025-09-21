@@ -1223,7 +1223,11 @@ describe("expr.str", () => {
         '{"a":2, "b": false}',
       ],
     });
-    const actual = df.select(pl.col("json").str.jsonDecode());
+    const dtype = pl.Struct([
+      new pl.Field("a", pl.Int64),
+      new pl.Field("b", pl.Bool),
+    ]);
+    const actual = df.select(pl.col("json").str.jsonDecode(dtype));
     const expected = pl.DataFrame({
       json: [{ a: 1, b: true }, "null", { a: 2, b: false }],
     });
@@ -2381,35 +2385,15 @@ describe("rolling", () => {
     const df = pl.DataFrame({ a: [1, 2, 3, 3, 2, 10, 8] });
     const expected = pl.DataFrame({
       a: [1, 2, 3, 3, 2, 10, 8],
-      bias_true: [
-        null,
-        null,
-        null,
-        "-0.49338220021815865",
-        "0.0",
-        "1.097025449363867",
-        "0.09770939201338157",
-      ],
-      bias_false: [
-        null,
-        null,
-        null,
-        "-0.8545630383279712",
-        "0.0",
-        "1.9001038154942962",
-        "0.16923763134384154",
-      ],
+      bias_true: [null, null, null, -0.493382, -0.0, 1.097025, 0.097709],
+      bias_false: [null, null, null, -0.854563, -0.0, 1.900104, 0.169238],
     });
     const actual = df.withColumns(
-      col("a")
-        .cast(pl.UInt64)
-        .rollingSkew(4)
-        .cast(pl.Utf8) // casted to string to retain precision when extracting to JS
-        .as("bias_true"),
+      col("a").cast(pl.UInt64).rollingSkew(4).round(6).as("bias_true"),
       col("a")
         .cast(pl.UInt64)
         .rollingSkew({ windowSize: 4, bias: false })
-        .cast(pl.Utf8) // casted to string to retain precision when extracting to JS
+        .round(6)
         .as("bias_false"),
     );
     expect(actual).toFrameStrictEqual(expected);

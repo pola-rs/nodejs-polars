@@ -904,7 +904,10 @@ impl JsExpr {
     }
     #[napi(catch_unwind)]
     pub fn str_json_decode(&self, dtype: Option<Wrap<DataType>>) -> JsExpr {
-        let dt = dtype.clone().map(|d| DataTypeExpr::Literal(d.0)).unwrap();
+        let dt = match dtype {
+            Some(d) => DataTypeExpr::Literal(d.0),
+            None => DataTypeExpr::OfExpr(Box::new(self.inner.clone())).into(),
+        };
         self.inner.clone().str().json_decode(dt).into()
     }
     #[napi(catch_unwind)]
