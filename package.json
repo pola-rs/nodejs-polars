@@ -71,7 +71,7 @@
     "typedoc-plugin-missing-exports": "^4.1.0",
     "typescript": "5.9.2"
   },
-  "packageManager": "yarn@4.9.3",
+  "packageManager": "yarn@4.10.2",
   "workspaces": [
     "benches"
   ],
