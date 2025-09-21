@@ -47,6 +47,12 @@ impl ToExprs for Vec<&JsExpr> {
     }
 }
 
+fn bin_config() -> bincode::config::Configuration {
+    bincode::config::standard()
+        .with_no_limit()
+        .with_variable_int_encoding()
+}
+
 #[napi]
 impl JsExpr {
     #[napi(catch_unwind)]
@@ -56,7 +62,7 @@ impl JsExpr {
     #[napi(catch_unwind)]
     pub fn serialize(&self, format: String) -> napi::Result<Buffer> {
         let buf = match format.as_ref() {
-            "bincode" => bincode::serialize(&self.inner)
+            "bincode" => bincode::serde::encode_to_vec(&self.inner, bin_config())
                 .map_err(|err| napi::Error::from_reason(format!("{:?}", err)))?,
             "json" => serde_json::to_vec(&self.inner)
                 .map_err(|err| napi::Error::from_reason(format!("{:?}", err)))?,
@@ -80,8 +86,12 @@ impl JsExpr {
         let bytes: &[u8] = &buf;
         let bytes = unsafe { std::mem::transmute::<&'_ [u8], &'static [u8]>(bytes) };
         let expr: Expr = match format.as_ref() {
-            "bincode" => bincode::deserialize(bytes)
-                .map_err(|err| napi::Error::from_reason(format!("{:?}", err)))?,
+            "bincode" => {
+                bincode::serde::decode_from_slice(bytes, bin_config())
+                    .map_err(|err| napi::Error::from_reason(format!("{:?}", err)))
+                    .unwrap()
+                    .0
+            }
             "json" => serde_json::from_slice(bytes)
                 .map_err(|err| napi::Error::from_reason(format!("{:?}", err)))?,
             _ => {

@@ -45,6 +45,12 @@ impl JsLazyGroupBy {
     }
 }
 
+fn bin_config() -> bincode::config::Configuration {
+    bincode::config::standard()
+        .with_no_limit()
+        .with_variable_int_encoding()
+}
+
 #[napi]
 impl JsLazyFrame {
     #[napi(catch_unwind)]
@@ -55,7 +61,7 @@ impl JsLazyFrame {
     #[napi(catch_unwind)]
     pub fn serialize(&self, format: String) -> napi::Result<Buffer> {
         let buf = match format.as_ref() {
-            "bincode" => bincode::serialize(&self.ldf.logical_plan)
+            "bincode" => bincode::serde::encode_to_vec(&self.ldf.logical_plan, bin_config())
                 .map_err(|err| napi::Error::from_reason(format!("{:?}", err)))?,
             "json" => serde_json::to_vec(&self.ldf.logical_plan)
                 .map_err(|err| napi::Error::from_reason(format!("{:?}", err)))?,
@@ -71,8 +77,12 @@ impl JsLazyFrame {
     #[napi(factory, catch_unwind)]
     pub fn deserialize(buf: Buffer, format: String) -> napi::Result<JsLazyFrame> {
         let lp: DslPlan = match format.as_ref() {
-            "bincode" => bincode::deserialize(&buf)
-                .map_err(|err| napi::Error::from_reason(format!("{:?}", err)))?,
+            "bincode" => {
+                bincode::serde::decode_from_slice(&buf, bin_config())
+                    .map_err(|err| napi::Error::from_reason(format!("{:?}", err)))
+                    .unwrap()
+                    .0
+            }
             "json" => serde_json::from_slice(&buf)
                 .map_err(|err| napi::Error::from_reason(format!("{:?}", err)))?,
             _ => {
