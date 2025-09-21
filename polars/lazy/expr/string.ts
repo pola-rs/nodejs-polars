@@ -211,7 +211,7 @@ export interface ExprString extends StringFunctions<Expr> {
    * ----------
    * jsonPathMatch : Extract the first match of json string with provided JSONPath expression.
    */
-  jsonDecode(dtype?: DataType, inferSchemaLength?: number): Expr;
+  jsonDecode(dtype?: DataType): Expr;
   /**
    * Extract the first match of json string in Expression with provided JSONPath expression.
    * Throw errors if encounter invalid json strings.
@@ -597,8 +597,8 @@ export const ExprStringFunctions = (_expr: any): ExprString => {
         groupIndex,
       );
     },
-    jsonDecode(dtype?: DataType, inferSchemaLength?: number) {
-      return wrap("strJsonDecode", dtype, inferSchemaLength);
+    jsonDecode(dtype?: DataType) {
+      return wrap("strJsonDecode", dtype);
     },
     jsonPathMatch(pat: string) {
       return wrap("strJsonPathMatch", [pat]);
