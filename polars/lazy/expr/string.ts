@@ -11,9 +11,8 @@ export interface ExprString extends StringFunctions<Expr> {
    * Vertically concat the values in the Expression to a single string value.
    * @example
    * ```
-   * >>> df = pl.DataFrame({"foo": [1, null, 2]})
-   * >>> df = df.select(pl.col("foo").str.concat("-"))
-   * >>> df
+   * >>> const df = pl.DataFrame({"foo": [1, null, 2]});
+   * >>> df.select(pl.col("foo").str.concat("-"));
    * shape: (1, 1)
    * ┌──────────┐
    * │ foo      │
@@ -33,12 +32,12 @@ export interface ExprString extends StringFunctions<Expr> {
    * @returns Boolean mask
    * @example
    * ```
-   * const df = pl.DataFrame({"txt": ["Crab", "cat and dog", "rab$bit", null]})
+   * const df = pl.DataFrame({"txt": ["Crab", "cat and dog", "rab$bit", null]});
    * df.select(
    * ...     pl.col("txt"),
    * ...     pl.col("txt").str.contains("cat|bit").alias("regex"),
    * ...     pl.col("txt").str.contains("rab$", true).alias("literal"),
-   * ... )
+   * ... );
    * shape: (4, 3)
    * ┌─────────────┬───────┬─────────┐
    * │ txt         ┆ regex ┆ literal │
@@ -61,12 +60,11 @@ export interface ExprString extends StringFunctions<Expr> {
    * Decodes a value in Expression using the provided encoding
    * @param encoding - hex | base64
    * @param strict - how to handle invalid inputs
-   *
    *     - true: method will throw error if unable to decode a value
    *     - false: unhandled values will be replaced with `null`
    * @example
    * ```
-   * >>> df = pl.DataFrame({"strings": ["666f6f", "626172", null]})
+   * >>> const df = pl.DataFrame({"strings": ["666f6f", "626172", null]});
    * >>> df.select(col("strings").str.decode("hex"))
    * shape: (3, 1)
    * ┌─────────┐
@@ -89,7 +87,7 @@ export interface ExprString extends StringFunctions<Expr> {
    * @param encoding - hex | base64
    * @example
    * ```
-   * >>> df = pl.DataFrame({"strings", ["foo", "bar", null]})
+   * >>> const df = pl.DataFrame({"strings", ["foo", "bar", null]});
    * >>> df.select(col("strings").str.encode("hex"))
    * shape: (3, 1)
    * ┌─────────┐
@@ -110,10 +108,8 @@ export interface ExprString extends StringFunctions<Expr> {
    * @param suffix - Suffix substring or expression
    * @example
    * ```
-   * >>> df = pl.DataFrame({"fruits": ["apple", "mango", None]})
-   * >>> df.withColumns(
-   * ...     pl.col("fruits").str.endsWith("go").alias("has_suffix"),
-   * ... )
+   * >>> const df = pl.DataFrame({"fruits": ["apple", "mango", None]});
+   * >>> df.withColumns( pl.col("fruits").str.endsWith("go").alias("has_suffix") );
    * shape: (3, 2)
    * ┌────────┬────────────┐
    * │ fruits ┆ has_suffix │
@@ -165,12 +161,12 @@ export interface ExprString extends StringFunctions<Expr> {
    * @returns Utf8 array. Contain null if original value is null or regex capture nothing.
    * @example
    * ```
-   * > df = pl.DataFrame({
+   * > const df = pl.DataFrame({
    * ...   'a': [
    * ...       'http://vote.com/ballon_dor?candidate=messi&ref=polars',
    * ...       'http://vote.com/ballon_dor?candidat=jorginho&ref=polars',
    * ...       'http://vote.com/ballon_dor?candidate=ronaldo&ref=polars'
-   * ...   ]})
+   * ...   ]});
    * > df.select(pl.col('a').str.extract(/candidate=(\w+)/, 1))
    * shape: (3, 1)
    * ┌─────────┐
@@ -190,12 +186,13 @@ export interface ExprString extends StringFunctions<Expr> {
   /**
    * Parse string values in Expression as JSON.
    * Throw errors if encounter invalid JSON strings.
-   * @param dtype The dtype to cast the extracted value to. If None, the dtype will be inferred from the JSON value.
+   * @param dtype - Types to cast the extracted value to. We need to explicitly give `dtype` otherwise Polars is not able to determine the output type.
    * @returns DF with struct
    * @example
    * ```
-   * >>> df = pl.DataFrame( {json: ['{"a":1, "b": true}', null, '{"a":2, "b": false}']} )
-   * >>> df.select(pl.col("json").str.jsonDecode())
+   * >>> const df = pl.DataFrame( {json: ['{"a":1, "b": true}', null, '{"a":2, "b": false}']} )
+   *     const dtype = pl.Struct([ new pl.Field("a", pl.Int64), new pl.Field("b", pl.Bool) ]);
+   * >>> df.select(pl.col("json").str.jsonDecode(dtype));
    * shape: (3, 1)
    * ┌─────────────┐
    * │ json        │
@@ -210,7 +207,7 @@ export interface ExprString extends StringFunctions<Expr> {
    * ----------
    * jsonPathMatch : Extract the first match of json string with provided JSONPath expression.
    */
-  jsonDecode(dtype?: DataType): Expr;
+  jsonDecode(dtype: DataType): Expr;
   /**
    * Extract the first match of json string in Expression with provided JSONPath expression.
    * Throw errors if encounter invalid json strings.
@@ -596,7 +593,11 @@ export const ExprStringFunctions = (_expr: any): ExprString => {
         groupIndex,
       );
     },
-    jsonDecode(dtype?: DataType) {
+    jsonDecode(dtype: DataType) {
+      if (!dtype)
+        throw new Error(
+          "`Expr.str.json_decode` needs an explicitly given `dtype` otherwise Polars is not able to determine the output type. If you want to eagerly infer datatype you can use `Series.str.json_decode`.",
+        );
       return wrap("strJsonDecode", dtype);
     },
     jsonPathMatch(pat: string) {

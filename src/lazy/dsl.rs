@@ -913,12 +913,8 @@ impl JsExpr {
             .into()
     }
     #[napi(catch_unwind)]
-    pub fn str_json_decode(&self, dtype: Option<Wrap<DataType>>) -> JsExpr {
-        let dt = match dtype {
-            Some(d) => DataTypeExpr::Literal(d.0),
-            None => DataTypeExpr::OfExpr(Box::new(self.inner.clone())).into(),
-        };
-        self.inner.clone().str().json_decode(dt).into()
+    pub fn str_json_decode(&self, dtype: Wrap<DataType>) -> JsExpr {
+        self.inner.clone().str().json_decode(dtype.0).into()
     }
     #[napi(catch_unwind)]
     pub fn str_json_path_match(&self, pat: Wrap<ChunkedArray<StringType>>) -> JsExpr {
