@@ -1475,7 +1475,7 @@ pub(crate) fn parse_parquet_compression(
             compression_level
                 .map(|lvl| {
                     GzipLevel::try_new(lvl as u8)
-                        .map_err(|e| napi::Error::from_reason(format!("{:?}", e)))
+                        .map_err(|e| napi::Error::from_reason(e.to_string()))
                 })
                 .transpose()?,
         ),
@@ -1484,7 +1484,7 @@ pub(crate) fn parse_parquet_compression(
             compression_level
                 .map(|lvl| {
                     BrotliLevel::try_new(lvl as u32)
-                        .map_err(|e| napi::Error::from_reason(format!("{e:?}")))
+                        .map_err(|e| napi::Error::from_reason(e.to_string()))
                 })
                 .transpose()?,
         ),
@@ -1493,7 +1493,7 @@ pub(crate) fn parse_parquet_compression(
             compression_level
                 .map(|lvl| {
                     ZstdLevel::try_new(lvl)
-                        .map_err(|e| napi::Error::from_reason(format!("{e:?}")))
+                        .map_err(|e| napi::Error::from_reason(e.to_string()))
                 })
                 .transpose()?,
         ),
