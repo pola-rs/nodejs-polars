@@ -1390,7 +1390,7 @@ describe("lazyframe", () => {
         { a: 2, b: false },
       ],
     });
-    const actual = pl
+    const ldf = pl
       .DataFrame({
         json: [
           '{"a": 1, "b": true}',
@@ -1398,8 +1398,13 @@ describe("lazyframe", () => {
           '{"a": 2, "b": false}',
         ],
       })
-      .lazy()
-      .select(pl.col("json").str.jsonDecode())
+      .lazy();
+    const dtype = pl.Struct([
+      new pl.Field("a", pl.Int64),
+      new pl.Field("b", pl.Bool),
+    ]);
+    const actual = ldf
+      .select(pl.col("json").str.jsonDecode(dtype))
       .collectSync();
     expect(actual).toFrameEqual(expected);
   });

@@ -47,6 +47,12 @@ impl ToExprs for Vec<&JsExpr> {
     }
 }
 
+fn bin_config() -> bincode::config::Configuration {
+    bincode::config::standard()
+        .with_no_limit()
+        .with_variable_int_encoding()
+}
+
 #[napi]
 impl JsExpr {
     #[napi(catch_unwind)]
@@ -56,10 +62,10 @@ impl JsExpr {
     #[napi(catch_unwind)]
     pub fn serialize(&self, format: String) -> napi::Result<Buffer> {
         let buf = match format.as_ref() {
-            "bincode" => bincode::serialize(&self.inner)
-                .map_err(|err| napi::Error::from_reason(format!("{:?}", err)))?,
+            "bincode" => bincode::serde::encode_to_vec(&self.inner, bin_config())
+                .map_err(|err| napi::Error::from_reason(err.to_string()))?,
             "json" => serde_json::to_vec(&self.inner)
-                .map_err(|err| napi::Error::from_reason(format!("{:?}", err)))?,
+                .map_err(|err| napi::Error::from_reason(err.to_string()))?,
             _ => {
                 return Err(napi::Error::from_reason(
                     "unexpected format. \n supported options are 'json', 'bincode'".to_owned(),
@@ -80,10 +86,14 @@ impl JsExpr {
         let bytes: &[u8] = &buf;
         let bytes = unsafe { std::mem::transmute::<&'_ [u8], &'static [u8]>(bytes) };
         let expr: Expr = match format.as_ref() {
-            "bincode" => bincode::deserialize(bytes)
-                .map_err(|err| napi::Error::from_reason(format!("{:?}", err)))?,
+            "bincode" => {
+                bincode::serde::decode_from_slice(bytes, bin_config())
+                    .map_err(|err| napi::Error::from_reason(err.to_string()))
+                    .unwrap()
+                    .0
+            }
             "json" => serde_json::from_slice(bytes)
-                .map_err(|err| napi::Error::from_reason(format!("{:?}", err)))?,
+                .map_err(|err| napi::Error::from_reason(err.to_string()))?,
             _ => {
                 return Err(napi::Error::from_reason(
                     "unexpected format. \n supported options are 'json', 'bincode'".to_owned(),
@@ -674,13 +684,11 @@ impl JsExpr {
     pub fn str_strip(&self) -> JsExpr {
         let function = |s: Column| {
             let ca = s.str()?;
-            Ok(Some(
-                ca.apply(|s| Some(Cow::Borrowed(s?.trim()))).into_column(),
-            ))
+            Ok(ca.apply(|s| Some(Cow::Borrowed(s?.trim()))).into_column())
         };
         self.clone()
             .inner
-            .map(function, GetOutput::same_type())
+            .map(function, |_, f| Ok(f.clone()))
             .into()
     }
 
@@ -713,14 +721,13 @@ impl JsExpr {
     pub fn str_rstrip(&self) -> JsExpr {
         let function = |s: Column| {
             let ca = s.str()?;
-            Ok(Some(
-                ca.apply(|s| Some(Cow::Borrowed(s?.trim_end())))
-                    .into_column(),
-            ))
+            Ok(ca
+                .apply(|s| Some(Cow::Borrowed(s?.trim_end())))
+                .into_column())
         };
         self.clone()
             .inner
-            .map(function, GetOutput::same_type())
+            .map(function, |_, f| Ok(f.clone()))
             .into()
     }
 
@@ -728,14 +735,13 @@ impl JsExpr {
     pub fn str_lstrip(&self) -> JsExpr {
         let function = |s: Column| {
             let ca = s.str()?;
-            Ok(Some(
-                ca.apply(|s| Some(Cow::Borrowed(s?.trim_start())))
-                    .into_column(),
-            ))
+            Ok(ca
+                .apply(|s| Some(Cow::Borrowed(s?.trim_start())))
+                .into_column())
         };
         self.clone()
             .inner
-            .map(function, GetOutput::same_type())
+            .map(function, |_, f| Ok(f.clone()))
             .into()
     }
 
@@ -766,11 +772,11 @@ impl JsExpr {
     pub fn str_to_uppercase(&self) -> JsExpr {
         let function = |s: Column| {
             let ca = s.str()?;
-            Ok(Some(ca.to_uppercase().into_column()))
+            Ok(ca.to_uppercase().into_column())
         };
         self.clone()
             .inner
-            .map(function, GetOutput::from_type(DataType::UInt32))
+            .map(function, |_, f| Ok(f.clone()))
             .into()
     }
 
@@ -801,11 +807,11 @@ impl JsExpr {
     pub fn str_to_lowercase(&self) -> JsExpr {
         let function = |s: Column| {
             let ca = s.str()?;
-            Ok(Some(ca.to_lowercase().into_column()))
+            Ok(ca.to_lowercase().into_column())
         };
         self.clone()
             .inner
-            .map(function, GetOutput::from_type(DataType::UInt32))
+            .map(function, |_, f| Ok(f.clone()))
             .into()
     }
 
@@ -813,11 +819,11 @@ impl JsExpr {
     pub fn str_lengths(&self) -> JsExpr {
         let function = |s: Column| {
             let ca = s.str()?;
-            Ok(Some(ca.str_len_chars().into_column()))
+            Ok(ca.str_len_chars().into_column())
         };
         self.clone()
             .inner
-            .map(function, GetOutput::from_type(DataType::UInt32))
+            .map(function, |_, f| Ok(f.clone()))
             .into()
     }
 
@@ -870,8 +876,8 @@ impl JsExpr {
         self.clone()
             .inner
             .map(
-                move |s| s.str().map(|s| Some(s.hex_encode().into_column())),
-                GetOutput::same_type(),
+                move |s| s.str().map(|s| s.hex_encode().into_column()),
+                |_, f| Ok(f.clone()),
             )
             .into()
     }
@@ -880,8 +886,8 @@ impl JsExpr {
         self.clone()
             .inner
             .map(
-                move |s| s.str()?.hex_decode(strict).map(|s| Some(s.into_column())),
-                GetOutput::same_type(),
+                move |s| s.str()?.hex_decode(strict).map(|s| s.into_column()),
+                |_, f| Ok(f.clone()),
             )
             .into()
     }
@@ -890,8 +896,8 @@ impl JsExpr {
         self.clone()
             .inner
             .map(
-                move |s| s.str().map(|s| Some(s.base64_encode().into_column())),
-                GetOutput::same_type(),
+                move |s| s.str().map(|s| s.base64_encode().into_column()),
+                |_, f| Ok(f.clone()),
             )
             .into()
     }
@@ -901,41 +907,27 @@ impl JsExpr {
         self.clone()
             .inner
             .map(
-                move |s| {
-                    s.str()?
-                        .base64_decode(strict)
-                        .map(|s| Some(s.into_column()))
-                },
-                GetOutput::same_type(),
+                move |s| s.str()?.base64_decode(strict).map(|s| s.into_column()),
+                |_, f| Ok(f.clone()),
             )
             .into()
     }
     #[napi(catch_unwind)]
-    pub fn str_json_decode(
-        &self,
-        dtype: Option<Wrap<DataType>>,
-        infer_schema_len: Option<i64>,
-    ) -> JsExpr {
-        let dt = dtype.clone().map(|d| d.0 as DataType);
-        let infer_schema_len = infer_schema_len.map(|l| l as usize);
-        self.inner
-            .clone()
-            .str()
-            .json_decode(dt, infer_schema_len)
-            .into()
+    pub fn str_json_decode(&self, dtype: Wrap<DataType>) -> JsExpr {
+        self.inner.clone().str().json_decode(dtype.0).into()
     }
     #[napi(catch_unwind)]
     pub fn str_json_path_match(&self, pat: Wrap<ChunkedArray<StringType>>) -> JsExpr {
         let function = move |s: Column| {
             let ca = s.str()?;
             match ca.json_path_match(&pat.0) {
-                Ok(ca) => Ok(Some(ca.into_column())),
+                Ok(ca) => Ok(ca.into_column()),
                 Err(e) => Err(PolarsError::ComputeError(format!("{:?}", e).into())),
             }
         };
         self.clone()
             .inner
-            .map(function, GetOutput::from_type(DataType::Boolean))
+            .map(function, |_, f| Ok(f.clone()))
             .into()
     }
     #[napi(catch_unwind)]
@@ -1044,8 +1036,8 @@ impl JsExpr {
         self.inner
             .clone()
             .map(
-                |s| Ok(Some(s.duration()?.days().into_column())),
-                GetOutput::from_type(DataType::Int64),
+                |s| Ok(s.duration()?.days().into_column()),
+                |_, f| Ok(f.clone()),
             )
             .into()
     }
@@ -1054,8 +1046,8 @@ impl JsExpr {
         self.inner
             .clone()
             .map(
-                |s| Ok(Some(s.duration()?.hours().into_column())),
-                GetOutput::from_type(DataType::Int64),
+                |s| Ok(s.duration()?.hours().into_column()),
+                |_, f| Ok(f.clone()),
             )
             .into()
     }
@@ -1064,8 +1056,8 @@ impl JsExpr {
         self.inner
             .clone()
             .map(
-                |s| Ok(Some(s.duration()?.seconds().into_column())),
-                GetOutput::from_type(DataType::Int64),
+                |s| Ok(s.duration()?.seconds().into_column()),
+                |_, f| Ok(f.clone()),
             )
             .into()
     }
@@ -1074,8 +1066,8 @@ impl JsExpr {
         self.inner
             .clone()
             .map(
-                |s| Ok(Some(s.duration()?.nanoseconds().into_column())),
-                GetOutput::from_type(DataType::Int64),
+                |s| Ok(s.duration()?.nanoseconds().into_column()),
+                |_, f| Ok(f.clone()),
             )
             .into()
     }
@@ -1084,8 +1076,8 @@ impl JsExpr {
         self.inner
             .clone()
             .map(
-                |s| Ok(Some(s.duration()?.milliseconds().into_column())),
-                GetOutput::from_type(DataType::Int64),
+                |s| Ok(s.duration()?.milliseconds().into_column()),
+                |_, f| Ok(f.clone()),
             )
             .into()
     }
@@ -1105,9 +1097,10 @@ impl JsExpr {
                 |s: Column| {
                     s.take_materialized_series()
                         .timestamp(TimeUnit::Milliseconds)
-                        .map(|ca| Some((ca / 1000).into_column()))
+                        .map(|ca| (ca / 1000).into_column())
                 },
-                GetOutput::from_type(DataType::Int64),
+                // GetOutput::from_type(DataType::Int64),
+                |_, f| Ok(f.clone()),
             )
             .into()
     }
@@ -1120,25 +1113,20 @@ impl JsExpr {
         let function = move |s: Column| {
             let seed = PlFixedStateQuality::default().hash_one((k0.0, k1.0, k2.0, k3.0));
             let hb = PlSeedableRandomStateQuality::seed_from_u64(seed);
-            Ok(Some(s.as_materialized_series().hash(hb).into_column()))
+            Ok(s.as_materialized_series().hash(hb).into_column())
         };
         self.clone()
             .inner
-            .map(function, GetOutput::from_type(DataType::UInt64))
+            .map(function, |_, f| Ok(f.clone()))
             .into()
     }
 
     #[napi(catch_unwind)]
     pub fn reinterpret(&self, signed: bool) -> JsExpr {
-        let function = move |s: Column| reinterpret(&s, signed).map(Some);
-        let dt = if signed {
-            DataType::Int64
-        } else {
-            DataType::UInt64
-        };
+        let function = move |s: Column| reinterpret(&s, signed);
         self.clone()
             .inner
-            .map(function, GetOutput::from_type(dt))
+            .map(function, |_, f| Ok(f.clone()))
             .into()
     }
     #[napi(catch_unwind)]
@@ -1247,12 +1235,14 @@ impl JsExpr {
     }
     #[napi(catch_unwind)]
     pub fn rolling_skew(&self, window_size: i64, bias: bool) -> JsExpr {
-        self.inner
-            .clone()
-            .rolling_map_float(window_size as usize, move |ca| {
-                ca.clone().into_series().skew(bias).unwrap()
-            })
-            .into()
+        let options = RollingOptionsFixedWindow {
+            window_size: window_size as usize,
+            weights: None,
+            min_periods: window_size as usize,
+            center: false,
+            fn_params: Some(RollingFnParams::Skew { bias }),
+        };
+        self.inner.clone().rolling_skew(options).into()
     }
     #[napi(catch_unwind)]
     pub fn lower_bound(&self) -> JsExpr {
@@ -1411,19 +1401,6 @@ impl JsExpr {
             .join(&separator, ignore_nulls)
             .into()
     }
-    // #[napi(catch_unwind)]
-    // pub fn cat_set_ordering(&self, ordering: String) -> JsExpr {
-    //     let ordering = match ordering.as_ref() {
-    //         "physical" => CategoricalOrdering::Physical,
-    //         "lexical" => CategoricalOrdering::Lexical,
-    //         _ => panic!("expected one of {{'physical', 'lexical'}}"),
-    //     };
-
-    //     self.inner
-    //         .clone()
-    //         .cast(DataType::Categorical(None, ordering))
-    //         .into()
-    // }
     #[napi(catch_unwind)]
     pub fn reshape(&self, dims: Vec<i64>) -> JsExpr {
         self.inner.clone().reshape(&dims).into()
@@ -1437,8 +1414,8 @@ impl JsExpr {
         self.inner
             .clone()
             .map(
-                |s| Ok(Some(s.to_physical_repr().to_owned())),
-                GetOutput::map_dtype(|dt| Ok(dt.to_physical())),
+                |s| Ok(s.to_physical_repr().to_owned()),
+                |_, f| Ok(f.clone()),
             )
             .into()
     }
@@ -1535,8 +1512,8 @@ impl JsExpr {
         self.inner
             .clone()
             .apply(
-                move |s| Ok(Some(s.extend_constant(value.clone().into(), n as usize)?)),
-                GetOutput::same_type(),
+                move |s| s.extend_constant(value.clone().into(), n as usize),
+                |_, f| Ok(f.clone()),
             )
             .into()
     }
@@ -1571,7 +1548,7 @@ impl JsExpr {
     }
     #[napi(catch_unwind)]
     pub fn log(&self, base: f64) -> JsExpr {
-        self.inner.clone().log(base).into()
+        self.inner.clone().log(base.into()).into()
     }
     #[napi(catch_unwind)]
     pub fn log1p(&self) -> JsExpr {

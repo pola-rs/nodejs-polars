@@ -4577,9 +4577,9 @@ __metadata:
     jest-get-type: "npm:^29.6.3"
     source-map-support: "npm:^0.5.21"
     ts-expect: "npm:^1.3.0"
-    ts-jest: "npm:^29.4.1"
+    ts-jest: "npm:^29.4.4"
     ts-node: "npm:^10.9.2"
-    typedoc: "npm:^0.28.12"
+    typedoc: "npm:^0.28.13"
     typedoc-plugin-missing-exports: "npm:^4.1.0"
     typescript: "npm:5.9.2"
   languageName: unknown
@@ -5183,9 +5183,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ts-jest@npm:^29.4.1":
-  version: 29.4.1
-  resolution: "ts-jest@npm:29.4.1"
+"ts-jest@npm:^29.4.4":
+  version: 29.4.4
+  resolution: "ts-jest@npm:29.4.4"
   dependencies:
     bs-logger: "npm:^0.2.6"
     fast-json-stable-stringify: "npm:^2.1.0"
@@ -5219,7 +5219,7 @@ __metadata:
       optional: true
   bin:
     ts-jest: cli.js
-  checksum: 10/6aed48232c01a70c7d24c8e1e1fa4c10fcc7d4845913cc4b4c3def10d2d5ba32e98e495b427d3aca5682c13ac0754e6145af81d977ffcc71a26c54a2ca634d65
+  checksum: 10/759913fdb9795416abe918ba41c2ab3865f796f909d22bbf219a6a6c5e7daecad06ad85ecc905ea1af89fde2eb048c3b981493dfad6e3a21f7d5c602e630d34d
   languageName: node
   linkType: hard
 
@@ -5305,9 +5305,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"typedoc@npm:^0.28.12":
-  version: 0.28.12
-  resolution: "typedoc@npm:0.28.12"
+"typedoc@npm:^0.28.13":
+  version: 0.28.13
+  resolution: "typedoc@npm:0.28.13"
   dependencies:
     "@gerrit0/mini-shiki": "npm:^3.12.0"
     lunr: "npm:^2.3.9"
@@ -5318,7 +5318,7 @@ __metadata:
     typescript: 5.0.x || 5.1.x || 5.2.x || 5.3.x || 5.4.x || 5.5.x || 5.6.x || 5.7.x || 5.8.x || 5.9.x
   bin:
     typedoc: bin/typedoc
-  checksum: 10/ce51ac19f417bcd105a50746f2512d8ff19539aeb82db247cb8ebafda499f2f70ec409ec0ff8c957d595ae3dd2678dcb9b70ada14dd73f872dd5cac92a8a5c04
+  checksum: 10/f562d8c4f7e3bc15f942d2f1447de1c8265026e39acb5a36276d3767cebd8f22527519c0c2146c8227a70f2d94d668f0abee7eca142b1702166f9081ab7da5ff
   languageName: node
   linkType: hard
 

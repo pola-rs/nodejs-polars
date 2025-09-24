@@ -45,6 +45,12 @@ impl JsLazyGroupBy {
     }
 }
 
+fn bin_config() -> bincode::config::Configuration {
+    bincode::config::standard()
+        .with_no_limit()
+        .with_variable_int_encoding()
+}
+
 #[napi]
 impl JsLazyFrame {
     #[napi(catch_unwind)]
@@ -55,10 +61,10 @@ impl JsLazyFrame {
     #[napi(catch_unwind)]
     pub fn serialize(&self, format: String) -> napi::Result<Buffer> {
         let buf = match format.as_ref() {
-            "bincode" => bincode::serialize(&self.ldf.logical_plan)
-                .map_err(|err| napi::Error::from_reason(format!("{:?}", err)))?,
+            "bincode" => bincode::serde::encode_to_vec(&self.ldf.logical_plan, bin_config())
+                .map_err(|err| napi::Error::from_reason(err.to_string()))?,
             "json" => serde_json::to_vec(&self.ldf.logical_plan)
-                .map_err(|err| napi::Error::from_reason(format!("{:?}", err)))?,
+                .map_err(|err| napi::Error::from_reason(err.to_string()))?,
             _ => {
                 return Err(napi::Error::from_reason(
                     "unexpected format. \n supported options are 'json', 'bincode'".to_owned(),
@@ -71,10 +77,14 @@ impl JsLazyFrame {
     #[napi(factory, catch_unwind)]
     pub fn deserialize(buf: Buffer, format: String) -> napi::Result<JsLazyFrame> {
         let lp: DslPlan = match format.as_ref() {
-            "bincode" => bincode::deserialize(&buf)
-                .map_err(|err| napi::Error::from_reason(format!("{:?}", err)))?,
+            "bincode" => {
+                bincode::serde::decode_from_slice(&buf, bin_config())
+                    .map_err(|err| napi::Error::from_reason(err.to_string()))
+                    .unwrap()
+                    .0
+            }
             "json" => serde_json::from_slice(&buf)
-                .map_err(|err| napi::Error::from_reason(format!("{:?}", err)))?,
+                .map_err(|err| napi::Error::from_reason(err.to_string()))?,
             _ => {
                 return Err(napi::Error::from_reason(
                     "unexpected format. \n supported options are 'json', 'bincode'".to_owned(),
@@ -855,7 +865,7 @@ pub fn scan_json(path: String, options: JsonScanOptions) -> napi::Result<JsLazyF
         .with_row_index(options.row_count.map(|rc| rc.into()))
         .with_n_rows(options.num_rows.map(|i| i as usize))
         .finish()
-        .map_err(|err| napi::Error::from_reason(format!("{:?}", err)))
+        .map_err(|err| napi::Error::from_reason(err.to_string()))
         .map(|lf| lf.into())
 }
 

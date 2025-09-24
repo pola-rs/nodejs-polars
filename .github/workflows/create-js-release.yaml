@@ -98,9 +98,9 @@ jobs:
     name: ${{ matrix.settings.target }} - node@24
     runs-on: ${{ matrix.settings.host }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Setup node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         if: ${{ !matrix.settings.docker }}
         with:
           node-version: 24
@@ -157,7 +157,7 @@ jobs:
       - build
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Install dependencies
         run: yarn install
       - name: Download all artifacts
@@ -173,8 +173,8 @@ jobs:
       - test-macos
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: 24
           registry-url: "https://registry.npmjs.org"
