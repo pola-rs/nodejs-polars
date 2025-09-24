@@ -1933,6 +1933,24 @@ describe("join", () => {
     expect(out.shape).toEqual({ height: 15, width: 4 });
   });
 });
+describe("joinAsOf", () => {
+  const df = pl.DataFrame({ a: [1, 1, 1, 2, 2, 2], b: [2, 1, 3, 1, 2, 3] });
+  test("errors when not sorted", () => {
+    expect(() => df.joinAsof(df, { on: "b" })).toThrow(/sorted/i);
+  });
+
+  test("does not error when not sorted but by is specified", () => {
+    expect(() => df.joinAsof(df, { on: "b", by: "a" })).not.toThrow();
+  });
+
+  test("skips sortedness check when checkSortedness is false", () => {
+    const df = pl.DataFrame({ a: [1, 1, 1, 2, 2, 2], b: [2, 1, 3, 1, 2, 3] });
+
+    expect(() =>
+      df.joinAsof(df, { on: "b", checkSortedness: false }),
+    ).not.toThrow();
+  });
+});
 describe("io", () => {
   const df = pl.DataFrame([
     pl.Series("foo", [1, 2, 9], pl.Int16),
