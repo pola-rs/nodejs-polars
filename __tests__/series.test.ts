@@ -720,6 +720,18 @@ describe("series functions", () => {
     const actual = s.round(2);
     expect(actual).toSeriesEqual(expected);
   });
+  test("round:halfawayfromzero", () => {
+    const s = pl.Series([1.5, 2.5, -1.5, -2.5]);
+    const expected = pl.Series([2, 3, -2, -3]);
+    const actual = s.round(0, "halfawayfromzero");
+    expect(actual).toSeriesEqual(expected);
+  });
+  test("round:halfawayfromzero:opt", () => {
+    const s = pl.Series([1.5, 2.5, -1.5, -2.5]);
+    const expected = pl.Series([2, 3, -2, -3]);
+    const actual = s.round({ decimals: 0, mode: "halfawayfromzero" });
+    expect(actual).toSeriesEqual(expected);
+  });
   test("round:named", () => {
     const s = pl.Series([1.1111, 2.2222]);
     const expected = pl.Series([1.11, 2.22]);

@@ -6,6 +6,7 @@ import type {
   RollingOptions,
   RollingQuantileOptions,
   RollingSkewOptions,
+  RoundMode,
 } from "./types";
 import type { ColumnsOrExpr, StartBy } from "./utils";
 
@@ -426,10 +427,16 @@ export interface Round<T> {
    *
    * Similar functionality to javascript `toFixed`
    * @param decimals number of decimals to round by.
+   * @param mode Rounding mode, the default is "half to even" (also known as "bankers' rounding").
+            RoundMode.
+            * *halftoeven*
+                round to the nearest even number
+            * *halfawayfromzero*
+                round to the nearest number away from zero
    * @category Math
    */
-  round(decimals: number): T;
-  round(options: { decimals: number }): T;
+  round(decimals: number, mode?: RoundMode): T;
+  round(options: { decimals: number; mode?: RoundMode }): T;
   /**
    * Floor underlying floating point array to the lowest integers smaller or equal to the float value.
    * Only works on floating point Series

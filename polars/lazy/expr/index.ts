@@ -27,6 +27,7 @@ import type {
   FillNullStrategy,
   InterpolationMethod,
   RankMethod,
+  RoundMode,
 } from "../../types";
 import {
   type ExprOrString,
@@ -1777,8 +1778,13 @@ export const _Expr = (_expr: any): Expr => {
 
       return wrap("rollingSkew", val.windowSize, val.bias ?? bias);
     },
-    round(decimals) {
-      return _Expr(_expr.round(decimals?.decimals ?? decimals, "halftoeven"));
+    round(decimals, mode?: RoundMode) {
+      return _Expr(
+        _expr.round(
+          decimals?.decimals ?? decimals,
+          decimals?.mode ?? mode ?? "halftoeven",
+        ),
+      );
     },
     sample(opts?, frac?, withReplacement = false, seed?) {
       if (opts?.n !== undefined || opts?.frac !== undefined) {

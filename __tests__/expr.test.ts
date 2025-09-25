@@ -791,6 +791,22 @@ describe("expr", () => {
     const actual = df.select(col("a").round({ decimals: 2 }).as("rounded"));
     expect(actual).toFrameStrictEqual(expected);
   });
+  test("round:halfawayfromzero:opt", () => {
+    const df = pl.DataFrame({ a: [1.00523, 2.35878, 3.3349999] });
+    const expected = pl.DataFrame({ rounded: [1.01, 2.36, 3.33] });
+    const actual = df.select(
+      col("a").round({ decimals: 2, mode: "halfawayfromzero" }).as("rounded"),
+    );
+    expect(actual).toFrameStrictEqual(expected);
+  });
+  test("round:halfawayfromzero", () => {
+    const df = pl.DataFrame({ a: [1.00523, 2.35878, 3.3349999] });
+    const expected = pl.DataFrame({ rounded: [1.01, 2.36, 3.33] });
+    const actual = df.select(
+      col("a").round(2, "halfawayfromzero").as("rounded"),
+    );
+    expect(actual).toFrameStrictEqual(expected);
+  });
   test("sample", () => {
     const df = pl.DataFrame({ n: [1, 2, 3] });
     let actual = df.withColumns(

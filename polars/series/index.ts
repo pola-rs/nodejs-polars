@@ -1693,15 +1693,14 @@ export function _Series(_s: any): Series {
     ceil() {
       return wrap("ceil");
     },
-    round(opt): any {
-      const mode = "halftoeven";
-      if (this.isNumeric()) {
-        if (typeof opt === "number") {
-          return wrap("round", opt, mode);
-        }
-        return wrap("round", opt.decimals, mode);
+    round(opt, mode): any {
+      if (!this.isNumeric()) {
+        throw new InvalidOperationError("round", this.dtype);
       }
-      throw new InvalidOperationError("round", this.dtype);
+      if (typeof opt === "number") {
+        return wrap("round", opt, mode ?? "halftoeven");
+      }
+      return wrap("round", opt.decimals, opt.mode ?? "halftoeven");
     },
     clip(...args) {
       return expr_op("clip", ...args);
