@@ -36,6 +36,11 @@ export type RankMethod =
   | "random";
 
 /**
+ * Round modes
+ */
+export type RoundMode = "halftoeven" | "halfawayfromzero";
+
+/**
  * Options for {@link concat}
  */
 export interface ConcatOptions {
