@@ -990,6 +990,10 @@ export interface DataFrame<S extends Schema = any>
    *   - "3d12h4m25s" # 3 days, 12 hours, 4 minutes, and 25 seconds
    * @param options.allowParallel Allow the physical plan to optionally evaluate the computation of both DataFrames up to the join in parallel.
    * @param options.forceParallel Force the physical plan to evaluate the computation of both DataFrames up to the join in parallel.
+   * @param options.checkSortedness
+   *    Check the sortedness of the asof keys. If the keys are not sorted Polars
+   *    will error, or in case of 'by' argument raise a warning. This might become
+   *    a hard error in the future.
    *
    * @example
    * ```
@@ -1045,6 +1049,7 @@ export interface DataFrame<S extends Schema = any>
       tolerance?: number | string;
       allowParallel?: boolean;
       forceParallel?: boolean;
+      checkSortedness?: boolean;
     },
   ): DataFrame;
   lazy(): LazyDataFrame<S>;

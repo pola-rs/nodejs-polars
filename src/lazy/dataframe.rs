@@ -312,6 +312,7 @@ impl JsLazyFrame {
         strategy: String,
         tolerance: Option<Wrap<AnyValue<'_>>>,
         tolerance_str: Option<String>,
+        check_sortedness: bool,
     ) -> JsLazyFrame {
         let strategy = match strategy.as_ref() {
             "forward" => AsofStrategy::Forward,
@@ -340,7 +341,7 @@ impl JsLazyFrame {
                 }),
                 tolerance_str: tolerance_str.map(|s| s.into()),
                 allow_eq: true,
-                check_sortedness: true,
+                check_sortedness,
             })))
             .suffix(suffix)
             .finish()
