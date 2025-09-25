@@ -28,10 +28,11 @@ jobs:
         uses: actions/setup-node@v5
         with: 
           node-version: 24
+          package-manager-cache: false
       - name: Build node reference
         run: | 
           npm install
-          npx typedoc
+          npx typedoc --plugin typedoc-plugin-missing-exports
       - name: deploy docs
         run: |
           mkdir -p target/doc
