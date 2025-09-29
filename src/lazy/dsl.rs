@@ -1535,6 +1535,10 @@ impl JsExpr {
         self.inner.clone().struct_().field_by_name(&name).into()
     }
     #[napi(catch_unwind)]
+    pub fn struct_json_encode(&self) -> JsExpr {
+        self.inner.clone().struct_().json_encode().into()
+    }
+    #[napi(catch_unwind)]
     pub fn struct_rename_fields(&self, names: Vec<String>) -> JsExpr {
         self.inner.clone().struct_().rename_fields(names).into()
     }

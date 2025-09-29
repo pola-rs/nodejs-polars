@@ -1,4 +1,5 @@
 /* eslint-disable newline-per-chained-call */
+
 import pl, { col, lit } from "@polars/index";
 
 const df = () => {
@@ -1469,6 +1470,23 @@ describe("expr.str", () => {
     );
     expect(actual).toFrameStrictEqual(expected);
   });
+  test("struct:renameFields", () => {
+    const actual = pl
+      .DataFrame({
+        objs: [
+          { a: 1, b: 2.0, c: "abc" },
+          { a: 10, b: 20.0, c: "def" },
+        ],
+      })
+      .select(col("objs").struct.renameFields(["a", "b", "c"]));
+    const expected = pl.DataFrame({
+      objs: [
+        { a: 1, b: 2.0, c: "abc" },
+        { a: 10, b: 20.0, c: "def" },
+      ],
+    });
+    expect(actual).toFrameStrictEqual(expected);
+  });
   test("struct:withFields", () => {
     const df = pl.DataFrame({
       objs: [
@@ -1498,6 +1516,23 @@ describe("expr.str", () => {
         .alias("new"),
     );
     expect(actual).toFrameStrictEqual(expected);
+  });
+  test("struct:jsonEncode", () => {
+    const actual = pl
+      .DataFrame({
+        a: [
+          { a: [1, 2], b: [45] },
+          { a: [9, 1, 3], b: null },
+        ],
+      })
+      .withColumn(pl.col("a").struct.jsonEncode().alias("encoded"))
+      .toRecords();
+
+    const expected = [
+      { a: { a: [1, 2], b: [45] }, encoded: '{"a":[1.0,2.0],"b":[45.0]}' },
+      { a: { a: [9, 1, 3], b: null }, encoded: '{"a":[9.0,1.0,3.0],"b":null}' },
+    ];
+    expect(actual).toEqual(expected);
   });
   test("expr.replace", () => {
     const df = pl.DataFrame({ a: [1, 2, 2, 3], b: ["a", "b", "c", "d"] });
