@@ -290,16 +290,16 @@ export function scanCSV(path, options?) {
  * @param options
  * @param options.inferSchemaLength -Maximum number of lines to read to infer schema. If set to 0, all columns will be read as pl.Utf8.
  *    If set to `null`, a full table scan will be done (slow).
- * @param options.jsonFormat - Either "lines" or "json"
+ * @param options.format - Either "lines" or "json"
  * @param options.batchSize - Number of lines to read into the buffer at once. Modify this to change performance.
  * @returns ({@link DataFrame})
  * @example
  * ```
  * const jsonString = `
- * {"a", 1, "b", "foo", "c": 3}
+ * {"a": 1, "b": "foo", "c": 3}
  * {"a": 2, "b": "bar", "c": 6}
  * `
- * > const df = pl.readJSON(jsonString)
+ * > const df = pl.readJSON(jsonString, {"format": "lines"})
  * > console.log(df)
  *   shape: (2, 3)
  * ╭─────┬─────┬─────╮
