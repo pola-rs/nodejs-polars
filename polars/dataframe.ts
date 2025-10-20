@@ -824,6 +824,7 @@ export interface DataFrame<S extends Schema = any>
    * @param options.on - Name(s) of the join columns in both DataFrames.
    * @param options.how - Join strategy
    * @param options.suffix - Suffix to append to columns with a duplicate name.
+   * @param options.coalesce - Coalescing behavior (merging of join columns).
    * @see {@link SameNameColumnJoinOptions}
    * @example
    * ```
@@ -868,6 +869,7 @@ export interface DataFrame<S extends Schema = any>
    * @param options.rightOn - Name(s) of the right join column(s).
    * @param options.how - Join strategy
    * @param options.suffix - Suffix to append to columns with a duplicate name.
+   * @param options.coalesce - Coalescing behavior (merging of join columns).
    * @see {@link DifferentNameColumnJoinOptions}
    * @example
    * ```
@@ -910,6 +912,7 @@ export interface DataFrame<S extends Schema = any>
    * @param options
    * @param options.how - Join strategy
    * @param options.suffix - Suffix to append to columns with a duplicate name.
+   * @param options.coalesce - Coalescing behavior (merging of join columns).
    * @see {@link CrossJoinOptions}
    * @example
    * ```
@@ -2405,10 +2408,11 @@ export const _DataFrame = <S extends Schema>(_df: any): DataFrame<S> => {
     join(other, options): any {
       options = { how: "inner", ...options };
       const on = columnOrColumns(options.on);
-      const how = options.how;
-      const suffix = options.suffix;
+      const how: string = options.how;
+      const suffix: string = options.suffix;
+      const coalesce: boolean = options.coalesce;
       if (how === "cross") {
-        return _DataFrame(_df.join(other._df, [], [], how, suffix));
+        return _DataFrame(_df.join(other._df, [], [], how, suffix, coalesce));
       }
       let leftOn = columnOrColumns(options.leftOn);
       let rightOn = columnOrColumns(options.rightOn);
@@ -2422,7 +2426,7 @@ export const _DataFrame = <S extends Schema>(_df: any): DataFrame<S> => {
           "You should pass the column to join on as an argument.",
         );
       }
-      return wrap("join", other._df, leftOn, rightOn, how, suffix);
+      return wrap("join", other._df, leftOn, rightOn, how, suffix, coalesce);
     },
     joinAsof(other, options) {
       return this.lazy()

@@ -1868,16 +1868,29 @@ describe("join", () => {
       ham: ["a", "d"],
       foo: [1, 10],
     });
-    const actual = df.join(otherDF, {
+    let actual = df.join(otherDF, {
       on: "ham",
       how: "full",
     });
-    const expected = pl.DataFrame({
+    let expected = pl.DataFrame({
       foo: [1, 2, 3, null],
       bar: [6, 7, 8, null],
       ham: ["a", "b", "c", null],
       apple: ["x", null, null, "y"],
       ham_right: ["a", null, null, "d"],
+      foo_right: [1, null, null, 10],
+    });
+    expect(actual).toFrameEqual(expected);
+    actual = df.join(otherDF, {
+      on: "ham",
+      how: "full",
+      coalesce: true,
+    });
+    expected = pl.DataFrame({
+      foo: [1, 2, 3, null],
+      bar: [6, 7, 8, null],
+      ham: ["a", "b", "c", "d"],
+      apple: ["x", null, null, "y"],
       foo_right: [1, null, null, 10],
     });
     expect(actual).toFrameEqual(expected);
@@ -1904,6 +1917,33 @@ describe("join", () => {
       ham: ["a", "b", "c"],
       apple: ["x", "y", null],
       foo_other: [1, 10, null],
+    });
+    expect(actual).toFrameEqual(expected);
+  });
+  test("coalesce:false", () => {
+    const df = pl.DataFrame({
+      foo: [1, 2, 3],
+      bar: [6.0, 7.0, 8.0],
+      ham: ["a", "b", "c"],
+    });
+    const otherDF = pl.DataFrame({
+      apple: ["x", "y", "z"],
+      ham: ["a", "b", "d"],
+      foo: [1, 10, 11],
+    });
+    const actual = df.join(otherDF, {
+      on: "ham",
+      how: "left",
+      suffix: "_suffix",
+      coalesce: false,
+    });
+    const expected = pl.DataFrame({
+      foo: [1, 2, 3],
+      bar: [6, 7, 8],
+      ham: ["a", "b", "c"],
+      apple: ["x", "y", null],
+      ham_suffix: ["a", "b", null],
+      foo_suffix: [1, 10, null],
     });
     expect(actual).toFrameEqual(expected);
   });

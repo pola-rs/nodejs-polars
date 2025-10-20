@@ -358,11 +358,18 @@ impl JsLazyFrame {
         force_parallel: bool,
         how: Wrap<JoinType>,
         suffix: String,
+        coalesce: Option<bool>,
     ) -> JsLazyFrame {
         let ldf = self.ldf.clone();
         let other = other.ldf.clone();
         let left_on = left_on.to_exprs();
         let right_on = right_on.to_exprs();
+
+        let coalesce = match (&how.0, coalesce) {
+            (JoinType::Full, None) => JoinCoalesce::KeepColumns,
+            (_, Some(false)) => JoinCoalesce::KeepColumns,
+            _ => JoinCoalesce::CoalesceColumns, // Default is true
+        };
 
         ldf.join_builder()
             .with(other)
@@ -372,6 +379,7 @@ impl JsLazyFrame {
             .force_parallel(force_parallel)
             .how(how.0)
             .suffix(suffix)
+            .coalesce(coalesce)
             .finish()
             .into()
     }
