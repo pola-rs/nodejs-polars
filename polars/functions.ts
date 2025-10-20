@@ -34,9 +34,18 @@ export function repeat<V>(value: V, n: number, name = ""): Series {
  * @param items DataFrames/Series/LazyFrames to concatenate.
  * @param options.rechunk rechunk the final DataFrame/Series.
  * @param options.how Only used if the items are DataFrames. *Defaults to 'vertical'*
- *     - Vertical: Applies multiple `vstack` operations.
- *     - Horizontal: Stacks Series horizontally and fills with nulls if the lengths don't match.
- *     - Diagonal: Finds a union between the column schemas and fills missing column values with ``null``.
+ *     - vertical: Applies multiple `vstack` operations.
+ *     - horizontal: Stacks Series horizontally and fills with nulls if the lengths don't match.
+ *     - diagonal: Finds a union between the column schemas and fills missing column values with ``null``.
+ *     - diagonalRelaxed: Same as `diagonal`, but additionally coerces columns to their common supertype *if* they are mismatched (eg: Int32 → Int64).
+       - align, alignFull, alignLeft, alignRight: Combines frames horizontally,
+          auto-determining the common key columns and aligning rows using the same
+          logic as `align_frames` (note that "align" is an alias for "align_full").
+          The "align" strategy determines the type of join used to align the frames,
+          equivalent to the "how" parameter on `align_frames`. Note that the common
+          join columns are automatically coalesced, but other column collisions
+          will raise an error (if you need more control over this you should use
+          a suitable `join` method directly).
  * @example
  * > const df1 = pl.DataFrame({"a": [1], "b": [3]});
  * > const df2 = pl.DataFrame({"a": [2], "b": [4]});
