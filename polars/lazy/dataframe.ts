@@ -233,6 +233,7 @@ export interface LazyDataFrame<S extends Schema = any>
    * @param joinOptions.rightOn - Name(s) of the right join column(s).
    * @param joinOptions.how - Join strategy
    * @param joinOptions.suffix - Suffix to append to columns with a duplicate name.
+   * @param joinOptions.coalesce - Coalescing behavior (merging of join columns).
    * @param joinOptions.allowParallel - Allow the physical plan to optionally evaluate the computation of both DataFrames up to the join in parallel.
    * @param joinOptions.forceParallel - Force the physical plan to evaluate the computation of both DataFrames up to the join in parallel.
    * @see {@link LazyJoinOptions}
@@ -277,6 +278,7 @@ export interface LazyDataFrame<S extends Schema = any>
    * @param other - DataFrame to join with.
    * @param joinOptions.how - Join strategy
    * @param joinOptions.suffix - Suffix to append to columns with a duplicate name.
+   * @param joinOptions.coalesce - Coalescing behavior (merging of join columns).
    * @param joinOptions.allowParallel - Allow the physical plan to optionally evaluate the computation of both DataFrames up to the join in parallel.
    * @param joinOptions.forceParallel - Force the physical plan to evaluate the computation of both DataFrames up to the join in parallel.
    * @see {@link LazyJoinOptions}
