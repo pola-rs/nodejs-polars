@@ -625,6 +625,7 @@ impl JsDataFrame {
         right_on: Vec<String>,
         how: String,
         suffix: Option<String>,
+        coalesce: Option<bool>,
     ) -> napi::Result<JsDataFrame> {
         let how = match how.as_ref() {
             "left" => JoinType::Left,
@@ -645,6 +646,12 @@ impl JsDataFrame {
             _ => panic!("not supported"),
         };
 
+        let coalesce = match (&how, coalesce) {
+            (JoinType::Full, None) => JoinCoalesce::KeepColumns,
+            (_, Some(false)) => JoinCoalesce::KeepColumns,
+            _ => JoinCoalesce::CoalesceColumns, // Default is true
+        };
+
         let df = self
             .df
             .join(
@@ -654,6 +661,7 @@ impl JsDataFrame {
                 JoinArgs {
                     how: how,
                     suffix: suffix.map_or(None, |s| Some(PlSmallStr::from_string(s))),
+                    coalesce,
                     ..Default::default()
                 },
                 None,

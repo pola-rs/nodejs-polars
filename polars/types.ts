@@ -239,6 +239,8 @@ export type SameNameColumnJoinOptions<
   how?: Exclude<JoinType, "cross">;
   /** Suffix to append to columns with a duplicate name. */
   suffix?: string;
+  /** Coalescing behavior (merging of join columns). */
+  coalesce?: boolean;
 };
 /**
  * options for differently named column join @see {@link DataFrame.join}
@@ -255,6 +257,8 @@ export type DifferentNameColumnJoinOptions<
   how?: Exclude<JoinType, "cross">;
   /** Suffix to append to columns with a duplicate name. */
   suffix?: string;
+  /** Coalescing behavior (merging of join columns). */
+  coalesce?: boolean;
 };
 /**
  * options for cross join @see {@link DataFrame.join}
@@ -264,6 +268,8 @@ export type CrossJoinOptions = {
   how: "cross";
   /** Suffix to append to columns with a duplicate name. */
   suffix?: string;
+  /** Coalescing behavior (merging of join columns). */
+  coalesce?: boolean;
 };
 /**
  * options for join operations @see {@link DataFrame.join}
