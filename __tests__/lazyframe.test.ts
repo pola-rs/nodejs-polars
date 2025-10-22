@@ -649,19 +649,36 @@ describe("lazyframe", () => {
         })
         .lazy();
 
-      const actual = df
+      let actual = df
         .lazy()
         .join(otherDF, {
           on: "ham",
           how: "full",
+          coalesce: false,
         })
         .collectSync();
-      const expected = pl.DataFrame({
+      let expected = pl.DataFrame({
         foo: [1, null, 2, 3],
         bar: [6, null, 7, 8],
         ham: ["a", null, "b", "c"],
         apple: ["x", "y", null, null],
         hamright: ["a", "d", null, null],
+        fooright: [1, 10, null, null],
+      });
+      expect(actual).toFrameEqualIgnoringOrder(expected);
+      actual = df
+        .lazy()
+        .join(otherDF, {
+          on: "ham",
+          how: "full",
+          coalesce: true,
+        })
+        .collectSync();
+      expected = pl.DataFrame({
+        foo: [1, null, 2, 3],
+        bar: [6, null, 7, 8],
+        ham: ["a", "d", "b", "c"],
+        apple: ["x", "y", null, null],
         fooright: [1, 10, null, null],
       });
       expect(actual).toFrameEqualIgnoringOrder(expected);
@@ -696,6 +713,39 @@ describe("lazyframe", () => {
         foo_other: [1, 10, null],
       });
       expect(actual).toFrameEqualIgnoringOrder(expected);
+    });
+    test("coalesce:false", () => {
+      const df = pl.DataFrame({
+        foo: [1, 2, 3],
+        bar: [6.0, 7.0, 8.0],
+        ham: ["a", "b", "c"],
+      });
+      const otherDF = pl
+        .DataFrame({
+          apple: ["x", "y", "z"],
+          ham: ["a", "b", "d"],
+          foo: [1, 10, 11],
+        })
+        .lazy();
+
+      const actual = df
+        .lazy()
+        .join(otherDF, {
+          on: "ham",
+          how: "left",
+          suffix: "_other",
+          coalesce: false,
+        })
+        .collectSync();
+      const expected = pl.DataFrame({
+        foo: [1, 2, 3],
+        bar: [6, 7, 8],
+        ham: ["a", "b", "c"],
+        apple: ["x", "y", null],
+        ham_other: ["a", "b", null],
+        foo_other: [1, 10, null],
+      });
+      expect(actual).toFrameEqual(expected);
     });
   });
   test("last", () => {
