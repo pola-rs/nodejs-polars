@@ -17,7 +17,30 @@ describe("concat", () => {
     });
     expect(actual).toFrameEqual(expected);
   });
-
+  it("can concat multiple dataframes vertically relaxed", () => {
+    const df1 = pl.DataFrame(
+      {
+        a: [1, 2, 3],
+        b: ["a", "b", "c"],
+      },
+      {
+        schema: {
+          a: pl.Int32,
+          b: pl.String,
+        },
+      },
+    );
+    const df2 = pl.DataFrame({
+      a: [4.5, 5.5, 6],
+      b: ["d", "e", "f"],
+    });
+    const actual = pl.concat([df1, df2], { how: "verticalRelaxed" });
+    const expected = pl.DataFrame({
+      a: [1, 2, 3, 4.5, 5.5, 6],
+      b: ["a", "b", "c", "d", "e", "f"],
+    });
+    expect(actual).toFrameEqual(expected);
+  });
   it("can concat multiple lazy dataframes vertically", () => {
     const df1 = pl
       .DataFrame({
@@ -61,7 +84,31 @@ describe("concat", () => {
     });
     expect(actual).toFrameEqual(expected);
   });
-
+  it("can concat multiple dataframes diagonally relaxed", () => {
+    const df1 = pl.DataFrame(
+      {
+        a: [1],
+        b: ["b"],
+      },
+      {
+        schema: {
+          a: pl.Int32,
+          b: pl.String,
+        },
+      },
+    );
+    const df2 = pl.DataFrame({
+      a: [2.5],
+      d: [4.5],
+    });
+    const actual = pl.concat([df1, df2], { how: "diagonalRelaxed" });
+    const expected = pl.DataFrame({
+      a: [1, 2.5],
+      b: ["b", null],
+      d: [null, 4.5],
+    });
+    expect(actual).toFrameEqual(expected);
+  });
   it("can concat multiple lazy dataframes diagonally", () => {
     const df1 = pl
       .DataFrame({
