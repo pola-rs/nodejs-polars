@@ -52,7 +52,7 @@ export function repeat<V>(value: V, n: number, name = ""): Series {
           join columns are automatically coalesced, but other column collisions
           will raise an error (if you need more control over this you should use
           a suitable `join` method directly).
- * @param parallel - Only relevant for LazyFrames. This determines if the concatenated lazy computations may be executed in parallel.
+ * @param options.parallel - Only relevant for LazyFrames. This determines if the concatenated lazy computations may be executed in parallel.
  * @example
  * > const df1 = pl.DataFrame({"a": [1], "b": [3]});
  * > const df2 = pl.DataFrame({"a": [2], "b": [4]});
@@ -237,7 +237,6 @@ export function concat(
 
   if (isSeriesArray(items)) {
     const s = items.reduce((acc, curr) => acc.concat(curr));
-
     return rechunk ? s.rechunk() : s;
   }
   throw new TypeError("can only concat series and dataframes");
