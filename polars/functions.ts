@@ -4,8 +4,13 @@ import { jsTypeToPolarsType } from "./internals/construction";
 import pli from "./internals/polars_internal";
 import { _LazyDataFrame, type LazyDataFrame } from "./lazy/dataframe";
 import { _Series, type Series } from "./series";
-import type { ConcatOptions } from "./types";
-import { isDataFrameArray, isLazyDataFrameArray, isSeriesArray } from "./utils";
+import type { ConcatOptions, JoinType } from "./types";
+import {
+  commonValue,
+  isDataFrameArray,
+  isLazyDataFrameArray,
+  isSeriesArray,
+} from "./utils";
 
 /**
  * _Repeat a single value n times and collect into a Series._
@@ -91,6 +96,50 @@ export function repeat<V>(value: V, n: number, name = ""): Series {
  * │ 2   ┆ null ┆ 4    │
  * └─────┴──────┴──────┘
  *
+ *  The "align" strategies require at least one common column to align on:
+
+    >>> df1 = pl.DataFrame({"id": [1, 2], "x": [3, 4]});
+    >>> df2 = pl.DataFrame({"id": [2, 3], "y": [5, 6]});
+    >>> df3 = pl.DataFrame({"id": [1, 3], "z": [7, 8]});
+    >>> pl.concat([df1, df2, df3], how="align") // equivalent to "alignFull"
+    shape: (3, 4)
+    ┌─────┬──────┬──────┬──────┐
+    │ id  ┆ x    ┆ y    ┆ z    │
+    │ --- ┆ ---  ┆ ---  ┆ ---  │
+    │ i64 ┆ i64  ┆ i64  ┆ i64  │
+    ╞═════╪══════╪══════╪══════╡
+    │ 1   ┆ 3    ┆ null ┆ 7    │
+    │ 2   ┆ 4    ┆ 5    ┆ null │
+    │ 3   ┆ null ┆ 6    ┆ 8    │
+    └─────┴──────┴──────┴──────┘
+    >>> pl.concat([df1, df2, df3], how="alignLeft");
+    shape: (2, 4)
+    ┌─────┬─────┬──────┬──────┐
+    │ id  ┆ x   ┆ y    ┆ z    │
+    │ --- ┆ --- ┆ ---  ┆ ---  │
+    │ i64 ┆ i64 ┆ i64  ┆ i64  │
+    ╞═════╪═════╪══════╪══════╡
+    │ 1   ┆ 3   ┆ null ┆ 7    │
+    │ 2   ┆ 4   ┆ 5    ┆ null │
+    └─────┴─────┴──────┴──────┘
+    >>> pl.concat([df1, df2, df3], how="alignRight");
+    shape: (2, 4)
+    ┌─────┬──────┬──────┬─────┐
+    │ id  ┆ x    ┆ y    ┆ z   │
+    │ --- ┆ ---  ┆ ---  ┆ --- │
+    │ i64 ┆ i64  ┆ i64  ┆ i64 │
+    ╞═════╪══════╪══════╪═════╡
+    │ 1   ┆ null ┆ null ┆ 7   │
+    │ 3   ┆ null ┆ 6    ┆ 8   │
+    └─────┴──────┴──────┴─────┘
+    >>> pl.concat([df1, df2, df3], how="alignInner");
+    shape: (0, 4)
+    ┌─────┬─────┬─────┬─────┐
+    │ id  ┆ x   ┆ y   ┆ z   │
+    │ --- ┆ --- ┆ --- ┆ --- │
+    │ i64 ┆ i64 ┆ i64 ┆ i64 │
+    ╞═════╪═════╪═════╪═════╡
+    └─────┴─────┴─────┴─────┘
  */
 export function concat(
   items: Array<DataFrame>,
@@ -117,6 +166,32 @@ export function concat(
   if (isDataFrameArray(items)) {
     let df: DataFrame;
     switch (how) {
+      case "align":
+      case "alignFull":
+      case "alignInner":
+      case "alignLeft":
+      case "alignRight": {
+        if (items.length === 1) return items[0];
+        const commonCols = commonValue(...items.map((c) => c.columns));
+        const uniqueCols = [...new Set(items.flatMap((c) => c.columns))].sort();
+        // Join methods allowed: "full" | "left" | "inner" | "semi" | "anti" | undefined
+        const joinMethod: Exclude<JoinType, "cross"> =
+          how === "align"
+            ? "full"
+            : (how.replace("align", "").toLocaleLowerCase() as Exclude<
+                JoinType,
+                "cross"
+              >);
+
+        df = _DataFrame(
+          items.reduce((acc, curr) =>
+            acc.join(curr, { on: commonCols, how: joinMethod, coalesce: true }),
+          ),
+        )
+          ._df.sort(commonCols)
+          .select(uniqueCols);
+        break;
+      }
       case "vertical":
         df = items.reduce((acc, curr) => acc.vstack(curr));
         break;
