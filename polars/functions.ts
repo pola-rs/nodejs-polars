@@ -221,16 +221,39 @@ export function concat(
   }
 
   if (isLazyDataFrameArray(items)) {
-    const df: LazyDataFrame = _LazyDataFrame(
-      pli.concatLf(
-        items.map((i: any) => i.inner()),
-        how,
-        rechunk ?? false,
-        parallel ?? true,
-        true, // to_supertypes
-        true, // maintain_order
-      ),
-    );
+    let df: LazyDataFrame;
+    if (how?.startsWith("align")) {
+      if (items.length === 1) return items[0];
+      const commonCols = commonValue(...items.map((c) => c.columns));
+      const uniqueCols = [...new Set(items.flatMap((c) => c.columns))].sort();
+      // Join methods allowed: "full" | "left" | "inner" | "semi" | "anti" | undefined
+      const joinMethod: Exclude<JoinType, "cross"> =
+        how === "align"
+          ? "full"
+          : (how.replace("align", "").toLocaleLowerCase() as Exclude<
+              JoinType,
+              "cross"
+            >);
+
+      df = _LazyDataFrame(
+        items.reduce((acc, curr) =>
+          acc.join(curr, { on: commonCols, how: joinMethod, coalesce: true }),
+        ),
+      )
+        ._ldf.sort(commonCols)
+        .select(uniqueCols);
+    } else {
+      df = _LazyDataFrame(
+        pli.concatLf(
+          items.map((i: any) => i.inner()),
+          how,
+          rechunk ?? false,
+          parallel ?? true,
+          true, // to_supertypes
+          true, // maintain_order
+        ),
+      );
+    }
 
     return df;
   }

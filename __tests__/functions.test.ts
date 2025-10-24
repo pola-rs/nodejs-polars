@@ -61,6 +61,48 @@ describe("concat", () => {
     });
     expect(actual).toFrameEqual(expectedAlign);
   });
+  it("can concat multiple lazy dataframes using align", () => {
+    const df1 = pl.DataFrame({ a: [1, 2], x: [3, 4] }).lazy();
+    const df2 = pl.DataFrame({ a: [2, 3], y: [5, 6] }).lazy();
+    const df3 = pl.DataFrame({ a: [1, 3], z: [7, 8] }).lazy();
+    let actual: pl.DataFrame = pl
+      .concat([df1, df2, df3], { how: "align" })
+      .collectSync(); // equivalent to "align_full"
+
+    let expected = pl.DataFrame({
+      a: [1, 2, 3],
+      x: [3, 4, null],
+      y: [null, 5, 6],
+      z: [7, null, 8],
+    });
+    expect(actual).toFrameEqual(expected);
+    actual = pl.concat([df1, df2, df3], { how: "alignLeft" }).collectSync();
+    expected = pl.DataFrame({
+      a: [1, 2],
+      x: [3, 4],
+      y: [null, 5],
+      z: [7, null],
+    });
+    expect(actual).toFrameEqual(expected);
+
+    actual = pl.concat([df1, df2, df3], { how: "alignRight" }).collectSync();
+    const expectedRight = pl.DataFrame({
+      a: [1, 3],
+      x: [null, null],
+      y: [null, 6],
+      z: [7, 8],
+    });
+    expect(actual).toFrameEqual(expectedRight);
+
+    actual = pl.concat([df1, df2, df3], { how: "alignInner" }).collectSync();
+    const expectedInner = pl.DataFrame({
+      a: [],
+      x: [],
+      y: [],
+      z: [],
+    });
+    expect(actual).toFrameEqual(expectedInner);
+  });
   it("can concat multiple dataframes vertically", () => {
     const df1 = pl.DataFrame({
       a: [1, 2, 3],
@@ -121,7 +163,6 @@ describe("concat", () => {
     });
     expect(actual).toFrameEqual(expected);
   });
-
   it("can concat multiple lazy dataframes horizontally", () => {
     const df1 = pl
       .DataFrame({
@@ -190,7 +231,6 @@ describe("concat", () => {
     });
     expect(actual).toFrameEqual(expected);
   });
-
   it("can concat multiple series vertically", () => {
     const s1 = pl.Series("a", [1, 2, 3]);
     const s2 = pl.Series("a", [4, 5, 6]);
@@ -203,7 +243,6 @@ describe("concat", () => {
     const fn = () => pl.concat([]);
     expect(fn).toThrow();
   });
-
   it("can only concat series and df", () => {
     const fn = () => pl.concat([[1] as any, [2] as any]);
     expect(fn).toThrow();
