@@ -2,6 +2,12 @@ import pl from "@polars";
 
 describe("concat", () => {
   it("can concat multiple dataframes using align", () => {
+    const b = pl.DataFrame({ a: ["a", "b", "c"], c: [5.5, 6.0, 7.5] });
+    // Single concat should return self
+    const actual = pl.concat([b], { how: "align" });
+    expect(actual).toFrameEqual(b);
+  });
+  it("can concat multiple dataframes using align", () => {
     const df1 = pl.DataFrame({ a: [1, 2], x: [3, 4] });
     const df2 = pl.DataFrame({ a: [2, 3], y: [5, 6] });
     const df3 = pl.DataFrame({ a: [1, 3], z: [7, 8] });
