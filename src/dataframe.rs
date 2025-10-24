@@ -643,7 +643,12 @@ impl JsDataFrame {
                 check_sortedness: true,
             })),
             "cross" => JoinType::Cross,
-            _ => panic!("not supported"),
+            "right" => JoinType::Right,
+            _ => {
+                return Err(napi::Error::from_reason(format!(
+                    "join: {how} is not supported"
+                )))
+            }
         };
 
         let coalesce = match (&how, coalesce) {

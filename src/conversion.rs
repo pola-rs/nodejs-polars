@@ -1032,6 +1032,7 @@ impl FromNapiValue for Wrap<JoinType> {
         let parsed = match s.as_ref() {
             "inner" => JoinType::Inner,
             "left" => JoinType::Left,
+            "right" => JoinType::Right,
             "full" => JoinType::Full,
             "semi" => JoinType::Semi,
             "anti" => JoinType::Anti,
@@ -1039,7 +1040,7 @@ impl FromNapiValue for Wrap<JoinType> {
             v =>
                 return Err(Error::new(
                     Status::InvalidArg,
-                    format!("how must be one of {{'inner', 'left', 'full', 'semi', 'anti', 'cross'}}, got {v}")
+                    format!("how must be one of {{'inner', 'left', 'right', 'full', 'semi', 'anti', 'cross'}}, got {v}")
                 ))
         };
         Ok(Wrap(parsed))

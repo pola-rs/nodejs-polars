@@ -2399,8 +2399,8 @@ describe("create", () => {
   test("with schema", () => {
     const df = pl.DataFrame(
       {
-        a: [1, 2, 3],
-        b: ["1", "2", "3"],
+        x: [1, 2, 3],
+        y: ["1", "2", "3"],
       },
       {
         schema: {

@@ -170,8 +170,8 @@ export interface SQLContext {
    * @example
    * ```ts
    * const df0 = pl.DataFrame({"ints": [9, 8, 7, 6, 5]});
-   * const lf1 = pl.LazyDataFrame({"text": ["a", "b", "c"]});
-   * const lf2 = pl.LazyDataFrame({"misc": ["testing1234"]});
+   * const lf1 = pl.DataFrame({"text": ["a", "b", "c"]}).lazy();
+   * const lf2 = pl.DataFrame({"misc": ["testing1234"]}).lazy();
    *
    * // Register with a SQLContext object
    * const ctx = pl.SQLContext({ test1: df0, test2: lf1, test3: lf2 });
