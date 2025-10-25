@@ -50,8 +50,9 @@
     "lint": "yarn lint:ts && yarn format:rs",
     "prepublishOnly": "napi prepublish -t npm",
     "test": "jest",
+    "type": "tsc --noEmit -p tsconfig.test.json",
     "version": "napi version",
-    "precommit": "yarn lint && yarn test"
+    "precommit": "yarn lint && yarn type && yarn test"
   },
   "devDependencies": {
     "@biomejs/biome": "=2.2.4",

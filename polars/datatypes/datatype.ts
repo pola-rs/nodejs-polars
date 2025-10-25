@@ -2,9 +2,7 @@ import { Field } from "./field";
 
 export abstract class DataType<Dtype extends DataTypeName = any> {
   declare readonly __dtype: Dtype;
-  get variant() {
-    return this.constructor.name as DataTypeName;
-  }
+  abstract readonly variant: DataTypeName;
   protected identity = "DataType";
   protected get inner(): null | any[] {
     return null;
@@ -166,66 +164,85 @@ export abstract class DataType<Dtype extends DataTypeName = any> {
 
 export class Null extends DataType<"Null"> {
   declare __dtype: "Null";
+  readonly variant = "Null";
 }
 
 export class Bool extends DataType<"Bool"> {
   declare __dtype: "Bool";
+  readonly variant = "Bool";
 }
 export class Int8 extends DataType<"Int8"> {
   declare __dtype: "Int8";
+  readonly variant = "Int8";
 }
 export class Int16 extends DataType<"Int16"> {
   declare __dtype: "Int16";
+  readonly variant = "Int16";
 }
 export class Int32 extends DataType<"Int32"> {
   declare __dtype: "Int32";
+  readonly variant = "Int32";
 }
 export class Int64 extends DataType<"Int64"> {
   declare __dtype: "Int64";
+  readonly variant = "Int64";
 }
 export class UInt8 extends DataType<"UInt8"> {
   declare __dtype: "UInt8";
+  readonly variant = "UInt8";
 }
 export class UInt16 extends DataType<"UInt16"> {
   declare __dtype: "UInt16";
+  readonly variant = "UInt16";
 }
 export class UInt32 extends DataType<"UInt32"> {
   declare __dtype: "UInt32";
+  readonly variant = "UInt32";
 }
 export class UInt64 extends DataType<"UInt64"> {
   declare __dtype: "UInt64";
+  readonly variant = "UInt64";
 }
 export class Float32 extends DataType<"Float32"> {
   declare __dtype: "Float32";
+  readonly variant = "Float32";
 }
 export class Float64 extends DataType<"Float64"> {
   declare __dtype: "Float64";
+  readonly variant = "Float64";
 }
 
 // biome-ignore lint/suspicious/noShadowRestrictedNames: Using Polars Date
 export class Date extends DataType<"Date"> {
   declare __dtype: "Date";
+  readonly variant = "Date";
 }
 export class Time extends DataType<"Time"> {
   declare __dtype: "Time";
+  readonly variant = "Time";
 }
 export class Object_ extends DataType<"Object"> {
   declare __dtype: "Object";
+  readonly variant = "Object";
 }
 export class Utf8 extends DataType<"Utf8"> {
   declare __dtype: "Utf8";
+  readonly variant = "Utf8";
 }
 // biome-ignore lint/suspicious/noShadowRestrictedNames: Using Polars String
 export class String extends DataType<"String"> {
   declare __dtype: "String";
+  readonly variant = "String";
 }
 
 export class Categorical extends DataType<"Categorical"> {
   declare __dtype: "Categorical";
+  readonly variant = "Categorical";
 }
 
 export class Decimal extends DataType<"Decimal"> {
   declare __dtype: "Decimal";
+  readonly variant = "Decimal";
   private precision: number | null;
   private scale: number | null;
   constructor(precision?: number, scale?: number) {
@@ -263,6 +280,7 @@ export class Decimal extends DataType<"Decimal"> {
  */
 export class Datetime extends DataType<"Datetime"> {
   declare __dtype: "Datetime";
+  readonly variant = "Datetime";
   constructor(
     private timeUnit: TimeUnit | "ms" | "ns" | "us" = "ms",
     private timeZone?: string | null,
@@ -286,6 +304,7 @@ export class Datetime extends DataType<"Datetime"> {
 
 export class List extends DataType<"List"> {
   declare __dtype: "List";
+  readonly variant = "List";
   constructor(protected __inner: DataType) {
     super();
   }
@@ -302,6 +321,7 @@ export class List extends DataType<"List"> {
 
 export class FixedSizeList extends DataType<"FixedSizeList"> {
   declare __dtype: "FixedSizeList";
+  readonly variant = "FixedSizeList";
   constructor(
     protected __inner: DataType,
     protected listSize: number,
@@ -336,6 +356,7 @@ export class FixedSizeList extends DataType<"FixedSizeList"> {
 
 export class Struct extends DataType<"Struct"> {
   declare __dtype: "Struct";
+  readonly variant = "Struct";
   private fields: Field[];
 
   constructor(
