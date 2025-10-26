@@ -25,20 +25,26 @@ pub fn diagonal_concat(dfs: Vec<&JsDataFrame>) -> napi::Result<JsDataFrame> {
 pub fn concat_lf(
     ldfs: Vec<&JsLazyFrame>,
     how: Option<String>,
-    rechunk: Option<bool>,
+    rechunk: bool,
+    parallel: bool,
+    to_supertypes: bool,
+    maintain_order: bool,
 ) -> napi::Result<JsLazyFrame> {
     let ldfs: Vec<LazyFrame> = ldfs.iter().map(|ldf| ldf.ldf.clone()).collect();
 
     let union_args = UnionArgs {
-        rechunk: rechunk.unwrap_or(false),
+        rechunk,
+        parallel,
+        to_supertypes,
+        maintain_order,
         ..Default::default()
     };
     let ldf = match how.as_deref() {
         // Default to vertical
         None => concat(&ldfs, union_args),
-        Some("vertical") => concat(&ldfs, union_args),
+        Some("vertical") | Some("verticalRelaxed") => concat(&ldfs, union_args),
         Some("horizontal") => concat_lf_horizontal(&ldfs, union_args),
-        Some("diagonal") => concat_lf_diagonal(
+        Some("diagonal") | Some("diagonalRelaxed") => concat_lf_diagonal(
             &ldfs,
             UnionArgs {
                 diagonal: true,
