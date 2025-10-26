@@ -9,7 +9,7 @@ const INSPECT = Symbol.for("nodejs.util.inspect.custom");
  * @experimental This functionality is considered **unstable**, although it is close to being
  * considered stable. It may be changed at any point without it being considered a breaking change.
  */
-export interface SQLContext {
+export interface iSQLContext {
   /**
    * Parse the given SQL query and execute it against the registered frame data.
    *
@@ -227,7 +227,7 @@ export interface SQLContext {
   tables(): string[];
 }
 
-export class SQLContext implements SQLContext {
+export class SQLContext implements iSQLContext {
   #ctx: any; // native SQLContext
   [INSPECT](): string {
     return `SQLContext: {${this.#ctx.getTables().join(", ")}}`;
