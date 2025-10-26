@@ -88,6 +88,10 @@ export const regexToString = (r: string | RegExp): string => {
   return r;
 };
 
+// find common value in array of arrays of strings: string[][]
+export const commonValue = (...arr: string[][]): string[] =>
+  arr[0].filter((x) => arr.every((y) => y.includes(x)));
+
 export const INSPECT_SYMBOL = Symbol.for("nodejs.util.inspect.custom");
 
 export type Simplify<T> = { [K in keyof T]: T[K] } & {};
