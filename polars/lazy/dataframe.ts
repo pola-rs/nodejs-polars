@@ -595,7 +595,7 @@ export interface LazyDataFrame<S extends Schema = any>
     @param options.includeHeader - Whether to include header in the CSV output.
     @param options.separator - Separate CSV fields with this symbol.
     @param options.lineTerminator - String used to end each row.
-    @param options.quoteChar - Byte to use as quoting character.
+    @param options.quoteChar - Byte to use as quoting character. Default: '"'
     @param options.batchSize - Number of rows that will be processed per thread. Default - 1024
     @param options.datetimeFormat - A format string, with the specifiers defined by the
         `chrono <https://docs.rs/chrono/latest/chrono/format/strftime/index.html>`_
@@ -1249,6 +1249,7 @@ export const _LazyDataFrame = (_ldf: any): LazyDataFrame => {
     },
     sinkCSV(path, options: CsvWriterOptions = {}) {
       options.maintainOrder = options.maintainOrder ?? false;
+      options.quoteChar = options.quoteChar ?? '"';
       return _ldf.sinkCsv(path, options, {
         syncOnClose: "all",
         maintainOrder: false,
