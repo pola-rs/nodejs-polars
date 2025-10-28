@@ -9,6 +9,7 @@ import { isPath } from "./utils";
 
 export interface ReadCsvOptions {
   inferSchemaLength: number | null;
+  batchSize: number;
   nRows: number;
   hasHeader: boolean;
   ignoreErrors: boolean;
@@ -39,11 +40,13 @@ export interface ReadCsvOptions {
 
 const readCsvDefaultOptions: Partial<ReadCsvOptions> = {
   inferSchemaLength: 100,
+  batchSize: 8192,
   hasHeader: true,
   ignoreErrors: true,
   chunkSize: 10000,
   skipRows: 0,
   sep: ",",
+  quoteChar: '"',
   rechunk: false,
   encoding: "utf8",
   lowMemory: false,
@@ -186,7 +189,6 @@ export function readCSV(pathOrBody, options?) {
 
   // Handle If set to `null` case
   options.inferSchemaLength = options.inferSchemaLength ?? 0;
-  options.quoteChar = options.quoteChar ?? '"';
 
   if (Buffer.isBuffer(pathOrBody)) {
     return _DataFrame(pli.readCsv(pathOrBody, options));
@@ -233,6 +235,7 @@ const scanCsvDefaultOptions: Partial<ScanCsvOptions> = {
   ignoreErrors: true,
   skipRows: 0,
   sep: ",",
+  quoteChar: '"',
   eolChar: "\n",
   rechunk: false,
   encoding: "utf8",
@@ -276,7 +279,7 @@ export function scanCSV(
   options?: Partial<ScanCsvOptions>,
 ): LazyDataFrame;
 export function scanCSV(path, options?) {
-  options = { quoteChar: '"', ...scanCsvDefaultOptions, ...options };
+  options = { ...scanCsvDefaultOptions, ...options };
 
   // Handle If set to `null` case
   options.inferSchemaLength = options.inferSchemaLength ?? 0;
@@ -673,10 +676,10 @@ export function readCSVStream(
   options?: Partial<ReadCsvOptions>,
 ): Promise<DataFrame>;
 export function readCSVStream(stream, options?) {
+  options = { ...readCsvDefaultOptions, ...options };
   const batchSize = options?.batchSize ?? 10000;
   let count = 0;
   const end = options?.endRows ?? Number.POSITIVE_INFINITY;
-  options = { quoteChar: '"', ...options };
 
   return new Promise((resolve, reject) => {
     const s = stream.pipe(new LineBatcher({ batchSize }));

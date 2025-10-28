@@ -3,6 +3,7 @@ import {
   type DataFrame,
   type JoinSchemas,
   type Schema,
+  writeCsvDefaultOptions,
 } from "../dataframe";
 import pli from "../internals/polars_internal";
 import type { Series } from "../series";
@@ -1241,15 +1242,14 @@ export const _LazyDataFrame = (_ldf: any): LazyDataFrame => {
       const exprs = selectionToExprList(columns, false);
       return _LazyDataFrame(_ldf.withColumns(exprs));
     },
-    withColumnRenamed(existing, replacement) {
+    withColumnRenamed(existing: string, replacement: string) {
       return _LazyDataFrame(_ldf.rename([existing], [replacement]));
     },
     withRowCount(name = "row_nr") {
       return _LazyDataFrame(_ldf.withRowCount(name));
     },
-    sinkCSV(path, options: CsvWriterOptions = {}) {
-      options.maintainOrder = options.maintainOrder ?? false;
-      options.quoteChar = options.quoteChar ?? '"';
+    sinkCSV(path, options: CsvWriterOptions) {
+      options = { ...writeCsvDefaultOptions, ...options };
       return _ldf.sinkCsv(path, options, {
         syncOnClose: "all",
         maintainOrder: false,
