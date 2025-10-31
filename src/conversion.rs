@@ -788,6 +788,7 @@ impl FromNapiValue for Wrap<DataType> {
                         DataType::Datetime(tu.0, None)
                     }
                     "Time" => DataType::Time,
+                    "Duration" => DataType::Duration(TimeUnit::Microseconds),
                     "Object" => DataType::Object("object"),
                     "Categorical" => {
                         let categories = Categories::new(
@@ -1153,6 +1154,7 @@ impl ToNapiValue for Wrap<DataType> {
             }
             DataType::Null => String::to_napi_value(env, "Null".to_owned()),
             DataType::Time => String::to_napi_value(env, "Time".to_owned()),
+            DataType::Duration(..) => String::to_napi_value(env, "Duration".to_owned()),
             DataType::Object(..) => String::to_napi_value(env, "Object".to_owned()),
             DataType::Categorical(..) => String::to_napi_value(env, "Categorical".to_owned()),
             DataType::Struct(flds) => {

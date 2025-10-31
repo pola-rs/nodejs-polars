@@ -21,6 +21,7 @@ pub enum JsDataType {
     Date,
     Datetime,
     Time,
+    Duration,
     Object,
     Categorical,
     Struct,
@@ -45,6 +46,7 @@ impl JsDataType {
             "Date" => JsDataType::Date,
             "Datetime" => JsDataType::Datetime,
             "Time" => JsDataType::Time,
+            "Duration" => JsDataType::Duration,
             "Object" => JsDataType::Object,
             "Categorical" => JsDataType::Categorical,
             "Struct" => JsDataType::Struct,
@@ -73,6 +75,7 @@ impl From<&DataType> for JsDataType {
             DataType::Date => Date,
             DataType::Datetime(_, _) => Datetime,
             DataType::Time => Time,
+            DataType::Duration(_) => Duration,
             DataType::Object(..) => Object,
             DataType::Categorical(..) => Categorical,
             DataType::Struct(_) => Struct,
@@ -280,7 +283,7 @@ impl<'a> From<JsAnyValue> for AnyValue<'a> {
             JsAnyValue::Float64(v) => AnyValue::Float64(v),
             JsAnyValue::Date(v) => AnyValue::Date(v),
             JsAnyValue::Datetime(v, w, _) => AnyValue::Datetime(v, w, None),
-            JsAnyValue::Duration(v, _) => AnyValue::Duration(v, TimeUnit::Milliseconds),
+            JsAnyValue::Duration(v, w) => AnyValue::Duration(v, w),
             JsAnyValue::Time(v) => AnyValue::Time(v),
             JsAnyValue::List(v) => AnyValue::List(v),
             _ => todo!(), // JsAnyValue::Struct(v) => AnyValue::Struct(v),
@@ -332,8 +335,8 @@ impl From<&JsAnyValue> for DataType {
             JsAnyValue::Float64(_) => DataType::Float64,
             JsAnyValue::Date(_) => DataType::Date,
             JsAnyValue::Datetime(_, _, _) => DataType::Datetime(TimeUnit::Milliseconds, None),
-            JsAnyValue::Duration(_, _) => DataType::Duration(TimeUnit::Milliseconds),
             JsAnyValue::Time(_) => DataType::Time,
+            JsAnyValue::Duration(_, _) => DataType::Duration(TimeUnit::Milliseconds),
             _ => todo!(), // JsAnyValue::Struct(v) => AnyValue::Struct(v),
         }
     }
@@ -401,6 +404,7 @@ impl Into<DataType> for JsDataType {
             JsDataType::Date => Date,
             JsDataType::Datetime => Datetime(TimeUnit::Milliseconds, None),
             JsDataType::Time => Time,
+            JsDataType::Duration => DataType::Duration(TimeUnit::Microseconds),
             JsDataType::Object => Object("object"),
             JsDataType::Categorical => {
                 let categories = Categories::new(

@@ -117,6 +117,7 @@ export namespace pl {
   export type Date = import("./datatypes").Date;
   export type Datetime = import("./datatypes").Datetime;
   export type Time = import("./datatypes").Time;
+  export type Duration = import("./datatypes").Duration;
   export type Object = import("./datatypes").Object_;
   export type Null = import("./datatypes").Null;
   export type Struct = import("./datatypes").Struct;
@@ -142,7 +143,7 @@ export namespace pl {
   // biome-ignore lint/suspicious/noShadowRestrictedNames: pl.Date
   export const Date = DataType.Date;
   export const Datetime = DataType.Datetime;
-
+  export const Duration = DataType.Duration;
   export const Time = DataType.Time;
   // biome-ignore lint/suspicious/noShadowRestrictedNames: pl.Object
   export const Object = DataType.Object;
@@ -260,6 +261,7 @@ export type FixedSizeList = import("./datatypes").FixedSizeList;
 export type Date = import("./datatypes").Date;
 export type Datetime = import("./datatypes").Datetime;
 export type Time = import("./datatypes").Time;
+export type Duration = import("./datatypes").Duration;
 export type Object = import("./datatypes").Object_;
 export type Null = import("./datatypes").Null;
 export type Struct = import("./datatypes").Struct;
@@ -285,7 +287,7 @@ export const FixedSizeList = DataType.FixedSizeList;
 // biome-ignore lint/suspicious/noShadowRestrictedNames: pl.Date
 export const Date = DataType.Date;
 export const Datetime = DataType.Datetime;
-
+export const Duration = DataType.Duration;
 export const Time = DataType.Time;
 // biome-ignore lint/suspicious/noShadowRestrictedNames: pl.Object
 export const Object = DataType.Object;

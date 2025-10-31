@@ -97,6 +97,9 @@ export abstract class DataType<Dtype extends DataTypeName = any> {
   ) {
     return new Datetime(timeUnit ?? "ms", timeZone);
   }
+  public static Duration(timeUnit: TimeUnit | "ms" | "ns" | "us") {
+    return new Duration(timeUnit);
+  }
 
   /**
    * Nested list/array type
@@ -284,6 +287,27 @@ export class Datetime extends DataType<"Datetime"> {
   }
 }
 
+export class Duration extends DataType<"Duration"> {
+  declare __dtype: "Duration";
+  constructor(
+    private timeUnit: TimeUnit | "ms" | "ns" | "us" = "ms",
+  ) {
+    super();
+  }
+  override get inner() {
+    return [this.timeUnit];
+  }
+
+  override equals(other: Duration): boolean {
+    if (other.variant === this.variant) {
+      return (
+        this.timeUnit === (other as Duration).timeUnit
+      );
+    }
+    return false;
+  }
+}
+
 export class List extends DataType<"List"> {
   declare __dtype: "List";
   constructor(protected __inner: DataType) {
@@ -418,6 +442,7 @@ export namespace DataType {
   export type Date = import(".").Date;
   export type Datetime = import(".").Datetime;
   export type Time = import(".").Time;
+  export type Duration = import(".").Duration;
   export type Object = import(".").Object_;
   export type Null = import(".").Null;
   export type Struct = import(".").Struct;
@@ -466,6 +491,7 @@ export type DataTypeName =
   | "Date"
   | "Datetime"
   | "Time"
+  | "Duration"
   | "Object"
   | "Utf8"
   | "String"

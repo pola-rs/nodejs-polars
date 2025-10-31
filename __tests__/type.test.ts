@@ -1,3 +1,4 @@
+import { TimeUnit } from "@polars/datatypes";
 import pl from "@polars/index";
 import { expectType } from "ts-expect";
 
@@ -16,6 +17,7 @@ describe("type tests", () => {
       strings_nulls: ["foo", null, "ham"],
       date: [new Date(), new Date(), new Date()],
       datetime: [13241324, 12341256, 12341234],
+      duration: [ TimeUnit.Microseconds, TimeUnit.Milliseconds, TimeUnit.Nanoseconds ],
     });
 
     expectType<
@@ -32,6 +34,7 @@ describe("type tests", () => {
         strings_nulls: pl.String;
         date: pl.Datetime;
         datetime: pl.Float64;
+        duration: pl.String;
       }>
     >(df);
   });

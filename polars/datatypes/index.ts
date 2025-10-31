@@ -2,6 +2,7 @@ export * from "./conversion";
 export * from "./datatype";
 export { Field } from "./field";
 
+import { Duration } from "..";
 import pli from "../internals/polars_internal";
 import { type DataType, Time } from "./datatype";
 
@@ -49,6 +50,7 @@ export const DTYPE_TO_FFINAME = {
   List: "List",
   Date: "Date",
   Datetime: "Datetime",
+  Duration: "Duration",
   Time: "Time",
   Object: "Object",
   Categorical: "Categorical",
@@ -94,6 +96,9 @@ const POLARS_TYPE_TO_CONSTRUCTOR: Record<string, any> = {
   },
   Time(name, values) {
     return pli.JsSeries.newAnyValue(name, values, Time);
+  },
+  Duration(name, values) {
+    return pli.JsSeries.newAnyValue(name, values, Duration("ns"));
   },
   Bool(name, values) {
     return pli.JsSeries.newOptBool(name, values);
