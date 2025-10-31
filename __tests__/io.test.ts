@@ -73,7 +73,6 @@ describe("read:csv", () => {
       '"name\na","height\nb"\n"John",172.23\n"Anna",1653.34',
     );
     const df = pl.readCSV(csvBuffer, {
-      quoteChar: '"',
       sep: ",",
       hasHeader: false,
       skipRows: 1,
@@ -91,8 +90,8 @@ describe("read:csv", () => {
     );
   });
   it("can read from a csv buffer quoted", () => {
-    const csvBuffer = Buffer.from('a,b,c,d\n1,test,"a,b,c",another test');
-    const df = pl.readCSV(csvBuffer, { quoteChar: '"' });
+    let csvBuffer = Buffer.from('a,b,c,d\n1,test,"a,b,c",another test');
+    let df = pl.readCSV(csvBuffer);
     const expected = `shape: (1, 4)
 ┌─────┬──────┬───────┬──────────────┐
 │ a   ┆ b    ┆ c     ┆ d            │
@@ -101,6 +100,9 @@ describe("read:csv", () => {
 ╞═════╪══════╪═══════╪══════════════╡
 │ 1   ┆ test ┆ a,b,c ┆ another test │
 └─────┴──────┴───────┴──────────────┘`;
+    expect(df.toString()).toEqual(expected);
+    csvBuffer = Buffer.from("a,b,c,d\n1,test,|a,b,c|,another test");
+    df = pl.readCSV(csvBuffer, { quoteChar: "|" });
     expect(df.toString()).toEqual(expected);
   });
   it("can read from a csv buffer with options", () => {
