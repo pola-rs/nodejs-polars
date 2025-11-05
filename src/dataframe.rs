@@ -1198,7 +1198,7 @@ impl JsDataFrame {
     }
     #[napi(catch_unwind)]
     pub fn unnest(&self, names: Vec<String>) -> napi::Result<JsDataFrame> {
-        let df = self.df.unnest(names).map_err(JsPolarsErr::from)?;
+        let df = self.df.unnest(names, Some(&PlSmallStr::EMPTY)).map_err(JsPolarsErr::from)?;
         Ok(df.into())
     }
     #[napi(catch_unwind)]
