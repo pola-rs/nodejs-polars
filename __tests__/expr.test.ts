@@ -608,7 +608,7 @@ describe("expr", () => {
       pl.Series("uint64", [0n], pl.UInt64),
     ]);
 
-    const actual = df.select(col("*").lowerBound().keepName());
+    const actual = df.select(col("*").lowerBound());
     expect(actual).toFrameStrictEqual(expected);
   });
   test("lt", () => {
@@ -1056,7 +1056,7 @@ describe("expr", () => {
       pl.Series("uint32", [4294967295], pl.UInt32),
       pl.Series("uint64", [18446744073709551615n], pl.UInt64),
     ]);
-    const actual = df.select(col("*").upperBound().keepName());
+    const actual = df.select(col("*").upperBound());
     expect(actual).toFrameStrictEqual(expected);
   });
   test("var", () => {
