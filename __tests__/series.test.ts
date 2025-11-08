@@ -467,10 +467,10 @@ describe("series functions", () => {
 
   it.each`
     name                 | actual                                                                                 | expected
-    ${"dtype:Utf8"}      | ${pl.Series(["foo"]).dtype}                                                            | ${pl.Utf8}
+    ${"dtype:String"}    | ${pl.Series(["foo"]).dtype}                                                            | ${pl.String}
     ${"dtype:UInt64"}    | ${pl.Series([1n]).dtype}                                                               | ${pl.UInt64}
     ${"dtype:Float64"}   | ${pl.Series([1]).dtype}                                                                | ${pl.Float64}
-    ${"dtype"}           | ${pl.Series(["foo"]).dtype}                                                            | ${pl.Utf8}
+    ${"dtype"}           | ${pl.Series(["foo"]).dtype}                                                            | ${pl.String}
     ${"name"}            | ${pl.Series("a", ["foo"]).name}                                                        | ${"a"}
     ${"length"}          | ${pl.Series([1, 2, 3, 4]).length}                                                      | ${4}
     ${"abs"}             | ${pl.Series([1, 2, -3]).abs()}                                                         | ${pl.Series([1, 2, 3])}
