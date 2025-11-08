@@ -788,7 +788,10 @@ impl FromNapiValue for Wrap<DataType> {
                         DataType::Datetime(tu.0, None)
                     }
                     "Time" => DataType::Time,
-                    "Duration" => DataType::Duration(TimeUnit::Microseconds),
+                    "Duration" => {
+                        let tu = obj.get::<Wrap<TimeUnit>>("timeUnit")?.unwrap();
+                        DataType::Duration(tu.0)
+                    },
                     "Object" => DataType::Object("object"),
                     "Categorical" => {
                         let categories = Categories::new(

@@ -97,9 +97,6 @@ const POLARS_TYPE_TO_CONSTRUCTOR: Record<string, any> = {
   Time(name, values) {
     return pli.JsSeries.newAnyValue(name, values, Time);
   },
-  Duration(name, values) {
-    return pli.JsSeries.newAnyValue(name, values, Duration("ns"));
-  },
   Bool(name, values) {
     return pli.JsSeries.newOptBool(name, values);
   },
