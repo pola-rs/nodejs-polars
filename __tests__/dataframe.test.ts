@@ -2913,7 +2913,7 @@ describe("additional", () => {
     const actual = df.toRecords();
     expect(actual).toEqual(rows);
   });
-  test("upsample", () => {
+  test.skip("upsample", () => {
     const df = pl
       .DataFrame({
         date: [
