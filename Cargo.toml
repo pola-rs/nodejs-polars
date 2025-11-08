@@ -14,8 +14,8 @@ crate-type = ["cdylib", "lib"]
 
 [dependencies]
 bincode = { version = "2.0.1", features = ["serde"] }
-napi = { version = "3.4.0", default-features = false, features = [ "napi8", "serde-json" ] }
-napi-derive = { version = "3.3.0", default-features = false }
+napi = { version = "3.5.1", default-features = false, features = [ "napi8", "serde-json" ] }
+napi-derive = { version = "3.3.2", default-features = false }
 polars-core = { version = "0.52.0", default-features = false }
 polars-io = { version = "0.52.0", default-features = false }
 polars-lazy = { version = "0.52.0", default-features = false }
@@ -163,7 +163,7 @@ features = [
 version = "0.52.0"
 
 [build-dependencies]
-napi-build = "2.2.4"
+napi-build = "2.3.0"
 
 [profile.release]
 codegen-units = 1

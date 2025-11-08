@@ -1,9 +1,9 @@
 use crate::dataframe::JsDataFrame;
 use crate::lazy::dsl::{JsExpr, ToExprs};
 use crate::prelude::*;
-use polars_utils::slice_enum::Slice;
 use polars::prelude::{lit, ClosedWindow, JoinType};
 use polars_io::{HiveOptions, RowIndex};
+use polars_utils::slice_enum::Slice;
 use std::collections::HashMap;
 use std::num::NonZeroUsize;
 use std::ops::BitOrAssign;
@@ -574,7 +574,10 @@ impl JsLazyFrame {
 
     #[napi(catch_unwind)]
     pub fn unnest(&self, colss: Vec<String>) -> JsLazyFrame {
-        self.ldf.clone().unnest(strings_to_selector(colss), Some(PlSmallStr::EMPTY)).into()
+        self.ldf
+            .clone()
+            .unnest(strings_to_selector(colss), Some(PlSmallStr::EMPTY))
+            .into()
     }
 
     #[napi(catch_unwind)]
@@ -842,7 +845,9 @@ pub fn scan_ipc(path: String, options: ScanIPCOptions) -> napi::Result<JsLazyFra
     let rechunk = options.rechunk.unwrap_or(false);
     let row_index: Option<RowIndex> = options.row_count.map(|rc| rc.into());
     let options = IpcScanOptions;
-    let lf = LazyFrame::scan_ipc(PlPath::new(&path), options, 
+    let lf = LazyFrame::scan_ipc(
+        PlPath::new(&path),
+        options,
         UnifiedScanArgs {
             pre_slice: n_rows.map(|len| Slice::Positive { offset: 0, len }),
             row_index,
@@ -850,7 +855,9 @@ pub fn scan_ipc(path: String, options: ScanIPCOptions) -> napi::Result<JsLazyFra
             cache,
             glob: true,
             ..Default::default()
-        }).map_err(JsPolarsErr::from)?;
+        },
+    )
+    .map_err(JsPolarsErr::from)?;
     Ok(lf.into())
 }
 
