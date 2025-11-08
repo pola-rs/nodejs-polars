@@ -3,12 +3,12 @@ import type { DataType } from "./datatype";
 /**
  * A field is a name and a datatype.
  */
-export interface Field {
+export interface iField {
   name: string;
   dtype: DataType;
 }
 
-export class Field implements Field {
+export class Field implements iField {
   constructor(
     public name: string,
     public dtype: DataType,

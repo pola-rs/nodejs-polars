@@ -45,7 +45,18 @@ export type RoundMode = "halftoeven" | "halfawayfromzero";
  */
 export interface ConcatOptions {
   rechunk?: boolean;
-  how?: "vertical" | "horizontal" | "diagonal";
+  parallel?: boolean;
+  how?:
+    | "vertical"
+    | "verticalRelaxed"
+    | "horizontal"
+    | "diagonal"
+    | "diagonalRelaxed"
+    | "align"
+    | "alignInner"
+    | "alignFull"
+    | "alignLeft"
+    | "alignRight";
 }
 /**
  * Options for @see {@link DataFrame.writeCSV}
