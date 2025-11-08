@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import { Stream } from "node:stream";
 /* eslint-disable newline-per-chained-call */
-import pl, { Duration } from "@polars";
+import pl from "@polars";
 
 describe("dataframe", () => {
   const df = pl.DataFrame([
@@ -2186,7 +2186,7 @@ describe("create", () => {
   });
   test("duration type", () => {
     const df = pl.DataFrame({
-      duration: [ pl.Series("duration", [null, null], pl.Duration("ms"))],
+      duration: [pl.Series("duration", [null, null], pl.Duration("ms"))],
     });
     console.log(df);
   });
@@ -2197,7 +2197,7 @@ describe("create", () => {
       date_nulls: pl.Series("", [null, new Date()], pl.Date),
       datetime: pl.Series("", [new Date(), new Date()]),
       datetime_nulls: pl.Series("", [null, new Date()]),
-      duration: [ pl.Series("duration", [null, null], pl.Duration("ms"))],
+      duration: [pl.Series("duration", [null, null], pl.Duration("ms"))],
       string: ["a", "b"],
       string_nulls: [null, "a"],
       categorical: pl.Series("", ["one", "two"], pl.Categorical),

@@ -289,9 +289,7 @@ export class Datetime extends DataType<"Datetime"> {
 
 export class Duration extends DataType<"Duration"> {
   declare __dtype: "Duration";
-  constructor(
-    private timeUnit: TimeUnit | "ms" | "ns" | "us" = "ms",
-  ) {
+  constructor(private timeUnit: TimeUnit | "ms" | "ns" | "us" = "ms") {
     super();
   }
   override get inner() {
@@ -300,9 +298,7 @@ export class Duration extends DataType<"Duration"> {
 
   override equals(other: Duration): boolean {
     if (other.variant === this.variant) {
-      return (
-        this.timeUnit === (other as Duration).timeUnit
-      );
+      return this.timeUnit === (other as Duration).timeUnit;
     }
     return false;
   }

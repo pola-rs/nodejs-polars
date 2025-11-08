@@ -2,7 +2,6 @@ export * from "./conversion";
 export * from "./datatype";
 export { Field } from "./field";
 
-import { Duration } from "..";
 import pli from "../internals/polars_internal";
 import { type DataType, Time } from "./datatype";
 
