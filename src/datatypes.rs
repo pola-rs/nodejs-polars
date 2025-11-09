@@ -309,7 +309,7 @@ impl From<AnyValue<'_>> for JsAnyValue {
             AnyValue::Float64(v) => JsAnyValue::Float64(v),
             AnyValue::Date(v) => JsAnyValue::Date(v),
             AnyValue::Datetime(v, w, _) => JsAnyValue::Datetime(v, w, None),
-            AnyValue::Duration(v, _) => JsAnyValue::Duration(v, TimeUnit::Milliseconds),
+            AnyValue::Duration(v, w) => JsAnyValue::Duration(v, w),
             AnyValue::Time(v) => JsAnyValue::Time(v),
             AnyValue::List(v) => JsAnyValue::List(v),
             _ => todo!(), // JsAnyValue::Struct(v) => AnyValue::Struct(v),

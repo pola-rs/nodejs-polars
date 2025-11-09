@@ -449,7 +449,10 @@ export namespace DataType {
    */
   export function deserialize(dtype: any): DataType {
     if (typeof dtype === "string") {
-      return DataType[dtype];
+      const member = (DataType as any)[dtype];
+      // if it's a factory function, call it with no args (use defaults),
+      // otherwise return the already-instantiated value
+      return typeof member === "function" ? member() : member;
     }
 
     let { variant, inner } = dtype;

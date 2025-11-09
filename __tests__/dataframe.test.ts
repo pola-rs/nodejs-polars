@@ -2184,11 +2184,16 @@ describe("create", () => {
     const df = pl.DataFrame({});
     expect(df.isEmpty()).toStrictEqual(true);
   });
-  test("duration type", () => {
-    const df = pl.DataFrame({
-      duration: [pl.Series("duration", [null, null], pl.Duration("ms"))],
+  test("duration dtype", () => {
+    let df = pl.DataFrame(
+      { duration: [1, 1] },
+      { schema: { duration: pl.Duration("ms") } },
+    );
+    expect(df.getColumn("duration").dtype).toStrictEqual(pl.Duration("ms"));
+    df = pl.DataFrame({
+      duration: pl.Series("duration", [1, 1], pl.Duration("ms")),
     });
-    console.log(df);
+    expect(df.getColumn("duration").dtype).toStrictEqual(pl.Duration("ms"));
   });
   test("all supported types", () => {
     const df = pl.DataFrame({
@@ -2197,7 +2202,7 @@ describe("create", () => {
       date_nulls: pl.Series("", [null, new Date()], pl.Date),
       datetime: pl.Series("", [new Date(), new Date()]),
       datetime_nulls: pl.Series("", [null, new Date()]),
-      duration: [pl.Series("duration", [null, null], pl.Duration("ms"))],
+      duration: pl.Series("duration", [null, null], pl.Duration("ms")),
       string: ["a", "b"],
       string_nulls: [null, "a"],
       categorical: pl.Series("", ["one", "two"], pl.Categorical),
