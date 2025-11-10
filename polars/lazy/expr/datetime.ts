@@ -1,8 +1,8 @@
 import type { DateFunctions } from "../../shared_traits";
-import { _Expr, type Expr } from "../expr";
+import { _Expr, type Expr, exprToLitOrExpr } from "../expr";
 
 /**
- * DateTime functions for Lazy dataframes
+ * DateTime functions for expression
  */
 export interface ExprDateTime extends DateFunctions<Expr> {}
 
@@ -26,5 +26,6 @@ export const ExprDateTimeFunctions = (_expr: any): ExprDateTime => {
     week: wrapNullArgs("week"),
     weekday: wrapNullArgs("weekday"),
     year: wrapNullArgs("year"),
+    truncate: (every) => wrap("dtTruncate", exprToLitOrExpr(every)._expr),
   };
 };

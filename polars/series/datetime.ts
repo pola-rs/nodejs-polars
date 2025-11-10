@@ -1,6 +1,6 @@
+import { col } from "../lazy/functions";
 import type { DateFunctions } from "../shared_traits";
 import { _Series, type Series } from ".";
-
 /**
  * DateTime functions for Series
  */
@@ -26,5 +26,10 @@ export const SeriesDateFunctions = (_s): SeriesDateFunctions => {
     week: wrapNullArgs("week"),
     weekday: wrapNullArgs("weekday"),
     year: wrapNullArgs("year"),
+    truncate: (every) =>
+      _Series(_s)
+        .toFrame()
+        .select(col(_s.name).date.truncate(every))
+        .getColumn(_s.name),
   };
 };

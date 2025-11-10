@@ -1629,6 +1629,20 @@ describe("expr.str", () => {
     expect(actual).toFrameEqual(expected);
     expect(seriesActual).toFrameEqual(expected);
   });
+  test("truncate", () => {
+    const df = pl.DataFrame([
+      pl.Series("datetime", [
+        new Date(Date.parse("2020-01-01T01:32:00.002+00:00")),
+        new Date(Date.parse("2020-01-01T02:02:01.030+00:00")),
+        new Date(Date.parse("2020-01-01T04:42:20.001+00:00")),
+      ]),
+    ]);
+    const actual = df
+      .select(pl.col("datetime").date.truncate("1h").date.minute().alias("1hr"))
+      .toSeries();
+    const expected = pl.Series("1hr", [0, 0, 0], pl.Int8);
+    expect(actual).toSeriesStrictEqual(expected);
+  });
   test("strptime", () => {
     const df = pl.DataFrame({
       timestamp: [

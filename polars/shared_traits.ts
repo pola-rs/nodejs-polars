@@ -873,6 +873,77 @@ export interface DateFunctions<T> {
    * @returns Year as Int32
    */
   year(): T;
+  /**
+   * Divide the date/datetime range into buckets.
+   * Each date/datetime is mapped to the start of its bucket using the corresponding local datetime. Note that:
+
+    - Weekly buckets start on Monday.
+    - All other buckets start on the Unix epoch (1970-01-01).
+    - Ambiguous results are localised using the DST offset of the original
+      timestamp - for example, truncating `'2022-11-06 01:30:00 CST'` by
+      `'1h'` results in `'2022-11-06 01:00:00 CST'`, whereas truncating
+      `'2022-11-06 01:30:00 CDT'` by `'1h'` results in
+      `'2022-11-06 01:00:00 CDT'`.
+
+    Parameters
+    ----------
+    @param every - The size of each bucket.
+
+    Notes
+    -----
+    The `every` argument is created with
+    the following string language:
+
+    - 1ns   (1 nanosecond)
+    - 1us   (1 microsecond)
+    - 1ms   (1 millisecond)
+    - 1s    (1 second)
+    - 1m    (1 minute)
+    - 1h    (1 hour)
+    - 1d    (1 calendar day)
+    - 1w    (1 calendar week)
+    - 1mo   (1 calendar month)
+    - 1q    (1 calendar quarter)
+    - 1y    (1 calendar year)
+
+    By "calendar day", we mean the corresponding time on the next day (which may
+    not be 24 hours, due to daylight savings). Similarly for "calendar week",
+    "calendar month", "calendar quarter", and "calendar year".
+
+    @returns Expr Expression of data type :class:`Date` or :class:`Datetime`.
+    @example
+    --------
+    const df = pl.DataFrame([
+      pl.Series("datetime", [
+        new Date(Date.parse("2020-01-01T01:32:00.002+00:00")),
+        new Date(Date.parse("2020-01-01T02:02:01.030+00:00")),
+        new Date(Date.parse("2020-01-01T04:42:20.001+00:00")),
+      ])]);
+    
+    >>> df.select("datetime", pl.col("datetime").date.truncate("1h").alias("hr0"));
+    shape: (3, 2)
+    ┌─────────────────────────┬─────────────────────┐
+    │ datetime                ┆ hr0                 │
+    │ ---                     ┆ ---                 │
+    │ datetime[ms]            ┆ datetime[ms]        │
+    ╞═════════════════════════╪═════════════════════╡
+    │ 2020-01-01 01:32:00.002 ┆ 2020-01-01 01:00:00 │
+    │ 2020-01-01 02:02:01.030 ┆ 2020-01-01 02:00:00 │
+    │ 2020-01-01 04:42:20.001 ┆ 2020-01-01 04:00:00 │
+    └─────────────────────────┴─────────────────────┘
+    >>> df.select("datetime", pl.col("datetime").date.truncate("30m").alias("hr30m"));
+    shape: (3, 2)
+    ┌─────────────────────────┬─────────────────────┐
+    │ datetime                ┆ hr30m               │
+    │ ---                     ┆ ---                 │
+    │ datetime[ms]            ┆ datetime[ms]        │
+    ╞═════════════════════════╪═════════════════════╡
+    │ 2020-01-01 01:32:00.002 ┆ 2020-01-01 01:30:00 │
+    │ 2020-01-01 02:02:01.030 ┆ 2020-01-01 02:00:00 │
+    │ 2020-01-01 04:42:20.001 ┆ 2020-01-01 04:30:00 │
+    └─────────────────────────┴─────────────────────┘
+   */
+  truncate(every: string | Expr): T;
 }
 
 export interface StringFunctions<T> {

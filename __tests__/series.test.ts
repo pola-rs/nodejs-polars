@@ -1030,3 +1030,19 @@ describe("generics", () => {
     expect<number[]>(arr2).toStrictEqual([1, 2, 3]);
   });
 });
+describe("series date", () => {
+  test("truncate time", () => {
+    const s = pl.Series("datetime", [
+      new Date(Date.parse("2020-01-01T01:32:00.002+00:00")),
+      new Date(Date.parse("2020-01-01T02:02:01.030+00:00")),
+      new Date(Date.parse("2020-01-01T04:42:20.001+00:00")),
+    ]);
+    const actual = s.date.truncate("30m").date.minute().alias("30m");
+    const expected = pl.Series("30min", [30, 0, 30], pl.Int8);
+    expect(actual).toSeriesStrictEqual(expected);
+
+    const actual2 = s.date.truncate("1h").date.hour().alias("1hr");
+    const expected2 = pl.Series("1hr", [1, 2, 4], pl.Int8);
+    expect(actual2).toSeriesStrictEqual(expected2);
+  });
+});
