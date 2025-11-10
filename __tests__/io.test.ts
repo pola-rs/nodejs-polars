@@ -220,7 +220,7 @@ describe("read:json", () => {
     ].join("\n");
     const df = pl.readJSON(Buffer.from(json), { format: "lines" });
     const actualCols = df.getColumns().map((x) => x.dtype);
-    expect(actualCols).toEqual([pl.Int64, pl.Utf8, pl.Null]);
+    expect(actualCols).toEqual([pl.Int64, pl.String, pl.Null]);
   });
 });
 
