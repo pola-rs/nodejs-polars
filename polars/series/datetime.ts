@@ -31,5 +31,10 @@ export const SeriesDateFunctions = (_s): SeriesDateFunctions => {
         .toFrame()
         .select(col(_s.name).date.truncate(every))
         .getColumn(_s.name),
+    round: (every) =>
+      _Series(_s)
+        .toFrame()
+        .select(col(_s.name).date.round(every))
+        .getColumn(_s.name),
   };
 };

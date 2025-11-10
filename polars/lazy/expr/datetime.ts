@@ -27,5 +27,6 @@ export const ExprDateTimeFunctions = (_expr: any): ExprDateTime => {
     weekday: wrapNullArgs("weekday"),
     year: wrapNullArgs("year"),
     truncate: (every) => wrap("dtTruncate", exprToLitOrExpr(every)._expr),
+    round: (every) => wrap("dtRound", exprToLitOrExpr(every)._expr),
   };
 };
