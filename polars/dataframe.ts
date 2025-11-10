@@ -832,9 +832,18 @@ export interface DataFrame<S extends Schema = any>
    * @param other - DataFrame to join with.
    * @param options
    * @param options.on - Name(s) of the join columns in both DataFrames.
-   * @param options.how - Join strategy
+   * @param options.how - Join strategy {'inner', 'left', 'right', 'full', 'semi', 'anti', 'cross'}
    * @param options.suffix - Suffix to append to columns with a duplicate name.
-   * @param options.coalesce - Coalescing behavior (merging of join columns).
+   * @param options.coalesce - Coalescing behavior (merging of join columns). default: undefined
+            * - **undefined** - *(Default)* Coalesce unless `how='full'` is specified.
+            * - **true**      - Always coalesce join columns.
+            * - **false**     - Never coalesce join columns.
+   * @param options.validate - Checks if join is of specified type. default: m:m 
+            valid options: {'m:m', 'm:1', '1:m', '1:1'}
+            * - **m:m** - *(Default)* Many-to-many (default). Does not result in checks.
+            * - **1:1** - One-to-one. Checks if join keys are unique in both left and right datasets.
+            * - **1:m** - One-to-many. Checks if join keys are unique in left dataset.
+            * - **m:1** - Many-to-one. Check if join keys are unique in right dataset.
    * @see {@link SameNameColumnJoinOptions}
    * @example
    * ```
@@ -2421,8 +2430,11 @@ export const _DataFrame = <S extends Schema>(_df: any): DataFrame<S> => {
       const how: string = options.how;
       const suffix: string = options.suffix;
       const coalesce: boolean = options.coalesce;
+      const validate: string = options.validate;
       if (how === "cross") {
-        return _DataFrame(_df.join(other._df, [], [], how, suffix, coalesce));
+        return _DataFrame(
+          _df.join(other._df, [], [], how, suffix, coalesce, validate),
+        );
       }
       let leftOn = columnOrColumns(options.leftOn);
       let rightOn = columnOrColumns(options.rightOn);
@@ -2436,7 +2448,16 @@ export const _DataFrame = <S extends Schema>(_df: any): DataFrame<S> => {
           "You should pass the column to join on as an argument.",
         );
       }
-      return wrap("join", other._df, leftOn, rightOn, how, suffix, coalesce);
+      return wrap(
+        "join",
+        other._df,
+        leftOn,
+        rightOn,
+        how,
+        suffix,
+        coalesce,
+        validate,
+      );
     },
     joinAsof(other, options) {
       return this.lazy()

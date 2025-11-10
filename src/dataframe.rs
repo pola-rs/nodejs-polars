@@ -626,6 +626,7 @@ impl JsDataFrame {
         how: String,
         suffix: Option<String>,
         coalesce: Option<bool>,
+        validate: Option<String>,
     ) -> napi::Result<JsDataFrame> {
         let how = match how.as_ref() {
             "left" => JoinType::Left,
@@ -651,6 +652,20 @@ impl JsDataFrame {
             }
         };
 
+        let validation: JoinValidation = match validate.as_deref() {
+            Some("m:m") => JoinValidation::ManyToMany,
+            Some("m:1") => JoinValidation::ManyToOne,
+            Some("1:m") => JoinValidation::OneToMany,
+            Some("1:1") => JoinValidation::OneToOne,
+            None => JoinValidation::ManyToMany,
+            Some(unknown) => {
+                return Err(napi::Error::from_reason(format!(
+                    "Unknown join validation: {}",
+                    unknown
+                )))
+            }
+        };
+
         let coalesce = match (&how, coalesce) {
             (JoinType::Full, None) => JoinCoalesce::KeepColumns,
             (_, Some(false)) => JoinCoalesce::KeepColumns,
@@ -667,6 +682,7 @@ impl JsDataFrame {
                     how: how,
                     suffix: suffix.map_or(None, |s| Some(PlSmallStr::from_string(s))),
                     coalesce,
+                    validation,
                     ..Default::default()
                 },
                 None,

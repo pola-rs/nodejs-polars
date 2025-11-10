@@ -252,6 +252,8 @@ export type SameNameColumnJoinOptions<
   suffix?: string;
   /** Coalescing behavior (merging of join columns). */
   coalesce?: boolean;
+  // Checks if join is of specified type.
+  validate?: string;
 };
 /**
  * options for differently named column join @see {@link DataFrame.join}
@@ -270,6 +272,8 @@ export type DifferentNameColumnJoinOptions<
   suffix?: string;
   /** Coalescing behavior (merging of join columns). */
   coalesce?: boolean;
+  // Checks if join is of specified type.
+  validate?: string;
 };
 /**
  * options for cross join @see {@link DataFrame.join}
@@ -281,6 +285,8 @@ export type CrossJoinOptions = {
   suffix?: string;
   /** Coalescing behavior (merging of join columns). */
   coalesce?: boolean;
+  // Checks if join is of specified type.
+  validate?: string;
 };
 /**
  * options for join operations @see {@link DataFrame.join}

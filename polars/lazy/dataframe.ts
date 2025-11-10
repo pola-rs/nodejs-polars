@@ -277,9 +277,18 @@ export interface LazyDataFrame<S extends Schema = any>
   /**
    *  __SQL like cross joins.__
    * @param other - DataFrame to join with.
-   * @param joinOptions.how - Join strategy
+   * @param joinOptions.how - Join strategy {'inner', 'left', 'right', 'full', 'semi', 'anti', 'cross'}
    * @param joinOptions.suffix - Suffix to append to columns with a duplicate name.
-   * @param joinOptions.coalesce - Coalescing behavior (merging of join columns).
+   * @param joinOptions.coalesce - Coalescing behavior (merging of join columns). default: undefined
+   *         - **undefined** - *(Default)* Coalesce unless `how='full'` is specified.
+   *         - **true**      - Always coalesce join columns.
+   *         - **false**     - Never coalesce join columns.
+   * @param joinOptions.validate - Checks if join is of specified type. default: m:m
+   *        valid options: {'m:m', 'm:1', '1:m', '1:1'}
+   *           - **m:m** - *(Default)* Many-to-many (default). Does not result in checks.
+   *           - **1:1** - One-to-one. Checks if join keys are unique in both left and right datasets.
+   *           - **1:m** - One-to-many. Checks if join keys are unique in left dataset.
+   *           - **m:1** - Many-to-one. Check if join keys are unique in right dataset.
    * @param joinOptions.allowParallel - Allow the physical plan to optionally evaluate the computation of both DataFrames up to the join in parallel.
    * @param joinOptions.forceParallel - Force the physical plan to evaluate the computation of both DataFrames up to the join in parallel.
    * @see {@link LazyJoinOptions}
@@ -1001,7 +1010,8 @@ export const _LazyDataFrame = (_ldf: any): LazyDataFrame => {
         forceParallel: false,
         ...options,
       };
-      const { how, suffix, allowParallel, forceParallel, coalesce } = options;
+      const { how, suffix, allowParallel, forceParallel, coalesce, validate } =
+        options;
       if (how === "cross") {
         return _LazyDataFrame(
           _ldf.join(
@@ -1013,6 +1023,7 @@ export const _LazyDataFrame = (_ldf: any): LazyDataFrame => {
             how,
             suffix,
             coalesce,
+            validate,
             [],
             [],
           ),
@@ -1045,6 +1056,7 @@ export const _LazyDataFrame = (_ldf: any): LazyDataFrame => {
         how,
         suffix,
         coalesce,
+        validate,
         [],
         [],
       );

@@ -359,6 +359,7 @@ impl JsLazyFrame {
         how: Wrap<JoinType>,
         suffix: String,
         coalesce: Option<bool>,
+        validate: Option<String>,
     ) -> JsLazyFrame {
         let ldf = self.ldf.clone();
         let other = other.ldf.clone();
@@ -371,6 +372,15 @@ impl JsLazyFrame {
             _ => JoinCoalesce::CoalesceColumns, // Default is true
         };
 
+        let validation: JoinValidation = match validate.as_deref() {
+            Some("m:m") => JoinValidation::ManyToMany,
+            Some("m:1") => JoinValidation::ManyToOne,
+            Some("1:m") => JoinValidation::OneToMany,
+            Some("1:1") => JoinValidation::OneToOne,
+            None => JoinValidation::ManyToMany,
+            _ => panic!("Unknown join validation method"),
+        };
+
         ldf.join_builder()
             .with(other)
             .left_on(left_on)
@@ -380,6 +390,7 @@ impl JsLazyFrame {
             .how(how.0)
             .suffix(suffix)
             .coalesce(coalesce)
+            .validate(validation)
             .finish()
             .into()
     }
