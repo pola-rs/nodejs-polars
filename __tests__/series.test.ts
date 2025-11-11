@@ -242,6 +242,7 @@ describe("series", () => {
       ${[true, false]}          | ${pl.Bool}                   | ${"boolean"}
       ${[]}                     | ${pl.Float64}                | ${"empty"}
       ${[new Date(Date.now())]} | ${pl.Datetime("ms", "")}     | ${"Date"}
+      ${[1, 2, 3]}              | ${pl.Duration("ms")}         | ${"duration[ms]"}
       ${[[1, 2, 3, 4, 5, 6]]}   | ${pl.List(DataType.Int16)}   | ${"[list[i16]]"}
       ${[[1, 2, 3, 4, 5, 6]]}   | ${pl.List(DataType.UInt16)}  | ${"[list[u16]]"}
       ${[[1, 2, 3, 4, 5, 6]]}   | ${pl.List(DataType.Int32)}   | ${"[list[i32]]"}
@@ -467,10 +468,10 @@ describe("series functions", () => {
 
   it.each`
     name                 | actual                                                                                 | expected
-    ${"dtype:Utf8"}      | ${pl.Series(["foo"]).dtype}                                                            | ${pl.Utf8}
+    ${"dtype:String"}    | ${pl.Series(["foo"]).dtype}                                                            | ${pl.String}
     ${"dtype:UInt64"}    | ${pl.Series([1n]).dtype}                                                               | ${pl.UInt64}
     ${"dtype:Float64"}   | ${pl.Series([1]).dtype}                                                                | ${pl.Float64}
-    ${"dtype"}           | ${pl.Series(["foo"]).dtype}                                                            | ${pl.Utf8}
+    ${"dtype"}           | ${pl.Series(["foo"]).dtype}                                                            | ${pl.String}
     ${"name"}            | ${pl.Series("a", ["foo"]).name}                                                        | ${"a"}
     ${"length"}          | ${pl.Series([1, 2, 3, 4]).length}                                                      | ${4}
     ${"abs"}             | ${pl.Series([1, 2, -3]).abs()}                                                         | ${pl.Series([1, 2, 3])}
@@ -515,7 +516,7 @@ describe("series functions", () => {
     ${"getIndex"}        | ${pl.Series(["a", "b", "c"]).getIndex(0)}                                              | ${"a"}
     ${"hasValidity"}     | ${pl.Series([1, null, 2]).hasValidity()}                                               | ${true}
     ${"hasValidity"}     | ${pl.Series([1, 1, 2]).hasValidity()}                                                  | ${false}
-    ${"hash"}            | ${pl.Series([1]).hash()}                                                               | ${pl.Series([3464615199868688860n])}
+    ${"hash"}            | ${pl.Series([1]).hash()}                                                               | ${pl.Series([11654340066941867156n])}
     ${"head"}            | ${pl.Series([1, 2, 3, 4, 5, 5, 5]).head()}                                             | ${pl.Series([1, 2, 3, 4, 5])}
     ${"head"}            | ${pl.Series([1, 2, 3, 4, 5, 5, 5]).head(2)}                                            | ${pl.Series([1, 2])}
     ${"interpolate"}     | ${pl.Series([1, 2, null, null, 5]).interpolate()}                                      | ${pl.Series([1, 2, 3, 4, 5])}
@@ -781,6 +782,14 @@ describe("series functions", () => {
   });
 });
 describe("comparators & math", () => {
+  test("duration/add/series", () => {
+    const drs = pl.Series("dur", [1], pl.Duration("ms"));
+    const dt = new Date(Date.now());
+    const ds = pl.Series("dt", [dt], pl.Datetime("ms", ""));
+    const expected = dt.getMilliseconds() + 1;
+    const actual = ds.add(drs).values().next().value.getMilliseconds();
+    expect(actual).toEqual(expected);
+  });
   test("add/plus/series", () => {
     const s = pl.Series([1, 2, 3]);
     const expected = pl.Series([2, 4, 6]);

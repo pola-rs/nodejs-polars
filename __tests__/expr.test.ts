@@ -418,8 +418,8 @@ describe("expr", () => {
   });
   test.each`
     args                   | hashValue
-    ${[0]}                 | ${3464615199868688860n}
-    ${[{ k0: 1n, k1: 1 }]} | ${9891435580050628982n}
+    ${[0]}                 | ${11654340066941867156n}
+    ${[{ k0: 1n, k1: 1 }]} | ${4783439339143683609n}
   `("$# hash", ({ args, hashValue }) => {
     const df = pl.DataFrame({ a: [1] });
     const expected = pl.DataFrame({ hash: [hashValue] });
@@ -608,7 +608,7 @@ describe("expr", () => {
       pl.Series("uint64", [0n], pl.UInt64),
     ]);
 
-    const actual = df.select(col("*").lowerBound().keepName());
+    const actual = df.select(col("*").lowerBound());
     expect(actual).toFrameStrictEqual(expected);
   });
   test("lt", () => {
@@ -1056,7 +1056,7 @@ describe("expr", () => {
       pl.Series("uint32", [4294967295], pl.UInt32),
       pl.Series("uint64", [18446744073709551615n], pl.UInt64),
     ]);
-    const actual = df.select(col("*").upperBound().keepName());
+    const actual = df.select(col("*").upperBound());
     expect(actual).toFrameStrictEqual(expected);
   });
   test("var", () => {
@@ -1336,7 +1336,7 @@ describe("expr.str", () => {
       val: ["windows", "acorn", "atari", null],
     });
     const expected = pl.DataFrame({
-      os: ["kali-windows", "debian-acorn", null, null],
+      os: ["kali-windows", "debian-acorn", null, "mac-sierra"],
     });
     const actual = df.select(
       col("os").str.replace("linux", col("val")).as("os"),
@@ -1409,7 +1409,12 @@ describe("expr.str", () => {
       val: [":", ":", null, "_"],
     });
     const expected = pl.DataFrame({
-      os: ["kali:linux:2021.3a", null, null, "mac_sierra_10.12.1"],
+      os: [
+        "kali:linux:2021.3a",
+        null,
+        "ubuntu-linux-16.04",
+        "mac_sierra_10.12.1",
+      ],
     });
     const actual = df.select(
       col("os").str.replaceAll("-", col("val")).as("os"),
@@ -2606,7 +2611,7 @@ describe("EWM", () => {
   test("ewmMean", () => {
     const s = pl.Series("s", [2, 5, 3]);
     const df = pl.DataFrame([s]);
-    let expected = pl.DataFrame({ s, ewmMean: [2.0, 4.0, 3.4285714285714284] });
+    let expected = pl.DataFrame({ s, ewmMean: [2.0, 4.0, 3.428571428571429] });
     {
       const seriesActual = df.getColumn("s").ewmMean().rename("ewmMean");
       const actual = df.withColumn(col("s").ewmMean().as("ewmMean"));
