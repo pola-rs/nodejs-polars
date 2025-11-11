@@ -307,6 +307,7 @@ export class Datetime extends DataType<"Datetime"> {
 
 export class Duration extends DataType<"Duration"> {
   declare __dtype: "Duration";
+  readonly variant = "Duration";
   constructor(private timeUnit: TimeUnit | "ms" | "ns" | "us" = "ms") {
     super();
   }
