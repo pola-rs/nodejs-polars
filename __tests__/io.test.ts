@@ -220,7 +220,7 @@ describe("read:json", () => {
     ].join("\n");
     const df = pl.readJSON(Buffer.from(json), { format: "lines" });
     const actualCols = df.getColumns().map((x) => x.dtype);
-    expect(actualCols).toEqual([pl.Int64, pl.Utf8, pl.Null]);
+    expect(actualCols).toEqual([pl.Int64, pl.String, pl.Null]);
   });
 });
 
@@ -343,11 +343,10 @@ describe("parquet", () => {
 
   test("writeParquet with decimals", async () => {
     const df = pl.DataFrame([
-      pl.Series("decimal", [1n, 2n, 3n], pl.Decimal()),
+      pl.Series("decimal", [1n, 2n, 3n], pl.Decimal(2, 0)),
       pl.Series("u32", [1, 2, 3], pl.UInt32),
       pl.Series("str", ["a", "b", "c"]),
     ]);
-
     const buf = df.writeParquet();
     const newDF = pl.readParquet(buf);
     expect(newDF).toFrameEqual(df);

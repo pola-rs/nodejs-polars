@@ -1903,44 +1903,45 @@ export interface DataFrame<S extends Schema = any>
     keep?: "first" | "last";
   }): DataFrame<S>;
   /**
-      Decompose a struct into its fields. The fields will be inserted in to the `DataFrame` on the
-      location of the `struct` type.
-      @param names Names of the struct columns that will be decomposed by its fields
-      @example
-      ```
-      > const df = pl.DataFrame({
-      ...   "int": [1, 2],
-      ...   "str": ["a", "b"],
-      ...   "bool": [true, null],
-      ...   "list": [[1, 2], [3]],
-      ... })
-      ...  .toStruct("my_struct")
-      ...  .toFrame();
-      > df
-      shape: (2, 1)
-      ┌─────────────────────────────┐
-      │ my_struct                   │
-      │ ---                         │
-      │ struct[4]{'int',...,'list'} │
-      ╞═════════════════════════════╡
-      │ {1,"a",true,[1, 2]}         │
-      ├╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌┤
-      │ {2,"b",null,[3]}            │
-      └─────────────────────────────┘
-      > df.unnest("my_struct")
-      shape: (2, 4)
-      ┌─────┬─────┬──────┬────────────┐
-      │ int ┆ str ┆ bool ┆ list       │
-      │ --- ┆ --- ┆ ---  ┆ ---        │
-      │ i64 ┆ str ┆ bool ┆ list [i64] │
-      ╞═════╪═════╪══════╪════════════╡
-      │ 1   ┆ a   ┆ true ┆ [1, 2]     │
-      ├╌╌╌╌╌┼╌╌╌╌╌┼╌╌╌╌╌╌┼╌╌╌╌╌╌╌╌╌╌╌╌┤
-      │ 2   ┆ b   ┆ null ┆ [3]        │
-      └─────┴─────┴──────┴────────────┘
-      ```
-     */
-  unnest(names: string | string[]): DataFrame;
+    Decompose struct columns into separate columns for each of their fields.
+    The new columns will be inserted into the DataFrame at the location of the struct column.
+    @param columns Name of the struct column(s) that should be unnested.
+    @param separator Rename output column names as combination of the struct column name, name separator and field name.
+    @example
+    ```
+    > const df = pl.DataFrame({
+    ...   "int": [1, 2],
+    ...   "str": ["a", "b"],
+    ...   "bool": [true, null],
+    ...   "list": [[1, 2], [3]],
+    ... })
+    ...  .toStruct("my_struct")
+    ...  .toFrame();
+    > df
+    shape: (2, 1)
+    ┌─────────────────────────────┐
+    │ my_struct                   │
+    │ ---                         │
+    │ struct[4]{'int',...,'list'} │
+    ╞═════════════════════════════╡
+    │ {1,"a",true,[1, 2]}         │
+    ├╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌┤
+    │ {2,"b",null,[3]}            │
+    └─────────────────────────────┘
+    > df.unnest("my_struct")
+    shape: (2, 4)
+    ┌─────┬─────┬──────┬────────────┐
+    │ int ┆ str ┆ bool ┆ list       │
+    │ --- ┆ --- ┆ ---  ┆ ---        │
+    │ i64 ┆ str ┆ bool ┆ list [i64] │
+    ╞═════╪═════╪══════╪════════════╡
+    │ 1   ┆ a   ┆ true ┆ [1, 2]     │
+    ├╌╌╌╌╌┼╌╌╌╌╌┼╌╌╌╌╌╌┼╌╌╌╌╌╌╌╌╌╌╌╌┤
+    │ 2   ┆ b   ┆ null ┆ [3]        │
+    └─────┴─────┴──────┴────────────┘
+    ```
+  */
+  unnest(columns: string | string[], separator?: string): DataFrame;
   /**
    * Aggregate the columns of this DataFrame to their variance value.
    * @example
@@ -2868,9 +2869,9 @@ export const _DataFrame = <S extends Schema>(_df: any): DataFrame<S> => {
       }
       return wrap("transpose", keep_names_as, options.columnNames);
     },
-    unnest(names) {
-      names = Array.isArray(names) ? names : [names];
-      return _DataFrame(_df.unnest(names));
+    unnest(columns, separator) {
+      columns = Array.isArray(columns) ? columns : [columns];
+      return _DataFrame(_df.unnest(columns, separator));
     },
     var() {
       return this.lazy().var().collectSync();

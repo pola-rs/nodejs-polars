@@ -1213,8 +1213,16 @@ impl JsDataFrame {
         s.into_series().into()
     }
     #[napi(catch_unwind)]
-    pub fn unnest(&self, names: Vec<String>) -> napi::Result<JsDataFrame> {
-        let df = self.df.unnest(names).map_err(JsPolarsErr::from)?;
+    pub fn unnest(
+        &self,
+        names: Vec<String>,
+        separator: Option<String>,
+    ) -> napi::Result<JsDataFrame> {
+        let separator = separator.map_or(None, |s| Some(s));
+        let df = self
+            .df
+            .unnest(names, separator.as_deref())
+            .map_err(JsPolarsErr::from)?;
         Ok(df.into())
     }
     #[napi(catch_unwind)]
