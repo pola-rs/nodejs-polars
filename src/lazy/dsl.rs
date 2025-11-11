@@ -1032,6 +1032,14 @@ impl JsExpr {
         self.clone().inner.dt().nanosecond().into()
     }
     #[napi(catch_unwind)]
+    pub fn dt_truncate(&self, every: &JsExpr) -> JsExpr {
+        self.clone().inner.dt().truncate(every.inner.clone()).into()
+    }
+    #[napi(catch_unwind)]
+    pub fn dt_round(&self, every: &JsExpr) -> JsExpr {
+        self.clone().inner.dt().round(every.inner.clone()).into()
+    }
+    #[napi(catch_unwind)]
     pub fn duration_days(&self) -> JsExpr {
         self.inner
             .clone()

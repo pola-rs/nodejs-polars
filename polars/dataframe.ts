@@ -1647,17 +1647,6 @@ export interface DataFrame<S extends Schema = any>
   ): DataFrame<S>;
   sort({
     by,
-    reverse, // deprecated
-    maintainOrder,
-  }: {
-    by: ColumnsOrExpr;
-    /** @param @deprecated *since 0.16.0* Use descending instead */
-    reverse?: boolean; // deprecated
-    nullsLast?: boolean;
-    maintainOrder?: boolean;
-  }): DataFrame<S>;
-  sort({
-    by,
     descending,
     maintainOrder,
   }: {
@@ -2663,7 +2652,7 @@ export const _DataFrame = <S extends Schema>(_df: any): DataFrame<S> => {
       if (arg?.by !== undefined) {
         return this.sort(
           arg.by,
-          arg.descending ?? arg.reverse ?? false,
+          arg.descending ?? false,
           arg.nullsLast,
           arg.maintainOrder,
         );

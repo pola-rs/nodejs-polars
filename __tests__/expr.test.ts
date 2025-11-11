@@ -88,7 +88,6 @@ describe("expr", () => {
     ${undefined}            | ${[1, 0, 3, 2]}
     ${true}                 | ${[2, 3, 0, 1]}
     ${{ descending: true }} | ${[2, 3, 0, 1]}
-    ${{ reverse: true }}    | ${[2, 3, 0, 1]}
   `("argSort", ({ args, expectedSort }) => {
     const df = pl.DataFrame({ a: [1, 0, 2, 1.5] });
     const expected = pl.DataFrame({ argSort: expectedSort });
@@ -1633,6 +1632,34 @@ describe("expr.str", () => {
     const actual = df.select(col("os").str.slice(0, 5).as("first5"));
     expect(actual).toFrameEqual(expected);
     expect(seriesActual).toFrameEqual(expected);
+  });
+  test("truncate/dateime", () => {
+    const df = pl.DataFrame([
+      pl.Series("datetime", [
+        new Date(Date.parse("2020-01-01T01:32:00.002+00:00")),
+        new Date(Date.parse("2020-01-01T02:02:01.030+00:00")),
+        new Date(Date.parse("2020-01-01T04:42:20.001+00:00")),
+      ]),
+    ]);
+    const actual = df
+      .select(pl.col("datetime").dt.truncate("1h").dt.minute().alias("1hr"))
+      .toSeries();
+    const expected = pl.Series("1hr", [0, 0, 0], pl.Int8);
+    expect(actual).toSeriesStrictEqual(expected);
+  });
+  test("round/dateime", () => {
+    const df = pl.DataFrame([
+      pl.Series("datetime", [
+        new Date(Date.parse("2020-01-01T01:30:00.002+00:00")),
+        new Date(Date.parse("2020-01-01T02:02:01.030+00:00")),
+        new Date(Date.parse("2020-01-01T04:42:20.001+00:00")),
+      ]),
+    ]);
+    const actual = df
+      .select(pl.col("datetime").dt.round("1h").dt.minute().alias("1hr"))
+      .toSeries();
+    const expected = pl.Series("1hr", [0, 0, 0], pl.Int8);
+    expect(actual).toSeriesStrictEqual(expected);
   });
   test("strptime", () => {
     const df = pl.DataFrame({

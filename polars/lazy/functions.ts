@@ -227,14 +227,6 @@ export function intRange<DT extends DataType = DataType.Int64>(opts: {
   dtype?: DT;
   eager?: boolean;
 }): Expr | Series<DT>;
-/** @deprecated *since 0.15.0* use `start` and `end` instead */
-export function intRange(opts: {
-  low: number | Expr;
-  high: number | Expr;
-  step?: number | Expr;
-  dtype?: DataType;
-  eager?: boolean;
-}): Expr | Series;
 export function intRange<DT extends DataType = DataType.Int64>(
   start: number | Expr,
   end?: number | Expr,
@@ -249,10 +241,6 @@ export function intRange<DT extends DataType = DataType.Int64>(
   dtype?: DT,
   eager?: boolean,
 ): Series | Expr {
-  // @deprecated since 0.15.0
-  if (typeof opts?.low === "number") {
-    return intRange(opts.low, opts.high, opts.step, opts.dtype, opts.eager);
-  }
   if (typeof opts?.start === "number") {
     return intRange(opts.start, opts.end, opts.step, opts.dtype, opts.eager);
   }

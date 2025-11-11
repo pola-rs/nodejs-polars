@@ -133,14 +133,9 @@ describe("lazy functions", () => {
       foo: [1, 1, 1],
     });
     const expected = pl.DataFrame({ foo: [1, 1] });
-    let actual = df.filter(
-      /** @deprecated *since 0.15.0* use `start` and `end` instead */
-      pl
-        .col("foo")
-        .gtEq(pl.intRange({ low: 0, high: 3 })),
+    const actual = df.filter(
+      pl.col("foo").gtEq(pl.intRange({ start: 0, end: 3 })),
     );
-    expect(actual).toFrameEqual(expected);
-    actual = df.filter(pl.col("foo").gtEq(pl.intRange({ start: 0, end: 3 })));
     expect(actual).toFrameEqual(expected);
   });
   test.skip("intRange:eager", () => {

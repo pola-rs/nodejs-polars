@@ -525,7 +525,7 @@ export interface ListFunctions<T> {
    * --------
    * ```
    * const s0 = pl.Series("a", [[1, 2], [2, 1]]);
-   * s0.lst.argMax();
+   * s0.list.argMax();
    * Series: 'a' [u32]
    * [
    *   0
@@ -541,7 +541,7 @@ export interface ListFunctions<T> {
    * --------
    * ```
    * const s0 = pl.Series("a", [[1, 2], [2, 1]]);
-   * s0.lst.argMax();
+   * s0.list.argMax();
    * Series: 'a' [u32]
    * [
    *   1
@@ -560,7 +560,7 @@ export interface ListFunctions<T> {
    *   "a": [["a"], ["x"]],
    *   "b": [["b", "c"], ["y", "z"]],
    * })
-   * df.select(pl.col("a").lst.concat("b"))
+   * df.select(pl.col("a").list.concat("b"))
    * shape: (2, 1)
    * ┌─────────────────┐
    * │ a               │
@@ -583,7 +583,7 @@ export interface ListFunctions<T> {
    * --------
    * ```
    * df = pl.DataFrame({"foo": [[3, 2, 1], [], [1, 2]]})
-   * df.select(pl.col("foo").lst.contains(1))
+   * df.select(pl.col("foo").list.contains(1))
    * shape: (3, 1)
    * ┌───────┐
    * │ foo   │
@@ -606,7 +606,7 @@ export interface ListFunctions<T> {
    * @param nullBehavior 'ignore' | 'drop'
    * ```
    * s = pl.Series("a", [[1, 2, 3, 4], [10, 2, 1]])
-   * s.lst.diff()
+   * s.list.diff()
    *
    * shape: (2,)
    * Series: 'a' [list]
@@ -628,7 +628,7 @@ export interface ListFunctions<T> {
    * -------
    * ```
    * const s0 = pl.Series("a", [[1, 2], [2, 1]]);
-   * s0.lst.get(0);
+   * s0.list.get(0);
    * Series: 'a' [f64]
     [
       1.0
@@ -647,7 +647,7 @@ export interface ListFunctions<T> {
    * @example
    *  >df = pl.DataFrame({"a": [1, 8, 3], "b": [4, 5, 2]})
    *  >df.withColumn(
-   *  ...   pl.concatList(["a", "b"]).lst.eval(pl.first().rank()).alias("rank")
+   *  ...   pl.concatList(["a", "b"]).list.eval(pl.first().rank()).alias("rank")
    *  ... )
    *  shape: (3, 3)
    *  ┌─────┬─────┬────────────┐
@@ -675,7 +675,7 @@ export interface ListFunctions<T> {
    * @example
    * ```
    * s = pl.Series("a", [[1, 2, 3, 4], [10, 2, 1]])
-   * s.lst.head(2)
+   * s.list.head(2)
    * shape: (2,)
    * Series: 'a' [list]
    * [
@@ -692,7 +692,7 @@ export interface ListFunctions<T> {
    * @example
    * ```
    * s = pl.Series("a", [[1, 2, 3, 4], [10, 2, 1]])
-   * s.lst.tail(2)
+   * s.list.tail(2)
    * shape: (2,)
    * Series: 'a' [list]
    * [
@@ -764,8 +764,6 @@ export interface ListFunctions<T> {
    */
   sort(descending?: boolean): T;
   sort(opt: { descending: boolean }): T;
-  /* @deprecated Use descending instead */
-  sort(opt: { reverse: boolean }): T;
   /**
    * Sum all elements of the sublists.
    * @category List
@@ -873,6 +871,142 @@ export interface DateFunctions<T> {
    * @returns Year as Int32
    */
   year(): T;
+  /**
+   * Divide the date/datetime range into buckets.
+   * Each date/datetime is mapped to the start of its bucket using the corresponding local datetime. Note that:
+
+    - Weekly buckets start on Monday.
+    - All other buckets start on the Unix epoch (1970-01-01).
+    - Ambiguous results are localised using the DST offset of the original
+      timestamp - for example, truncating `'2022-11-06 01:30:00 CST'` by
+      `'1h'` results in `'2022-11-06 01:00:00 CST'`, whereas truncating
+      `'2022-11-06 01:30:00 CDT'` by `'1h'` results in
+      `'2022-11-06 01:00:00 CDT'`.
+
+    Parameters
+    ----------
+    @param every - The size of each bucket.
+
+    Notes
+    -----
+    The `every` argument is created with
+    the following string language:
+
+    - 1ns   (1 nanosecond)
+    - 1us   (1 microsecond)
+    - 1ms   (1 millisecond)
+    - 1s    (1 second)
+    - 1m    (1 minute)
+    - 1h    (1 hour)
+    - 1d    (1 calendar day)
+    - 1w    (1 calendar week)
+    - 1mo   (1 calendar month)
+    - 1q    (1 calendar quarter)
+    - 1y    (1 calendar year)
+
+    By "calendar day", we mean the corresponding time on the next day (which may
+    not be 24 hours, due to daylight savings). Similarly for "calendar week",
+    "calendar month", "calendar quarter", and "calendar year".
+
+    @returns Expr Expression of data type :class:`Date` or :class:`Datetime`.
+    @example
+    --------
+    const df = pl.DataFrame([
+      pl.Series("datetime", [
+        new Date(Date.parse("2020-01-01T01:32:00.002+00:00")),
+        new Date(Date.parse("2020-01-01T02:02:01.030+00:00")),
+        new Date(Date.parse("2020-01-01T04:42:20.001+00:00")),
+      ])]);
+    
+    >>> df.select("datetime", pl.col("datetime").dt.truncate("1h").alias("hr0"));
+    shape: (3, 2)
+    ┌─────────────────────────┬─────────────────────┐
+    │ datetime                ┆ hr0                 │
+    │ ---                     ┆ ---                 │
+    │ datetime[ms]            ┆ datetime[ms]        │
+    ╞═════════════════════════╪═════════════════════╡
+    │ 2020-01-01 01:32:00.002 ┆ 2020-01-01 01:00:00 │
+    │ 2020-01-01 02:02:01.030 ┆ 2020-01-01 02:00:00 │
+    │ 2020-01-01 04:42:20.001 ┆ 2020-01-01 04:00:00 │
+    └─────────────────────────┴─────────────────────┘
+    >>> df.select("datetime", pl.col("datetime").dt.truncate("30m").alias("hr30m"));
+    shape: (3, 2)
+    ┌─────────────────────────┬─────────────────────┐
+    │ datetime                ┆ hr30m               │
+    │ ---                     ┆ ---                 │
+    │ datetime[ms]            ┆ datetime[ms]        │
+    ╞═════════════════════════╪═════════════════════╡
+    │ 2020-01-01 01:32:00.002 ┆ 2020-01-01 01:30:00 │
+    │ 2020-01-01 02:02:01.030 ┆ 2020-01-01 02:00:00 │
+    │ 2020-01-01 04:42:20.001 ┆ 2020-01-01 04:30:00 │
+    └─────────────────────────┴─────────────────────┘
+   */
+  truncate(every: string | Expr): T;
+  /**
+   * Divide the date/datetime range into buckets.
+    - Each date/datetime in the first half of the interval is mapped to the start of its bucket.
+    - Each date/datetime in the second half of the interval is mapped to the end of its bucket.
+    - Half-way points are mapped to the start of their bucket.
+
+    Ambiguous results are localised using the DST offset of the original timestamp -
+    for example, rounding `'2022-11-06 01:20:00 CST'` by `'1h'` results in
+    `'2022-11-06 01:00:00 CST'`, whereas rounding `'2022-11-06 01:20:00 CDT'` by
+    `'1h'` results in `'2022-11-06 01:00:00 CDT'`.
+
+    @param every - Every interval start and period length
+    @returns Expr Expression of data type :class:`Date` or :class:`Datetime`.
+
+    Notes
+    -----
+    The `every` argument is created with the following small string formatting language:
+    - 1ns   (1 nanosecond)
+    - 1us   (1 microsecond)
+    - 1ms   (1 millisecond)
+    - 1s    (1 second)
+    - 1m    (1 minute)
+    - 1h    (1 hour)
+    - 1d    (1 calendar day)
+    - 1w    (1 calendar week)
+    - 1mo   (1 calendar month)
+    - 1q    (1 calendar quarter)
+    - 1y    (1 calendar year)
+
+    By "calendar day", we mean the corresponding time on the next day (which may not be 24 hours, due to daylight savings). 
+    Similarly for "calendar week", "calendar month", "calendar quarter", and "calendar year".
+
+    @example
+    --------
+    const df = pl.DataFrame([
+      pl.Series("datetime", [
+        new Date(Date.parse("2020-01-01T01:30:00.002+00:00")),
+        new Date(Date.parse("2020-01-01T02:02:01.030+00:00")),
+        new Date(Date.parse("2020-01-01T04:42:20.001+00:00")),
+      ])]);
+    
+    >>> df.select("datetime", pl.col("datetime").dt.round("1h").alias("hr0"));
+    shape: (3, 2)
+    ┌─────────────────────────┬─────────────────────┐
+    │ datetime                ┆ hr0                 │
+    │ ---                     ┆ ---                 │
+    │ datetime[ms]            ┆ datetime[ms]        │
+    ╞═════════════════════════╪═════════════════════╡
+    │ 2020-01-01 01:30:00.002 ┆ 2020-01-01 02:00:00 │
+    │ 2020-01-01 02:02:01.030 ┆ 2020-01-01 02:00:00 │
+    │ 2020-01-01 04:42:20.001 ┆ 2020-01-01 05:00:00 │
+    └─────────────────────────┴─────────────────────┘
+    >>> df.select("datetime", pl.col("datetime").dt.round("30m").alias("hr30m"));
+    shape: (3, 2)
+    ┌─────────────────────────┬─────────────────────┐
+    │ datetime                ┆ hr30m               │
+    │ ---                     ┆ ---                 │
+    │ datetime[ms]            ┆ datetime[ms]        │
+    ╞═════════════════════════╪═════════════════════╡
+    │ 2020-01-01 01:32:00.002 ┆ 2020-01-01 01:30:00 │
+    │ 2020-01-01 02:02:01.030 ┆ 2020-01-01 02:00:00 │
+    │ 2020-01-01 04:42:20.001 ┆ 2020-01-01 05:00:00 │
+    └─────────────────────────┴─────────────────────┘
+   */
+  round(every: string | Expr): T;
 }
 
 export interface StringFunctions<T> {
