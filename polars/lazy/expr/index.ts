@@ -50,8 +50,10 @@ export interface Expr
   _expr: any;
   /**
    * Datetime namespace
+   * @deprecated *since 0.23.0 use .dt instead to match Polars core
    */
   get date(): dt.ExprDateTime;
+  get dt(): dt.ExprDateTime;
   /**
    * String namespace
    */
@@ -616,7 +618,9 @@ export interface Expr
   kurtosis({ fisher, bias }: { fisher?: boolean; bias?: boolean }): Expr;
   /** Get the last value.  */
   last(): Expr;
-  /** Aggregate to list. */
+  /** Aggregate to list.
+   * @deprecated *since 0.23.0 use implode instead to match Polars core
+   */
   list(): Expr;
   /***
    * Compute the natural logarithm of each element plus one.
@@ -1096,13 +1100,6 @@ export interface Expr
     descending?: boolean;
     nullsLast?: boolean;
   }): Expr;
-  sort({
-    reverse, // deprecated
-    nullsLast,
-  }: {
-    reverse?: boolean;
-    nullsLast?: boolean;
-  }): Expr;
   /**
    * Sort this column by the ordering of another column, or multiple other columns.
       In projection/ selection context the whole column is sorted.
@@ -1122,10 +1119,6 @@ export interface Expr
   sortBy(options: {
     by: ExprOrString[] | ExprOrString;
     descending?: boolean | boolean[];
-  }): Expr;
-  sortBy(options: {
-    by: ExprOrString[] | ExprOrString;
-    reverse?: boolean | boolean[];
   }): Expr;
   /** Get standard deviation. */
   std(): Expr;
@@ -1253,6 +1246,9 @@ export const _Expr = (_expr: any): Expr => {
     get date() {
       return dt.ExprDateTimeFunctions(_expr);
     },
+    get dt() {
+      return dt.ExprDateTimeFunctions(_expr);
+    },
     get struct() {
       return struct.ExprStructFunctions(_expr);
     },
@@ -1297,7 +1293,7 @@ export const _Expr = (_expr: any): Expr => {
       return _Expr(_expr.argMin());
     },
     argSort(descending: any = false, nullsLast: boolean = false) {
-      descending = descending?.descending ?? descending?.reverse ?? descending;
+      descending = descending?.descending ?? descending;
       nullsLast = descending?.nullsLast ?? nullsLast;
       return _Expr(_expr.argSort(descending, nullsLast));
     },
@@ -1847,7 +1843,7 @@ export const _Expr = (_expr: any): Expr => {
 
       return wrap(
         "sortWith",
-        descending?.descending ?? descending?.reverse ?? false,
+        descending?.descending ?? false,
         descending?.nullsLast ?? nullsLast,
         false,
         descending?.maintainOrder ?? maintainOrder,
@@ -1855,7 +1851,7 @@ export const _Expr = (_expr: any): Expr => {
     },
     sortBy(arg, descending = false) {
       if (arg?.by !== undefined) {
-        return this.sortBy(arg.by, arg.descending ?? arg.reverse ?? false);
+        return this.sortBy(arg.by, arg.descending ?? false);
       }
 
       descending = Array.isArray(descending)

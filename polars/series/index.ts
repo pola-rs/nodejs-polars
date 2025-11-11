@@ -55,9 +55,13 @@ export interface Series<T extends DataType = any, Name extends string = string>
   name: Name;
   dtype: T;
   str: SeriesStringFunctions;
+  /** @deprecated *since 0.23.0 use .list instead to match Polars core */
   lst: SeriesListFunctions;
+  list: SeriesListFunctions;
   struct: SeriesStructFunctions;
+  /** @deprecated *since 0.23.0 use .dt instead to match Polars core */
   date: SeriesDateFunctions;
+  dt: SeriesDateFunctions;
   [inspect](): string;
   [Symbol.iterator](): IterableIterator<DTypeToJs<T>>;
   // inner(): JsSeries
@@ -156,14 +160,6 @@ export interface Series<T extends DataType = any, Name extends string = string>
     descending?: boolean;
     nullsLast?: boolean;
   }): Series<T, Name>;
-  /* @deprecated Use descending instead */
-  argSort({
-    reverse, // deprecated
-    nullsLast,
-  }: {
-    reverse?: boolean;
-    nullsLast?: boolean;
-  }): Series<T, Name>;
   argSort(): Series<T, Name>;
   /**
    * __Rename this Series.__
@@ -186,7 +182,6 @@ export interface Series<T extends DataType = any, Name extends string = string>
    */
   clone(): Series<T, Name>;
   concat(other: Series<T>): Series<T, Name>;
-
   /**
    * __Quick summary statistics of a series. __
    *
@@ -924,8 +919,6 @@ export interface Series<T extends DataType = any, Name extends string = string>
    * ```
    */
   sort(options: { descending?: boolean; nullsLast?: boolean }): Series;
-  /* @deprecated Use descending instead */
-  sort(options: { reverse?: boolean; nullsLast?: boolean }): Series;
   sort(): Series;
   /**
    * Reduce this Series to the sum value.
@@ -1151,7 +1144,7 @@ export interface Series<T extends DataType = any, Name extends string = string>
   /** Returns an iterator over the values */
   values(): IterableIterator<any>;
 }
-/** @ignore */
+
 export function _Series(_s: any): Series {
   const unwrap = (method: keyof any, ...args: any[]) => {
     return _s[method as any](...args);
@@ -1234,7 +1227,13 @@ export function _Series(_s: any): Series {
     get lst() {
       return SeriesListFunctions(_s);
     },
+    get list() {
+      return SeriesListFunctions(_s);
+    },
     get date() {
+      return SeriesDateFunctions(_s);
+    },
+    get dt() {
       return SeriesDateFunctions(_s);
     },
     get struct() {
@@ -1275,7 +1274,7 @@ export function _Series(_s: any): Series {
 
       return _Series(
         _s.argsort(
-          descending.descending ?? descending.reverse ?? false,
+          descending.descending ?? false,
           descending.nullsLast ?? nullsLast,
           descending.multithreaded ?? multithreaded,
           descending.maintainOrder ?? maintainOrder,
@@ -1776,11 +1775,7 @@ export function _Series(_s: any): Series {
     },
     sort(options?) {
       options = { descending: false, nullsLast: false, ...(options ?? {}) };
-      return wrap(
-        "sort",
-        options.descending ?? options.reverse ?? false,
-        options.nullsLast,
-      );
+      return wrap("sort", options.descending ?? false, options.nullsLast);
     },
     sub(other: number | Series) {
       return numberOrSeriesFunc(other, "Sub");
