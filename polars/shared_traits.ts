@@ -525,7 +525,7 @@ export interface ListFunctions<T> {
    * --------
    * ```
    * const s0 = pl.Series("a", [[1, 2], [2, 1]]);
-   * s0.lst.argMax();
+   * s0.list.argMax();
    * Series: 'a' [u32]
    * [
    *   0
@@ -541,7 +541,7 @@ export interface ListFunctions<T> {
    * --------
    * ```
    * const s0 = pl.Series("a", [[1, 2], [2, 1]]);
-   * s0.lst.argMax();
+   * s0.list.argMax();
    * Series: 'a' [u32]
    * [
    *   1
@@ -560,7 +560,7 @@ export interface ListFunctions<T> {
    *   "a": [["a"], ["x"]],
    *   "b": [["b", "c"], ["y", "z"]],
    * })
-   * df.select(pl.col("a").lst.concat("b"))
+   * df.select(pl.col("a").list.concat("b"))
    * shape: (2, 1)
    * ┌─────────────────┐
    * │ a               │
@@ -583,7 +583,7 @@ export interface ListFunctions<T> {
    * --------
    * ```
    * df = pl.DataFrame({"foo": [[3, 2, 1], [], [1, 2]]})
-   * df.select(pl.col("foo").lst.contains(1))
+   * df.select(pl.col("foo").list.contains(1))
    * shape: (3, 1)
    * ┌───────┐
    * │ foo   │
@@ -606,7 +606,7 @@ export interface ListFunctions<T> {
    * @param nullBehavior 'ignore' | 'drop'
    * ```
    * s = pl.Series("a", [[1, 2, 3, 4], [10, 2, 1]])
-   * s.lst.diff()
+   * s.list.diff()
    *
    * shape: (2,)
    * Series: 'a' [list]
@@ -628,7 +628,7 @@ export interface ListFunctions<T> {
    * -------
    * ```
    * const s0 = pl.Series("a", [[1, 2], [2, 1]]);
-   * s0.lst.get(0);
+   * s0.list.get(0);
    * Series: 'a' [f64]
     [
       1.0
@@ -647,7 +647,7 @@ export interface ListFunctions<T> {
    * @example
    *  >df = pl.DataFrame({"a": [1, 8, 3], "b": [4, 5, 2]})
    *  >df.withColumn(
-   *  ...   pl.concatList(["a", "b"]).lst.eval(pl.first().rank()).alias("rank")
+   *  ...   pl.concatList(["a", "b"]).list.eval(pl.first().rank()).alias("rank")
    *  ... )
    *  shape: (3, 3)
    *  ┌─────┬─────┬────────────┐
@@ -675,7 +675,7 @@ export interface ListFunctions<T> {
    * @example
    * ```
    * s = pl.Series("a", [[1, 2, 3, 4], [10, 2, 1]])
-   * s.lst.head(2)
+   * s.list.head(2)
    * shape: (2,)
    * Series: 'a' [list]
    * [
@@ -692,7 +692,7 @@ export interface ListFunctions<T> {
    * @example
    * ```
    * s = pl.Series("a", [[1, 2, 3, 4], [10, 2, 1]])
-   * s.lst.tail(2)
+   * s.list.tail(2)
    * shape: (2,)
    * Series: 'a' [list]
    * [
@@ -764,8 +764,6 @@ export interface ListFunctions<T> {
    */
   sort(descending?: boolean): T;
   sort(opt: { descending: boolean }): T;
-  /* @deprecated Use descending instead */
-  sort(opt: { reverse: boolean }): T;
   /**
    * Sum all elements of the sublists.
    * @category List
@@ -920,7 +918,7 @@ export interface DateFunctions<T> {
         new Date(Date.parse("2020-01-01T04:42:20.001+00:00")),
       ])]);
     
-    >>> df.select("datetime", pl.col("datetime").date.truncate("1h").alias("hr0"));
+    >>> df.select("datetime", pl.col("datetime").dt.truncate("1h").alias("hr0"));
     shape: (3, 2)
     ┌─────────────────────────┬─────────────────────┐
     │ datetime                ┆ hr0                 │
@@ -931,7 +929,7 @@ export interface DateFunctions<T> {
     │ 2020-01-01 02:02:01.030 ┆ 2020-01-01 02:00:00 │
     │ 2020-01-01 04:42:20.001 ┆ 2020-01-01 04:00:00 │
     └─────────────────────────┴─────────────────────┘
-    >>> df.select("datetime", pl.col("datetime").date.truncate("30m").alias("hr30m"));
+    >>> df.select("datetime", pl.col("datetime").dt.truncate("30m").alias("hr30m"));
     shape: (3, 2)
     ┌─────────────────────────┬─────────────────────┐
     │ datetime                ┆ hr30m               │
@@ -985,7 +983,7 @@ export interface DateFunctions<T> {
         new Date(Date.parse("2020-01-01T04:42:20.001+00:00")),
       ])]);
     
-    >>> df.select("datetime", pl.col("datetime").date.round("1h").alias("hr0"));
+    >>> df.select("datetime", pl.col("datetime").dt.round("1h").alias("hr0"));
     shape: (3, 2)
     ┌─────────────────────────┬─────────────────────┐
     │ datetime                ┆ hr0                 │
@@ -996,7 +994,7 @@ export interface DateFunctions<T> {
     │ 2020-01-01 02:02:01.030 ┆ 2020-01-01 02:00:00 │
     │ 2020-01-01 04:42:20.001 ┆ 2020-01-01 05:00:00 │
     └─────────────────────────┴─────────────────────┘
-    >>> df.select("datetime", pl.col("datetime").date.round("30m").alias("hr30m"));
+    >>> df.select("datetime", pl.col("datetime").dt.round("30m").alias("hr30m"));
     shape: (3, 2)
     ┌─────────────────────────┬─────────────────────┐
     │ datetime                ┆ hr30m               │

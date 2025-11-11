@@ -1046,11 +1046,11 @@ describe("series date", () => {
       new Date(Date.parse("2020-01-01T02:02:01.030+00:00")),
       new Date(Date.parse("2020-01-01T04:42:20.001+00:00")),
     ]);
-    const actual = s.date.truncate("30m").date.minute().alias("30m");
+    const actual = s.dt.truncate("30m").dt.minute().alias("30m");
     const expected = pl.Series("30min", [30, 0, 30], pl.Int8);
     expect(actual).toSeriesStrictEqual(expected);
 
-    const actual2 = s.date.truncate("1h").date.hour().alias("1hr");
+    const actual2 = s.dt.truncate("1h").dt.hour().alias("1hr");
     const expected2 = pl.Series("1hr", [1, 2, 4], pl.Int8);
     expect(actual2).toSeriesStrictEqual(expected2);
   });
@@ -1060,11 +1060,11 @@ describe("series date", () => {
       new Date(Date.parse("2020-01-01T02:02:01.030+00:00")),
       new Date(Date.parse("2020-01-01T04:42:20.001+00:00")),
     ]);
-    const actual = s.date.round("30m").date.minute().alias("30m");
+    const actual = s.dt.round("30m").dt.minute().alias("30m");
     const expected = pl.Series("30min", [30, 0, 30], pl.Int8);
     expect(actual).toSeriesStrictEqual(expected);
 
-    const actual2 = s.date.round("1h").date.hour().alias("1hr");
+    const actual2 = s.dt.round("1h").dt.hour().alias("1hr");
     const expected2 = pl.Series("1hr", [2, 2, 5], pl.Int8);
     expect(actual2).toSeriesStrictEqual(expected2);
   });

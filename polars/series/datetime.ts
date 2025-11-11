@@ -29,12 +29,12 @@ export const SeriesDateFunctions = (_s): SeriesDateFunctions => {
     truncate: (every) =>
       _Series(_s)
         .toFrame()
-        .select(col(_s.name).date.truncate(every))
+        .select(col(_s.name).dt.truncate(every))
         .getColumn(_s.name),
     round: (every) =>
       _Series(_s)
         .toFrame()
-        .select(col(_s.name).date.round(every))
+        .select(col(_s.name).dt.round(every))
         .getColumn(_s.name),
   };
 };
