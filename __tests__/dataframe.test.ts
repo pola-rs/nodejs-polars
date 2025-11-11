@@ -1706,6 +1706,27 @@ describe("join", () => {
     });
     expect(actual).toFrameEqual(expected);
   });
+  test("validate", () => {
+    const df = pl.DataFrame({
+      foo: [1, 2, 3],
+      bar: [6.0, 7.0, 8.0],
+      ham: ["a", "a", "a"],
+    });
+    const otherDF = pl.DataFrame({
+      apple: ["x", "y", "z"],
+      ham: ["a", "b", "d"],
+    });
+    const actual = df.join(otherDF, { on: "ham", validate: "m:1" });
+    const expected = pl.DataFrame({
+      foo: [1, 2, 3],
+      bar: [6.0, 7.0, 8.0],
+      ham: ["a", "a", "a"],
+      apple: ["x", "x", "x"],
+    });
+    expect(actual).toFrameEqual(expected);
+    const f = () => df.join(otherDF, { on: "ham", validate: "1:1" });
+    expect(f).toThrow(/join keys did not fulfill 1:1 validation/i);
+  });
   test("on:multiple-columns", () => {
     const df = pl.DataFrame({
       foo: [1, 2, 3],
