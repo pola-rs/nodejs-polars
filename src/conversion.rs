@@ -120,6 +120,7 @@ impl<'a> ToNapiValue for Wrap<AnyValue<'a>> {
             AnyValue::UInt16(n) => u32::to_napi_value(env, n as u32),
             AnyValue::UInt32(n) => u32::to_napi_value(env, n),
             AnyValue::UInt64(n) => u64::to_napi_value(env, n),
+            AnyValue::UInt128(n) => u128::to_napi_value(env, n),
             AnyValue::Float32(n) => f64::to_napi_value(env, n as f64),
             AnyValue::Float64(n) => f64::to_napi_value(env, n),
             AnyValue::String(s) => String::to_napi_value(env, s.to_owned()),
@@ -169,7 +170,7 @@ impl<'a> ToNapiValue for Wrap<AnyValue<'a>> {
             AnyValue::StructOwned(_) => Err(napi::Error::from_reason("StructOwned is not a supported, please convert to string or number before collecting to js")),
             AnyValue::Binary(_) => Err(napi::Error::from_reason("Binary is not a supported, please convert to string or number before collecting to js")),
             AnyValue::BinaryOwned(_) => Err(napi::Error::from_reason("BinaryOwned is not a supported, please convert to string or number before collecting to js")),
-            AnyValue::Decimal(_, _) => Err(napi::Error::from_reason("Decimal is not a supported type in javascript, please convert to string or number before collecting to js")),
+            AnyValue::Decimal(_,_,_) => Err(napi::Error::from_reason("Decimal is not a supported type in javascript, please convert to string or number before collecting to js")),
             AnyValue::DatetimeOwned(_,_,_) => Err(napi::Error::from_reason("DatetimeOwned is not a supported, please convert to string or number before collecting to js")),
             AnyValue::EnumOwned(_,_) => Err(napi::Error::from_reason("EnumOwned is not a supported, please convert to string or number before collecting to js")),
         }
@@ -419,7 +420,7 @@ impl FromNapiValue for Wrap<Option<IpcCompression>> {
         let compression = String::from_napi_value(env, napi_val)?;
         let compression = match compression.as_ref() {
             "lz4" => Some(IpcCompression::LZ4),
-            "zstd" => Some(IpcCompression::ZSTD),
+            "zstd" => Some(IpcCompression::ZSTD(Default::default())),
             _ => None,
         };
         Ok(Wrap(compression))
@@ -430,7 +431,7 @@ impl ToNapiValue for Wrap<Option<IpcCompression>> {
     unsafe fn to_napi_value(env: sys::napi_env, val: Self) -> Result<sys::napi_value> {
         let s = match val.0.unwrap() {
             IpcCompression::LZ4 => "lz4",
-            IpcCompression::ZSTD => "zstd",
+            IpcCompression::ZSTD(_) => "zstd",
         };
         String::to_napi_value(env, s.to_owned())
     }
@@ -815,7 +816,7 @@ impl FromNapiValue for Wrap<DataType> {
                         let inner = obj.get::<Array>("inner")?.unwrap(); // [precision, scale]
                         let precision = inner.get::<Option<i32>>(0)?.unwrap().map(|x| x as usize);
                         let scale = inner.get::<Option<i32>>(1)?.unwrap().map(|x| x as usize);
-                        DataType::Decimal(precision, scale)
+                        DataType::Decimal(precision.unwrap_or(0), scale.unwrap_or(0))
                     }
                     tp => panic!("Type {} not implemented in str_to_polarstype", tp),
                 };
@@ -1188,8 +1189,8 @@ impl ToNapiValue for Wrap<DataType> {
                 let env_ctx = Env::from_raw(env);
                 let mut obj = Object::new(&env_ctx)?;
                 let mut inner_arr = env_ctx.create_array(2)?;
-                inner_arr.set(0, precision.map(|p| p as u32))?;
-                inner_arr.set(1, scale.map(|s| s as u32))?;
+                inner_arr.set(0, precision as u32)?;
+                inner_arr.set(1, scale as u32)?;
                 obj.set("variant", "Decimal")?;
                 obj.set("inner", inner_arr)?;
                 Object::to_napi_value(env, obj)
@@ -1515,7 +1516,7 @@ pub(crate) fn parse_cloud_options(
     let mut cloud_options: Option<CloudOptions> = if let Some(o) = kv {
         let co: Vec<(String, String)> = o.into_iter().map(|kv: (String, String)| kv).collect();
         Some(
-            CloudOptions::from_untyped_config(&uri, co)
+            CloudOptions::from_untyped_config(CloudScheme::from_uri(uri).as_ref(), co)
                 .map_err(JsPolarsErr::from)
                 .unwrap(),
         )

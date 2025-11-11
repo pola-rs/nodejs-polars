@@ -198,8 +198,16 @@ describe("dataframe", () => {
       bool: [true, null],
       list: [[1, 2], [3]],
     });
-    const actual = expected.toStruct("my_struct").toFrame().unnest("my_struct");
+    let actual = expected.toStruct("my_struct").toFrame().unnest("my_struct");
     expect(actual).toFrameEqual(expected);
+    actual = expected.toStruct("my_struct").toFrame().unnest("my_struct", "::");
+    const expected2 = pl.DataFrame({
+      "my_struct::int": [1, 2],
+      "my_struct::str": ["a", "b"],
+      "my_struct::bool": [true, null],
+      "my_struct::list": [[1, 2], [3]],
+    });
+    expect(actual).toFrameEqual(expected2);
   });
   test("DF with nulls", () => {
     const actual = pl.DataFrame([

@@ -515,7 +515,7 @@ describe("series functions", () => {
     ${"getIndex"}        | ${pl.Series(["a", "b", "c"]).getIndex(0)}                                              | ${"a"}
     ${"hasValidity"}     | ${pl.Series([1, null, 2]).hasValidity()}                                               | ${true}
     ${"hasValidity"}     | ${pl.Series([1, 1, 2]).hasValidity()}                                                  | ${false}
-    ${"hash"}            | ${pl.Series([1]).hash()}                                                               | ${pl.Series([3464615199868688860n])}
+    ${"hash"}            | ${pl.Series([1]).hash()}                                                               | ${pl.Series([11654340066941867156n])}
     ${"head"}            | ${pl.Series([1, 2, 3, 4, 5, 5, 5]).head()}                                             | ${pl.Series([1, 2, 3, 4, 5])}
     ${"head"}            | ${pl.Series([1, 2, 3, 4, 5, 5, 5]).head(2)}                                            | ${pl.Series([1, 2])}
     ${"interpolate"}     | ${pl.Series([1, 2, null, null, 5]).interpolate()}                                      | ${pl.Series([1, 2, 3, 4, 5])}
