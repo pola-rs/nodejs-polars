@@ -242,6 +242,7 @@ describe("series", () => {
       ${[true, false]}          | ${pl.Bool}                   | ${"boolean"}
       ${[]}                     | ${pl.Float64}                | ${"empty"}
       ${[new Date(Date.now())]} | ${pl.Datetime("ms", "")}     | ${"Date"}
+      ${[1, 2, 3]}              | ${pl.Duration("ms")}         | ${"duration[ms]"}
       ${[[1, 2, 3, 4, 5, 6]]}   | ${pl.List(DataType.Int16)}   | ${"[list[i16]]"}
       ${[[1, 2, 3, 4, 5, 6]]}   | ${pl.List(DataType.UInt16)}  | ${"[list[u16]]"}
       ${[[1, 2, 3, 4, 5, 6]]}   | ${pl.List(DataType.Int32)}   | ${"[list[i32]]"}
@@ -781,6 +782,14 @@ describe("series functions", () => {
   });
 });
 describe("comparators & math", () => {
+  test("duration/add/series", () => {
+    const drs = pl.Series("dur", [1], pl.Duration("ms"));
+    const dt = new Date(Date.now());
+    const ds = pl.Series("dt", [dt], pl.Datetime("ms", ""));
+    const expected = dt.getMilliseconds() + 1;
+    const actual = ds.add(drs).values().next().value.getMilliseconds();
+    expect(actual).toEqual(expected);
+  });
   test("add/plus/series", () => {
     const s = pl.Series([1, 2, 3]);
     const expected = pl.Series([2, 4, 6]);

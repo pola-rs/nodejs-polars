@@ -152,6 +152,8 @@ export function arrayToJsSeries(
   dtype = dtype ?? jsTypeToPolarsType(firstValue);
 
   switch (dtype?.variant) {
+    case "Duration":
+      return pli.JsSeries.newAnyValue(name, values, dtype);
     case "Struct":
       return pli.fromRows(values, null, 1).toStruct(name);
     case "Decimal":

@@ -49,6 +49,7 @@ export const DTYPE_TO_FFINAME = {
   List: "List",
   Date: "Date",
   Datetime: "Datetime",
+  Duration: "Duration",
   Time: "Time",
   Object: "Object",
   Categorical: "Categorical",
