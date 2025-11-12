@@ -8,6 +8,10 @@ env:
     # Sequence of patterns matched against refs/tags
     tags:
       - "nodejs-polars-v*" # Push events to matching nodejs-polars-v*, i.e. nodejs-polars-v1.0, nodejs-polars-v20.15.10
+permissions:
+  id-token: write  # Required for OIDC
+  contents: read
+
 jobs:
   build:
     strategy:
@@ -201,5 +205,3 @@ jobs:
 
       - name: Publish to npm
         run: npm publish
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
