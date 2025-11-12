@@ -443,6 +443,8 @@ impl FromNapiValue for Wrap<UniqueKeepStrategy> {
         let method = match method.as_ref() {
             "first" => UniqueKeepStrategy::First,
             "last" => UniqueKeepStrategy::Last,
+            "any" => UniqueKeepStrategy::Any,
+            "none" => UniqueKeepStrategy::None,
             _ => {
                 return Err(napi::Error::from_reason(
                     "use one of {'first', 'last'}".to_owned(),

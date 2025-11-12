@@ -1050,9 +1050,9 @@ impl JsDataFrame {
     #[napi(catch_unwind)]
     pub fn unique(
         &self,
-        maintain_order: bool,
         subset: Option<Vec<String>>,
         keep: Wrap<UniqueKeepStrategy>,
+        maintain_order: bool,
         slice: Option<Wrap<(i64, usize)>>,
     ) -> napi::Result<JsDataFrame> {
         let subset = subset.map(|v| v.iter().map(|x| PlSmallStr::from_str(x.as_str())).collect());

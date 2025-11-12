@@ -511,9 +511,9 @@ impl JsLazyFrame {
     #[napi(catch_unwind)]
     pub fn unique(
         &self,
-        maintain_order: bool,
         subset: Option<Vec<String>>,
         keep: Wrap<UniqueKeepStrategy>,
+        maintain_order: bool,
     ) -> JsLazyFrame {
         let ldf = self.ldf.clone();
         match maintain_order {

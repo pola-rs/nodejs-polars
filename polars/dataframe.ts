@@ -1877,19 +1877,65 @@ export interface DataFrame<S extends Schema = any>
   /**
    * Drop duplicate rows from this DataFrame.
    * Note that this fails if there is a column of type `List` in the DataFrame.
-   * @param maintainOrder
-   * @param subset - subset to drop duplicates for
-   * @param keep "first" | "last"
-   */
+   * @param subset Column name(s), selector(s) to consider when identifying duplicate rows. If set to `None` (default), all columns are considered.
+   * @param keep : 'first', 'last', 'any', 'none' 
+   *        Which of the duplicate rows to keep. 
+            * 'any': Defaut, does not give any guarantee of which row is kept. This allows more optimizations.
+            * 'none': Don't keep duplicate rows.
+            * 'first': Keep the first unique row.
+            * 'last': Keep the last unique row.
+   * @param maintainOrder Keep the same order as the original DataFrame. This is more expensive to compute. Default: false
+   * @returns DataFrame with unique rows.
+   * @example
+   * const df = pl.DataFrame({
+           foo: [1, 2, 2, 3],
+           bar: [1, 2, 2, 4],
+           ham: ["a", "d", "d", "c"],
+         });
+    > df.unique();
+    By default, all columns are considered when determining which rows are unique:
+    shape: (3, 3)
+    ┌─────┬─────┬─────┐
+    │ foo ┆ bar ┆ ham │
+    │ --- ┆ --- ┆ --- │
+    │ f64 ┆ f64 ┆ str │
+    ╞═════╪═════╪═════╡
+    │ 3.0 ┆ 4.0 ┆ c   │
+    │ 1.0 ┆ 1.0 ┆ a   │
+    │ 2.0 ┆ 2.0 ┆ d   │
+    └─────┴─────┴─────┘
+    > df.unique("foo");
+    shape: (3, 3)
+    ┌─────┬─────┬─────┐
+    │ foo ┆ bar ┆ ham │
+    │ --- ┆ --- ┆ --- │
+    │ f64 ┆ f64 ┆ str │
+    ╞═════╪═════╪═════╡
+    │ 3.0 ┆ 4.0 ┆ c   │
+    │ 1.0 ┆ 1.0 ┆ a   │
+    │ 2.0 ┆ 2.0 ┆ d   │
+    └─────┴─────┴─────┘
+    > df.unique(["foo", "ham"], "first", true); or df.unique({ subset: ["foo", "ham"], keep: "first", maintainOrder: true });
+    shape: (3, 3)
+    ┌─────┬─────┬─────┐
+    │ foo ┆ bar ┆ ham │
+    │ --- ┆ --- ┆ --- │
+    │ f64 ┆ f64 ┆ str │
+    ╞═════╪═════╪═════╡
+    │ 1.0 ┆ 1.0 ┆ a   │
+    │ 2.0 ┆ 2.0 ┆ d   │
+    │ 3.0 ┆ 4.0 ┆ c   │
+    └─────┴─────┴─────┘
+  */
   unique(
-    maintainOrder?: boolean,
     subset?: ColumnSelection,
-    keep?: "first" | "last",
+    keep?: "first" | "last" | "any" | "none",
+    maintainOrder?: boolean,
   ): DataFrame<S>;
   unique(opts: {
-    maintainOrder?: boolean;
     subset?: ColumnSelection;
-    keep?: "first" | "last";
+    keep?: "first" | "last" | "any" | "none";
+    maintainOrder?: boolean;
   }): DataFrame<S>;
   /**
     Decompose struct columns into separate columns for each of their fields.
@@ -2272,22 +2318,31 @@ export const _DataFrame = <S extends Schema>(_df: any): DataFrame<S> => {
       }
       return wrap("dropNulls");
     },
-    unique(opts: any = false, subset?, keep = "first") {
-      const defaultOptions = {
-        maintainOrder: false,
-        keep,
-      };
+    unique(
+      opts?:
+        | ColumnSelection
+        | { subset?: ColumnSelection; keep?: string; maintainOrder?: boolean }
+        | null,
+      keep = "any",
+      maintainOrder = false,
+    ) {
+      // no arguments -> signal call with defaults
+      if (arguments.length === 0)
+        return wrap("unique", null, keep, maintainOrder);
 
-      if (typeof opts === "boolean") {
-        return wrap("unique", opts, subset, keep);
+      // string -> single-element array
+      if (typeof opts === "string")
+        return wrap("unique", [opts], keep, maintainOrder);
+
+      // array -> use as-is
+      if (Array.isArray(opts)) return wrap("unique", opts, keep, maintainOrder);
+
+      // object -> merge defaults, normalize subset to array (if present)
+      if (opts && typeof opts === "object") {
+        const o = { keep, maintainOrder, ...(opts as any) };
+        const subset = o.subset ? ([o.subset].flat(3) as string[]) : undefined;
+        return wrap("unique", subset, o.keep, o.maintainOrder);
       }
-
-      if (opts.subset) {
-        opts.subset = [opts.subset].flat(3);
-      }
-      const o = { ...defaultOptions, ...opts };
-
-      return wrap("unique", o.maintainOrder, o.subset, o.keep);
     },
     explode(...columns) {
       return _DataFrame(_df)

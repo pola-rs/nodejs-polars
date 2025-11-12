@@ -105,31 +105,57 @@ describe("dataframe", () => {
     expect(actual).toFrameEqual(expected);
   });
   test("unique", () => {
-    const actual = pl
-      .DataFrame({
-        foo: [1, 2, 2, 3],
-        bar: [1, 2, 2, 4],
-        ham: ["a", "d", "d", "c"],
-      })
-      .unique();
-    const expected = pl.DataFrame({
+    const df = pl.DataFrame({
+      foo: [1, 2, 2, 3],
+      bar: [1, 2, 2, 4],
+      ham: ["a", "d", "d", "c"],
+    });
+    let expected = pl.DataFrame({
       foo: [1, 2, 3],
       bar: [1, 2, 4],
       ham: ["a", "d", "c"],
     });
+    let actual = df.unique();
     expect(actual).toFrameEqualIgnoringOrder(expected);
+    actual = df.unique("foo", "first", true);
+    expect(actual).toFrameEqual(expected);
+    actual = df.unique("foo");
+    expect(actual).toFrameEqualIgnoringOrder(expected);
+    actual = df.unique(["foo"]);
+    expect(actual).toFrameEqualIgnoringOrder(expected);
+    actual = df.unique(["foo", "ham"], "first", true);
+    expect(actual).toFrameEqual(expected);
+    actual = df.unique(["foo", "ham"]);
+    expect(actual).toFrameEqualIgnoringOrder(expected);
+    actual = df.unique(["foo", "ham"], "none", true);
+    expected = pl.DataFrame({
+      foo: [1, 3],
+      bar: [1, 4],
+      ham: ["a", "c"],
+    });
+    expect(actual).toFrameEqual(expected);
   });
   test("unique:subset", () => {
-    const actual = pl
-      .DataFrame({
-        foo: [1, 2, 2, 2],
-        bar: [1, 2, 2, 2],
-        ham: ["a", "b", "c", "c"],
-      })
-      .unique({ subset: ["foo", "ham"] });
-    const expected = pl.DataFrame({
+    const df = pl.DataFrame({
+      foo: [1, 2, 2, 2],
+      bar: [1, 2, 2, 3],
+      ham: ["a", "b", "c", "c"],
+    });
+    let actual = df.unique({ subset: ["foo", "ham"] });
+    let expected = pl.DataFrame({
       foo: [1, 2, 2],
       bar: [1, 2, 2],
+      ham: ["a", "b", "c"],
+    });
+    expect(actual).toFrameEqualIgnoringOrder(expected);
+    actual = df.unique({ subset: ["ham"] });
+    expect(actual).toFrameEqualIgnoringOrder(expected);
+    actual = df.unique({ subset: ["ham"], keep: "first", maintainOrder: true });
+    expect(actual).toFrameEqualIgnoringOrder(expected);
+    actual = df.unique({ subset: ["ham"], keep: "last" });
+    expected = pl.DataFrame({
+      foo: [1, 2, 2],
+      bar: [1, 2, 3],
       ham: ["a", "b", "c"],
     });
     expect(actual).toFrameEqualIgnoringOrder(expected);
@@ -144,7 +170,6 @@ describe("dataframe", () => {
           ham: ["0", "a", "b", "b", "b"],
         })
         .unique({ maintainOrder: true });
-
       const expected = pl.DataFrame({
         foo: [0, 1, 2],
         bar: [0, 1, 2],
@@ -163,7 +188,6 @@ describe("dataframe", () => {
           ham: ["0", "a", "b", "c", "d"],
         })
         .unique({ maintainOrder: true, subset: "foo" });
-
       const expected = pl.DataFrame({
         foo: [0, 1, 2],
         bar: [0, 1, 2],
