@@ -549,19 +549,65 @@ export interface LazyDataFrame<S extends Schema = any>
   /**
    * Drop duplicate rows from this DataFrame.
    * Note that this fails if there is a column of type `List` in the DataFrame.
-   * @param maintainOrder
-   * @param subset - subset to drop duplicates for
-   * @param keep "first" | "last"
-   */
+   * @param subset Column name(s), selector(s) to consider when identifying duplicate rows. If set to `None` (default), all columns are considered.
+   * @param keep : 'first', 'last', 'any', 'none' 
+   *        Which of the duplicate rows to keep. 
+            * 'any': Defaut, does not give any guarantee of which row is kept. This allows more optimizations.
+            * 'none': Don't keep duplicate rows.
+            * 'first': Keep the first unique row.
+            * 'last': Keep the last unique row.
+   * @param maintainOrder Keep the same order as the original DataFrame. This is more expensive to compute. Default: false
+   * @returns LazyDataFrame with unique rows.
+   * @example
+   * const ldf = pl.DataFrame({
+           foo: [1, 2, 2, 3],
+           bar: [1, 2, 2, 4],
+           ham: ["a", "d", "d", "c"],
+         }).lazy();
+    > ldf.unique().collectSync();
+    By default, all columns are considered when determining which rows are unique:
+    shape: (3, 3)
+    ┌─────┬─────┬─────┐
+    │ foo ┆ bar ┆ ham │
+    │ --- ┆ --- ┆ --- │
+    │ f64 ┆ f64 ┆ str │
+    ╞═════╪═════╪═════╡
+    │ 3.0 ┆ 4.0 ┆ c   │
+    │ 1.0 ┆ 1.0 ┆ a   │
+    │ 2.0 ┆ 2.0 ┆ d   │
+    └─────┴─────┴─────┘
+    > ldf.unique("foo").collectSync();
+    shape: (3, 3)
+    ┌─────┬─────┬─────┐
+    │ foo ┆ bar ┆ ham │
+    │ --- ┆ --- ┆ --- │
+    │ f64 ┆ f64 ┆ str │
+    ╞═════╪═════╪═════╡
+    │ 3.0 ┆ 4.0 ┆ c   │
+    │ 1.0 ┆ 1.0 ┆ a   │
+    │ 2.0 ┆ 2.0 ┆ d   │
+    └─────┴─────┴─────┘
+    > ldf.unique(["foo", "ham"], "first", true).collectSync(); or df.unique({ subset: ["foo", "ham"], keep: "first", maintainOrder: true }).collectSync();
+    shape: (3, 3)
+    ┌─────┬─────┬─────┐
+    │ foo ┆ bar ┆ ham │
+    │ --- ┆ --- ┆ --- │
+    │ f64 ┆ f64 ┆ str │
+    ╞═════╪═════╪═════╡
+    │ 1.0 ┆ 1.0 ┆ a   │
+    │ 2.0 ┆ 2.0 ┆ d   │
+    │ 3.0 ┆ 4.0 ┆ c   │
+    └─────┴─────┴─────┘
+  */
   unique(
-    maintainOrder?: boolean,
     subset?: ColumnSelection,
-    keep?: "first" | "last",
+    keep?: "first" | "last" | "any" | "none",
+    maintainOrder?: boolean,
   ): LazyDataFrame<S>;
   unique(opts: {
-    maintainOrder?: boolean;
     subset?: ColumnSelection;
-    keep?: "first" | "last";
+    keep?: "first" | "last" | "any" | "none";
+    maintainOrder?: boolean;
   }): LazyDataFrame<S>;
   /**
    * Aggregate the columns in the DataFrame to their variance value.
@@ -846,26 +892,33 @@ export const _LazyDataFrame = (_ldf: any): LazyDataFrame => {
     drop(...cols) {
       return _LazyDataFrame(_ldf.dropColumns(cols.flat(2)));
     },
-    unique(opts: any = false, subset?, keep = "first") {
-      const defaultOptions = {
-        maintainOrder: false,
-        keep: "first",
-      };
+    unique(
+      opts?:
+        | ColumnSelection
+        | { subset?: ColumnSelection; keep?: string; maintainOrder?: boolean }
+        | null,
+      keep = "any",
+      maintainOrder = false,
+    ) {
+      // no arguments -> signal call with defaults
+      if (arguments.length === 0)
+        return _LazyDataFrame(_ldf.unique(null, keep, maintainOrder));
 
-      if (typeof opts === "boolean") {
-        const o = { ...defaultOptions, maintainOrder: opts, subset, keep };
+      // string -> single-element array
+      if (typeof opts === "string")
+        return _LazyDataFrame(_ldf.unique([opts], keep, maintainOrder));
 
-        return _LazyDataFrame(
-          _ldf.unique(o.maintainOrder, o?.subset?.flat(2), o.keep),
-        );
+      // array -> use as-is
+      if (Array.isArray(opts))
+        return _LazyDataFrame(_ldf.unique(opts, keep, maintainOrder));
+
+      // object -> merge defaults, normalize subset to array (if present)
+      if (opts && typeof opts === "object") {
+        const o = { keep, maintainOrder, ...(opts as any) };
+        const subset = o.subset ? ([o.subset].flat(3) as string[]) : undefined;
+        return _LazyDataFrame(_ldf.unique(subset, o.keep, o.maintainOrder));
       }
-
-      if (opts.subset) {
-        opts.subset = [opts.subset].flat(3);
-      }
-      const o = { ...defaultOptions, ...opts };
-
-      return _LazyDataFrame(_ldf.unique(o.maintainOrder, o.subset, o.keep));
+      throw new TypeError("You should pass valid unique argument.");
     },
     dropNulls(...subset) {
       if (subset.length) {

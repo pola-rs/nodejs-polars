@@ -105,35 +105,63 @@ describe("lazyframe", () => {
     expect(actual).toFrameEqualIgnoringOrder(expected);
   });
   test("unique", () => {
-    const actual = pl
+    const ldf = pl
       .DataFrame({
         foo: [1, 2, 2, 3],
         bar: [1, 2, 2, 4],
         ham: ["a", "d", "d", "c"],
       })
-      .lazy()
-      .unique()
-      .collectSync();
-    const expected = pl.DataFrame({
+      .lazy();
+    let actual = ldf.unique().collectSync();
+    let expected = pl.DataFrame({
       foo: [1, 2, 3],
       bar: [1, 2, 4],
       ham: ["a", "d", "c"],
     });
     expect(actual).toFrameEqualIgnoringOrder(expected);
+    actual = ldf.unique("foo", "first", true).collectSync();
+    expect(actual).toFrameEqual(expected);
+    actual = ldf.unique("foo").collectSync();
+    expect(actual).toFrameEqualIgnoringOrder(expected);
+    actual = ldf.unique(["foo"]).collectSync();
+    expect(actual).toFrameEqualIgnoringOrder(expected);
+    actual = ldf.unique(["foo", "ham"], "first", true).collectSync();
+    expect(actual).toFrameEqual(expected);
+    actual = ldf.unique(["foo", "ham"]).collectSync();
+    expect(actual).toFrameEqualIgnoringOrder(expected);
+    actual = ldf.unique(["foo", "ham"], "none", true).collectSync();
+    expected = pl.DataFrame({
+      foo: [1, 3],
+      bar: [1, 4],
+      ham: ["a", "c"],
+    });
+    expect(actual).toFrameEqual(expected);
   });
   test("unique:subset", () => {
-    const actual = pl
+    const ldf = pl
       .DataFrame({
         foo: [1, 2, 2, 2],
-        bar: [1, 2, 2, 2],
+        bar: [1, 2, 2, 3],
         ham: ["a", "b", "c", "c"],
       })
-      .lazy()
-      .unique({ subset: ["foo", "ham"] })
-      .collectSync();
-    const expected = pl.DataFrame({
+      .lazy();
+    let actual = ldf.unique({ subset: ["foo", "ham"] }).collectSync();
+    let expected = pl.DataFrame({
       foo: [1, 2, 2],
       bar: [1, 2, 2],
+      ham: ["a", "b", "c"],
+    });
+    expect(actual).toFrameEqualIgnoringOrder(expected);
+    actual = ldf.unique({ subset: ["ham"] }).collectSync();
+    expect(actual).toFrameEqualIgnoringOrder(expected);
+    actual = ldf
+      .unique({ subset: ["ham"], keep: "first", maintainOrder: true })
+      .collectSync();
+    expect(actual).toFrameEqualIgnoringOrder(expected);
+    actual = ldf.unique({ subset: ["ham"], keep: "last" }).collectSync();
+    expected = pl.DataFrame({
+      foo: [1, 2, 2],
+      bar: [1, 2, 3],
       ham: ["a", "b", "c"],
     });
     expect(actual).toFrameEqualIgnoringOrder(expected);
