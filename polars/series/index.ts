@@ -472,6 +472,20 @@ export interface Series<T extends DataType = any, Name extends string = string>
    */
   isInfinite(): Series;
   /**
+   * Aggregate values into a list.
+    The returned list itself is a scalar value of `list` dtype.
+    @example
+    --------
+    >>> s = pl.Series("a", [1, 2, 3], pl.Int32);
+    >>> s.implode()
+    shape: (1,)
+    Series: 'a' [list[i64]]
+    [
+        [1, 2, 3]
+    ]
+   */
+  implode(): Series;
+  /**
    * __Get mask of non null values.__
    *
    * *`undefined` values are treated as null*
@@ -1514,6 +1528,9 @@ export function _Series(_s: any): Series {
         throw new InvalidOperationError("isFinite", dtype);
       }
       return wrap("isInfinite");
+    },
+    implode() {
+      return wrap("implode");
     },
     isNotNull() {
       return wrap("isNotNull");

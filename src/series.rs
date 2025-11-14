@@ -643,7 +643,11 @@ impl JsSeries {
         let ca = self.series.is_infinite().map_err(JsPolarsErr::from)?;
         Ok(ca.into_series().into())
     }
-
+    #[napi(catch_unwind)]
+    pub fn implode(&self) -> napi::Result<JsSeries> {
+        let ca = self.series.implode().map_err(JsPolarsErr::from)?;
+        Ok(ca.into_series().into())
+    }
     #[napi(catch_unwind)]
     pub fn is_unique(&self) -> napi::Result<JsSeries> {
         let ca = is_unique(&self.series).map_err(JsPolarsErr::from)?;
