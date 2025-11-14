@@ -527,6 +527,7 @@ describe("series functions", () => {
     ${"isFinite"}        | ${pl.Series([1.0, 3.1]).isFinite()}                                                    | ${pl.Series([true, true])}
     ${"isFinite"}        | ${pl.Series([1, 1 / 0]).isFinite()}                                                    | ${pl.Series([true, false])}
     ${"isInfinite"}      | ${pl.Series([1.0, 2]).isInfinite()}                                                    | ${pl.Series([false, false])}
+    ${"implode"}         | ${pl.Series("implode", [1, 2, 3], pl.Int32).implode()}                                 | ${pl.Series([[1, 2, 3]])}
     ${"isNotNull"}       | ${pl.Series([1, null, undefined, 2]).isNotNull()}                                      | ${pl.Series([true, false, false, true])}
     ${"isNull"}          | ${pl.Series([1, null, undefined, 2]).isNull()}                                         | ${pl.Series([false, true, true, false])}
     ${"isNumeric"}       | ${pl.Series([1, 2, 3]).isNumeric()}                                                    | ${true}
