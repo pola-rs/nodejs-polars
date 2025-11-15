@@ -2059,8 +2059,45 @@ export interface DataFrame<S extends Schema = any>
   /**
    * Add a column at index 0 that counts the rows.
    * @param name - name of the column to add
+   * @deprecated - *since 0.23.0 use withRowIndex instead
    */
   withRowCount(name?: string): DataFrame;
+  /**
+   * Add a row index as the first column in the DataFrame.
+   * @param name Name of the index column.
+   * @param offset Start the index at this offset. Cannot be negative.
+   * @example
+   * 
+   * >>> df = pl.DataFrame(
+    ...     {
+    ...         "a": [1, 3, 5],
+    ...         "b": [2, 4, 6],
+    ...     }
+    ... )
+    >>> df.withRowIndex()
+    shape: (3, 3)
+    ┌───────┬─────┬─────┐
+    │ index ┆ a   ┆ b   │
+    │ ---   ┆ --- ┆ --- │
+    │ u32   ┆ i64 ┆ i64 │
+    ╞═══════╪═════╪═════╡
+    │ 0     ┆ 1   ┆ 2   │
+    │ 1     ┆ 3   ┆ 4   │
+    │ 2     ┆ 5   ┆ 6   │
+    └───────┴─────┴─────┘
+    >>> df.withRowIndex("id", offset=1000)
+    shape: (3, 3)
+    ┌──────┬─────┬─────┐
+    │ id   ┆ a   ┆ b   │
+    │ ---  ┆ --- ┆ --- │
+    │ u32  ┆ i64 ┆ i64 │
+    ╞══════╪═════╪═════╡
+    │ 1000 ┆ 1   ┆ 2   │
+    │ 1001 ┆ 3   ┆ 4   │
+    │ 1002 ┆ 5   ┆ 6   │
+    └──────┴─────┴─────┘
+   */
+  withRowIndex(name?: string, offset?: number): DataFrame;
   /** @see {@link filter} */
   where(predicate: any): DataFrame<S>;
   /**
@@ -2317,32 +2354,6 @@ export const _DataFrame = <S extends Schema>(_df: any): DataFrame<S> => {
         return wrap("dropNulls", subset.flat(2));
       }
       return wrap("dropNulls");
-    },
-    unique(
-      opts?:
-        | ColumnSelection
-        | { subset?: ColumnSelection; keep?: string; maintainOrder?: boolean }
-        | null,
-      keep = "any",
-      maintainOrder = false,
-    ) {
-      // no arguments -> signal call with defaults
-      if (arguments.length === 0)
-        return wrap("unique", null, keep, maintainOrder);
-
-      // string -> single-element array
-      if (typeof opts === "string")
-        return wrap("unique", [opts], keep, maintainOrder);
-
-      // array -> use as-is
-      if (Array.isArray(opts)) return wrap("unique", opts, keep, maintainOrder);
-
-      // object -> merge defaults, normalize subset to array (if present)
-      if (opts && typeof opts === "object") {
-        const o = { keep, maintainOrder, ...(opts as any) };
-        const subset = o.subset ? ([o.subset].flat(3) as string[]) : undefined;
-        return wrap("unique", subset, o.keep, o.maintainOrder);
-      }
     },
     explode(...columns) {
       return _DataFrame(_df)
@@ -2792,6 +2803,9 @@ export const _DataFrame = <S extends Schema>(_df: any): DataFrame<S> => {
         return acc;
       }, {});
     },
+    withRowIndex(name = "index", offset = 0) {
+      return wrap("withRowIndex", name, offset);
+    },
     writeJSON(dest?, options = { format: "lines" }) {
       if (dest instanceof Writable || typeof dest === "string") {
         return _df.writeJson(dest, options) as any;
@@ -2912,6 +2926,32 @@ export const _DataFrame = <S extends Schema>(_df: any): DataFrame<S> => {
         return wrap("transpose", keep_names_as, undefined);
       }
       return wrap("transpose", keep_names_as, options.columnNames);
+    },
+    unique(
+      opts?:
+        | ColumnSelection
+        | { subset?: ColumnSelection; keep?: string; maintainOrder?: boolean }
+        | null,
+      keep = "any",
+      maintainOrder = false,
+    ) {
+      // no arguments -> signal call with defaults
+      if (arguments.length === 0)
+        return wrap("unique", null, keep, maintainOrder);
+
+      // string -> single-element array
+      if (typeof opts === "string")
+        return wrap("unique", [opts], keep, maintainOrder);
+
+      // array -> use as-is
+      if (Array.isArray(opts)) return wrap("unique", opts, keep, maintainOrder);
+
+      // object -> merge defaults, normalize subset to array (if present)
+      if (opts && typeof opts === "object") {
+        const o = { keep, maintainOrder, ...(opts as any) };
+        const subset = o.subset ? ([o.subset].flat(3) as string[]) : undefined;
+        return wrap("unique", subset, o.keep, o.maintainOrder);
+      }
     },
     unnest(columns, separator) {
       columns = Array.isArray(columns) ? columns : [columns];

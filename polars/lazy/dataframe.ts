@@ -632,8 +632,46 @@ export interface LazyDataFrame<S extends Schema = any>
   /**
    * Add a column at index 0 that counts the rows.
    * @see {@link DataFrame.withRowCount}
+   * @deprecated *since 0.23.0 use withRowIndex instead
    */
   withRowCount(): LazyDataFrame;
+  /**
+   * Add a row index as the first column in the DataFrame.
+   * @param name Name of the index column.
+   * @param offset Start the index at this offset. Cannot be negative.
+   * @example
+   * 
+   * >>> ldf = pl.DataFrame(
+    ...     {
+    ...         "a": [1, 3, 5],
+    ...         "b": [2, 4, 6],
+    ...     }
+    ... ).lazy();
+    >>> ldf.withRowIndex().collectSync();
+    shape: (3, 3)
+    ┌───────┬─────┬─────┐
+    │ index ┆ a   ┆ b   │
+    │ ---   ┆ --- ┆ --- │
+    │ u32   ┆ i64 ┆ i64 │
+    ╞═══════╪═════╪═════╡
+    │ 0     ┆ 1   ┆ 2   │
+    │ 1     ┆ 3   ┆ 4   │
+    │ 2     ┆ 5   ┆ 6   │
+    └───────┴─────┴─────┘
+    >>> ldf.withRowIndex("id", offset=1000).collectSync();
+    shape: (3, 3)
+    ┌──────┬─────┬─────┐
+    │ id   ┆ a   ┆ b   │
+    │ ---  ┆ --- ┆ --- │
+    │ u32  ┆ i64 ┆ i64 │
+    ╞══════╪═════╪═════╡
+    │ 1000 ┆ 1   ┆ 2   │
+    │ 1001 ┆ 3   ┆ 4   │
+    │ 1002 ┆ 5   ┆ 6   │
+    └──────┴─────┴─────┘
+  */
+
+  withRowIndex(name?: string, offset?: number): LazyDataFrame;
   /***
   *
   * Evaluate the query in streaming mode and write to a CSV file.
@@ -1312,6 +1350,9 @@ export const _LazyDataFrame = (_ldf: any): LazyDataFrame => {
     },
     withRowCount(name = "row_nr") {
       return _LazyDataFrame(_ldf.withRowCount(name));
+    },
+    withRowIndex(name = "index", offset = 0) {
+      return _LazyDataFrame(_ldf.withRowIndex(name, offset));
     },
     sinkCSV(path, options: CsvWriterOptions) {
       options = { ...writeCsvDefaultOptions, ...options };

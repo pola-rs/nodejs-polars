@@ -8,6 +8,16 @@ describe("dataframe", () => {
     pl.Series("foo", [1, 2, 9], pl.Int16),
     pl.Series("bar", [6, 2, 8], pl.Int16),
   ]);
+  test("withRowIndex", () => {
+    let actual = df.withRowIndex();
+    let expected = df.clone();
+    expected.insertAtIdx(0, pl.Series("index", [0, 1, 2], pl.Int16));
+    expect(actual).toFrameEqual(expected);
+    actual = df.withRowIndex("idx", 100);
+    expected = df.clone();
+    expected.insertAtIdx(0, pl.Series("idx", [100, 101, 102], pl.Int16));
+    expect(actual).toFrameEqual(expected);
+  });
   test("dtypes", () => {
     const expected = [pl.Float64, pl.String];
     const actual = pl.DataFrame({ a: [1, 2, 3], b: ["a", "b", "c"] }).dtypes;
