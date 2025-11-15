@@ -1356,21 +1356,21 @@ describe("lazyframe", () => {
     ]);
     expect(actual).toFrameEqual(expected);
   });
-  test("withRowCount", () => {
-    const actual = pl
+  test("withRowIndex", () => {
+    const ldf = pl
       .DataFrame({
         foo: [1, 2, 9],
         bar: [6, 2, 8],
       })
-      .lazy()
-      .withRowCount()
-      .collectSync();
+      .lazy();
 
-    const expected = pl.DataFrame([
-      pl.Series("row_nr", [0, 1, 2], pl.UInt32),
-      pl.Series("foo", [1, 2, 9], pl.Int16),
-      pl.Series("bar", [6, 2, 8], pl.Int16),
-    ]);
+    let actual = ldf.withRowIndex().collectSync();
+    let expected = ldf.collectSync();
+    expected.insertAtIdx(0, pl.Series("index", [0, 1, 2], pl.Int16));
+    expect(actual).toFrameEqual(expected);
+    actual = ldf.withRowIndex("idx", 100).collectSync();
+    expected = ldf.collectSync();
+    expected.insertAtIdx(0, pl.Series("idx", [100, 101, 102], pl.Int16));
     expect(actual).toFrameEqual(expected);
   });
   test("tail", () => {

@@ -556,8 +556,15 @@ impl JsLazyFrame {
         ldf.unpivot(args).into()
     }
 
+    // deprecated
     #[napi(catch_unwind)]
     pub fn with_row_count(&self, name: String, offset: Option<u32>) -> JsLazyFrame {
+        let ldf = self.ldf.clone();
+        ldf.with_row_index(&name, offset).into()
+    }
+
+    #[napi(catch_unwind)]
+    pub fn with_row_index(&self, name: String, offset: Option<u32>) -> JsLazyFrame {
         let ldf = self.ldf.clone();
         ldf.with_row_index(&name, offset).into()
     }
