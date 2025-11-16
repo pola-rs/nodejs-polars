@@ -802,10 +802,11 @@ export interface Expr
    * @param new_ - Value or sequence of values to replace by.
                   Accepts expression input. Sequences are parsed as Series, other non-expression inputs are parsed as literals.
                   Length must match the length of `old` or have length 1.
-   * @param default_ - Set values that were not replaced to this value.
-                      Defaults to keeping the original value.
-                      Accepts expression input. Non-expression inputs are parsed as literals.
+   * @param default_ - Set values that were not replaced to this value. If no default is specified,
+                  (default), an error is raised if any values were not replaced.
+                  Accepts expression input. Non-expression inputs are parsed as literals.
    * @param returnDtype - The data type of the resulting expression. If set to `None` (default), the data type is determined automatically based on the other inputs.
+     @returns InvalidOperationError - If any non-null values in the original column were not replaced, and no `default` was specified.
    * @see {@link replace}
    * @example
    * Replace a single value by another value. Values that were not replaced remain unchanged.
