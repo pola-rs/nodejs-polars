@@ -514,6 +514,18 @@ export function readAvro(pathOrBody, options = {}) {
         If `cloudOptions` is not provided, Polars will try to infer the information from environment variables.
     @param options.retries - Number of retries if accessing a cloud instance fails.
     @param options.includeFilePaths - Include the path of the source file(s) as a column with this name.
+
+    @example
+    ```
+      const lazyDf = pl.scanParquet("s3://[bucket-name]/[file-key]", {
+          cloudOptions: {
+              aws_access_key_id: credentials.accessKeyId,
+              aws_secret_access_key: credentials.secretAccessKey,
+              aws_session_token: credentials.sessionToken,
+              aws_region: "us-east-1",
+          },
+      });
+    ```
  */
 export function scanParquet(source: string, options: ScanParquetOptions = {}) {
   const defaultOptions = { parallel: "auto" };
