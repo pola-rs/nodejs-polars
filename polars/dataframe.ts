@@ -2537,9 +2537,6 @@ export const _DataFrame = <S extends Schema>(_df: any): DataFrame<S> => {
     median() {
       return this.lazy().median().collectSync();
     },
-    melt(ids, values) {
-      return wrap("unpivot", columnOrColumns(ids), columnOrColumns(values));
-    },
     unpivot(ids, values, options) {
       options = {
         variableName: null,

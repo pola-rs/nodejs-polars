@@ -319,7 +319,7 @@ describe("series functions", () => {
     ${numSeries()}  | ${"fillNull"}        | ${[{ strategy: "zero" }]}
     ${numSeries()}  | ${"filter"}          | ${[boolSeries()]}
     ${fltSeries()}  | ${"floor"}           | ${[]}
-    ${numSeries()}  | ${"hasValidity"}     | ${[]}
+    ${numSeries()}  | ${"hasNulls"}        | ${[]}
     ${numSeries()}  | ${"hash"}            | ${[]}
     ${numSeries()}  | ${"hash"}            | ${[{ k0: 10 }]}
     ${numSeries()}  | ${"hash"}            | ${[{ k0: 10, k1: 29 }]}
@@ -514,8 +514,8 @@ describe("series functions", () => {
     ${"get"}             | ${pl.Series(["foo"]).get(0)}                                                           | ${"foo"}
     ${"get"}             | ${pl.Series([1, 2, 3]).get(2)}                                                         | ${3}
     ${"getIndex"}        | ${pl.Series(["a", "b", "c"]).getIndex(0)}                                              | ${"a"}
-    ${"hasValidity"}     | ${pl.Series([1, null, 2]).hasValidity()}                                               | ${true}
-    ${"hasValidity"}     | ${pl.Series([1, 1, 2]).hasValidity()}                                                  | ${false}
+    ${"hasNulls"}        | ${pl.Series([1, null, 2]).hasNulls()}                                                  | ${true}
+    ${"hasNulls"}        | ${pl.Series([1, 1, 2]).hasNulls()}                                                     | ${false}
     ${"hash"}            | ${pl.Series([1]).hash()}                                                               | ${pl.Series([11654340066941867156n])}
     ${"head"}            | ${pl.Series([1, 2, 3, 4, 5, 5, 5]).head()}                                             | ${pl.Series([1, 2, 3, 4, 5])}
     ${"head"}            | ${pl.Series([1, 2, 3, 4, 5, 5, 5]).head(2)}                                            | ${pl.Series([1, 2])}

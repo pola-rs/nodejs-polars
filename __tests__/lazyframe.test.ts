@@ -432,6 +432,24 @@ describe("lazyframe", () => {
         foo: [2, 4],
       });
       expect(actual).toFrameEqual(expected);
+      actual = ldf.groupBy("ham").len().collectSync();
+      expected = pl.DataFrame(
+        {
+          ham: ["a", "b"],
+          len: [2, 2],
+        },
+        { schema: { ham: pl.String, len: pl.UInt32 } },
+      );
+      expect(actual).toFrameEqual(expected);
+      actual = ldf.groupBy("ham").len("foo").collectSync();
+      expected = pl.DataFrame(
+        {
+          ham: ["a", "b"],
+          foo: [2, 2],
+        },
+        { schema: { ham: pl.String, foo: pl.UInt32 } },
+      );
+      expect(actual).toFrameEqual(expected);
     });
   });
   test("head", () => {

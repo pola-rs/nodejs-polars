@@ -108,10 +108,9 @@ export interface LazyDataFrame<S extends Schema = any>
   explode(column: ExprOrString, ...columns: ExprOrString[]): LazyDataFrame;
   /**
    * Fetch is like a collect operation, but it overwrites the number of rows read by every scan
-   *
    * Note that the fetch does not guarantee the final number of rows in the DataFrame.
-   * Filter, join operations and a lower number of rows available in the scanned file influence
-   * the final number of rows.
+   * Filter, join operations and a lower number of rows available in the scanned file influence the final number of rows.
+   * @deprecated *since 0.23.0* use `LazyFrame.collect` instead, in conjunction with a call to `head`
    * @param numRows - collect 'n' number of rows from data source
    * @param opts.typeCoercion -Do type coercion optimization.
    * @param opts.predicatePushdown - Do predicate pushdown optimization.
@@ -460,6 +459,7 @@ export interface LazyDataFrame<S extends Schema = any>
   median(): LazyDataFrame<S>;
   /**
    * @see {@link DataFrame.unpivot}
+   * @deprecated use `LazyFrame.unpivot` instead
    */
   melt(idVars: ColumnSelection, valueVars: ColumnSelection): LazyDataFrame;
   /**
