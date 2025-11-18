@@ -606,7 +606,7 @@ impl JsSeries {
     }
 
     #[napi(catch_unwind)]
-    pub fn has_validity(&self) -> bool {
+    pub fn has_nulls(&self) -> bool {
         self.series.has_nulls()
     }
 

@@ -331,8 +331,19 @@ export interface Series<T extends DataType = any, Name extends string = string>
   get(index: number): any;
   getIndex(n: number): any;
   /**
+   * Check whether the Series contains one or more null values.
+    @example
+    ```
+    >>> s = pl.Series([1, 2, null])
+    >>> s.hasNulls()
+    true
+    ```
+   */
+  hasNulls(): boolean;
+  /**
    * Returns True if the Series has a validity bitmask.
    * If there is none, it means that there are no null values.
+   * @deprecated Use the :meth: `hasNulls` method instead.
    */
   hasValidity(): boolean;
   /**
@@ -1468,8 +1479,11 @@ export function _Series(_s: any): Series {
         BigInt(o.k3),
       );
     },
+    hasNulls() {
+      return _s.hasNulls();
+    },
     hasValidity() {
-      return _s.hasValidity();
+      return _s.hasNulls();
     },
     head(length = 5) {
       return wrap("head", length);
@@ -1816,7 +1830,7 @@ export function _Series(_s: any): Series {
       return _s.toArray();
     },
     toTypedArray() {
-      if (!this.hasValidity() || this.nullCount() === 0) {
+      if (!this.hasNulls() || this.nullCount() === 0) {
         return _s.toTypedArray();
       }
       throw new Error("data contains nulls, unable to convert to TypedArray");

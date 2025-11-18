@@ -32,6 +32,7 @@ describe("expr", () => {
     expect(actual).toSeriesEqual(expected);
   });
   test("aggGroups", () => {
+    // aggGroups is deprecated, use: df.withRowIndex().groupBy(...).agg(pl.col('index'))` instead.
     const df = pl.DataFrame({
       a: [1, 2, 3],
       b: ["a", "b", "c"],
@@ -39,12 +40,13 @@ describe("expr", () => {
     const expected = pl
       .DataFrame({
         a: [1, 2, 3],
-        b: [[0], [1], [2]],
+        index: [[0], [1], [2]],
       })
-      .withColumn(pl.col("b").cast(pl.List(pl.UInt32)));
+      .withColumn(pl.col("index").cast(pl.List(pl.UInt32)));
     const actual = df
+      .withRowIndex()
       .groupBy("a")
-      .agg(col("b").list().aggGroups())
+      .agg(col("index"))
       .sort({ by: "a" });
     expect(actual).toFrameEqual(expected);
   });
