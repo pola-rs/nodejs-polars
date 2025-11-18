@@ -1355,14 +1355,14 @@ describe("dataframe", () => {
     ]);
     expect(actual).toFrameEqual(expected);
   });
-  test("withRowCount", () => {
-    const actual = df.clone().withRowCount();
-
-    const expected = pl.DataFrame([
-      pl.Series("row_nr", [0, 1, 2], pl.UInt32),
-      pl.Series("foo", [1, 2, 9], pl.Int16),
-      pl.Series("bar", [6, 2, 8], pl.Int16),
-    ]);
+  test("withRowIndex", () => {
+    let actual = df.withRowIndex();
+    let expected = df.clone();
+    expected.insertAtIdx(0, pl.Series("index", [0, 1, 2], pl.Int16));
+    expect(actual).toFrameEqual(expected);
+    actual = df.withRowIndex("idx", 100);
+    expected = df.clone();
+    expected.insertAtIdx(0, pl.Series("idx", [100, 101, 102], pl.Int16));
     expect(actual).toFrameEqual(expected);
   });
   test("df from JSON with multiple struct", () => {

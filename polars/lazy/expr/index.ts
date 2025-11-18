@@ -76,6 +76,7 @@ export interface Expr
   /**
    * Get the group indexes of the group by operation.
    * Should be used in aggregation context only.
+   * @deprecated use: df.withRowIndex().groupBy(...).agg(pl.col('index'))` instead.
    * @example
    * ```
     >>> const df = pl.DataFrame(
