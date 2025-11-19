@@ -101,7 +101,7 @@ export interface SinkParquetOptions {
   simplifyExpression?: boolean;
   slicePushdown?: boolean;
   noOptimization?: boolean;
-  cloudOptions?: Map<string, string>;
+  cloudOptions?: Record<string, string>;
   retries?: number;
   sinkOptions?: SinkOptions;
 }
@@ -110,7 +110,7 @@ export interface SinkParquetOptions {
  * @category Options
  */
 export interface SinkJsonOptions {
-  cloudOptions?: Map<string, string>;
+  cloudOptions?: Record<string, string>;
   retries?: number;
   syncOnClose?: string; // Call sync when closing the file.
   maintainOrder?: boolean; // The output file needs to maintain order of the data that comes in.
@@ -123,7 +123,7 @@ export interface SinkJsonOptions {
 export interface SinkIpcOptions {
   compression?: string;
   compatLevel?: string;
-  cloudOptions?: Map<string, string>;
+  cloudOptions?: Record<string, string>;
   retries?: number;
   syncOnClose?: string; // Call sync when closing the file.
   maintainOrder?: boolean; // The output file needs to maintain order of the data that comes in.
@@ -190,7 +190,7 @@ export interface ScanParquetOptions {
   rechunk?: boolean;
   lowMemory?: boolean;
   useStatistics?: boolean;
-  cloudOptions?: Map<string, string>;
+  cloudOptions?: Record<string, string>;
   retries?: number;
   includeFilePaths?: string;
   allowMissingColumns?: boolean;
