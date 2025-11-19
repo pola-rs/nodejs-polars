@@ -15,44 +15,82 @@ export interface GroupBy {
   [inspect](): string;
   /**
    * Aggregate the groups into Series.
+   * @deprecated
    */
   aggList(): DataFrame;
   /**
-   * __Use multiple aggregations on columns.__
-   * This can be combined with complete lazy API and is considered idiomatic polars.
+   * Compute aggregations for each group of a group by operation.
    * ___
-   * @param columns - map of 'col' -> 'agg'
-   *
-   *  - using lazy API (recommended): `[col('foo').sum(), col('bar').min()]`
-   *  - using multiple aggs per column: `{'foo': ['sum', 'numUnique'], 'bar': ['min'] }`
-   *  - using single agg per column:  `{'foo': ['sum'], 'bar': 'min' }`
+   * @param columns - Aggregations to compute for each group of the group by operation, specified as positional arguments.
    * @example
    * ```
+   * const df = pl.DataFrame({
+      foo: [1, 2, 2, 3, 3],
+      ham: [6.0, 6, 7, 8.0, 8.0],
+      bar: ["a", "b", "c", "c", "c"],
+      spam: ["a", "b", "c", "c", "c"],
+    });
    * // use lazy api rest parameter style
-   * > df.groupBy('foo', 'bar')
-   * >   .agg(pl.sum('ham'), col('spam').tail(4).sum())
-   *
-   * // use lazy api array style
-   * > df.groupBy('foo', 'bar')
-   * >   .agg([pl.sum('ham'), col('spam').tail(4).sum()])
-   *
-   * // use a mapping
-   * > df.groupBy('foo', 'bar')
-   * >   .agg({'spam': ['sum', 'min']})
-   *
+   * > df.groupBy('foo', 'bar').agg(pl.count('ham'), pl.col('spam')).sort(["foo", "bar"]);
+   * shape: (4, 4)
+    ┌─────┬─────┬─────┬────────────┐
+    │ foo ┆ bar ┆ ham ┆ spam       │
+    │ --- ┆ --- ┆ --- ┆ ---        │
+    │ f64 ┆ str ┆ u32 ┆ list[str]  │
+    ╞═════╪═════╪═════╪════════════╡
+    │ 1.0 ┆ a   ┆ 1   ┆ ["a"]      │
+    │ 2.0 ┆ b   ┆ 1   ┆ ["b"]      │
+    │ 2.0 ┆ c   ┆ 1   ┆ ["c"]      │
+    │ 3.0 ┆ c   ┆ 2   ┆ ["c", "c"] │
+    └─────┴─────┴─────┴────────────┘
+   * 
+   * > df.groupBy("bar").agg(pl.col("foo"), pl.col("ham"), pl.col("spam") ).sort("bar");
+   * shape: (3, 4)
+    ┌─────┬─────────────────┬─────────────────┬─────────────────┐
+    │ bar ┆ foo             ┆ ham             ┆ spam            │
+    │ --- ┆ ---             ┆ ---             ┆ ---             │
+    │ str ┆ list[f64]       ┆ list[f64]       ┆ list[str]       │
+    ╞═════╪═════════════════╪═════════════════╪═════════════════╡
+    │ a   ┆ [1.0]           ┆ [6.0]           ┆ ["a"]           │
+    │ b   ┆ [2.0]           ┆ [6.0]           ┆ ["b"]           │
+    │ c   ┆ [2.0, 3.0, 3.0] ┆ [7.0, 8.0, 8.0] ┆ ["c", "c", "c"] │
+    └─────┴─────────────────┴─────────────────┴─────────────────┘
+   * > const h = pl.col("ham");
+   * > df.groupBy("bar").agg(h.sum().as("sum_ham"), h.min().as("min_ham"), h.max().as("max_ham"));
+   * shape: (3, 4)
+    ┌─────┬─────────┬─────────┬─────────┐
+    │ bar ┆ sum_ham ┆ min_ham ┆ max_ham │
+    │ --- ┆ ---     ┆ ---     ┆ ---     │
+    │ str ┆ f64     ┆ f64     ┆ f64     │
+    ╞═════╪═════════╪═════════╪═════════╡
+    │ a   ┆ 6.0     ┆ 6.0     ┆ 6.0     │
+    │ b   ┆ 6.0     ┆ 6.0     ┆ 6.0     │
+    │ c   ┆ 23.0    ┆ 7.0     ┆ 8.0     │
+    └─────┴─────────┴─────────┴─────────┘
    * ```
    */
   agg(...columns: Expr[]): DataFrame;
   agg(columns: Record<string, keyof Expr | (keyof Expr)[]>): DataFrame;
   /**
    * Return the number of rows in each group.
+   * @example
+   * > df = pl.DataFrame({a: ["Apple", "Apple", "Orange"], b: [1, None, 2]});
+     > df.groupBy("a").len()
+    shape: (2, 2)
+    ┌────────┬─────┐
+    │ a      ┆ len │
+    │ ---    ┆ --- │
+    │ str    ┆ u32 │
+    ╞════════╪═════╡
+    │ Apple  ┆ 2   │
+    │ Orange ┆ 1   │
+    └────────┴─────┘
    */
   len(): DataFrame;
   /**
    * Aggregate the first values in the group.
    */
   first(): DataFrame;
-
   /**
    * Return a `DataFrame` with:
    *   - the groupby keys
