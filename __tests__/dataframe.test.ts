@@ -2209,6 +2209,132 @@ describe("io", () => {
       }
     }
   });
+  test("toRecords:datetime:microseconds:fromPythonIPC", () => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const path = require("node:path");
+    const pythonIpcPath = path.resolve(
+      __dirname,
+      "./examples/test_datetime_us_python.ipc",
+    );
+
+    if (!fs.existsSync(pythonIpcPath)) {
+      console.warn(
+        `Skipping test: ${pythonIpcPath} not found. Run create_test_datetime.py first.`,
+      );
+      return;
+    }
+
+    const dfRead = pl.readIPC(pythonIpcPath);
+
+    const variants = dfRead.dtypes.map((dt) => dt.variant);
+    expect(variants[0]).toMatch(/Int64|Float64/);
+    expect(variants[1]).toBe("Datetime");
+    expect(variants[2]).toBe("Date");
+
+    const records = dfRead.toRecords() as unknown as Array<{
+      id: number;
+      datetime_us: Date;
+      date_field: Date;
+    }>;
+
+    expect(records).toHaveLength(3);
+
+    const date1 = records[0].datetime_us;
+    expect(date1.getUTCFullYear()).toBe(2024);
+    expect(date1.getUTCMonth()).toBe(1);
+    expect(date1.getUTCDate()).toBe(28);
+    expect(date1.getUTCHours()).toBe(14);
+    expect(date1.getUTCMinutes()).toBe(53);
+    expect(date1.getUTCSeconds()).toBe(0);
+
+    const date2 = records[1].datetime_us;
+    expect(date2.getUTCFullYear()).toBe(2025);
+    expect(date2.getUTCMonth()).toBe(0);
+    expect(date2.getUTCDate()).toBe(3);
+    expect(date2.getUTCHours()).toBe(9);
+    expect(date2.getUTCMinutes()).toBe(30);
+    expect(date2.getUTCSeconds()).toBe(0);
+
+    const date3 = records[2].datetime_us;
+    expect(date3.getUTCFullYear()).toBe(2024);
+    expect(date3.getUTCMonth()).toBe(11);
+    expect(date3.getUTCDate()).toBe(31);
+    expect(date3.getUTCHours()).toBe(23);
+    expect(date3.getUTCMinutes()).toBe(59);
+    expect(date3.getUTCSeconds()).toBe(59);
+  });
+  test("toRecords:date:fromIPC", () => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const path = require("node:path");
+    const tmpPath = path.resolve(__dirname, "./test_date.ipc");
+
+    try {
+      const dt1 = new Date("2024-02-28T14:53:00.000Z");
+      const dt2 = new Date("2025-01-03T09:30:00.000Z");
+      const dt3 = new Date("2024-12-31T23:59:59.999Z");
+
+      const df = pl.DataFrame({
+        id: [1, 2, 3],
+        date_field: pl.Series("date_field", [dt1, dt2, dt3], pl.Date),
+      });
+
+      df.writeIPC(tmpPath);
+      const dfRead = pl.readIPC(tmpPath);
+
+      const variants = dfRead.dtypes.map((dt) => dt.variant);
+      expect(variants[0]).toMatch(/Int64|Float64/);
+      expect(variants[1]).toBe("Date");
+
+      const records = dfRead.toRecords() as unknown as Array<{
+        id: number;
+        date_field: Date;
+      }>;
+
+      expect(records).toHaveLength(3);
+
+      const date1 = records[0].date_field;
+      expect(date1.getUTCFullYear()).toBe(2024);
+      expect(date1.getUTCMonth()).toBe(1);
+      expect(date1.getUTCDate()).toBe(28);
+      expect(date1.getUTCHours()).toBe(0);
+      expect(date1.getUTCMinutes()).toBe(0);
+      expect(date1.getUTCSeconds()).toBe(0);
+
+      const date2 = records[1].date_field;
+      expect(date2.getUTCFullYear()).toBe(2025);
+      expect(date2.getUTCMonth()).toBe(0);
+      expect(date2.getUTCDate()).toBe(3);
+      expect(date2.getUTCHours()).toBe(0);
+      expect(date2.getUTCMinutes()).toBe(0);
+      expect(date2.getUTCSeconds()).toBe(0);
+
+      const date3 = records[2].date_field;
+      expect(date3.getUTCFullYear()).toBe(2024);
+      expect(date3.getUTCMonth()).toBe(11);
+      expect(date3.getUTCDate()).toBe(31);
+      expect(date3.getUTCHours()).toBe(0);
+      expect(date3.getUTCMinutes()).toBe(0);
+      expect(date3.getUTCSeconds()).toBe(0);
+
+      const expected1 = new Date(
+        Date.UTC(dt1.getUTCFullYear(), dt1.getUTCMonth(), dt1.getUTCDate(), 0, 0, 0, 0),
+      );
+      const expected2 = new Date(
+        Date.UTC(dt2.getUTCFullYear(), dt2.getUTCMonth(), dt2.getUTCDate(), 0, 0, 0, 0),
+      );
+      const expected3 = new Date(
+        Date.UTC(dt3.getUTCFullYear(), dt3.getUTCMonth(), dt3.getUTCDate(), 0, 0, 0, 0),
+      );
+
+      expect(date1.getTime()).toBe(expected1.getTime());
+      expect(date2.getTime()).toBe(expected2.getTime());
+      expect(date3.getTime()).toBe(expected3.getTime());
+    } finally {
+      if (fs.existsSync(tmpPath)) {
+        fs.rmSync(tmpPath);
+      }
+    }
+  });
   test("toRecords:quoteChar:emptyHeader", () => {
     const csv = `|name|,||
 |John|,|green|
