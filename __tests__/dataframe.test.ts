@@ -1595,7 +1595,7 @@ Series: 'attributes' [struct[5]]
       const _iactual = df
         .groupBy("grb")
         .pivot("idx", "val")
-      [Symbol.for("nodejs.util.inspect.custom")]();
+        [Symbol.for("nodejs.util.inspect.custom")]();
       const fn = () => df.groupBy("grb").pivot("idx", "").first();
       expect(fn).toThrow("must specify both pivotCol and valuesCol");
     }
@@ -2156,7 +2156,11 @@ describe("io", () => {
 
       const df = pl.DataFrame({
         id: [1, 2, 3],
-        datetime_us: pl.Series("datetime_us", [dt1, dt2, dt3], pl.Datetime("us")),
+        datetime_us: pl.Series(
+          "datetime_us",
+          [dt1, dt2, dt3],
+          pl.Datetime("us"),
+        ),
         date_field: pl.Series("date_field", [dt1, dt2, dt3], pl.Date),
       });
 
@@ -2317,13 +2321,37 @@ describe("io", () => {
       expect(date3.getUTCSeconds()).toBe(0);
 
       const expected1 = new Date(
-        Date.UTC(dt1.getUTCFullYear(), dt1.getUTCMonth(), dt1.getUTCDate(), 0, 0, 0, 0),
+        Date.UTC(
+          dt1.getUTCFullYear(),
+          dt1.getUTCMonth(),
+          dt1.getUTCDate(),
+          0,
+          0,
+          0,
+          0,
+        ),
       );
       const expected2 = new Date(
-        Date.UTC(dt2.getUTCFullYear(), dt2.getUTCMonth(), dt2.getUTCDate(), 0, 0, 0, 0),
+        Date.UTC(
+          dt2.getUTCFullYear(),
+          dt2.getUTCMonth(),
+          dt2.getUTCDate(),
+          0,
+          0,
+          0,
+          0,
+        ),
       );
       const expected3 = new Date(
-        Date.UTC(dt3.getUTCFullYear(), dt3.getUTCMonth(), dt3.getUTCDate(), 0, 0, 0, 0),
+        Date.UTC(
+          dt3.getUTCFullYear(),
+          dt3.getUTCMonth(),
+          dt3.getUTCDate(),
+          0,
+          0,
+          0,
+          0,
+        ),
       );
 
       expect(date1.getTime()).toBe(expected1.getTime());
