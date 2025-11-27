@@ -3075,13 +3075,9 @@ export interface DataFrameConstructor extends Deserialize<DataFrame> {
    * @param options.orient - orientation of the data [row, col]
    * Whether to interpret two-dimensional data as columns or as rows. If None, the orientation is inferred by matching the columns and data dimensions. If this does not yield conclusive results, column orientation is used.
    * @param options.schema - The schema of the resulting DataFrame. The schema may be declared in several ways:
-   *
    *     - As a dict of {name:type} pairs; if type is None, it will be auto-inferred.
-   *
    *     - As a list of column names; in this case types are automatically inferred.
-   *
    *     - As a list of (name,type) pairs; this is equivalent to the dictionary form.
-   *
    * If you supply a list of column names that does not match the names in the underlying data, the names given here will overwrite them. The number of names given in the schema should match the underlying data dimensions.
    *
    * If set to null (default), the schema is inferred from the data.
@@ -3092,19 +3088,65 @@ export interface DataFrameConstructor extends Deserialize<DataFrame> {
    *
    * @example
    * ```
-   * data = {'a': [1n, 2n], 'b': [3, 4]}
-   * df = pl.DataFrame(data)
-   * df
-   * shape: (2, 2)
-   * ╭─────┬─────╮
-   * │ a   ┆ b   │
-   * │ --- ┆ --- │
-   * │ u64 ┆ i64 │
-   * ╞═════╪═════╡
-   * │ 1   ┆ 3   │
-   * ├╌╌╌╌╌┼╌╌╌╌╌┤
-   * │ 2   ┆ 4   │
-   * ╰─────┴─────╯
+   * > pl.DataFrame({ a: [1, 2, 3], b: ["a", "b", "c"] });
+    shape: (3, 2)
+    ┌─────┬─────┐
+    │ a   ┆ b   │
+    │ --- ┆ --- │
+    │ f64 ┆ str │
+    ╞═════╪═════╡
+    │ 1.0 ┆ a   │
+    │ 2.0 ┆ b   │
+    │ 3.0 ┆ c   │
+    └─────┴─────┘
+
+   * To specify a more detailed/specific frame schema you can supply the `schema` parameter with a dictionary of (name,dtype) pairs...
+   * > const data = {col1: [0, 2], col2: [3, 7]}
+   * > pl.DataFrame(data, { schema: { "col1": pl.Float32, "col2": pl.Int64}} );
+     shape: (2, 2)
+    ┌──────┬──────┐
+    │ col1 ┆ col2 │
+    │ ---  ┆ ---  │
+    │ f32  ┆ i64  │
+    ╞══════╪══════╡
+    │ 0.0  ┆ 3    │
+    │ 2.0  ┆ 7    │
+    └──────┴──────┘
+
+    * Constructing a DataFrame from a list of lists, row orientation and columns specified
+    * > const data = [[1, 2, 3], [4, 5, 6]];
+    * > pl.DataFrame(data, { columns: ["a", "b", "c"], orient: "row" });
+     shape: (2, 3)
+    ┌─────┬─────┬─────┐
+    │ a   ┆ b   ┆ c   │
+    │ --- ┆ --- ┆ --- │
+    │ f64 ┆ f64 ┆ f64 │
+    ╞═════╪═════╪═════╡
+    │ 1.0 ┆ 2.0 ┆ 3.0 │
+    │ 4.0 ┆ 5.0 ┆ 6.0 │
+    └─────┴─────┴─────┘
+
+    * Constructing an empty DataFrame with a schema
+    * > const schema = {
+          s: pl.String,
+          b: pl.Bool,
+          i: pl.Int32,
+          d: pl.Datetime("ms"),
+          a: pl.Struct([
+            new pl.Field("b", pl.Bool),
+            new pl.Field("bb", pl.Bool),
+            new pl.Field("s", pl.String),
+            new pl.Field("x", pl.Float64),
+          ]),
+        };
+    * > pl.DataFrame({ schema });
+     shape: (0, 5)
+    ┌─────┬──────┬─────┬──────────────┬───────────┐
+    │ s   ┆ b    ┆ i   ┆ d            ┆ a         │
+    │ --- ┆ ---  ┆ --- ┆ ---          ┆ ---       │
+    │ str ┆ bool ┆ i32 ┆ datetime[ms] ┆ struct[0] │
+    ╞═════╪══════╪═════╪══════════════╪═══════════╡
+    └─────┴──────┴─────┴──────────────┴───────────┘
    * ```
    */
   <T1 extends ArrayLike<Series>>(
@@ -3130,6 +3172,16 @@ function DataFrameConstructor<S extends Schema = Schema>(
   data?,
   options?,
 ): DataFrame<S> {
+  if (data?.schema && !Array.isArray(data?.schema)) {
+    return _DataFrame(
+      new pli.JsDataFrame(
+        Object.keys(data.schema).map((key) =>
+          Series(key, [], data.schema[key]).inner(),
+        ),
+      ),
+    );
+  }
+
   if (!data) {
     return _DataFrame(objToDF({}));
   }

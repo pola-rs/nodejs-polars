@@ -2226,6 +2226,27 @@ describe("create", () => {
     const df = pl.DataFrame();
     expect(df.isEmpty()).toStrictEqual(true);
   });
+  test("empty with schema", () => {
+    const schema = {
+      s: pl.String,
+      b: pl.Bool,
+      i: pl.Int32,
+      d: pl.Datetime("ms"),
+      a: pl.Struct([
+        new pl.Field("b", pl.Bool),
+        new pl.Field("bb", pl.Bool),
+        new pl.Field("s", pl.String),
+        new pl.Field("x", pl.Float64),
+      ]),
+    };
+    const df = pl.DataFrame({ schema });
+    expect(df.isEmpty()).toStrictEqual(true);
+    expect(df.columns).toEqual(["s", "b", "i", "d", "a"]);
+  });
+  test("df with schema column name", () => {
+    const df = pl.DataFrame({ schema: [1] });
+    expect(df.columns).toEqual(["schema"]);
+  });
   test("from empty-object", () => {
     const df = pl.DataFrame({});
     expect(df.isEmpty()).toStrictEqual(true);
