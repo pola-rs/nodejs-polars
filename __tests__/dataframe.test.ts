@@ -2239,9 +2239,11 @@ describe("create", () => {
         new pl.Field("x", pl.Float64),
       ]),
     };
-    const df = pl.DataFrame({ schema });
-    expect(df.isEmpty()).toStrictEqual(true);
-    expect(df.columns).toEqual(["s", "b", "i", "d", "a"]);
+    for (const data of [{}, null, undefined]) {
+      const df = pl.DataFrame(data, { schema });
+      expect(df.isEmpty()).toStrictEqual(true);
+      expect(df.columns).toEqual(["s", "b", "i", "d", "a"]);
+    }
   });
   test("df with schema column name", () => {
     const df = pl.DataFrame({ schema: [1] });

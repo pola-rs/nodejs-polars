@@ -3139,7 +3139,7 @@ export interface DataFrameConstructor extends Deserialize<DataFrame> {
             new pl.Field("x", pl.Float64),
           ]),
         };
-    * > pl.DataFrame({ schema });
+    * > pl.DataFrame({}, { schema }) or pl.DataFrame(null, { schema }) or pl.DataFrame(underfined, { schema });
      shape: (0, 5)
     ┌─────┬──────┬─────┬──────────────┬───────────┐
     │ s   ┆ b    ┆ i   ┆ d            ┆ a         │
@@ -3172,11 +3172,11 @@ function DataFrameConstructor<S extends Schema = Schema>(
   data?,
   options?,
 ): DataFrame<S> {
-  if (data?.schema && !Array.isArray(data?.schema)) {
+  if ((!data || Object.keys(data).length === 0) && options?.schema) {
     return _DataFrame(
       new pli.JsDataFrame(
-        Object.keys(data.schema).map((key) =>
-          Series(key, [], data.schema[key]).inner(),
+        Object.keys(options.schema).map((key) =>
+          Series(key, [], options.schema[key]).inner(),
         ),
       ),
     );
