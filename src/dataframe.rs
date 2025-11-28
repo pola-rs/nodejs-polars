@@ -1379,12 +1379,22 @@ impl JsDataFrame {
     // deprecated
     #[napi(catch_unwind)]
     pub fn with_row_count(&self, name: String, offset: Option<u32>) -> napi::Result<JsDataFrame> {
-        let df = self.df.with_row_index(PlSmallStr::from_string(name), offset).map_err(JsPolarsErr::from)?;
+        let df = self
+            .df
+            .with_row_index(PlSmallStr::from_string(name), offset)
+            .map_err(JsPolarsErr::from)?;
         Ok(df.into())
     }
     #[napi(catch_unwind)]
-    pub fn with_row_index(&self, name: String, offset: Option<IdxSize>) -> napi::Result<JsDataFrame> {
-        let df = self.df.with_row_index(PlSmallStr::from_string(name), offset).map_err(JsPolarsErr::from)?;
+    pub fn with_row_index(
+        &self,
+        name: String,
+        offset: Option<IdxSize>,
+    ) -> napi::Result<JsDataFrame> {
+        let df = self
+            .df
+            .with_row_index(PlSmallStr::from_string(name), offset)
+            .map_err(JsPolarsErr::from)?;
         Ok(df.into())
     }
     #[napi(catch_unwind)]

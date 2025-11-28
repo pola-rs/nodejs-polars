@@ -486,18 +486,20 @@ describe("dataframe", () => {
       .hashRows();
     expect(actual.dtype).toStrictEqual(pl.UInt64);
   });
-  test.each([[1], [1, 2], [1, 2, 3], [1, 2, 3, 4]])(
-    "hashRows:positional",
-    (...args: any[]) => {
-      const actual = pl
-        .DataFrame({
-          foo: [1, 2, 3],
-          ham: ["a", "b", "c"],
-        })
-        .hashRows(...args);
-      expect(actual.dtype).toStrictEqual(pl.UInt64);
-    },
-  );
+  test.each([
+    [1],
+    [1, 2],
+    [1, 2, 3],
+    [1, 2, 3, 4],
+  ])("hashRows:positional", (...args: any[]) => {
+    const actual = pl
+      .DataFrame({
+        foo: [1, 2, 3],
+        ham: ["a", "b", "c"],
+      })
+      .hashRows(...args);
+    expect(actual.dtype).toStrictEqual(pl.UInt64);
+  });
   test.each([
     [{ k0: 1 }],
     [{ k0: 1, k1: 2 }],
