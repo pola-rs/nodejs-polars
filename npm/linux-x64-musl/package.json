@@ -1,6 +1,6 @@
 {
   "name": "nodejs-polars-linux-x64-musl",
-  "version": "0.23.3",
+  "version": "0.23.4",
   "os": [
     "linux"
   ],
