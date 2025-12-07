@@ -629,6 +629,28 @@ export interface Series<T extends DataType = any, Name extends string = string>
    */
   limit(n?: number): Series;
   /**
+   * Map a custom/user-defined function (UDF) over elements in this Series.
+   * @param fn - Custom function to call
+   * 
+   * @example
+   * ```
+   * > const mapping: Record<string, string> = { A: 'AA', B: 'BB', C: 'CC', D: 'OtherD', };
+   * > const funcMap = (k: string): string => mapping[k] ?? '';
+   * > pl.Series("foo", ["A", "B", "C", "D", "F", null], pl.String).mapElements(funcMap);
+  shape: (6,)
+  Series: 'foo' [str]
+  [
+    "AA"
+    "BB"
+    "CC"
+    "OtherD"
+    ""
+    ""
+  ]
+  * ```
+  */
+  mapElements(fn: (v: any) => any): Series;
+  /**
    * Get the maximum value in this Series.
    * @example
    * ```
@@ -1611,6 +1633,9 @@ export function _Series(_s: any): Series {
     },
     limit(n = 10) {
       return wrap("limit", n);
+    },
+    mapElements(fn: (v: any) => any) {
+      return Series(this.name, [...this.values()].map(fn));
     },
     max() {
       return _s.max() as any;
