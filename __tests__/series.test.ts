@@ -2,6 +2,41 @@
 import pl, { DataType } from "@polars";
 import Chance from "chance";
 
+describe("mapElements", () => {
+  test("mapElements string", () => {
+    const mapping: Record<string, string> = {
+      A: "AA",
+      B: "BB",
+      C: "CC",
+      D: "OtherD",
+    };
+    const funcMap = (k: string): string => mapping[k] ?? "";
+    const actual = pl
+      .Series("foo", ["A", "B", "C", "D", "F", null], pl.String)
+      .mapElements(funcMap);
+    const expected = pl.Series(
+      "foo",
+      ["AA", "BB", "CC", "OtherD", "", ""],
+      pl.String,
+    );
+    expect(actual).toSeriesEqual(expected);
+  });
+  test("mapElements int", () => {
+    const mapping: Record<number, number> = { 1: 11, 2: 22, 3: 33, 4: 44 };
+    const funcMap = (k: number): number => mapping[k] ?? "";
+    let actual = pl.Series("foo", [1, 2, 3, 5], pl.Int32).mapElements(funcMap);
+    let expected = pl.Series("foo", [11, 22, 33, null], pl.Int32);
+    expect(actual).toSeriesEqual(expected);
+    const multiFunc = (k: number): number => k * 2;
+    actual = pl.Series("foo", [1, 2, 3, 5], pl.Int32).mapElements(multiFunc);
+    expected = pl.Series("foo", [2, 4, 6, 10], pl.Int32);
+    expect(actual).toSeriesEqual(expected);
+    const funcStr = (k: number): string => `${k}x`;
+    actual = pl.Series("foo", [1, 2, 3, 5], pl.Int32).mapElements(funcStr);
+    expected = pl.Series("foo", ["1x", "2x", "3x", "5x"], pl.String);
+    expect(actual).toSeriesEqual(expected);
+  });
+});
 describe("from lists", () => {
   test("bool", () => {
     const expected = [[true, false], [true], [null], []];
