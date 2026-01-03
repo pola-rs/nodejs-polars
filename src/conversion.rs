@@ -785,7 +785,7 @@ impl FromNapiValue for Wrap<DataType> {
                     "Datetime" => {
                         let tu = obj.get::<Wrap<TimeUnit>>("timeUnit")?.unwrap();
                         let tz = obj.get::<Option<String>>("timeZone")?.unwrap();
-                        let time_zone = TimeZone::opt_try_new(tz).map_err(JsPolarsErr::from).unwrap_or(Some(TimeZone::UTC));
+                        let time_zone = TimeZone::opt_try_new(tz).map_err(JsPolarsErr::from)?;
                         DataType::Datetime(tu.0, time_zone)
                     }
                     "Time" => DataType::Time,
