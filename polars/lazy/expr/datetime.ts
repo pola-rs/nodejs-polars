@@ -28,5 +28,17 @@ export const ExprDateTimeFunctions = (_expr: any): ExprDateTime => {
     year: wrapNullArgs("year"),
     truncate: (every) => wrap("dtTruncate", exprToLitOrExpr(every)._expr),
     round: (every) => wrap("dtRound", exprToLitOrExpr(every)._expr),
+    replaceTimeZone: (
+      timeZone: string,
+      ambiguous: string | Expr = "raise",
+      nonExistent: string = "raise",
+    ) =>
+      wrap(
+        "dtReplaceTimeZone",
+        timeZone,
+        exprToLitOrExpr(ambiguous)._expr,
+        nonExistent,
+      ),
+    convertTimeZone: (timeZone: string) => wrap("dtConvertTimeZone", timeZone),
   };
 };

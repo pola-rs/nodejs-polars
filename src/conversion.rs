@@ -445,11 +445,7 @@ impl FromNapiValue for Wrap<UniqueKeepStrategy> {
             "last" => UniqueKeepStrategy::Last,
             "any" => UniqueKeepStrategy::Any,
             "none" => UniqueKeepStrategy::None,
-            _ => {
-                return Err(napi::Error::from_reason(
-                    "use one of {'first', 'last'}".to_owned(),
-                ))
-            }
+            v => return Err(napi::Error::from_reason(format!("UniqueKeepStrategy must be one of {{'first', 'last'}}, got {v}"))),
         };
         Ok(Wrap(method))
     }
@@ -461,13 +457,21 @@ impl FromNapiValue for Wrap<NullStrategy> {
         let method = match method.as_ref() {
             "ignore" => NullStrategy::Ignore,
             "propagate" => NullStrategy::Propagate,
-            _ => {
-                return Err(napi::Error::from_reason(
-                    "use one of {'ignore', 'propagate'}".to_owned(),
-                ))
-            }
+            v => return Err(napi::Error::from_reason(format!("NullStrategy must be one of {{'ignore', 'propagate'}}, got {v}"))),
         };
         Ok(Wrap(method))
+    }
+}
+
+impl FromNapiValue for Wrap<NonExistent> {
+    unsafe fn from_napi_value(env: sys::napi_env, napi_val: sys::napi_value) -> JsResult<Self> {
+        let method = String::from_napi_value(env, napi_val)?;
+        let parsed = match method.as_ref() {
+            "null" => NonExistent::Null,
+            "raise" => NonExistent::Raise,
+            v => return Err(napi::Error::from_reason(format!("`nonExistent` must be one of {{'null', 'raise'}}, got {v}")))
+        };
+        Ok(Wrap(parsed))
     }
 }
 
@@ -477,11 +481,7 @@ impl FromNapiValue for Wrap<NullBehavior> {
         let method = match method.as_ref() {
             "drop" => NullBehavior::Drop,
             "ignore" => NullBehavior::Ignore,
-            _ => {
-                return Err(napi::Error::from_reason(
-                    "use one of {'drop', 'ignore'}".to_owned(),
-                ))
-            }
+            v => return Err(napi::Error::from_reason(format!("`NullBehavior` must be one of {{'drop', 'ignore'}}, got {v}" )))
         };
         Ok(Wrap(method))
     }
@@ -498,11 +498,7 @@ impl FromNapiValue for Wrap<FillNullStrategy> {
             "mean" => FillNullStrategy::Mean,
             "zero" => FillNullStrategy::Zero,
             "one" => FillNullStrategy::One,
-            _ => {
-                return Err(napi::Error::from_reason(
-                    "Strategy not supported".to_owned(),
-                ))
-            }
+            v => return Err(napi::Error::from_reason(format!("{v} strategy not supported",)))
         };
         Ok(Wrap(method))
     }
@@ -788,7 +784,9 @@ impl FromNapiValue for Wrap<DataType> {
                     "Date" => DataType::Date,
                     "Datetime" => {
                         let tu = obj.get::<Wrap<TimeUnit>>("timeUnit")?.unwrap();
-                        DataType::Datetime(tu.0, None)
+                        let tz = obj.get::<Option<String>>("timeZone")?.unwrap();
+                        let time_zone = TimeZone::opt_try_new(tz).map_err(JsPolarsErr::from).unwrap_or(Some(TimeZone::UTC));
+                        DataType::Datetime(tu.0, time_zone)
                     }
                     "Time" => DataType::Time,
                     "Duration" => {

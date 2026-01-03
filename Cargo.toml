@@ -148,7 +148,6 @@ features = [
   "avro",
   "list_eval",
   "arg_where",
-  "timezones",
   "peaks",
   "string_pad",
   "replace",

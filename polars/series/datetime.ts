@@ -1,3 +1,4 @@
+import type { Expr } from "../lazy/expr";
 import { col } from "../lazy/functions";
 import type { DateFunctions } from "../shared_traits";
 import { _Series, type Series } from ".";
@@ -35,6 +36,22 @@ export const SeriesDateFunctions = (_s): SeriesDateFunctions => {
       _Series(_s)
         .toFrame()
         .select(col(_s.name).dt.round(every))
+        .getColumn(_s.name),
+    replaceTimeZone: (
+      timeZone: string,
+      ambiguous: string | Expr = "raise",
+      nonExistent: string = "raise",
+    ) =>
+      _Series(_s)
+        .toFrame()
+        .select(
+          col(_s.name).dt.replaceTimeZone(timeZone, ambiguous, nonExistent),
+        )
+        .getColumn(_s.name),
+    convertTimeZone: (timeZone: string) =>
+      _Series(_s)
+        .toFrame()
+        .select(col(_s.name).dt.convertTimeZone(timeZone))
         .getColumn(_s.name),
   };
 };
