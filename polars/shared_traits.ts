@@ -1046,7 +1046,7 @@ export interface DateFunctions<T> {
   convertTimeZone(timeZone: string): T;
   /**
    * Replace time zone for an expression of type Datetime.
-   * @param timeZone - Time zone for the `Datetime` expression. Pass `None` to unset time zone.
+   * @param timeZone - Time zone for the `Datetime` expression. Pass `null` to unset time zone.
    * @param ambiguous - Determine how to deal with ambiguous datetimes:
             - `'raise'` (default): raise
             - `'earliest'`: use the earliest datetime
