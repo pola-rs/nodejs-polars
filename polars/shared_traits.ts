@@ -1007,6 +1007,89 @@ export interface DateFunctions<T> {
     └─────────────────────────┴─────────────────────┘
    */
   round(every: string | Expr): T;
+  /***
+    Convert to given time zone for an expression of type Datetime.
+    @param timeZone Time zone for the `Datetime` expression.
+    @returns Expr Expression of data type `Datetime` with the given time zone.
+    @example
+    --------
+    >>> DataFrame([
+      Series("london_timezone", [new Date(Date.UTC(2026, 0, 1, 6, 0, 0))],DataType.Datetime("us"),).dt.replaceTimeZone("Europe/London"),
+    ]).select([
+      pl.col("london_timezone"),
+      pl.col("london_timezone").dt.convertTimeZone("Europe/Amsterdam").alias("London_to_Amsterdam"),
+    ]);
+    shape: (1, 2)
+    ┌─────────────────────────────┬────────────────────────────────┐
+    │ london_timezone             ┆ London_to_Amsterdam            │
+    │ ---                         ┆ ---                            │
+    │ datetime[μs, Europe/London] ┆ datetime[μs, Europe/Amsterdam] │
+    ╞═════════════════════════════╪════════════════════════════════╡
+    │ 2026-01-01 06:00:00 GMT     ┆ 2026-01-01 07:00:00 CET        │
+    └─────────────────────────────┴────────────────────────────────┘
+  */
+  convertTimeZone(timeZone: string): T;
+  /**
+   * Replace time zone for an expression of type Datetime.
+   * @param timeZone - Time zone for the `Datetime` expression. Pass `null` to unset time zone.
+   * @param ambiguous - Determine how to deal with ambiguous datetimes:
+            - `'raise'` (default): raise
+            - `'earliest'`: use the earliest datetime
+            - `'latest'`: use the latest datetime
+            - `'null'`: set to null
+   * @param nonExistent - Determine how to deal with non-existent datetimes:
+            - `'raise'` (default): raise
+            - `'null'`: set to null
+   * @example
+   * ```
+    DataFrame([
+        Series("london_timezone", [new Date(Date.UTC(2026, 0, 1, 6, 0, 0))],DataType.Datetime("us")).dt.replaceTimeZone("Europe/London")
+      ]).select([ pl.col("london_timezone"),
+                  pl.col("london_timezone").dt.replaceTimeZone("Europe/Amsterdam").alias("London_to_Amsterdam")]);
+
+    shape: (1, 2)
+    ┌─────────────────────────────┬────────────────────────────────┐
+    │ london_timezone             ┆ London_to_Amsterdam            │
+    │ ---                         ┆ ---                            │
+    │ datetime[μs, Europe/London] ┆ datetime[μs, Europe/Amsterdam] │
+    ╞═════════════════════════════╪════════════════════════════════╡
+    │ 2026-01-01 06:00:00 GMT     ┆ 2026-01-01 06:00:00 CET        │
+    └─────────────────────────────┴────────────────────────────────┘
+
+    You can use `ambiguous` to deal with ambiguous datetimes:
+
+    >>> const dates = [
+    ...     "2018-10-28 01:30",
+    ...     "2018-10-28 02:00",
+    ...     "2018-10-28 02:30",
+    ...     "2018-10-28 02:00",
+    ... ];
+
+    pl.DataFrame(
+     {
+         "ts": pl.Series(dates).str.strptime(pl.Datetime),
+         "ambiguous": ["earliest", "earliest", "latest", "latest"],
+     }).withColumns(
+        pl.col("ts").dt.replaceTimeZone( "Europe/Brussels", pl.col("ambiguous")).alias("ts_localized")
+      );
+
+    shape: (4, 3)
+    ┌─────────────────────┬───────────┬───────────────────────────────┐
+    │ ts                  ┆ ambiguous ┆ ts_localized                  │
+    │ ---                 ┆ ---       ┆ ---                           │
+    │ datetime[μs]        ┆ str       ┆ datetime[μs, Europe/Brussels] │
+    ╞═════════════════════╪═══════════╪═══════════════════════════════╡
+    │ 2018-10-28 01:30:00 ┆ earliest  ┆ 2018-10-28 01:30:00 CEST      │
+    │ 2018-10-28 02:00:00 ┆ earliest  ┆ 2018-10-28 02:00:00 CEST      │
+    │ 2018-10-28 02:30:00 ┆ latest    ┆ 2018-10-28 02:30:00 CET       │
+    │ 2018-10-28 02:00:00 ┆ latest    ┆ 2018-10-28 02:00:00 CET       │
+    └─────────────────────┴───────────┴───────────────────────────────┘
+  */
+  replaceTimeZone(
+    timeZone: string,
+    ambiguous?: string | Expr,
+    nonExistent?: string,
+  ): T;
 }
 
 export interface StringFunctions<T> {

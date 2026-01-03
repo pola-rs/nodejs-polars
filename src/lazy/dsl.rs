@@ -1032,6 +1032,38 @@ impl JsExpr {
         self.clone().inner.dt().nanosecond().into()
     }
     #[napi(catch_unwind)]
+    pub fn dt_convert_time_zone(&self, time_zone: String) -> JsResult<JsExpr> {
+        TimeZone::validate_time_zone(&time_zone).map_err(JsPolarsErr::from)?;
+        let tz = TimeZone::opt_try_new(Some(PlSmallStr::from(time_zone)))
+            .map_err(JsPolarsErr::from)?
+            .unwrap_or(TimeZone::UTC);
+        Ok(self
+            .inner
+            .clone()
+            .dt()
+            .convert_time_zone(tz)
+            .into())
+    }
+    #[napi(catch_unwind)]
+    pub fn dt_cast_time_unit(&self, time_unit: Wrap<TimeUnit>) -> Self {
+        self.inner.clone().dt().cast_time_unit(time_unit.0).into()
+    }
+    #[napi(catch_unwind)]
+    pub fn dt_replace_time_zone(&self, time_zone: Option<String>, ambiguous: &JsExpr, non_existent: Wrap<NonExistent>) -> JsResult<JsExpr> {
+        if let Some(ref tz_str) = time_zone {
+            TimeZone::validate_time_zone(tz_str).map_err(JsPolarsErr::from)?;
+        }
+        let tz = TimeZone::opt_try_new(time_zone.map(PlSmallStr::from_string))
+            .map_err(JsPolarsErr::from)?
+            .or(Some(TimeZone::UTC));
+        Ok(self
+            .inner
+            .clone()
+            .dt()
+            .replace_time_zone(tz, ambiguous.inner.clone(), non_existent.0)
+            .into())
+    }
+    #[napi(catch_unwind)]
     pub fn dt_truncate(&self, every: &JsExpr) -> JsExpr {
         self.clone().inner.dt().truncate(every.inner.clone()).into()
     }
