@@ -2335,11 +2335,7 @@ describe("expr.dt", () => {
       month: pl.Series("", [1], pl.UInt32),
       year: pl.Series("", [1984], pl.Int32),
       tz: pl.Series("", [dt], pl.Datetime("ms", "Europe/Amsterdam")),
-      tzReplace: pl.Series(
-        "",
-        [dt.setHours(19)],
-        pl.Datetime("ms", "Europe/Brussels"),
-      ),
+      tzReplace: pl.Series("", [dt], pl.Datetime("ms", "Europe/London")),
     });
     const dtCol = col("date_col").dt;
     const dtSeries = df.getColumn("date_col").dt;
@@ -2355,7 +2351,7 @@ describe("expr.dt", () => {
       dtCol.month().as("month"),
       dtCol.year().as("year"),
       dtCol.convertTimeZone("Europe/Amsterdam").as("tz"),
-      dtCol.replaceTimeZone("Europe/Brussels").as("tzReplace"),
+      dtCol.replaceTimeZone("Europe/London").as("tzReplace"),
     );
 
     const actualFromSeries = pl.DataFrame([
@@ -2370,7 +2366,7 @@ describe("expr.dt", () => {
       dtSeries.month().rename("month"),
       dtSeries.year().rename("year"),
       dtSeries.convertTimeZone("Europe/Amsterdam").rename("tz"),
-      dtSeries.replaceTimeZone("Europe/Brussels").rename("tzReplace"),
+      dtSeries.replaceTimeZone("Europe/London").rename("tzReplace"),
     ]);
     expect(actual).toFrameEqual(expected);
     expect(actualFromSeries).toFrameEqual(expected);

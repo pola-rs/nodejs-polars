@@ -32,13 +32,26 @@ export const ExprDateTimeFunctions = (_expr: any): ExprDateTime => {
       timeZone: string,
       ambiguous: string | Expr = "raise",
       nonExistent: string = "raise",
-    ) =>
-      wrap(
+    ) => {
+      const res = wrap(
         "dtReplaceTimeZone",
         timeZone,
         exprToLitOrExpr(ambiguous)._expr,
         nonExistent,
-      ),
-    convertTimeZone: (timeZone: string) => wrap("dtConvertTimeZone", timeZone),
+      );
+      if (res._expr.toString().startsWith("Error:")) {
+        throw new Error(res._expr.toString());
+      }
+
+      return res;
+    },
+    convertTimeZone: (timeZone: string) => {
+      const res = wrap("dtConvertTimeZone", timeZone);
+      if (res._expr.toString().startsWith("Error:")) {
+        throw new Error(res._expr.toString());
+      }
+
+      return res;
+    },
   };
 };

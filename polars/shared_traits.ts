@@ -1013,35 +1013,20 @@ export interface DateFunctions<T> {
     @returns Expr Expression of data type `Datetime` with the given time zone.
     @example
     --------
-    >>> df = pl.DataFrame(
-    ...     {
-    ...         "date": pl.datetime_range(
-    ...             datetime(2020, 3, 1),
-    ...             datetime(2020, 5, 1),
-    ...             "1mo",
-    ...             time_zone="UTC",
-    ...             eager=True,
-    ...         ),
-    ...     }
-    ... )
-    >>> df.select(
-    ...     [
-    ...         pl.col("date"),
-    ...         pl.col("date")
-    ...         .dt.convertTimeZone(time_zone="Europe/London")
-    ...         .alias("London"),
-    ...     ]
-    ... )
-    shape: (3, 2)
-    ┌─────────────────────────┬─────────────────────────────┐
-    │ date                    ┆ London                      │
-    │ ---                     ┆ ---                         │
-    │ datetime[μs, UTC]       ┆ datetime[μs, Europe/London] │
-    ╞═════════════════════════╪═════════════════════════════╡
-    │ 2020-03-01 00:00:00 UTC ┆ 2020-03-01 00:00:00 GMT     │
-    │ 2020-04-01 00:00:00 UTC ┆ 2020-04-01 01:00:00 BST     │
-    │ 2020-05-01 00:00:00 UTC ┆ 2020-05-01 01:00:00 BST     │
-    └─────────────────────────┴─────────────────────────────┘
+    >>> DataFrame([
+      Series("london_timezone", [new Date(Date.UTC(2026, 0, 1, 6, 0, 0))],DataType.Datetime("us"),).dt.replaceTimeZone("Europe/London"),
+    ]).select([
+      pl.col("london_timezone"),
+      pl.col("london_timezone").dt.convertTimeZone("Europe/Amsterdam").alias("London_to_Amsterdam"),
+    ]);
+    shape: (1, 2)
+    ┌─────────────────────────────┬────────────────────────────────┐
+    │ london_timezone             ┆ London_to_Amsterdam            │
+    │ ---                         ┆ ---                            │
+    │ datetime[μs, Europe/London] ┆ datetime[μs, Europe/Amsterdam] │
+    ╞═════════════════════════════╪════════════════════════════════╡
+    │ 2026-01-01 06:00:00 GMT     ┆ 2026-01-01 07:00:00 CET        │
+    └─────────────────────────────┴────────────────────────────────┘
   */
   convertTimeZone(timeZone: string): T;
   /**
