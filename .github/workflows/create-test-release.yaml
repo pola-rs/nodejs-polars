@@ -1,0 +1,120 @@
+name: nodejs-polars
+env:
+  DEBUG: napi:*
+  APP_NAME: nodejs-polars
+  MACOSX_DEPLOYMENT_TARGET: "15.0"
+"on":
+  push:
+    # Sequence of patterns matched against refs/tags
+    tags:
+      - "nodejs-polars-v*" # Push events to matching nodejs-polars-v*, i.e. nodejs-polars-v1.0, nodejs-polars-v20.15.10
+permissions:
+  id-token: write  # Required for OIDC
+  contents: read
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        settings:
+          - host: macos-latest
+            target: x86_64-apple-darwin
+            architecture: x64
+            build: |
+              rustup target add x86_64-apple-darwin
+              yarn build --target x86_64-apple-darwin
+              strip -x polars/*.node
+          - host: windows-latest
+            architecture: x64
+            build: yarn build
+            target: x86_64-pc-windows-msvc
+          - host: ubuntu-latest
+            architecture: x64
+            target: x86_64-unknown-linux-gnu
+            build: yarn build --target x86_64-unknown-linux-gnu --use-napi-cross && llvm-strip -x polars/*.node
+          - host: ubuntu-latest
+            architecture: x64
+            target: x86_64-unknown-linux-musl
+            build: yarn build --target x86_64-unknown-linux-musl --use-napi-cross
+          - host: macos-latest
+            target: aarch64-apple-darwin
+            architecture: arm64
+            build: yarn build --target aarch64-apple-darwin && strip -x polars/*.node
+          - host: ubuntu-latest
+            architecture: x64
+            target: aarch64-unknown-linux-gnu
+            build: yarn build --target aarch64-unknown-linux-gnu --use-napi-cross && llvm-strip -x polars/*.node
+          - host: ubuntu-latest
+            architecture: x64
+            target: aarch64-linux-android
+            build: |
+              export CLANG_VERSION=`ls ${ANDROID_NDK_LATEST_HOME}/toolchains/llvm/prebuilt/linux-x86_64/lib/clang | sed 's/ *$//g'`
+              touch "${ANDROID_NDK_LATEST_HOME}/toolchains/llvm/prebuilt/linux-x86_64/lib/clang/${CLANG_VERSION}/lib/linux/aarch64/libgcc.a"
+              chmod 777 "${ANDROID_NDK_LATEST_HOME}/toolchains/llvm/prebuilt/linux-x86_64/lib/clang/${CLANG_VERSION}/lib/linux/aarch64/libgcc.a"
+              echo "INPUT(-lunwind)" > "${ANDROID_NDK_LATEST_HOME}/toolchains/llvm/prebuilt/linux-x86_64/lib/clang/${CLANG_VERSION}/lib/linux/aarch64/libgcc.a"
+              yarn build --target aarch64-linux-android
+              ${ANDROID_NDK_LATEST_HOME}/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-strip polars/*.node
+
+          - host: ubuntu-latest
+            architecture: x64
+            target: aarch64-unknown-linux-musl
+            build: yarn build --target aarch64-unknown-linux-musl --use-napi-cross && llvm-strip -x polars/*.node
+
+    name: ${{ matrix.settings.target }} - node@24
+    runs-on: ${{ matrix.settings.host }}
+    steps:
+      - uses: actions/checkout@v6
+      - name: Setup node
+        uses: actions/setup-node@v6
+        if: ${{ !matrix.settings.docker }}
+        with:
+          node-version: 24
+          check-latest: true
+          cache: yarn
+      - name: Copy rust-toolchain to root
+        run: cp rust-toolchain ..
+      - name: Install
+        uses: actions-rs/toolchain@v1
+        if: ${{ !matrix.settings.docker }}
+        with:
+          override: true
+          target: ${{ matrix.settings.target }}
+      - name: Cache cargo
+        uses: actions/cache@v5
+        with:
+          path: |
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            .cargo-cache
+            target/
+          key: ${{ matrix.settings.target }}-cargo-${{ matrix.settings.host }}
+      - name: Cache NPM dependencies
+        uses: actions/cache@v5
+        with:
+          path: .yarn/cache
+          key: npm-cache-build-${{ matrix.settings.target }}-node@24
+      - name: Setup toolchain
+        run: ${{ matrix.settings.setup }}
+        if: ${{ matrix.settings.setup }}
+        shell: bash
+      - name: Install dependencies
+        run: yarn install
+      - name: Build in docker
+        uses: addnab/docker-run-action@v3
+        if: ${{ matrix.settings.docker }}
+        with:
+          image: ${{ matrix.settings.docker }}
+          options: "--user 0:0 -v ${{ github.workspace }}/.cargo-cache/git/db:/usr/local/cargo/git/db -v ${{ github.workspace }}/.cargo/registry/cache:/usr/local/cargo/registry/cache -v ${{ github.workspace }}/.cargo/registry/index:/usr/local/cargo/registry/index -v ${{ github.workspace }}:/build -w /build"
+          run: ${{ matrix.settings.build }}
+      - name: Build
+        run: ${{ matrix.settings.build }}
+        if: ${{ !matrix.settings.docker }}
+        shell: bash
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: bindings-${{ matrix.settings.target }}
+          path: polars/*.node
+          if-no-files-found: error
