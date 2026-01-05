@@ -1,4 +1,4 @@
-name: nodejs-polars
+name: test-release-build
 env:
   DEBUG: napi:*
   APP_NAME: nodejs-polars
