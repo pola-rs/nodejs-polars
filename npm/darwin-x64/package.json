@@ -1,6 +1,6 @@
 {
   "name": "nodejs-polars-darwin-x64",
-  "version": "0.23.4",
+  "version": "0.23.5",
   "os": [
     "darwin"
   ],
