@@ -10,24 +10,24 @@ jobs:
     name: Docs
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - name: Install latest Rust nightly
         uses: dtolnay/rust-toolchain@stable
         with:
           toolchain: nightly-2025-10-24
           components: rustfmt, clippy
       - name: Install ghp-import
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
-          python-version: 3.13
+          python-version: 3.14
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install ghp-import
       - name: Set up Node
-        uses: actions/setup-node@v5
+        uses: actions/setup-node@v6
         with: 
-          node-version: 24
+          node-version: 25
           package-manager-cache: false
       - name: Build node reference
         run: | 

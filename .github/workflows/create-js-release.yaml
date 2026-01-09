@@ -2,7 +2,7 @@ name: nodejs-polars
 env:
   DEBUG: napi:*
   APP_NAME: nodejs-polars
-  MACOSX_DEPLOYMENT_TARGET: "15.0"
+  MACOSX_DEPLOYMENT_TARGET: "26.0"
 "on":
   push:
     # Sequence of patterns matched against refs/tags
@@ -20,106 +20,49 @@ jobs:
         settings:
           - host: macos-latest
             target: x86_64-apple-darwin
-            architecture: x64
-            build: |
-              rustup target add x86_64-apple-darwin
-              yarn build --target x86_64-apple-darwin
-              strip -x polars/*.node
+            build: yarn build --target x86_64-apple-darwin
+          - host: macos-latest
+            architecture: arm64
+            target: aarch64-apple-darwin
+            build: yarn build --target aarch64-apple-darwin
           - host: windows-latest
             architecture: x64
-            build: yarn build
             target: x86_64-pc-windows-msvc
+            build: yarn build --target x86_64-pc-windows-msvc
           - host: ubuntu-latest
-            architecture: x64
             target: x86_64-unknown-linux-gnu
-            docker: ghcr.io/napi-rs/napi-rs/nodejs-rust:lts-alpine-zig
-            build: |-
-              set -e &&
-              rustup target add x86_64-unknown-linux-gnu &&
-              yarn build -x --target x86_64-unknown-linux-gnu && llvm-strip -x polars/*.node
-
+            build: yarn build --target x86_64-unknown-linux-gnu --use-napi-cross
           - host: ubuntu-latest
             architecture: x64
             target: x86_64-unknown-linux-musl
-            docker: ghcr.io/napi-rs/napi-rs/nodejs-rust:lts-alpine
-            build: set -e && unset CC && unset CXX && yarn build && strip polars/*.node
-          - host: macos-latest
-            target: aarch64-apple-darwin
-            build: |
-              sudo rm -Rf /Library/Developer/CommandLineTools/SDKs/*;
-              export CC=$(xcrun -f clang);
-              export CXX=$(xcrun -f clang++);
-              SYSROOT=$(xcrun --sdk macosx --show-sdk-path);
-              export CFLAGS="-isysroot $SYSROOT -isystem $SYSROOT";
-              yarn build --target aarch64-apple-darwin
-              strip -x polars/*.node
+            build: yarn build --target x86_64-unknown-linux-musl -x
           - host: ubuntu-latest
-            architecture: x64
             target: aarch64-unknown-linux-gnu
-            docker: ghcr.io/napi-rs/napi-rs/nodejs-rust:lts-debian-aarch64
-            build: |
-              rustup toolchain install $(cat ./rust-toolchain)
-              rustup target add aarch64-unknown-linux-gnu
-              cp -r /usr/aarch64-unknown-linux-gnu/lib/gcc /usr/aarch64-unknown-linux-gnu/aarch64-unknown-linux-gnu/sysroot/lib/
-              export LDFLAGS="--sysroot=/usr/aarch64-unknown-linux-gnu/aarch64-unknown-linux-gnu/sysroot -L/usr/aarch64-unknown-linux-gnu/lib/gcc/aarch64-unknown-linux-gnu/4.8.5"
-              export CFLAGS="-fuse-ld=lld --sysroot=/usr/aarch64-unknown-linux-gnu/aarch64-unknown-linux-gnu/sysroot -L/usr/aarch64-unknown-linux-gnu/lib/gcc/aarch64-unknown-linux-gnu/4.8.5"
-              yarn build --use-napi-cross --target aarch64-unknown-linux-gnu
-              llvm-strip polars/*.node
-          # Disabled until a simd-json fallback can be implemented. see https://github.com/simd-lite/simd-json/issues/263 and https://github.com/simd-lite/simd-json/issues/218
-          # - host: ubuntu-latest
-          #   architecture: x64
-          #   target: armv7-unknown-linux-gnueabihf
-          #   setup: |
-          #     sudo apt-get update
-          #     sudo apt-get install gcc-arm-linux-gnueabihf g++-arm-linux-gnueabihf -y
-          #   build: |
-          #     yarn build --target=armv7-unknown-linux-gnueabihf
-          #     arm-linux-gnueabihf-strip polars/*.node
-
+            build: yarn build --target aarch64-unknown-linux-gnu -x
           - host: ubuntu-latest
-            architecture: x64
             target: aarch64-linux-android
-            build: |
-              export CLANG_VERSION=`ls ${ANDROID_NDK_LATEST_HOME}/toolchains/llvm/prebuilt/linux-x86_64/lib/clang | sed 's/ *$//g'`
-              touch "${ANDROID_NDK_LATEST_HOME}/toolchains/llvm/prebuilt/linux-x86_64/lib/clang/${CLANG_VERSION}/lib/linux/aarch64/libgcc.a"
-              chmod 777 "${ANDROID_NDK_LATEST_HOME}/toolchains/llvm/prebuilt/linux-x86_64/lib/clang/${CLANG_VERSION}/lib/linux/aarch64/libgcc.a"
-              echo "INPUT(-lunwind)" > "${ANDROID_NDK_LATEST_HOME}/toolchains/llvm/prebuilt/linux-x86_64/lib/clang/${CLANG_VERSION}/lib/linux/aarch64/libgcc.a"
-              yarn build --target aarch64-linux-android
-              ${ANDROID_NDK_LATEST_HOME}/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-strip polars/*.node
-
+            build: yarn build --target aarch64-linux-android
           - host: ubuntu-latest
-            architecture: x64
             target: aarch64-unknown-linux-musl
-            docker: ghcr.io/napi-rs/napi-rs/nodejs-rust:lts-alpine
-            build: |-
-              rustup toolchain install $(cat ./rust-toolchain)
-              rustup target add aarch64-unknown-linux-musl
-              unset CC
-              unset CXX
-              yarn build --target=aarch64-unknown-linux-musl
-              /aarch64-linux-musl-cross/bin/aarch64-linux-musl-strip polars/*.node
-
-    name: ${{ matrix.settings.target }} - node@24
+            build: yarn build --target aarch64-unknown-linux-musl -x
+    name: ${{ matrix.settings.target }} - node@25
     runs-on: ${{ matrix.settings.host }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - name: Setup node
-        uses: actions/setup-node@v5
-        if: ${{ !matrix.settings.docker }}
+        uses: actions/setup-node@v6
         with:
-          node-version: 24
-          check-latest: true
+          node-version: 25
           cache: yarn
-      - name: Copy rust-toolchain to root
-        run: cp rust-toolchain ..
       - name: Install
-        uses: actions-rs/toolchain@v1
-        if: ${{ !matrix.settings.docker }}
+        uses: dtolnay/rust-toolchain@stable
         with:
-          override: true
-          target: ${{ matrix.settings.target }}
+          toolchain: stable
+          targets: ${{ matrix.settings.target }}
+      - name: Add rust target
+        run: rustup target add ${{ matrix.settings.target }}
       - name: Cache cargo
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             ~/.cargo/registry/index/
@@ -128,44 +71,53 @@ jobs:
             .cargo-cache
             target/
           key: ${{ matrix.settings.target }}-cargo-${{ matrix.settings.host }}
+      - uses: mlugg/setup-zig@v2
+        if: ${{ contains(matrix.settings.target, 'musl') || contains(matrix.settings.target, 'gnu') }}
+      - name: Install cargo-zigbuild
+        uses: taiki-e/install-action@v2
+        if: ${{ contains(matrix.settings.target, 'musl') || contains(matrix.settings.target, 'gnu') }}
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        with:
+          tool: cargo-zigbuild
       - name: Cache NPM dependencies
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: .yarn/cache
-          key: npm-cache-build-${{ matrix.settings.target }}-node@24
+          key: npm-cache-build-${{ matrix.settings.target }}-node@25
       - name: Setup toolchain
         run: ${{ matrix.settings.setup }}
         if: ${{ matrix.settings.setup }}
         shell: bash
       - name: Install dependencies
         run: yarn install
-      - name: Build in docker
-        uses: addnab/docker-run-action@v3
-        if: ${{ matrix.settings.docker }}
+      - name: Install LLVM and Clang
+        uses: KyleMayes/install-llvm-action@v2
         with:
-          image: ${{ matrix.settings.docker }}
-          options: "--user 0:0 -v ${{ github.workspace }}/.cargo-cache/git/db:/usr/local/cargo/git/db -v ${{ github.workspace }}/.cargo/registry/cache:/usr/local/cargo/registry/cache -v ${{ github.workspace }}/.cargo/registry/index:/usr/local/cargo/registry/index -v ${{ github.workspace }}:/build -w /build"
-          run: ${{ matrix.settings.build }}
+          version: "20"
       - name: Build
         run: ${{ matrix.settings.build }}
-        if: ${{ !matrix.settings.docker }}
         shell: bash
+      - name: Strip the artifact
+        run: llvm-strip -x polars/*.node
       - name: Upload artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: bindings-${{ matrix.settings.target }}
           path: polars/*.node
+          retention-days: 1
+          overwrite: true
           if-no-files-found: error
   test-macos:
     needs:
       - build
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - name: Install dependencies
         run: yarn install
       - name: Download all artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           name: bindings-aarch64-apple-darwin
           path: polars
@@ -177,10 +129,10 @@ jobs:
       - test-macos
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-node@v5
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
         with:
-          node-version: 24
+          node-version: 25
           registry-url: "https://registry.npmjs.org"
           cache: yarn
           cache-dependency-path: yarn.lock
