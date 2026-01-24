@@ -1,6 +1,7 @@
 import { TimeUnit } from "@polars/datatypes";
 import pl from "@polars/index";
-import { expectType } from "ts-expect";
+
+const expectType = <Type>(_: Type): void => void 0;
 
 describe("type tests", () => {
   it("types the DataFrame from the input", () => {
