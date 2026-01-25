@@ -445,7 +445,11 @@ impl FromNapiValue for Wrap<UniqueKeepStrategy> {
             "last" => UniqueKeepStrategy::Last,
             "any" => UniqueKeepStrategy::Any,
             "none" => UniqueKeepStrategy::None,
-            v => return Err(napi::Error::from_reason(format!("UniqueKeepStrategy must be one of {{'first', 'last'}}, got {v}"))),
+            v => {
+                return Err(napi::Error::from_reason(format!(
+                    "UniqueKeepStrategy must be one of {{'first', 'last'}}, got {v}"
+                )))
+            }
         };
         Ok(Wrap(method))
     }
@@ -457,7 +461,11 @@ impl FromNapiValue for Wrap<NullStrategy> {
         let method = match method.as_ref() {
             "ignore" => NullStrategy::Ignore,
             "propagate" => NullStrategy::Propagate,
-            v => return Err(napi::Error::from_reason(format!("NullStrategy must be one of {{'ignore', 'propagate'}}, got {v}"))),
+            v => {
+                return Err(napi::Error::from_reason(format!(
+                    "NullStrategy must be one of {{'ignore', 'propagate'}}, got {v}"
+                )))
+            }
         };
         Ok(Wrap(method))
     }
@@ -469,7 +477,11 @@ impl FromNapiValue for Wrap<NonExistent> {
         let parsed = match method.as_ref() {
             "null" => NonExistent::Null,
             "raise" => NonExistent::Raise,
-            v => return Err(napi::Error::from_reason(format!("`nonExistent` must be one of {{'null', 'raise'}}, got {v}")))
+            v => {
+                return Err(napi::Error::from_reason(format!(
+                    "`nonExistent` must be one of {{'null', 'raise'}}, got {v}"
+                )))
+            }
         };
         Ok(Wrap(parsed))
     }
@@ -481,7 +493,11 @@ impl FromNapiValue for Wrap<NullBehavior> {
         let method = match method.as_ref() {
             "drop" => NullBehavior::Drop,
             "ignore" => NullBehavior::Ignore,
-            v => return Err(napi::Error::from_reason(format!("`NullBehavior` must be one of {{'drop', 'ignore'}}, got {v}" )))
+            v => {
+                return Err(napi::Error::from_reason(format!(
+                    "`NullBehavior` must be one of {{'drop', 'ignore'}}, got {v}"
+                )))
+            }
         };
         Ok(Wrap(method))
     }
@@ -498,7 +514,11 @@ impl FromNapiValue for Wrap<FillNullStrategy> {
             "mean" => FillNullStrategy::Mean,
             "zero" => FillNullStrategy::Zero,
             "one" => FillNullStrategy::One,
-            v => return Err(napi::Error::from_reason(format!("{v} strategy not supported",)))
+            v => {
+                return Err(napi::Error::from_reason(format!(
+                    "{v} strategy not supported",
+                )))
+            }
         };
         Ok(Wrap(method))
     }
@@ -1049,6 +1069,26 @@ impl FromNapiValue for Wrap<JoinType> {
                 ))
         };
         Ok(Wrap(parsed))
+    }
+}
+
+impl FromNapiValue for Wrap<Engine> {
+    unsafe fn from_napi_value(env: sys::napi_env, napi_val: sys::napi_value) -> napi::Result<Self> {
+        let s = String::from_napi_value(env, napi_val)?;
+        let engine = match s.as_ref() {
+            "auto" => Engine::Auto,
+            "cpu" | "in-memory" => Engine::InMemory,
+            "streaming" => Engine::Streaming,
+            v => {
+                return Err(Error::new(
+                    Status::InvalidArg,
+                    format!(
+                    "`engine` must be one of {{'auto', 'in-memory', 'streaming', 'cpu'}}, got {v}",
+                ),
+                ))
+            }
+        };
+        Ok(Wrap(engine))
     }
 }
 

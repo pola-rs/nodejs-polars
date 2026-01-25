@@ -2356,10 +2356,7 @@ export const _DataFrame = <S extends Schema>(_df: any): DataFrame<S> => {
       return wrap("dropNulls");
     },
     explode(...columns) {
-      return _DataFrame(_df)
-        .lazy()
-        .explode(columns)
-        .collectSync({ noOptimization: true });
+      return _DataFrame(_df).lazy().explode(columns).collectSync();
     },
     extend(other) {
       return wrap("extend", (other as any).inner());
@@ -2724,7 +2721,7 @@ export const _DataFrame = <S extends Schema>(_df: any): DataFrame<S> => {
         return _DataFrame(_df)
           .lazy()
           .sort(arg, descending, nullsLast, maintainOrder)
-          .collectSync({ noOptimization: true });
+          .collectSync();
       }
       return wrap("sort", arg, descending, nullsLast, maintainOrder);
     },
@@ -2977,7 +2974,7 @@ export const _DataFrame = <S extends Schema>(_df: any): DataFrame<S> => {
       }
       return this.lazy()
         .withColumns(...columns)
-        .collectSync({ noOptimization: true });
+        .collectSync();
     },
     withColumnRenamed(opt, replacement?): any {
       if (typeof opt === "string") {
