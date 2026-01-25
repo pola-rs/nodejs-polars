@@ -1037,19 +1037,19 @@ impl JsExpr {
         let tz = TimeZone::opt_try_new(Some(PlSmallStr::from(time_zone)))
             .map_err(JsPolarsErr::from)?
             .unwrap_or(TimeZone::UTC);
-        Ok(self
-            .inner
-            .clone()
-            .dt()
-            .convert_time_zone(tz)
-            .into())
+        Ok(self.inner.clone().dt().convert_time_zone(tz).into())
     }
     #[napi(catch_unwind)]
     pub fn dt_cast_time_unit(&self, time_unit: Wrap<TimeUnit>) -> Self {
         self.inner.clone().dt().cast_time_unit(time_unit.0).into()
     }
     #[napi(catch_unwind)]
-    pub fn dt_replace_time_zone(&self, time_zone: Option<String>, ambiguous: &JsExpr, non_existent: Wrap<NonExistent>) -> JsResult<JsExpr> {
+    pub fn dt_replace_time_zone(
+        &self,
+        time_zone: Option<String>,
+        ambiguous: &JsExpr,
+        non_existent: Wrap<NonExistent>,
+    ) -> JsResult<JsExpr> {
         if let Some(ref tz_str) = time_zone {
             TimeZone::validate_time_zone(tz_str).map_err(JsPolarsErr::from)?;
         }

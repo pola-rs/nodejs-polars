@@ -192,9 +192,12 @@ impl JsLazyFrame {
         ldf.cache().into()
     }
     #[napi(catch_unwind)]
-    pub fn collect_sync(&self) -> napi::Result<JsDataFrame> {
-        let ldf = self.ldf.clone();
-        let df = ldf.collect().map_err(JsPolarsErr::from)?;
+    pub fn collect_sync(&self, engine: Wrap<Engine>) -> napi::Result<JsDataFrame> {
+        let df = self
+            .ldf
+            .clone()
+            .collect_with_engine(engine.0)
+            .map_err(JsPolarsErr::from)?;
         Ok(df.into())
     }
 

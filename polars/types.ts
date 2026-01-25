@@ -338,6 +338,13 @@ export type LazyOptions = {
 };
 
 /**
+ * options for lazy operations @see {@link LazyDataFrame.collectSync}
+ */
+export type CollectSyncOptions = {
+  engine?: Engine;
+};
+
+/**
  * options for rolling window operations
  * @category Options
  */
@@ -371,3 +378,10 @@ export interface RollingSkewOptions {
  * ClosedWindow types
  */
 export type ClosedWindow = "None" | "Both" | "Left" | "Right";
+
+/**
+ * Engine types
+ * @category Options
+ * Options for {@link LazyDataFrame.collectSync}
+ */
+export type Engine = "auto" | "cpu" | "in-memory" | "streaming";
