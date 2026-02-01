@@ -1333,7 +1333,7 @@ export function _Series(_s: any): Series {
         this.toFrame()
           ._df.lazy()
           .select([pli.argWhere(pli.col(this.name))])
-          .collectSync()
+          .collectSync("in-memory")
           .column(this.name),
       );
     },

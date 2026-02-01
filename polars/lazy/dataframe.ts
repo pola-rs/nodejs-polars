@@ -9,6 +9,7 @@ import pli from "../internals/polars_internal";
 import type { Series } from "../series";
 import type { Deserialize, GroupByOps, Serialize } from "../shared_traits";
 import type {
+  CollectSyncOptions,
   CsvWriterOptions,
   LazyCrossJoinOptions,
   LazyDifferentNameColumnJoinOptions,
@@ -72,7 +73,15 @@ export interface LazyDataFrame<S extends Schema = any>
    *
    */
   collect(opts?: LazyOptions): Promise<DataFrame<S>>;
-  collectSync(opts?: LazyOptions): DataFrame<S>;
+  /**
+   * Materialize this LazyFrame into a DataFrame. By default, all query optimizations are enabled.
+   * @param opts.engine - Engine to use for execution
+   *        Select the engine used to process the query, optional.
+            At the moment, if set to `"auto"` (default), the query is run using the polars in-memory engine. 
+            Polars will also attempt to use the engine set by the `POLARS_ENGINE_AFFINITY` environment variable. 
+            If it cannot run the query using the selected engine, the query is run using the polars in-memory engine. 
+   */
+  collectSync(opts?: CollectSyncOptions): DataFrame<S>;
   /**
    * A string representation of the optimized query plan.
    */
@@ -898,8 +907,8 @@ export const _LazyDataFrame = (_ldf: any): LazyDataFrame => {
     clone() {
       return _LazyDataFrame((_ldf as any).clone());
     },
-    collectSync() {
-      return _DataFrame(_ldf.collectSync());
+    collectSync(opts?) {
+      return _DataFrame(_ldf.collectSync(opts?.engine ?? "auto"));
     },
     collect(opts?) {
       if (opts?.noOptimization) {

@@ -229,7 +229,7 @@ export function _GroupBy(df: any, by: string[], maintainOrder = false) {
         .lazy()
         .groupBy(by, maintainOrder)
         .agg(...aggs)
-        .collectSync({ noOptimization: true });
+        .collectSync();
     }
     const pairs = Object.entries(aggs[0]).flatMap(([key, values]) => {
       return [values].flat(2).map((v) => col(key)[v as any]());
@@ -239,7 +239,7 @@ export function _GroupBy(df: any, by: string[], maintainOrder = false) {
       .lazy()
       .groupBy(by, maintainOrder)
       .agg(...pairs)
-      .collectSync({ noOptimization: true });
+      .collectSync();
   };
 
   return Object.seal({
@@ -359,7 +359,7 @@ export function DynamicGroupBy(
           startBy,
         } as any)
         .agg(column as any, ...columns)
-        .collectSync({ noOptimizations: true });
+        .collectSync();
     },
   };
 }

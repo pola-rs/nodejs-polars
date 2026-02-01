@@ -240,7 +240,7 @@ describe("scan", () => {
         skipRows: 1,
         nRows: 4,
       })
-      .collectSync();
+      .collectSync({ engine: "streaming" });
 
     expect(df.shape).toEqual({ height: 4, width: 4 });
   });
@@ -255,7 +255,7 @@ describe("scan", () => {
         skipRows: 2,
         nRows: 4,
       })
-      .collectSync();
+      .collectSync({ engine: "auto" });
 
     expect(df.shape).toEqual({ height: 4, width: 4 });
 
