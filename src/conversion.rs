@@ -8,6 +8,7 @@ use polars_core::series::ops::NullBehavior;
 use polars_io::cloud::CloudOptions;
 use polars_io::utils::sync_on_close::SyncOnCloseType;
 use polars_io::RowIndex;
+use polars_utils::compression::{BrotliLevel, GzipLevel, ZstdLevel};
 use std::collections::HashMap;
 use std::num::NonZero;
 
@@ -85,7 +86,7 @@ impl ToNapiValue for Wrap<&Series> {
 
                 for idx in 0..height {
                     let mut row = Object::new(&env)?;
-                    for col in df.get_columns() {
+                    for col in df.columns() {
                         let key = col.name();
                         let val = col.get(idx);
                         row.set(key, Wrap(val.unwrap()))?;
@@ -121,7 +122,8 @@ impl<'a> ToNapiValue for Wrap<AnyValue<'a>> {
             AnyValue::UInt32(n) => u32::to_napi_value(env, n),
             AnyValue::UInt64(n) => u64::to_napi_value(env, n),
             AnyValue::UInt128(n) => u128::to_napi_value(env, n),
-            AnyValue::Float32(n) => f64::to_napi_value(env, n as f64),
+            AnyValue::Float16(n) => f64::to_napi_value(env, f64::from(n)),
+            AnyValue::Float32(n) => f64::to_napi_value(env, f64::from(n)),
             AnyValue::Float64(n) => f64::to_napi_value(env, n),
             AnyValue::String(s) => String::to_napi_value(env, s.to_owned()),
             AnyValue::StringOwned(s) => String::to_napi_value(env, s.to_string()),
@@ -137,7 +139,7 @@ impl<'a> ToNapiValue for Wrap<AnyValue<'a>> {
                 )?;
                 Ok(ptr)
             }
-            AnyValue::Datetime(v, time_unit, _) => {
+            AnyValue::Datetime(v, time_unit, _) | AnyValue::DatetimeOwned(v, time_unit, _)  => {
                 let mut ptr = std::ptr::null_mut();
 
                 let div = match time_unit {
@@ -171,7 +173,6 @@ impl<'a> ToNapiValue for Wrap<AnyValue<'a>> {
             AnyValue::Binary(_) => Err(napi::Error::from_reason("Binary is not a supported, please convert to string or number before collecting to js")),
             AnyValue::BinaryOwned(_) => Err(napi::Error::from_reason("BinaryOwned is not a supported, please convert to string or number before collecting to js")),
             AnyValue::Decimal(_,_,_) => Err(napi::Error::from_reason("Decimal is not a supported type in javascript, please convert to string or number before collecting to js")),
-            AnyValue::DatetimeOwned(_,_,_) => Err(napi::Error::from_reason("DatetimeOwned is not a supported, please convert to string or number before collecting to js")),
             AnyValue::EnumOwned(_,_) => Err(napi::Error::from_reason("EnumOwned is not a supported, please convert to string or number before collecting to js")),
         }
     }
@@ -405,7 +406,6 @@ impl FromNapiValue for Wrap<ParquetCompression> {
         let compression = match compression.as_ref() {
             "snappy" => ParquetCompression::Snappy,
             "gzip" => ParquetCompression::Gzip(None),
-            "lzo" => ParquetCompression::Lzo,
             "brotli" => ParquetCompression::Brotli(None),
             "lz4" => ParquetCompression::Lz4Raw,
             "zstd" => ParquetCompression::Zstd(None),
@@ -651,21 +651,26 @@ pub struct JsSinkOptions {
     /// Recursively create all the directories in the path.
     pub mkdir: bool,
 }
-impl From<JsSinkOptions> for SinkOptions {
+impl From<JsSinkOptions> for FileSinkOptions {
     fn from(o: JsSinkOptions) -> Self {
-        SinkOptions {
-            sync_on_close: o.sync_on_close.0,
-            maintain_order: o.maintain_order,
-            mkdir: o.mkdir,
+        FileSinkOptions {
+            unified_sink_args: UnifiedSinkArgs {
+                sync_on_close: o.sync_on_close.0,
+                maintain_order: o.maintain_order,
+                mkdir: o.mkdir,
+                cloud_options: None,
+            },
+            target: SinkTarget::Path(PlRefPath::new("")),
+            file_format: FileWriteFormat::Parquet(Default::default()),
         }
     }
 }
-impl From<SinkOptions> for JsSinkOptions {
-    fn from(o: SinkOptions) -> Self {
+impl From<FileSinkOptions> for JsSinkOptions {
+    fn from(o: FileSinkOptions) -> Self {
         JsSinkOptions {
-            sync_on_close: Wrap(o.sync_on_close),
-            maintain_order: o.maintain_order,
-            mkdir: o.mkdir,
+            sync_on_close: Wrap(o.unified_sink_args.sync_on_close),
+            maintain_order: o.unified_sink_args.maintain_order,
+            mkdir: o.unified_sink_args.mkdir,
         }
     }
 }
@@ -1002,9 +1007,7 @@ impl FromNapiValue for Wrap<CsvWriterOptions> {
             .get::<String>("quoteChar")?
             .unwrap_or("\"".to_owned())
             .as_bytes()[0];
-        let null_value = obj
-            .get::<String>("nullValue")?
-            .unwrap_or(SerializeOptions::default().null);
+        let null_value = obj.get::<String>("nullValue")?.unwrap_or("".to_owned());
         let line_terminator = obj
             .get::<String>("lineTerminator")?
             .unwrap_or("\n".to_owned());
@@ -1013,15 +1016,15 @@ impl FromNapiValue for Wrap<CsvWriterOptions> {
             .map_or(QuoteStyle::default(), |wrap| wrap.0);
 
         let serialize_options = SerializeOptions {
-            date_format,
-            time_format,
-            datetime_format,
+            date_format: date_format.map(PlSmallStr::from_string),
+            time_format: time_format.map(PlSmallStr::from_string),
+            datetime_format: datetime_format.map(PlSmallStr::from_string),
             float_scientific,
             float_precision,
             separator,
             quote_char,
-            null: null_value,
-            line_terminator,
+            null: PlSmallStr::from_string(null_value),
+            line_terminator: PlSmallStr::from_string(line_terminator),
             quote_style,
             decimal_comma: false,
         };
@@ -1030,7 +1033,8 @@ impl FromNapiValue for Wrap<CsvWriterOptions> {
             include_bom,
             include_header,
             batch_size,
-            serialize_options,
+            serialize_options: serialize_options.into(),
+            ..Default::default()
         };
         Ok(Wrap(options))
     }
@@ -1526,7 +1530,6 @@ pub(crate) fn parse_parquet_compression(
                 })
                 .transpose()?,
         ),
-        "lzo" => ParquetCompression::Lzo,
         "brotli" => ParquetCompression::Brotli(
             compression_level
                 .map(|lvl| {
@@ -1561,7 +1564,7 @@ pub(crate) fn parse_cloud_options(
     let mut cloud_options: Option<CloudOptions> = if let Some(o) = kv {
         let co: Vec<(String, String)> = o.into_iter().map(|kv: (String, String)| kv).collect();
         Some(
-            CloudOptions::from_untyped_config(CloudScheme::from_uri(uri).as_ref(), co)
+            CloudOptions::from_untyped_config(CloudScheme::from_path(uri), co)
                 .map_err(JsPolarsErr::from)
                 .unwrap(),
         )
@@ -1569,13 +1572,12 @@ pub(crate) fn parse_cloud_options(
         None
     };
 
-    let max_retries = max_retries.unwrap_or_else(|| 2) as usize;
-    if max_retries > 0 {
+    if max_retries.is_some_and(|n| n > 0) {
         cloud_options =
             cloud_options
                 .or_else(|| Some(CloudOptions::default()))
                 .map(|mut options| {
-                    options.max_retries = max_retries;
+                    options.retry_config.max_retries = max_retries.map(|r| r as usize);
                     options
                 });
     }

@@ -767,7 +767,7 @@ export function struct(
  */
 
 export function element(): Expr {
-  return col("");
+  return _Expr(pli.element());
 }
 
 /**

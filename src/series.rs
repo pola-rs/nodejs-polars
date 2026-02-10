@@ -696,7 +696,11 @@ impl JsSeries {
     }
     #[napi(catch_unwind)]
     pub fn explode(&self) -> napi::Result<JsSeries> {
-        let s = self.series.explode(false).map_err(JsPolarsErr::from)?;
+        let options = ExplodeOptions {
+            empty_as_null: true,
+            keep_nulls: true,
+        };
+        let s = self.series.explode(options).map_err(JsPolarsErr::from)?;
         Ok(s.into())
     }
     #[napi(catch_unwind)]
@@ -1179,7 +1183,7 @@ impl JsSeries {
 
     #[napi(catch_unwind)]
     pub fn mode(&self) -> napi::Result<JsSeries> {
-        let s = mode::mode(&self.series).map_err(JsPolarsErr::from)?;
+        let s = mode::mode(&self.series, false).map_err(JsPolarsErr::from)?;
         Ok(s.into())
     }
 

@@ -1364,12 +1364,7 @@ export const _LazyDataFrame = (_ldf: any): LazyDataFrame => {
       return _LazyDataFrame(_ldf.withRowIndex(name, offset));
     },
     sinkCSV(path, options: CsvWriterOptions) {
-      options = { ...writeCsvDefaultOptions, ...options };
-      return _ldf.sinkCsv(path, options, {
-        syncOnClose: "all",
-        maintainOrder: false,
-        mkdir: true,
-      });
+      return _ldf.sinkCsv(path, { ...writeCsvDefaultOptions, ...options });
     },
     sinkParquet(path: string, options: SinkParquetOptions = {}) {
       options.compression = options.compression ?? "zstd";
