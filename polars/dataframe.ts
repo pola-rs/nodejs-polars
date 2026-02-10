@@ -2606,15 +2606,7 @@ export const _DataFrame = <S extends Schema>(_df: any): DataFrame<S> => {
       }
 
       return _DataFrame(
-        _df.pivot(
-          values,
-          on,
-          index,
-          fn,
-          maintainOrder,
-          sortColumns,
-          separator,
-        ),
+        _df.pivot(values, on, index, fn, maintainOrder, sortColumns, separator),
       );
     },
     quantile(quantile) {
