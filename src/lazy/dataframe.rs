@@ -611,10 +611,9 @@ impl JsLazyFrame {
         &self,
         path: String,
         options: Wrap<CsvWriterOptions>,
-        cloud_options: Option<HashMap<String, String>>,
-        max_retries: Option<u32>,
+        cloud_options: Option<HashMap<String, Wrap<AnyValue>>>,
     ) -> napi::Result<JsLazyFrame> {
-        let cloud_options = parse_cloud_options(&path, cloud_options, max_retries);
+        let cloud_options = parse_cloud_options(&path, cloud_options);
 
         let unified_sink_args = UnifiedSinkArgs {
             mkdir: true,
@@ -649,7 +648,7 @@ impl JsLazyFrame {
         };
         let row_group_size = options.row_group_size.map(|i| i as usize);
         let data_page_size = options.data_pagesize_limit.map(|i| i as usize);
-        let cloud_options = parse_cloud_options(&path, options.cloud_options, options.retries);
+        let cloud_options = parse_cloud_options(&path, options.cloud_options);
 
         let options = ParquetWriteOptions {
             compression,
@@ -683,7 +682,7 @@ impl JsLazyFrame {
 
     #[napi(catch_unwind)]
     pub fn sink_json(&self, path: String, options: SinkJsonOptions) -> napi::Result<JsLazyFrame> {
-        let cloud_options = parse_cloud_options(&path, options.cloud_options, options.retries);
+        let cloud_options = parse_cloud_options(&path, options.cloud_options);
         let target = SinkDestination::File {
             target: SinkTarget::Path(PlRefPath::new(&path)),
         };
@@ -713,7 +712,7 @@ impl JsLazyFrame {
 
     #[napi(catch_unwind)]
     pub fn sink_ipc(&self, path: String, options: SinkIpcOptions) -> napi::Result<JsLazyFrame> {
-        let cloud_options = parse_cloud_options(&path, options.cloud_options, options.retries);
+        let cloud_options = parse_cloud_options(&path, options.cloud_options);
         let compat_level: CompatLevel = match options.compat_level.unwrap().as_str() {
             "newest" => CompatLevel::newest(),
             "oldest" => CompatLevel::oldest(),
@@ -857,7 +856,7 @@ pub fn scan_parquet(path: String, options: ScanParquetOptions) -> napi::Result<J
     let low_memory = options.low_memory.unwrap_or(false);
     let use_statistics = options.use_statistics.unwrap_or(false);
 
-    let cloud_options = parse_cloud_options(&path, options.cloud_options, options.retries);
+    let cloud_options = parse_cloud_options(&path, options.cloud_options);
     let hive_schema = options.hive_schema.map(|s| Arc::new(s.0));
     let schema = options.schema.map(|s| Arc::new(s.0));
     let hive_options = HiveOptions {

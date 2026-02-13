@@ -1,14 +1,14 @@
 use crate::lazy::dsl::JsExpr;
 use crate::prelude::*;
 use napi::bindgen_prelude::*;
-use polars::prelude::NullStrategy;
-use polars::prelude::*;
 use polars_arrow::temporal_conversions::time64ns_to_time;
+use polars_core::config::verbose_print_sensitive;
 use polars_core::series::ops::NullBehavior;
-use polars_io::cloud::CloudOptions;
+use polars_io::cloud::{CloudOptions, CloudRetryConfig};
 use polars_io::utils::sync_on_close::SyncOnCloseType;
 use polars_io::RowIndex;
 use polars_utils::compression::{BrotliLevel, GzipLevel, ZstdLevel};
+use polars_utils::total_ord::TotalOrdWrap;
 use std::collections::HashMap;
 use std::num::NonZero;
 
@@ -676,7 +676,7 @@ impl From<FileSinkOptions> for JsSinkOptions {
 }
 
 #[napi(object)]
-pub struct SinkParquetOptions {
+pub struct SinkParquetOptions<'a> {
     pub compression: Option<String>,
     pub compression_level: Option<i32>,
     pub statistics: Option<bool>,
@@ -689,33 +689,30 @@ pub struct SinkParquetOptions {
     pub simplify_expression: Option<bool>,
     pub slice_pushdown: Option<bool>,
     pub no_optimization: Option<bool>,
-    pub cloud_options: Option<HashMap<String, String>>,
-    pub retries: Option<u32>,
+    pub cloud_options: Option<HashMap<String, Wrap<AnyValue<'a>>>>,
     pub sink_options: JsSinkOptions,
 }
 
 #[napi(object)]
-pub struct SinkJsonOptions {
+pub struct SinkJsonOptions<'a> {
     pub maintain_order: Option<bool>,
-    pub cloud_options: Option<HashMap<String, String>>,
-    pub retries: Option<u32>,
+    pub cloud_options: Option<HashMap<String, Wrap<AnyValue<'a>>>>,
     pub sync_on_close: Wrap<SyncOnCloseType>,
     pub mkdir: Option<bool>,
 }
 
 #[napi(object)]
-pub struct SinkIpcOptions {
+pub struct SinkIpcOptions<'a> {
     pub compat_level: Option<String>,
     pub compression: Wrap<Option<IpcCompression>>,
     pub maintain_order: Option<bool>,
-    pub cloud_options: Option<HashMap<String, String>>,
-    pub retries: Option<u32>,
+    pub cloud_options: Option<HashMap<String, Wrap<AnyValue<'a>>>>,
     pub sync_on_close: Wrap<SyncOnCloseType>,
     pub mkdir: Option<bool>,
 }
 
 #[napi(object)]
-pub struct ScanParquetOptions {
+pub struct ScanParquetOptions<'a> {
     pub n_rows: Option<i64>,
     pub row_index_name: Option<String>,
     pub row_index_offset: Option<u32>,
@@ -729,8 +726,7 @@ pub struct ScanParquetOptions {
     pub schema: Option<Wrap<Schema>>,
     pub low_memory: Option<bool>,
     pub use_statistics: Option<bool>,
-    pub cloud_options: Option<HashMap<String, String>>,
-    pub retries: Option<u32>,
+    pub cloud_options: Option<HashMap<String, Wrap<AnyValue<'a>>>>,
     pub include_file_paths: Option<String>,
     pub allow_missing_columns: Option<bool>,
 }
@@ -1556,30 +1552,100 @@ pub(crate) fn parse_parquet_compression(
     Ok(parsed)
 }
 
-pub(crate) fn parse_cloud_options(
+pub fn parse_cloud_options(
     uri: &str,
-    kv: Option<HashMap<String, String>>,
-    max_retries: Option<u32>,
+    storage_options_dict: Option<HashMap<String, Wrap<polars::prelude::AnyValue<'_>>>>,
 ) -> Option<CloudOptions> {
-    let mut cloud_options: Option<CloudOptions> = if let Some(o) = kv {
-        let co: Vec<(String, String)> = o.into_iter().map(|kv: (String, String)| kv).collect();
-        Some(
-            CloudOptions::from_untyped_config(CloudScheme::from_path(uri), co)
-                .map_err(JsPolarsErr::from)
-                .unwrap(),
-        )
-    } else {
-        None
-    };
-
-    if max_retries.is_some_and(|n| n > 0) {
-        cloud_options =
-            cloud_options
-                .or_else(|| Some(CloudOptions::default()))
-                .map(|mut options| {
-                    options.retry_config.max_retries = max_retries.map(|r| r as usize);
-                    options
-                });
+    if storage_options_dict.is_none() {
+        return Some(None)?;
     }
-    cloud_options
+
+    let cloud_scheme = CloudScheme::from_path(uri);
+    let mut storage_options: Vec<(String, String)> = vec![];
+    let mut file_cache_ttl: u64 = 2;
+    let mut retry_config = CloudRetryConfig::default();
+
+    if let Some(storage_options_dict) = storage_options_dict {
+        storage_options.reserve(storage_options_dict.len());
+        for v in storage_options_dict.iter() {
+            let (key, value) = (v.0, v.1 .0.clone());
+
+            macro_rules! expected_type {
+                ($key_name:expr, $type_name:expr) => {{
+                    |_| {
+                        let key_name = $key_name;
+                        let type_name = $type_name;
+                        JsPolarsErr::Other(format!(
+                            "invalid value for '{key_name}': '{value}' (expected {type_name})"
+                        ))
+                    }
+                }};
+            }
+
+            match key.as_str() {
+                "file_cache_ttl" => {
+                    file_cache_ttl = value
+                        .try_extract()
+                        .map_err(expected_type!("file_cache_ttl", "int"))
+                        .ok()?;
+                }
+                "max_retries" => {
+                    retry_config.max_retries = Some(
+                        value
+                            .try_extract()
+                            .map_err(expected_type!("max_retries", "int"))
+                            .ok()?,
+                    );
+                }
+                "retry_timeout_ms" => {
+                    retry_config.retry_timeout = Some(core::time::Duration::from_millis(
+                        value
+                            .try_extract()
+                            .map_err(expected_type!("retry_timeout", "int"))
+                            .ok()?,
+                    ));
+                }
+                "retry_init_backoff_ms" => {
+                    retry_config.retry_init_backoff = Some(core::time::Duration::from_millis(
+                        value
+                            .try_extract()
+                            .map_err(expected_type!("retry_init_backoff", "int"))
+                            .ok()?,
+                    ));
+                }
+                "retry_max_backoff_ms" => {
+                    retry_config.retry_max_backoff = Some(core::time::Duration::from_millis(
+                        value
+                            .try_extract()
+                            .map_err(expected_type!("retry_max_backoff", "int"))
+                            .ok()?,
+                    ));
+                }
+                "retry_base_multiplier" => {
+                    retry_config.retry_base_multiplier = Some(TotalOrdWrap(
+                        value
+                            .try_extract()
+                            .map_err(expected_type!("retry_base_multiplier", "float"))
+                            .ok()?,
+                    ));
+                }
+                _ => {
+                    let value: String = value.extract_str()?.to_string();
+                    storage_options.push((key.clone(), value))
+                }
+            }
+        }
+    }
+
+    let mut cloud_options = CloudOptions::from_untyped_config(cloud_scheme, storage_options)
+        .map_err(JsPolarsErr::from)
+        .ok()?
+        .with_retry_config(retry_config);
+
+    if file_cache_ttl > 0 {
+        cloud_options.file_cache_ttl = file_cache_ttl;
+    }
+    verbose_print_sensitive(|| format!("extracted cloud_options: {:?}", &cloud_options));
+
+    Some(cloud_options)
 }

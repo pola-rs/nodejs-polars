@@ -512,7 +512,6 @@ export function readAvro(pathOrBody, options = {}) {
         * `azure <https://docs.rs/object_store/latest/object_store/azure/enum.AzureConfigKey.html>`_
 
         If `cloudOptions` is not provided, Polars will try to infer the information from environment variables.
-    @param options.retries - Number of retries if accessing a cloud instance fails.
     @param options.includeFilePaths - Include the path of the source file(s) as a column with this name.
 
     @example

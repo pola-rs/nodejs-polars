@@ -502,7 +502,8 @@ impl JsDataFrame {
             })
             .collect();
 
-        let df = DataFrame::new(cols.first().map_or(0, |c| c.len()), cols).map_err(JsPolarsErr::from)?;
+        let df =
+            DataFrame::new(cols.first().map_or(0, |c| c.len()), cols).map_err(JsPolarsErr::from)?;
         Ok(JsDataFrame::new(df))
     }
 
@@ -959,19 +960,27 @@ impl JsDataFrame {
         separator: String,
     ) -> napi::Result<JsDataFrame> {
         let pivot_error = |msg: &str, e| napi::Error::from_reason(format!("{}: {}", msg, e));
-        
-        let mut on_cols = self.df.select(&on)
+
+        let mut on_cols = self
+            .df
+            .select(&on)
             .map_err(|e| pivot_error("Could not select in pivot", e))?;
-        
-        on_cols = on_cols.unique_stable(None::<&[String]>, UniqueKeepStrategy::First, None)
+
+        on_cols = on_cols
+            .unique_stable(None::<&[String]>, UniqueKeepStrategy::First, None)
             .map_err(|e| pivot_error("Could not get unique values in pivot", e))?;
-        
+
         if sort_columns {
-            on_cols = on_cols.sort(&on, SortMultipleOptions::default().with_maintain_order(true))
+            on_cols = on_cols
+                .sort(
+                    &on,
+                    SortMultipleOptions::default().with_maintain_order(true),
+                )
                 .map_err(|e| pivot_error("Could not sort in pivot", e))?;
         }
 
-        self.df.clone()
+        self.df
+            .clone()
             .lazy()
             .pivot(
                 strings_to_selector(on),
