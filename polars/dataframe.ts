@@ -2577,7 +2577,7 @@ export const _DataFrame = <S extends Schema>(_df: any): DataFrame<S> => {
         maintainOrder = true,
         sortColumns = false,
         aggregateFunc = "first",
-        separator,
+        separator = "_",
       } = options;
       values = values_ ?? values;
       values = typeof values === "string" ? [values] : values;
@@ -2606,15 +2606,7 @@ export const _DataFrame = <S extends Schema>(_df: any): DataFrame<S> => {
       }
 
       return _DataFrame(
-        _df.pivotExpr(
-          values,
-          on,
-          index,
-          fn,
-          maintainOrder,
-          sortColumns,
-          separator,
-        ),
+        _df.pivot(values, on, index, fn, maintainOrder, sortColumns, separator),
       );
     },
     quantile(quantile) {

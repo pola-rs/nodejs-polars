@@ -183,36 +183,6 @@ pub struct ReadJsonOptions {
 pub struct WriteJsonOptions {
     pub format: String,
 }
-
-#[napi(catch_unwind)]
-pub fn read_json_lines(
-    path_or_buffer: Either<String, Buffer>,
-    options: ReadJsonOptions,
-) -> napi::Result<JsDataFrame> {
-    let infer_schema_length =
-        NonZeroUsize::new(options.infer_schema_length.unwrap_or(100) as usize);
-    let batch_size = options
-        .batch_size
-        .map(|b| NonZeroUsize::try_from(b as usize).unwrap());
-
-    let df = match path_or_buffer {
-        Either::A(path) => JsonLineReader::from_path(path)
-            .expect("unable to read file")
-            .infer_schema_len(infer_schema_length)
-            .with_chunk_size(batch_size)
-            .finish()
-            .map_err(JsPolarsErr::from)?,
-        Either::B(buf) => {
-            let cursor = Cursor::new(buf.as_ref());
-            JsonLineReader::new(cursor)
-                .infer_schema_len(infer_schema_length)
-                .with_chunk_size(batch_size)
-                .finish()
-                .map_err(JsPolarsErr::from)?
-        }
-    };
-    Ok(df.into())
-}
 #[napi(catch_unwind)]
 pub fn read_json(
     path_or_buffer: Either<String, Buffer>,
@@ -532,7 +502,8 @@ impl JsDataFrame {
             })
             .collect();
 
-        let df = DataFrame::new(cols).map_err(JsPolarsErr::from)?;
+        let df =
+            DataFrame::new(cols.first().map_or(0, |c| c.len()), cols).map_err(JsPolarsErr::from)?;
         Ok(JsDataFrame::new(df))
     }
 
@@ -609,7 +580,7 @@ impl JsDataFrame {
     #[napi(catch_unwind)]
     pub fn rechunk(&self) -> JsDataFrame {
         let mut df = self.df.clone();
-        df.as_single_chunk_par();
+        df.rechunk_mut_par();
         df.into()
     }
     #[napi(catch_unwind)]
@@ -695,7 +666,7 @@ impl JsDataFrame {
     pub fn get_columns(&self) -> Vec<JsSeries> {
         let cols: Vec<Series> = self
             .df
-            .get_columns()
+            .columns()
             .iter()
             .map(Column::as_materialized_series)
             .cloned()
@@ -706,19 +677,25 @@ impl JsDataFrame {
     /// Get column names
     #[napi(getter, catch_unwind)]
     pub fn columns(&self) -> Vec<&str> {
-        self.df.get_column_names_str()
+        self.df
+            .columns()
+            .iter()
+            .map(|s| s.name().as_str())
+            .collect()
     }
 
     #[napi(setter, js_name = "columns", catch_unwind)]
     pub fn set_columns(&mut self, names: Vec<String>) -> napi::Result<()> {
-        self.df.set_column_names(names).map_err(JsPolarsErr::from)?;
+        self.df
+            .set_column_names(&names)
+            .map_err(JsPolarsErr::from)?;
         Ok(())
     }
 
     #[napi(catch_unwind)]
     pub fn with_column(&mut self, s: &JsSeries) -> napi::Result<JsDataFrame> {
         let mut df = self.df.clone();
-        df.with_column(s.series.clone())
+        df.with_column(s.series.clone().into())
             .map_err(JsPolarsErr::from)?;
         Ok(df.into())
     }
@@ -726,7 +703,11 @@ impl JsDataFrame {
     /// Get datatypes
     #[napi(catch_unwind)]
     pub fn dtypes(&self) -> Vec<Wrap<DataType>> {
-        self.df.iter().map(|s| Wrap(s.dtype().clone())).collect()
+        self.df
+            .columns()
+            .iter()
+            .map(|s| Wrap(s.dtype().clone()))
+            .collect()
     }
     #[napi(catch_unwind)]
     pub fn n_chunks(&self) -> napi::Result<u32> {
@@ -887,7 +868,7 @@ impl JsDataFrame {
     #[napi(catch_unwind)]
     pub fn replace(&mut self, column: String, new_col: &JsSeries) -> napi::Result<()> {
         self.df
-            .replace(&column, new_col.series.clone())
+            .replace(&column, new_col.series.clone().into())
             .map_err(JsPolarsErr::from)?;
         Ok(())
     }
@@ -903,7 +884,7 @@ impl JsDataFrame {
     #[napi(catch_unwind)]
     pub fn replace_at_idx(&mut self, index: f64, new_col: &JsSeries) -> napi::Result<()> {
         self.df
-            .replace_column(index as usize, new_col.series.clone())
+            .replace_column(index as usize, new_col.series.clone().into())
             .map_err(JsPolarsErr::from)?;
         Ok(())
     }
@@ -911,7 +892,7 @@ impl JsDataFrame {
     #[napi(catch_unwind)]
     pub fn insert_at_idx(&mut self, index: f64, new_col: &JsSeries) -> napi::Result<()> {
         self.df
-            .insert_column(index as usize, new_col.series.clone())
+            .insert_column(index as usize, new_col.series.clone().into())
             .map_err(JsPolarsErr::from)?;
         Ok(())
     }
@@ -968,31 +949,51 @@ impl JsDataFrame {
     }
 
     #[napi(catch_unwind)]
-    pub fn pivot_expr(
+    pub fn pivot(
         &self,
         values: Vec<String>,
         on: Vec<String>,
         index: Vec<String>,
-        aggregate_expr: Option<Wrap<polars::prelude::Expr>>,
+        aggregate_expr: Wrap<polars::prelude::Expr>,
         maintain_order: bool,
         sort_columns: bool,
-        separator: Option<String>,
+        separator: String,
     ) -> napi::Result<JsDataFrame> {
-        let fun = match maintain_order {
-            true => polars::prelude::pivot::pivot_stable,
-            false => polars::prelude::pivot::pivot,
-        };
-        fun(
-            &self.df,
-            on,
-            Some(index),
-            Some(values),
-            sort_columns,
-            aggregate_expr.map(|e| e.0 as Expr),
-            separator.as_deref(),
-        )
-        .map(|df| df.into())
-        .map_err(|e| napi::Error::from_reason(format!("Could not pivot: {}", e)))
+        let pivot_error = |msg: &str, e| napi::Error::from_reason(format!("{}: {}", msg, e));
+
+        let mut on_cols = self
+            .df
+            .select(&on)
+            .map_err(|e| pivot_error("Could not select in pivot", e))?;
+
+        on_cols = on_cols
+            .unique_stable(None::<&[String]>, UniqueKeepStrategy::First, None)
+            .map_err(|e| pivot_error("Could not get unique values in pivot", e))?;
+
+        if sort_columns {
+            on_cols = on_cols
+                .sort(
+                    &on,
+                    SortMultipleOptions::default().with_maintain_order(true),
+                )
+                .map_err(|e| pivot_error("Could not sort in pivot", e))?;
+        }
+
+        self.df
+            .clone()
+            .lazy()
+            .pivot(
+                strings_to_selector(on),
+                Arc::new(on_cols),
+                strings_to_selector(index),
+                strings_to_selector(values),
+                aggregate_expr.0,
+                maintain_order,
+                PlSmallStr::from_str(&separator),
+            )
+            .collect()
+            .map(|df| df.into())
+            .map_err(|e| pivot_error("Could not pivot", e))
     }
     #[napi(catch_unwind)]
     pub fn clone(&self) -> JsDataFrame {
@@ -1006,12 +1007,13 @@ impl JsDataFrame {
         variable_name: Option<String>,
         value_name: Option<String>,
     ) -> napi::Result<JsDataFrame> {
-        let args = UnpivotArgsIR {
-            on: strings_to_pl_smallstr(value_vars),
-            index: strings_to_pl_smallstr(id_vars),
-            variable_name: variable_name.map(|s| s.into()),
-            value_name: value_name.map(|s| s.into()),
-        };
+        let args = UnpivotArgsIR::new(
+            self.df.get_column_names_owned(),
+            Some(strings_to_pl_smallstr(value_vars)),
+            strings_to_pl_smallstr(id_vars),
+            value_name.map(|s| s.into()),
+            variable_name.map(|s| s.into()),
+        );
 
         let df = self.df.unpivot2(args).map_err(JsPolarsErr::from)?;
         Ok(JsDataFrame::new(df))
@@ -1229,7 +1231,7 @@ impl JsDataFrame {
 
         let width = self.df.width();
         let mut row = env.create_array(width as u32)?;
-        for (i, col) in self.df.get_columns().iter().enumerate() {
+        for (i, col) in self.df.columns().iter().enumerate() {
             let val = col.get(idx);
             row.set(i as u32, Wrap(val.unwrap()))?;
         }
@@ -1243,7 +1245,7 @@ impl JsDataFrame {
         let mut rows = env.create_array(height as u32)?;
         for idx in 0..height {
             let mut row = env.create_array(width as u32)?;
-            for (i, col) in self.df.get_columns().iter().enumerate() {
+            for (i, col) in self.df.columns().iter().enumerate() {
                 let val = col.get(idx);
                 row.set(i as u32, Wrap(val.unwrap()))?;
             }
@@ -1251,47 +1253,6 @@ impl JsDataFrame {
         }
         Ok(rows)
     }
-    // #[napi]
-    // pub fn to_rows_cb(&self, callback: napi::JsFunction, env: Env) -> napi::Result<()> {
-    //     panic!("not implemented");
-    // use napi::threadsafe_function::*;
-    // use polars_core::utils::rayon::prelude::*;
-    // let (height, _) = self.df.shape();
-    // let tsfn: ThreadsafeFunction<
-    //     Either<Vec<JsAnyValue>, napi::JsNull>,
-    //     ErrorStrategy::CalleeHandled,
-    // > = callback.create_threadsafe_function(
-    //     0,
-    //     |ctx: ThreadSafeCallContext<Either<Vec<JsAnyValue>, napi::JsNull>>| Ok(vec![ctx.value]),
-    // )?;
-
-    // polars_core::POOL.install(|| {
-    //     (0..height).into_par_iter().for_each(|idx| {
-    //         let tsfn = tsfn.clone();
-    //         let values = self
-    //             .df
-    //             .get_columns()
-    //             .iter()
-    //             .map(|s| {
-    //                 let av: JsAnyValue = s.get(idx).into();
-    //                 av
-    //             })
-    //             .collect::<Vec<_>>();
-
-    //         tsfn.call(
-    //             Ok(Either::A(values)),
-    //             ThreadsafeFunctionCallMode::NonBlocking,
-    //         );
-    //     });
-    // });
-    // tsfn.call(
-    //     Ok(Either::B(env.get_null().unwrap())),
-    //     ThreadsafeFunctionCallMode::NonBlocking,
-    // );
-
-    // Ok(())
-    // }
-
     #[napi]
     pub fn to_row_obj<'a>(&self, idx: Either<i64, f64>, env: &'a Env) -> napi::Result<Object<'a>> {
         let idx = match idx {
@@ -1307,7 +1268,7 @@ impl JsDataFrame {
 
         let mut row = Object::new(&env)?;
 
-        for col in self.df.get_columns() {
+        for col in self.df.columns() {
             let key = col.name();
             let val = col.get(idx);
             row.set(key, Wrap(val.unwrap()))?;
@@ -1321,7 +1282,7 @@ impl JsDataFrame {
         let mut rows = env.create_array(height as u32)?;
         for idx in 0..height {
             let mut row = Object::new(&env)?;
-            for col in self.df.get_columns() {
+            for col in self.df.columns() {
                 let key = col.name();
                 let val = col.get(idx);
                 row.set(key, Wrap(val.unwrap()))?;
@@ -1330,52 +1291,6 @@ impl JsDataFrame {
         }
         Ok(rows)
     }
-
-    // #[napi]
-    // pub fn to_objects_cb(&self, callback: napi::JsFunction, env: Env) -> napi::Result<()> {
-    //     panic!("not implemented");
-    // use napi::threadsafe_function::*;
-    // use polars_core::utils::rayon::prelude::*;
-    // use std::collections::HashMap;
-    // let (height, _) = self.df.shape();
-    // let tsfn: ThreadsafeFunction<
-    //     Either<HashMap<String, JsAnyValue>, napi::JsNull>,
-    //     ErrorStrategy::CalleeHandled,
-    // > = callback.create_threadsafe_function(
-    //     0,
-    //     |ctx: ThreadSafeCallContext<Either<HashMap<String, JsAnyValue>, napi::JsNull>>| {
-    //         Ok(vec![ctx.value])
-    //     },
-    // )?;
-
-    // polars_core::POOL.install(|| {
-    //     (0..height).into_par_iter().for_each(|idx| {
-    //         let tsfn = tsfn.clone();
-    //         let values = self
-    //             .df
-    //             .get_columns()
-    //             .iter()
-    //             .map(|s| {
-    //                 let key = s.name().to_owned();
-    //                 let av: JsAnyValue = s.get(idx).into();
-    //                 (key, av)
-    //             })
-    //             .collect::<HashMap<_, _>>();
-
-    //         tsfn.call(
-    //             Ok(Either::A(values)),
-    //             ThreadsafeFunctionCallMode::NonBlocking,
-    //         );
-    //     });
-    // });
-    // tsfn.call(
-    //     Ok(Either::B(env.get_null().unwrap())),
-    //     ThreadsafeFunctionCallMode::NonBlocking,
-    // );
-
-    // Ok(())
-    // }
-
     // deprecated
     #[napi(catch_unwind)]
     pub fn with_row_count(&self, name: String, offset: Option<u32>) -> napi::Result<JsDataFrame> {
@@ -1415,13 +1330,13 @@ impl JsDataFrame {
                     .include_bom(options.0.include_bom)
                     .include_header(options.0.include_header)
                     .with_separator(options.0.serialize_options.separator)
-                    .with_line_terminator(options.0.serialize_options.line_terminator)
+                    .with_line_terminator(options.0.serialize_options.line_terminator.clone())
                     .with_batch_size(options.0.batch_size)
-                    .with_datetime_format(options.0.serialize_options.datetime_format)
-                    .with_date_format(options.0.serialize_options.date_format)
-                    .with_time_format(options.0.serialize_options.time_format)
+                    .with_datetime_format(options.0.serialize_options.datetime_format.clone())
+                    .with_date_format(options.0.serialize_options.date_format.clone())
+                    .with_time_format(options.0.serialize_options.time_format.clone())
                     .with_float_precision(options.0.serialize_options.float_precision)
-                    .with_null_value(options.0.serialize_options.null)
+                    .with_null_value(options.0.serialize_options.null.clone())
                     .with_quote_char(options.0.serialize_options.quote_char)
                     .finish(&mut self.df)
                     .map_err(JsPolarsErr::from)?;
@@ -1434,13 +1349,13 @@ impl JsDataFrame {
                     .include_bom(options.0.include_bom)
                     .include_header(options.0.include_header)
                     .with_separator(options.0.serialize_options.separator)
-                    .with_line_terminator(options.0.serialize_options.line_terminator)
+                    .with_line_terminator(options.0.serialize_options.line_terminator.clone())
                     .with_batch_size(options.0.batch_size)
-                    .with_datetime_format(options.0.serialize_options.datetime_format)
-                    .with_date_format(options.0.serialize_options.date_format)
-                    .with_time_format(options.0.serialize_options.time_format)
+                    .with_datetime_format(options.0.serialize_options.datetime_format.clone())
+                    .with_date_format(options.0.serialize_options.date_format.clone())
+                    .with_time_format(options.0.serialize_options.time_format.clone())
                     .with_float_precision(options.0.serialize_options.float_precision)
-                    .with_null_value(options.0.serialize_options.null)
+                    .with_null_value(options.0.serialize_options.null.clone())
                     .with_quote_char(options.0.serialize_options.quote_char)
                     .finish(&mut self.df)
                     .map_err(JsPolarsErr::from)?;

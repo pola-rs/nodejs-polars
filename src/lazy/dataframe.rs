@@ -1,6 +1,7 @@
 use crate::dataframe::JsDataFrame;
 use crate::lazy::dsl::{JsExpr, ToExprs};
 use crate::prelude::*;
+use polars::prelude::sync_on_close::SyncOnCloseType;
 use polars::prelude::{lit, ClosedWindow, JoinType};
 use polars_io::{HiveOptions, RowIndex};
 use polars_utils::slice_enum::Slice;
@@ -509,7 +510,11 @@ impl JsLazyFrame {
         column.to_exprs().into_iter().for_each(|expr| {
             column_selector.bitor_assign(expr.into_selector().unwrap().into());
         });
-        self.ldf.clone().explode(column_selector).into()
+        let options = ExplodeOptions {
+            empty_as_null: true,
+            keep_nulls: true,
+        };
+        self.ldf.clone().explode(column_selector, options).into()
     }
     #[napi(catch_unwind)]
     pub fn unique(
@@ -550,7 +555,7 @@ impl JsLazyFrame {
         value_name: Option<String>,
     ) -> JsLazyFrame {
         let args = UnpivotArgsDSL {
-            on: strings_to_selector(value_vars),
+            on: Some(strings_to_selector(value_vars)),
             index: strings_to_selector(id_vars),
             variable_name: variable_name.map(|s| s.into()),
             value_name: value_name.map(|s| s.into()),
@@ -606,15 +611,24 @@ impl JsLazyFrame {
         &self,
         path: String,
         options: Wrap<CsvWriterOptions>,
-        sink_options: JsSinkOptions,
-        cloud_options: Option<HashMap<String, String>>,
-        max_retries: Option<u32>,
+        cloud_options: Option<HashMap<String, Wrap<AnyValue>>>,
     ) -> napi::Result<JsLazyFrame> {
-        let cloud_options = parse_cloud_options(&path, cloud_options, max_retries);
-        let sink_target = SinkTarget::Path(PlPath::new(&path));
+        let cloud_options = parse_cloud_options(&path, cloud_options);
+
+        let unified_sink_args = UnifiedSinkArgs {
+            mkdir: true,
+            maintain_order: true,
+            sync_on_close: SyncOnCloseType::default(),
+            cloud_options: cloud_options.map(Arc::new),
+        };
+
+        let target = SinkDestination::File {
+            target: SinkTarget::Path(PlRefPath::new(&path)),
+        };
+
         let ldf = self.ldf.clone().with_comm_subplan_elim(false);
         let rldf = ldf
-            .sink_csv(sink_target, options.0, cloud_options, sink_options.into())
+            .sink(target, FileWriteFormat::Csv(options.0), unified_sink_args)
             .map_err(JsPolarsErr::from)?;
         Ok(rldf.into())
     }
@@ -634,43 +648,63 @@ impl JsLazyFrame {
         };
         let row_group_size = options.row_group_size.map(|i| i as usize);
         let data_page_size = options.data_pagesize_limit.map(|i| i as usize);
-        let cloud_options = parse_cloud_options(&path, options.cloud_options, options.retries);
+        let cloud_options = parse_cloud_options(&path, options.cloud_options);
 
-        let sink_options = options.sink_options.into();
         let options = ParquetWriteOptions {
             compression,
             statistics,
             row_group_size,
             data_page_size,
-            key_value_metadata: None,
-            field_overwrites: Vec::new(),
+            ..Default::default()
         };
 
-        let sink_target = SinkTarget::Path(PlPath::new(&path));
+        let target = SinkDestination::File {
+            target: SinkTarget::Path(PlRefPath::new(&path)),
+        };
+
+        let unified_sink_args = UnifiedSinkArgs {
+            mkdir: true,
+            maintain_order: true,
+            sync_on_close: SyncOnCloseType::default(),
+            cloud_options: cloud_options.map(Arc::new),
+        };
+
         let ldf = self.ldf.clone().with_comm_subplan_elim(false);
         let rldf = ldf
-            .sink_parquet(sink_target, options, cloud_options, sink_options)
+            .sink(
+                target,
+                FileWriteFormat::Parquet(Arc::new(options)),
+                unified_sink_args,
+            )
             .map_err(JsPolarsErr::from)?;
         Ok(rldf.into())
     }
 
     #[napi(catch_unwind)]
     pub fn sink_json(&self, path: String, options: SinkJsonOptions) -> napi::Result<JsLazyFrame> {
-        let cloud_options = parse_cloud_options(&path, options.cloud_options, options.retries);
-        let sink_options: SinkOptions = SinkOptions {
+        let cloud_options = parse_cloud_options(&path, options.cloud_options);
+        let target = SinkDestination::File {
+            target: SinkTarget::Path(PlRefPath::new(&path)),
+        };
+
+        let unified_sink_args = UnifiedSinkArgs {
+            mkdir: options.mkdir.unwrap_or(true),
             maintain_order: options.maintain_order.unwrap_or(true),
             sync_on_close: options.sync_on_close.0,
-            mkdir: options.mkdir.unwrap_or(true),
+            cloud_options: cloud_options.map(Arc::new),
         };
-        let sink_target = SinkTarget::Path(PlPath::new(&path));
+
+        let nd_options = NDJsonWriterOptions {
+            ..Default::default()
+        };
+
         let rldf = self
             .ldf
             .clone()
-            .sink_json(
-                sink_target,
-                JsonWriterOptions {},
-                cloud_options,
-                sink_options,
+            .sink(
+                target,
+                FileWriteFormat::NDJson(nd_options),
+                unified_sink_args,
             )
             .map_err(JsPolarsErr::from)?;
         Ok(rldf.into())
@@ -678,13 +712,7 @@ impl JsLazyFrame {
 
     #[napi(catch_unwind)]
     pub fn sink_ipc(&self, path: String, options: SinkIpcOptions) -> napi::Result<JsLazyFrame> {
-        let cloud_options = parse_cloud_options(&path, options.cloud_options, options.retries);
-        let sink_options: SinkOptions = SinkOptions {
-            maintain_order: options.maintain_order.unwrap_or(true),
-            sync_on_close: options.sync_on_close.0,
-            mkdir: options.mkdir.unwrap_or(true),
-        };
-
+        let cloud_options = parse_cloud_options(&path, options.cloud_options);
         let compat_level: CompatLevel = match options.compat_level.unwrap().as_str() {
             "newest" => CompatLevel::newest(),
             "oldest" => CompatLevel::oldest(),
@@ -701,11 +729,20 @@ impl JsLazyFrame {
             ..Default::default()
         };
 
-        let sink_target = SinkTarget::Path(PlPath::new(&path));
+        let target = SinkDestination::File {
+            target: SinkTarget::Path(PlRefPath::new(&path)),
+        };
+        let unified_sink_args = UnifiedSinkArgs {
+            mkdir: options.mkdir.unwrap_or(true),
+            maintain_order: options.maintain_order.unwrap_or(true),
+            sync_on_close: options.sync_on_close.0,
+            cloud_options: cloud_options.map(Arc::new),
+        };
+
         let rldf = self
             .ldf
             .clone()
-            .sink_ipc(sink_target, ipc_options, cloud_options, sink_options)
+            .sink(target, FileWriteFormat::Ipc(ipc_options), unified_sink_args)
             .map_err(JsPolarsErr::from)?;
         Ok(rldf.into())
     }
@@ -767,7 +804,7 @@ pub fn scan_csv(path: String, options: ScanCsvOptions) -> napi::Result<JsLazyFra
         e => return Err(JsPolarsErr::Other(format!("encoding not {} not implemented.", e)).into()),
     };
 
-    let r = LazyCsvReader::new(PlPath::new(&path))
+    let r = LazyCsvReader::new(PlRefPath::new(&path))
         .with_infer_schema_length(Some(options.infer_schema_length.unwrap_or(100) as usize))
         .with_separator(options.sep.unwrap_or(",".to_owned()).as_bytes()[0])
         .with_has_header(options.has_header.unwrap_or(true))
@@ -819,7 +856,7 @@ pub fn scan_parquet(path: String, options: ScanParquetOptions) -> napi::Result<J
     let low_memory = options.low_memory.unwrap_or(false);
     let use_statistics = options.use_statistics.unwrap_or(false);
 
-    let cloud_options = parse_cloud_options(&path, options.cloud_options, options.retries);
+    let cloud_options = parse_cloud_options(&path, options.cloud_options);
     let hive_schema = options.hive_schema.map(|s| Arc::new(s.0));
     let schema = options.schema.map(|s| Arc::new(s.0));
     let hive_options = HiveOptions {
@@ -847,7 +884,7 @@ pub fn scan_parquet(path: String, options: ScanParquetOptions) -> napi::Result<J
         include_file_paths: include_file_paths.map(PlSmallStr::from),
         allow_missing_columns,
     };
-    let lf = LazyFrame::scan_parquet(PlPath::new(&path), args).map_err(JsPolarsErr::from)?;
+    let lf = LazyFrame::scan_parquet(PlRefPath::new(&path), args).map_err(JsPolarsErr::from)?;
     Ok(lf.into())
 }
 
@@ -865,9 +902,11 @@ pub fn scan_ipc(path: String, options: ScanIPCOptions) -> napi::Result<JsLazyFra
     let cache = options.cache.unwrap_or(true);
     let rechunk = options.rechunk.unwrap_or(false);
     let row_index: Option<RowIndex> = options.row_count.map(|rc| rc.into());
-    let options = IpcScanOptions;
+    let options = IpcScanOptions {
+        ..Default::default()
+    };
     let lf = LazyFrame::scan_ipc(
-        PlPath::new(&path),
+        PlRefPath::new(&path),
         options,
         UnifiedScanArgs {
             pre_slice: n_rows.map(|len| Slice::Positive { offset: 0, len }),
@@ -897,7 +936,7 @@ pub struct JsonScanOptions {
 pub fn scan_json(path: String, options: JsonScanOptions) -> napi::Result<JsLazyFrame> {
     let batch_size = options.batch_size as usize;
     let batch_size = NonZeroUsize::new(batch_size);
-    LazyJsonLineReader::new(PlPath::new(&path))
+    LazyJsonLineReader::new(PlRefPath::new(&path))
         .with_batch_size(batch_size)
         .low_memory(options.low_memory.unwrap_or(false))
         .with_row_index(options.row_count.map(|rc| rc.into()))

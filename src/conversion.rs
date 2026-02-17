@@ -1,13 +1,14 @@
 use crate::lazy::dsl::JsExpr;
 use crate::prelude::*;
 use napi::bindgen_prelude::*;
-use polars::prelude::NullStrategy;
-use polars::prelude::*;
 use polars_arrow::temporal_conversions::time64ns_to_time;
+use polars_core::config::verbose_print_sensitive;
 use polars_core::series::ops::NullBehavior;
-use polars_io::cloud::CloudOptions;
+use polars_io::cloud::{CloudOptions, CloudRetryConfig};
 use polars_io::utils::sync_on_close::SyncOnCloseType;
 use polars_io::RowIndex;
+use polars_utils::compression::{BrotliLevel, GzipLevel, ZstdLevel};
+use polars_utils::total_ord::TotalOrdWrap;
 use std::collections::HashMap;
 use std::num::NonZero;
 
@@ -85,7 +86,7 @@ impl ToNapiValue for Wrap<&Series> {
 
                 for idx in 0..height {
                     let mut row = Object::new(&env)?;
-                    for col in df.get_columns() {
+                    for col in df.columns() {
                         let key = col.name();
                         let val = col.get(idx);
                         row.set(key, Wrap(val.unwrap()))?;
@@ -121,7 +122,8 @@ impl<'a> ToNapiValue for Wrap<AnyValue<'a>> {
             AnyValue::UInt32(n) => u32::to_napi_value(env, n),
             AnyValue::UInt64(n) => u64::to_napi_value(env, n),
             AnyValue::UInt128(n) => u128::to_napi_value(env, n),
-            AnyValue::Float32(n) => f64::to_napi_value(env, n as f64),
+            AnyValue::Float16(n) => f64::to_napi_value(env, f64::from(n)),
+            AnyValue::Float32(n) => f64::to_napi_value(env, f64::from(n)),
             AnyValue::Float64(n) => f64::to_napi_value(env, n),
             AnyValue::String(s) => String::to_napi_value(env, s.to_owned()),
             AnyValue::StringOwned(s) => String::to_napi_value(env, s.to_string()),
@@ -137,7 +139,7 @@ impl<'a> ToNapiValue for Wrap<AnyValue<'a>> {
                 )?;
                 Ok(ptr)
             }
-            AnyValue::Datetime(v, time_unit, _) => {
+            AnyValue::Datetime(v, time_unit, _) | AnyValue::DatetimeOwned(v, time_unit, _)  => {
                 let mut ptr = std::ptr::null_mut();
 
                 let div = match time_unit {
@@ -171,7 +173,6 @@ impl<'a> ToNapiValue for Wrap<AnyValue<'a>> {
             AnyValue::Binary(_) => Err(napi::Error::from_reason("Binary is not a supported, please convert to string or number before collecting to js")),
             AnyValue::BinaryOwned(_) => Err(napi::Error::from_reason("BinaryOwned is not a supported, please convert to string or number before collecting to js")),
             AnyValue::Decimal(_,_,_) => Err(napi::Error::from_reason("Decimal is not a supported type in javascript, please convert to string or number before collecting to js")),
-            AnyValue::DatetimeOwned(_,_,_) => Err(napi::Error::from_reason("DatetimeOwned is not a supported, please convert to string or number before collecting to js")),
             AnyValue::EnumOwned(_,_) => Err(napi::Error::from_reason("EnumOwned is not a supported, please convert to string or number before collecting to js")),
         }
     }
@@ -405,7 +406,6 @@ impl FromNapiValue for Wrap<ParquetCompression> {
         let compression = match compression.as_ref() {
             "snappy" => ParquetCompression::Snappy,
             "gzip" => ParquetCompression::Gzip(None),
-            "lzo" => ParquetCompression::Lzo,
             "brotli" => ParquetCompression::Brotli(None),
             "lz4" => ParquetCompression::Lz4Raw,
             "zstd" => ParquetCompression::Zstd(None),
@@ -651,27 +651,32 @@ pub struct JsSinkOptions {
     /// Recursively create all the directories in the path.
     pub mkdir: bool,
 }
-impl From<JsSinkOptions> for SinkOptions {
+impl From<JsSinkOptions> for FileSinkOptions {
     fn from(o: JsSinkOptions) -> Self {
-        SinkOptions {
-            sync_on_close: o.sync_on_close.0,
-            maintain_order: o.maintain_order,
-            mkdir: o.mkdir,
+        FileSinkOptions {
+            unified_sink_args: UnifiedSinkArgs {
+                sync_on_close: o.sync_on_close.0,
+                maintain_order: o.maintain_order,
+                mkdir: o.mkdir,
+                cloud_options: None,
+            },
+            target: SinkTarget::Path(PlRefPath::new("")),
+            file_format: FileWriteFormat::Parquet(Default::default()),
         }
     }
 }
-impl From<SinkOptions> for JsSinkOptions {
-    fn from(o: SinkOptions) -> Self {
+impl From<FileSinkOptions> for JsSinkOptions {
+    fn from(o: FileSinkOptions) -> Self {
         JsSinkOptions {
-            sync_on_close: Wrap(o.sync_on_close),
-            maintain_order: o.maintain_order,
-            mkdir: o.mkdir,
+            sync_on_close: Wrap(o.unified_sink_args.sync_on_close),
+            maintain_order: o.unified_sink_args.maintain_order,
+            mkdir: o.unified_sink_args.mkdir,
         }
     }
 }
 
 #[napi(object)]
-pub struct SinkParquetOptions {
+pub struct SinkParquetOptions<'a> {
     pub compression: Option<String>,
     pub compression_level: Option<i32>,
     pub statistics: Option<bool>,
@@ -684,33 +689,30 @@ pub struct SinkParquetOptions {
     pub simplify_expression: Option<bool>,
     pub slice_pushdown: Option<bool>,
     pub no_optimization: Option<bool>,
-    pub cloud_options: Option<HashMap<String, String>>,
-    pub retries: Option<u32>,
+    pub cloud_options: Option<HashMap<String, Wrap<AnyValue<'a>>>>,
     pub sink_options: JsSinkOptions,
 }
 
 #[napi(object)]
-pub struct SinkJsonOptions {
+pub struct SinkJsonOptions<'a> {
     pub maintain_order: Option<bool>,
-    pub cloud_options: Option<HashMap<String, String>>,
-    pub retries: Option<u32>,
+    pub cloud_options: Option<HashMap<String, Wrap<AnyValue<'a>>>>,
     pub sync_on_close: Wrap<SyncOnCloseType>,
     pub mkdir: Option<bool>,
 }
 
 #[napi(object)]
-pub struct SinkIpcOptions {
+pub struct SinkIpcOptions<'a> {
     pub compat_level: Option<String>,
     pub compression: Wrap<Option<IpcCompression>>,
     pub maintain_order: Option<bool>,
-    pub cloud_options: Option<HashMap<String, String>>,
-    pub retries: Option<u32>,
+    pub cloud_options: Option<HashMap<String, Wrap<AnyValue<'a>>>>,
     pub sync_on_close: Wrap<SyncOnCloseType>,
     pub mkdir: Option<bool>,
 }
 
 #[napi(object)]
-pub struct ScanParquetOptions {
+pub struct ScanParquetOptions<'a> {
     pub n_rows: Option<i64>,
     pub row_index_name: Option<String>,
     pub row_index_offset: Option<u32>,
@@ -724,8 +726,7 @@ pub struct ScanParquetOptions {
     pub schema: Option<Wrap<Schema>>,
     pub low_memory: Option<bool>,
     pub use_statistics: Option<bool>,
-    pub cloud_options: Option<HashMap<String, String>>,
-    pub retries: Option<u32>,
+    pub cloud_options: Option<HashMap<String, Wrap<AnyValue<'a>>>>,
     pub include_file_paths: Option<String>,
     pub allow_missing_columns: Option<bool>,
 }
@@ -1002,9 +1003,7 @@ impl FromNapiValue for Wrap<CsvWriterOptions> {
             .get::<String>("quoteChar")?
             .unwrap_or("\"".to_owned())
             .as_bytes()[0];
-        let null_value = obj
-            .get::<String>("nullValue")?
-            .unwrap_or(SerializeOptions::default().null);
+        let null_value = obj.get::<String>("nullValue")?.unwrap_or("".to_owned());
         let line_terminator = obj
             .get::<String>("lineTerminator")?
             .unwrap_or("\n".to_owned());
@@ -1013,15 +1012,15 @@ impl FromNapiValue for Wrap<CsvWriterOptions> {
             .map_or(QuoteStyle::default(), |wrap| wrap.0);
 
         let serialize_options = SerializeOptions {
-            date_format,
-            time_format,
-            datetime_format,
+            date_format: date_format.map(PlSmallStr::from_string),
+            time_format: time_format.map(PlSmallStr::from_string),
+            datetime_format: datetime_format.map(PlSmallStr::from_string),
             float_scientific,
             float_precision,
             separator,
             quote_char,
-            null: null_value,
-            line_terminator,
+            null: PlSmallStr::from_string(null_value),
+            line_terminator: PlSmallStr::from_string(line_terminator),
             quote_style,
             decimal_comma: false,
         };
@@ -1030,7 +1029,8 @@ impl FromNapiValue for Wrap<CsvWriterOptions> {
             include_bom,
             include_header,
             batch_size,
-            serialize_options,
+            serialize_options: serialize_options.into(),
+            ..Default::default()
         };
         Ok(Wrap(options))
     }
@@ -1526,7 +1526,6 @@ pub(crate) fn parse_parquet_compression(
                 })
                 .transpose()?,
         ),
-        "lzo" => ParquetCompression::Lzo,
         "brotli" => ParquetCompression::Brotli(
             compression_level
                 .map(|lvl| {
@@ -1553,31 +1552,100 @@ pub(crate) fn parse_parquet_compression(
     Ok(parsed)
 }
 
-pub(crate) fn parse_cloud_options(
+pub fn parse_cloud_options(
     uri: &str,
-    kv: Option<HashMap<String, String>>,
-    max_retries: Option<u32>,
+    storage_options_dict: Option<HashMap<String, Wrap<polars::prelude::AnyValue<'_>>>>,
 ) -> Option<CloudOptions> {
-    let mut cloud_options: Option<CloudOptions> = if let Some(o) = kv {
-        let co: Vec<(String, String)> = o.into_iter().map(|kv: (String, String)| kv).collect();
-        Some(
-            CloudOptions::from_untyped_config(CloudScheme::from_uri(uri).as_ref(), co)
-                .map_err(JsPolarsErr::from)
-                .unwrap(),
-        )
-    } else {
-        None
-    };
-
-    let max_retries = max_retries.unwrap_or_else(|| 2) as usize;
-    if max_retries > 0 {
-        cloud_options =
-            cloud_options
-                .or_else(|| Some(CloudOptions::default()))
-                .map(|mut options| {
-                    options.max_retries = max_retries;
-                    options
-                });
+    if storage_options_dict.is_none() {
+        return Some(None)?;
     }
-    cloud_options
+
+    let cloud_scheme = CloudScheme::from_path(uri);
+    let mut storage_options: Vec<(String, String)> = vec![];
+    let mut file_cache_ttl: u64 = 2;
+    let mut retry_config = CloudRetryConfig::default();
+
+    if let Some(storage_options_dict) = storage_options_dict {
+        storage_options.reserve(storage_options_dict.len());
+        for v in storage_options_dict.iter() {
+            let (key, value) = (v.0, v.1 .0.clone());
+
+            macro_rules! expected_type {
+                ($key_name:expr, $type_name:expr) => {{
+                    |_| {
+                        let key_name = $key_name;
+                        let type_name = $type_name;
+                        JsPolarsErr::Other(format!(
+                            "invalid value for '{key_name}': '{value}' (expected {type_name})"
+                        ))
+                    }
+                }};
+            }
+
+            match key.as_str() {
+                "file_cache_ttl" => {
+                    file_cache_ttl = value
+                        .try_extract()
+                        .map_err(expected_type!("file_cache_ttl", "int"))
+                        .ok()?;
+                }
+                "max_retries" => {
+                    retry_config.max_retries = Some(
+                        value
+                            .try_extract()
+                            .map_err(expected_type!("max_retries", "int"))
+                            .ok()?,
+                    );
+                }
+                "retry_timeout_ms" => {
+                    retry_config.retry_timeout = Some(core::time::Duration::from_millis(
+                        value
+                            .try_extract()
+                            .map_err(expected_type!("retry_timeout", "int"))
+                            .ok()?,
+                    ));
+                }
+                "retry_init_backoff_ms" => {
+                    retry_config.retry_init_backoff = Some(core::time::Duration::from_millis(
+                        value
+                            .try_extract()
+                            .map_err(expected_type!("retry_init_backoff", "int"))
+                            .ok()?,
+                    ));
+                }
+                "retry_max_backoff_ms" => {
+                    retry_config.retry_max_backoff = Some(core::time::Duration::from_millis(
+                        value
+                            .try_extract()
+                            .map_err(expected_type!("retry_max_backoff", "int"))
+                            .ok()?,
+                    ));
+                }
+                "retry_base_multiplier" => {
+                    retry_config.retry_base_multiplier = Some(TotalOrdWrap(
+                        value
+                            .try_extract()
+                            .map_err(expected_type!("retry_base_multiplier", "float"))
+                            .ok()?,
+                    ));
+                }
+                _ => {
+                    let value: String = value.extract_str()?.to_string();
+                    storage_options.push((key.clone(), value))
+                }
+            }
+        }
+    }
+
+    let mut cloud_options = CloudOptions::from_untyped_config(cloud_scheme, storage_options)
+        .map_err(JsPolarsErr::from)
+        .ok()?
+        .with_retry_config(retry_config);
+
+    if file_cache_ttl > 0 {
+        cloud_options.file_cache_ttl = file_cache_ttl;
+    }
+    verbose_print_sensitive(|| format!("extracted cloud_options: {:?}", &cloud_options));
+
+    Some(cloud_options)
 }

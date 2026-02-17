@@ -786,7 +786,6 @@ export interface LazyDataFrame<S extends Schema = any>
     @param options.maintainOrder - Maintain the order in which data is processed. Default -> true
         Setting this to `False` will  be slightly faster.
     @param options.mkdir - Recursively create all the directories in the path. Default -> false
-    @param options.retries - Number of retries if accessing a cloud instance fails. Default = 2
     @param options.syncOnClose - { None, 'data', 'all' } Default -> 'all'
             Sync to disk when before closing a file.
 
@@ -826,7 +825,6 @@ export interface LazyDataFrame<S extends Schema = any>
     @param options.maintainOrder - Maintain the order in which data is processed. Default -> true
         Setting this to `False` will  be slightly faster.
     @param options.mkdir - Recursively create all the directories in the path. Default -> false
-    @param options.retries - Number of retries if accessing a cloud instance fails. Default = 2
     @param options.syncOnClose - { None, 'data', 'all' } Default -> 'all'
             Sync to disk when before closing a file.
 
@@ -1364,12 +1362,7 @@ export const _LazyDataFrame = (_ldf: any): LazyDataFrame => {
       return _LazyDataFrame(_ldf.withRowIndex(name, offset));
     },
     sinkCSV(path, options: CsvWriterOptions) {
-      options = { ...writeCsvDefaultOptions, ...options };
-      return _ldf.sinkCsv(path, options, {
-        syncOnClose: "all",
-        maintainOrder: false,
-        mkdir: true,
-      });
+      return _ldf.sinkCsv(path, { ...writeCsvDefaultOptions, ...options });
     },
     sinkParquet(path: string, options: SinkParquetOptions = {}) {
       options.compression = options.compression ?? "zstd";
@@ -1382,7 +1375,6 @@ export const _LazyDataFrame = (_ldf: any): LazyDataFrame => {
       return _ldf.sinkParquet(path, options);
     },
     sinkNdJson(path: string, options: SinkJsonOptions = {}) {
-      options.retries = options.retries ?? 2;
       options.syncOnClose = options.syncOnClose ?? "all";
       options.maintainOrder = options.maintainOrder ?? true;
       options.mkdir = options.mkdir ?? true;
@@ -1391,7 +1383,6 @@ export const _LazyDataFrame = (_ldf: any): LazyDataFrame => {
     sinkIpc(path: string, options: SinkIpcOptions = {}) {
       options.compatLevel = options.compatLevel ?? "newest";
       options.compression = options.compression ?? "uncompressed";
-      options.retries = options.retries ?? 2;
       options.syncOnClose = options.syncOnClose ?? "all";
       options.maintainOrder = options.maintainOrder ?? true;
       options.mkdir = options.mkdir ?? true;

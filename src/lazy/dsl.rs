@@ -129,7 +129,7 @@ impl JsExpr {
 
     #[napi(catch_unwind)]
     pub fn __floordiv__(&self, rhs: &JsExpr) -> napi::Result<JsExpr> {
-        Ok(dsl::binary_expr(self.inner.clone(), Operator::Divide, rhs.inner.clone()).into())
+        Ok(dsl::binary_expr(self.inner.clone(), Operator::FloorDivide, rhs.inner.clone()).into())
     }
 
     #[napi(catch_unwind)]
@@ -448,7 +448,11 @@ impl JsExpr {
 
     #[napi(catch_unwind)]
     pub fn explode(&self) -> JsExpr {
-        self.clone().inner.explode().into()
+        let options = ExplodeOptions {
+            empty_as_null: true,
+            keep_nulls: true,
+        };
+        self.clone().inner.explode(options).into()
     }
     #[napi(catch_unwind)]
     pub fn implode(&self) -> JsExpr {
@@ -1171,7 +1175,7 @@ impl JsExpr {
     }
     #[napi(catch_unwind)]
     pub fn mode(&self) -> JsExpr {
-        self.inner.clone().mode().into()
+        self.inner.clone().mode(false).into()
     }
     #[napi(catch_unwind)]
     pub fn keep_name(&self) -> JsExpr {
@@ -1628,7 +1632,7 @@ impl JsExpr {
     }
     #[napi(catch_unwind)]
     pub fn div(&self, rhs: &JsExpr) -> JsExpr {
-        dsl::binary_expr(self.inner.clone(), Operator::Divide, rhs.inner.clone()).into()
+        dsl::binary_expr(self.inner.clone(), Operator::RustDivide, rhs.inner.clone()).into()
     }
 }
 
@@ -1715,7 +1719,10 @@ impl JsChainedThen {
 pub fn col(name: String) -> JsExpr {
     dsl::col(&name).into()
 }
-
+#[napi(catch_unwind)]
+pub fn element() -> JsExpr {
+    dsl::element().into()
+}
 #[napi(catch_unwind)]
 pub fn first() -> JsExpr {
     dsl::first().as_expr().into()
