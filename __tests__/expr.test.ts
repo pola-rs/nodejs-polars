@@ -555,9 +555,8 @@ describe("expr", () => {
     expect(actual).toFrameEqual(expected);
   });
   test("last", () => {
-    const df = pl.DataFrame({ a: [1, 2, 3] });
     const expected = pl.DataFrame({ last: [3] });
-    const actual = df.select(col("a").last().as("last"));
+    const actual = df().select(col("int").last().as("last"));
     expect(actual).toFrameEqual(expected);
   });
   test("len", () => {
@@ -613,15 +612,13 @@ describe("expr", () => {
     expect(actual).toFrameStrictEqual(expected);
   });
   test("lt", () => {
-    const df = pl.DataFrame({ a: [1, 2, 3] });
     const expected = pl.DataFrame({ lt: [true, false, false] });
-    const actual = df.select(col("a").lt(2).as("lt"));
+    const actual = df().select(col("int").lt(2).as("lt"));
     expect(actual).toFrameEqual(expected);
   });
   test("ltEq", () => {
-    const df = pl.DataFrame({ a: [1, 2, 3] });
     const expected = pl.DataFrame({ lt: [true, true, false] });
-    const actual = df.select(col("a").ltEq(2).as("lt"));
+    const actual = df().select(col("int").ltEq(2).as("lt"));
     expect(actual).toFrameEqual(expected);
   });
   test("log", () => {
@@ -635,27 +632,23 @@ describe("expr", () => {
     expect(actual).toFrameEqual(expected);
   });
   test("max", () => {
-    const df = pl.DataFrame({ a: [1, 5, 3] });
-    const expected = pl.DataFrame({ max: [5] });
-    const actual = df.select(col("a").max().as("max"));
+    const expected = pl.DataFrame({ max: [3] });
+    const actual = df().select(col("int").max().as("max"));
     expect(actual).toFrameEqual(expected);
   });
   test("mean", () => {
-    const df = pl.DataFrame({ a: [2, 2, 8] });
-    const expected = pl.DataFrame({ mean: [4] });
-    const actual = df.select(col("a").mean().as("mean"));
+    const expected = pl.DataFrame({ mean: [2] });
+    const actual = df().select(col("int").mean().as("mean"));
     expect(actual).toFrameEqual(expected);
   });
   test("median", () => {
-    const df = pl.DataFrame({ a: [6, 1, 2] });
     const expected = pl.DataFrame({ median: [2] });
-    const actual = df.select(col("a").median().as("median"));
+    const actual = df().select(col("int").median().as("median"));
     expect(actual).toFrameEqual(expected);
   });
   test("min", () => {
-    const df = pl.DataFrame({ a: [2, 3, 1, 2, 1] });
     const expected = pl.DataFrame({ min: [1] });
-    const actual = df.select(col("a").min().as("min"));
+    const actual = df().select(col("int").min().as("min"));
     expect(actual).toFrameEqual(expected);
   });
   test("mode", () => {
@@ -673,15 +666,13 @@ describe("expr", () => {
     expect(actual).toFrameEqual(expected);
   });
   test("not", () => {
-    const df = pl.DataFrame({ a: [true, true, false] });
-    const expected = pl.DataFrame({ not: [false, false, true] });
-    const actual = df.select(col("a").not().as("not"));
+    const expected = pl.DataFrame({ not: [true, false, true] });
+    const actual = df().select(col("bools").not().as("not"));
     expect(actual).toFrameEqual(expected);
   });
   test("nUnique", () => {
-    const df = pl.DataFrame({ a: [0, 1, 2] });
     const expected = pl.DataFrame({ nUnique: [3] });
-    const actual = df.select(col("a").nUnique().as("nUnique"));
+    const actual = df().select(col("int").nUnique().as("nUnique"));
     expect(actual).toFrameEqual(expected);
   });
   test("or", () => {
@@ -712,9 +703,8 @@ describe("expr", () => {
     expect(actual).toFrameEqual(expected);
   });
   test("pow", () => {
-    const df = pl.DataFrame({ a: [2, 5, 10] });
-    const expected = pl.DataFrame({ pow: [4, 25, 100] });
-    const actual = df.select(col("a").pow(2).as("pow"));
+    const expected = pl.DataFrame({ pow: [1, 4, 9] });
+    const actual = df().select(col("int").pow(2).as("pow"));
     expect(actual).toFrameEqual(expected);
   });
   test("pow:named", () => {
@@ -724,21 +714,23 @@ describe("expr", () => {
     expect(actual).toFrameEqual(expected);
   });
   test("prefix", () => {
-    const df = pl.DataFrame({ a: [2, 5, 10] });
-    const expected = pl.DataFrame({ prefixed_a: [2, 5, 10] });
-    const actual = df.select(col("a").prefix("prefixed_"));
+    const expected = pl.DataFrame({ prefixed_int: [1, 2, 3] });
+    const actual = df().select(col("int").prefix("prefixed_"));
+    expect(actual).toFrameEqual(expected);
+  });
+  test("prefix", () => {
+    const actual = df().select(col("int").product().alias("product"));
+    const expected = pl.DataFrame({ product: [6] });
     expect(actual).toFrameEqual(expected);
   });
   test("quantile", () => {
-    const df = pl.DataFrame({ a: [1, 2, 3] });
     const expected = pl.DataFrame({ quantile: [2] });
-    const actual = df.select(col("a").quantile(0.5).as("quantile"));
+    const actual = df().select(col("int").quantile(0.5).as("quantile"));
     expect(actual).toFrameEqual(expected);
   });
   test("quantile with expr", () => {
-    const df = pl.DataFrame({ a: [1, 2, 3] });
     const expected = pl.DataFrame({ quantile: [2] });
-    const actual = df.select(col("a").quantile(lit(0.5)).as("quantile"));
+    const actual = df().select(col("int").quantile(lit(0.5)).as("quantile"));
     expect(actual).toFrameEqual(expected);
   });
 

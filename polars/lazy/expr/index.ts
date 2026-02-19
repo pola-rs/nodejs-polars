@@ -777,6 +777,31 @@ export interface Expr
    * ```
    */
   prefix(prefix: string): Expr;
+  /**
+  Compute the product of an expression.
+
+  Notes
+  -----
+  If there are no non-null values, then the output is `1`.
+  If you would prefer empty products to return `None`, you can
+  use `pl.when(expr.count()>0).then(expr.product())` instead
+  of `expr.product()`.
+
+  @example
+  ```
+  >>> df = pl.DataFrame({"a": [1, 2, 3]});
+  >>> df.select(pl.col("a").product());
+  shape: (1, 1)
+  ┌─────┐
+  │ a   │
+  │ --- │
+  │ f64 │
+  ╞═════╡
+  │ 6.0 │
+  └─────┘
+  ```
+  */
+  product(): Expr;
   /** Get quantile value. */
   quantile(quantile: number | Expr): Expr;
   /**
@@ -1665,6 +1690,9 @@ export const _Expr = (_expr: any): Expr => {
     },
     prefix(prefix) {
       return _Expr(_expr.prefix(prefix));
+    },
+    product() {
+      return _Expr(_expr.product());
     },
     quantile(quantile, interpolation: InterpolationMethod = "nearest") {
       if (Expr.isExpr(quantile)) {
