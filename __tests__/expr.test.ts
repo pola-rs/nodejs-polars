@@ -523,6 +523,11 @@ describe("expr", () => {
     const actual = df.select(col("a").isNotNull().as("isNotNull"));
     expect(actual).toFrameEqual(expected);
   });
+  test("nullCount", () => {
+    const expected = pl.DataFrame({ nullCount: [1] });
+    const actual = df().select(col("int_nulls").nullCount().as("nullCount"));
+    expect(actual).toFrameEqual(expected);
+  });
   test("isUnique", () => {
     const df = pl.DataFrame({ a: [1, 1, 2] });
     const expected = pl.DataFrame({ isUnique: [false, false, true] });
