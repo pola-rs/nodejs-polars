@@ -147,6 +147,26 @@ export interface Expr
    *```
    */
   alias(name: string): Expr;
+  /**
+     Method equivalent of bitwise "and" operator `expr & other & ...`.
+     This has the effect of combining logical boolean expressions, but operates bitwise on integers.
+     @param other One or more integer or boolean expressions to evaluate/combine.
+     @example
+     ```
+      const df = pl.DataFrame({ a: [1, 2, 3], b: [4, 5, 6] },{ schema: { a: pl.Int16, b: pl.Int16 } },);
+      df.select(pl.col("a").and(pl.col("b")).alias("a_and_b"));
+      shape: (3, 1)
+      ┌────────┐
+      │ a_or_b │
+      │ ---    │
+      │ i16    │
+      ╞════════╡
+      │ 0      │
+      │ 0      │
+      │ 2      │
+      └────────┘
+     ```
+   */
   and(other: any): Expr;
   /**
    * Compute the element-wise value for the inverse cosine.
