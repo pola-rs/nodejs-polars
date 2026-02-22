@@ -1280,13 +1280,15 @@ describe("dataframe", () => {
       bar: [8, 9],
       ham: ["c", "d"],
     });
-
-    const actual = df1.vstack(df2);
-    const expected = pl.DataFrame([
-      pl.Series("foo", [1, 2, 3, 4]),
-      pl.Series("bar", [6, 7, 8, 9]),
-      pl.Series("ham", ["a", "b", "c", "d"]),
-    ]);
+    let actual = df1.vstack(df2);
+    const expected = pl.DataFrame({
+      foo: [1, 2, 3, 4],
+      bar: [6, 7, 8, 9],
+      ham: ["a", "b", "c", "d"],
+    });
+    expect(actual).toFrameEqual(expected);
+    actual = df1.extend(df2);
+    expect(df1).toFrameEqual(expected);
     expect(actual).toFrameEqual(expected);
   });
   test("withColumn:series", () => {

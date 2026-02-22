@@ -740,11 +740,19 @@ describe("series functions", () => {
     const fn = () => s.reinterpret();
     expect(fn).toThrow();
   });
-  test("extend", () => {
+  test("extendConstant", () => {
     const s = pl.Series("extended", [1], pl.UInt16);
     const expected = pl.Series("extended", [1, null, null], pl.UInt16);
     const actual = s.extendConstant(null, 2);
     expect(actual).toSeriesStrictEqual(expected);
+  });
+  test("extend", () => {
+    const a = pl.Series("a", [1, 2, 3]);
+    const b = pl.Series("b", [4, 5]);
+    const actual = a.extend(b);
+    const expected = pl.Series("a", [1, 2, 3, 4, 5]);
+    expect(a).toSeriesEqual(expected);
+    expect(actual).toSeriesEqual(expected);
   });
   test("round invalid", () => {
     const s = pl.Series([true, false]);

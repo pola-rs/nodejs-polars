@@ -491,11 +491,8 @@ export interface DataFrame<S extends Schema = any>
   explode(column: ExprOrString): DataFrame;
   explode(column: ExprOrString, ...columns: ExprOrString[]): DataFrame;
   /**
-   *
-   *
-   * __Extend the memory backed by this `DataFrame` with the values from `other`.__
-   * ___
-
+    Extend the memory backed by this `DataFrame` with the values from `other`.
+   
     Different from `vstack` which adds the chunks from `other` to the chunks of this `DataFrame`
     `extent` appends the data from `other` to the underlying memory locations and thus may cause a reallocation.
 
@@ -510,6 +507,27 @@ export interface DataFrame<S extends Schema = any>
     In the latter case, finish the sequence of `vstack` operations with a `rechunk`.
 
    * @param other DataFrame to vertically add.
+   * @returns This method modifies the dataframe in-place. The dataframe is returned for convenience only.
+   * @see {@link vstack}
+   * @example
+   * ```
+    const df1 = pl.DataFrame({"foo": [1, 2, 3], "bar": [4, 5, 6]});
+    const df2 = pl.DataFrame({"foo": [10, 20, 30], "bar": [40, 50, 60]});
+    >>> df1.extend(df2)
+    shape: (6, 2)
+    ┌─────┬─────┐
+    │ foo ┆ bar │
+    │ --- ┆ --- │
+    │ i64 ┆ i64 │
+    ╞═════╪═════╡
+    │ 1   ┆ 4   │
+    │ 2   ┆ 5   │
+    │ 3   ┆ 6   │
+    │ 10  ┆ 40  │
+    │ 20  ┆ 50  │
+    │ 30  ┆ 60  │
+    └─────┴─────┘
+   * ```
    */
   extend(other: DataFrame<S>): DataFrame<S>;
   /**
@@ -1999,36 +2017,25 @@ export interface DataFrame<S extends Schema = any>
    */
   var(): DataFrame<S>;
   /**
-   * Grow this DataFrame vertically by stacking a DataFrame to it.
-   * @param df - DataFrame to stack.
-   * @example
-   * ```
-   * > const df1 = pl.DataFrame({
-   * ...   "foo": [1, 2],
-   * ...   "bar": [6, 7],
-   * ...   "ham": ['a', 'b']
-   * ... });
-   * > const df2 = pl.DataFrame({
-   * ...   "foo": [3, 4],
-   * ...   "bar": [8 , 9],
-   * ...   "ham": ['c', 'd']
-   * ... });
-   * > df1.vstack(df2);
-   * shape: (4, 3)
-   * ╭─────┬─────┬─────╮
-   * │ foo ┆ bar ┆ ham │
-   * │ --- ┆ --- ┆ --- │
-   * │ i64 ┆ i64 ┆ str │
-   * ╞═════╪═════╪═════╡
-   * │ 1   ┆ 6   ┆ "a" │
-   * ├╌╌╌╌╌┼╌╌╌╌╌┼╌╌╌╌╌┤
-   * │ 2   ┆ 7   ┆ "b" │
-   * ├╌╌╌╌╌┼╌╌╌╌╌┼╌╌╌╌╌┤
-   * │ 3   ┆ 8   ┆ "c" │
-   * ├╌╌╌╌╌┼╌╌╌╌╌┼╌╌╌╌╌┤
-   * │ 4   ┆ 9   ┆ "d" │
-   * ╰─────┴─────┴─────╯
-   * ```
+   Grow this DataFrame vertically by stacking a DataFrame to it.
+   @param df - DataFrame to stack.
+   @example
+   ```
+   > const df1 = pl.DataFrame({"foo": [1, 2], "bar": [6, 7], "ham": ['a', 'b'] });
+   > const df2 = pl.DataFrame({"foo": [3, 4], "bar": [8, 9], "ham": ['c', 'd'] });
+   > df1.vstack(df2);
+    shape: (4, 3)
+    ┌─────┬─────┬─────┐
+    │ foo ┆ bar ┆ ham │
+    │ --- ┆ --- ┆ --- │
+    │ i64 ┆ i64 ┆ str │
+    ╞═════╪═════╪═════╡
+    │ 1   ┆ 6   ┆ a   │
+    │ 2   ┆ 7   ┆ b   │
+    │ 3   ┆ 8   ┆ c   │
+    │ 4   ┆ 9   ┆ d   │
+    └─────┴─────┴─────┘
+    ```
    */
   vstack(df: DataFrame<S>): DataFrame<S>;
   /**
@@ -2359,7 +2366,8 @@ export const _DataFrame = <S extends Schema>(_df: any): DataFrame<S> => {
       return _DataFrame(_df).lazy().explode(columns).collectSync();
     },
     extend(other) {
-      return wrap("extend", (other as any).inner());
+      wrap("extend", (other as any).inner());
+      return _DataFrame(_df);
     },
     filter(predicate) {
       return this.lazy().filter(predicate).collectSync();
