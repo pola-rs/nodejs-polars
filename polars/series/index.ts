@@ -812,12 +812,30 @@ export interface Series<T extends DataType = any, Name extends string = string>
    */
   peakMin(): Series;
   /**
+    Reduce this Series to the product value.
+
+    Notes
+    -----
+    If there are no non-null values, then the output is `1`.
+    If you would prefer empty products to return `None`, you can
+    use `s.product() if s.count() else None` instead
+    of `s.product()`.
+
+    @example
+    ```
+    const s = pl.Series("a", [1, 2, 3])
+    s.product()
+    6
+    ```
+   */
+  product(): number;
+  /**
    * Get the quantile value of this Series.
    * ___
    * @param quantile
    * @example
    * ```
-   * s = pl.Series("a", [1, 2, 3])
+   * const s = pl.Series("a", [1, 2, 3])
    * s.quantile(0.5)
    * 2
    * ```
@@ -1721,6 +1739,9 @@ export function _Series(_s: any): Series {
     },
     peakMin() {
       return expr_op("peakMin");
+    },
+    product() {
+      return _s.product();
     },
     plus(other: number | Series) {
       return numberOrSeriesFunc(other, "Add");

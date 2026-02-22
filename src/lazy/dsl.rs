@@ -303,7 +303,10 @@ impl JsExpr {
     pub fn unique_counts(&self) -> JsExpr {
         self.inner.clone().unique_counts().into()
     }
-
+    #[napi(catch_unwind)]
+    pub fn null_count(&self) -> JsExpr {
+        self.inner.clone().null_count().into()
+    }
     #[napi(catch_unwind)]
     pub fn cast(&self, data_type: Wrap<DataType>, strict: bool) -> JsExpr {
         let dt = data_type.0;
