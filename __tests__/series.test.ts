@@ -581,6 +581,7 @@ describe("series functions", () => {
     ${"nullCount"}       | ${pl.Series([1, null, null, 4, 4]).nullCount()}                                        | ${2}
     ${"peakMax"}         | ${pl.Series([9, 4, 5]).peakMax()}                                                      | ${pl.Series([true, false, true])}
     ${"peakMin"}         | ${pl.Series([4, 1, 3, 2, 5]).peakMin()}                                                | ${pl.Series([false, true, false, true, false])}
+    ${"product"}         | ${pl.Series([1, 2, 3]).product()}                                                      | ${6}
     ${"quantile"}        | ${pl.Series([1, 2, 3]).quantile(0.5)}                                                  | ${2}
     ${"rank"}            | ${pl.Series([1, 2, 3, 2, 2, 3, 0]).rank("dense")}                                      | ${pl.Series("", [2, 3, 4, 3, 3, 4, 1], pl.UInt32)}
     ${"rename"}          | ${pl.Series([1, 3, 0]).rename("b")}                                                    | ${pl.Series("b", [1, 3, 0])}
