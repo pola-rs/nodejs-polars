@@ -333,7 +333,7 @@ describe("lazyframe", () => {
       foo: [1],
       bar: ["a"],
     });
-    let actual: pl.DataFrame = df.lazy().first();
+    const actual: pl.DataFrame = df.lazy().first();
     expect(actual).toFrameEqual(expected);
   });
   test("fillNull:zero", () => {
@@ -481,17 +481,17 @@ describe("lazyframe", () => {
   });
   describe("join", () => {
     const df = pl.DataFrame({
-        foo: [1, 2, 3],
-        bar: [6.0, 7.0, 8.0],
-        ham: ["a", "b", "c"],
-      });
+      foo: [1, 2, 3],
+      bar: [6.0, 7.0, 8.0],
+      ham: ["a", "b", "c"],
+    });
     const otherDF = pl
-        .DataFrame({
-          apple: ["x", "y", "z"],
-          ham: ["a", "b", "d"],
-          foo: [1, 10, 11],
-        })
-        .lazy();
+      .DataFrame({
+        apple: ["x", "y", "z"],
+        ham: ["a", "b", "d"],
+        foo: [1, 10, 11],
+      })
+      .lazy();
     test("on", () => {
       const actual = df.lazy().join(otherDF, { on: "ham" }).collectSync();
       const expected = pl.DataFrame({
@@ -752,19 +752,50 @@ describe("lazyframe", () => {
     test("joinAsof", () => {
       let actual = df.lazy().joinAsof(otherDF, { on: "ham" }).collectSync();
       expect(actual.shape).toEqual({ height: 3, width: 5 });
-      actual = df.lazy().joinAsof(otherDF, { leftOn: "ham", rightOn: "ham" }).collectSync();
+      actual = df
+        .lazy()
+        .joinAsof(otherDF, { leftOn: "ham", rightOn: "ham" })
+        .collectSync();
       expect(actual.shape).toEqual({ height: 3, width: 5 });
-      let fn = () => df.lazy().joinAsof(otherDF, { leftOn: "ham" }).collectSync();
+      let fn = () =>
+        df.lazy().joinAsof(otherDF, { leftOn: "ham" }).collectSync();
       expect(fn).toThrow();
-      fn = () => df.lazy().joinAsof(otherDF, { leftOn: "ham", rightOn: "ham", byLeft: "ham" }).collectSync();
+      fn = () =>
+        df
+          .lazy()
+          .joinAsof(otherDF, { leftOn: "ham", rightOn: "ham", byLeft: "ham" })
+          .collectSync();
       expect(fn).toThrow();
-      fn = () => df.lazy().joinAsof(otherDF, { byLeft: "ham", byRight: "ham" }).collectSync();
+      fn = () =>
+        df
+          .lazy()
+          .joinAsof(otherDF, { byLeft: "ham", byRight: "ham" })
+          .collectSync();
       expect(fn).toThrow();
-      actual = df.lazy().joinAsof(otherDF, { leftOn: "ham", rightOn: "ham", byLeft: "ham", byRight: "ham" }).collectSync();
+      actual = df
+        .lazy()
+        .joinAsof(otherDF, {
+          leftOn: "ham",
+          rightOn: "ham",
+          byLeft: "ham",
+          byRight: "ham",
+        })
+        .collectSync();
       expect(actual.shape).toEqual({ height: 3, width: 5 });
-      actual = df.lazy().joinAsof(otherDF, { leftOn: "ham", rightOn: "ham", byLeft: ["ham"], byRight: ["ham"] }).collectSync();
+      actual = df
+        .lazy()
+        .joinAsof(otherDF, {
+          leftOn: "ham",
+          rightOn: "ham",
+          byLeft: ["ham"],
+          byRight: ["ham"],
+        })
+        .collectSync();
       expect(actual.shape).toEqual({ height: 3, width: 5 });
-      actual = df.lazy().joinAsof(otherDF, { leftOn: "ham", rightOn: "ham", by: ["ham"] }).collectSync();
+      actual = df
+        .lazy()
+        .joinAsof(otherDF, { leftOn: "ham", rightOn: "ham", by: ["ham"] })
+        .collectSync();
       expect(actual.shape).toEqual({ height: 3, width: 5 });
     });
   });
