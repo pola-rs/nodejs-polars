@@ -1807,67 +1807,80 @@ export interface DataFrame<S extends Schema = any>
    * @param options.columnNames Optional generator/iterator that yields column names. Will be used to replace the columns in the DataFrame.
    *
    * @example
-   * > const df = pl.DataFrame({"a": [1, 2, 3], "b": [1, 2, 3]});
+   * > let df = pl.DataFrame({"a": [1, 2, 3], "b": [1, 2, 3]});
    * > df.transpose({includeHeader:true})
-   * shape: (2, 4)
-   * ┌────────┬──────────┬──────────┬──────────┐
-   * │ column ┆ column_0 ┆ column_1 ┆ column_2 │
-   * │ ---    ┆ ---      ┆ ---      ┆ ---      │
-   * │ str    ┆ i64      ┆ i64      ┆ i64      │
-   * ╞════════╪══════════╪══════════╪══════════╡
-   * │ a      ┆ 1        ┆ 2        ┆ 3        │
-   * ├╌╌╌╌╌╌╌╌┼╌╌╌╌╌╌╌╌╌╌┼╌╌╌╌╌╌╌╌╌╌┼╌╌╌╌╌╌╌╌╌╌┤
-   * │ b      ┆ 1        ┆ 2        ┆ 3        │
-   * └────────┴──────────┴──────────┴──────────┘
+    shape: (2, 4)
+    ┌────────┬──────────┬──────────┬──────────┐
+    │ column ┆ column_0 ┆ column_1 ┆ column_2 │
+    │ ---    ┆ ---      ┆ ---      ┆ ---      │
+    │ str    ┆ f64      ┆ f64      ┆ f64      │
+    ╞════════╪══════════╪══════════╪══════════╡
+    │ a      ┆ 1.0      ┆ 2.0      ┆ 3.0      │
+    │ b      ┆ 4.0      ┆ 5.0      ┆ 6.0      │
+    └────────┴──────────┴──────────┴──────────┘
    * // replace the auto generated column names with a list
    * > df.transpose({includeHeader:false, columnNames:["a", "b", "c"]})
-   * shape: (2, 3)
-   * ┌─────┬─────┬─────┐
-   * │ a   ┆ b   ┆ c   │
-   * │ --- ┆ --- ┆ --- │
-   * │ i64 ┆ i64 ┆ i64 │
-   * ╞═════╪═════╪═════╡
-   * │ 1   ┆ 2   ┆ 3   │
-   * ├╌╌╌╌╌┼╌╌╌╌╌┼╌╌╌╌╌┤
-   * │ 1   ┆ 2   ┆ 3   │
-   * └─────┴─────┴─────┘
-   *
+    shape: (2, 3)
+    ┌─────┬─────┬─────┐
+    │ a   ┆ b   ┆ c   │
+    │ --- ┆ --- ┆ --- │
+    │ f64 ┆ f64 ┆ f64 │
+    ╞═════╪═════╪═════╡
+    │ 1.0 ┆ 2.0 ┆ 3.0 │
+    │ 4.0 ┆ 5.0 ┆ 6.0 │
+    └─────┴─────┴─────┘
    * // Include the header as a separate column
-   * > df.transpose({
-   * ...     includeHeader:true,
-   * ...     headerName:"foo",
-   * ...     columnNames:["a", "b", "c"]
-   * ... })
-   * shape: (2, 4)
-   * ┌─────┬─────┬─────┬─────┐
-   * │ foo ┆ a   ┆ b   ┆ c   │
-   * │ --- ┆ --- ┆ --- ┆ --- │
-   * │ str ┆ i64 ┆ i64 ┆ i64 │
-   * ╞═════╪═════╪═════╪═════╡
-   * │ a   ┆ 1   ┆ 2   ┆ 3   │
-   * ├╌╌╌╌╌┼╌╌╌╌╌┼╌╌╌╌╌┼╌╌╌╌╌┤
-   * │ b   ┆ 1   ┆ 2   ┆ 3   │
-   * └─────┴─────┴─────┴─────┘
-   *
+   * > df.transpose({ includeHeader:true, headerName:"foo", columnNames:["a", "b", "c"] });
+    shape: (2, 4)
+    ┌─────┬─────┬─────┬─────┐
+    │ foo ┆ a   ┆ b   ┆ c   │
+    │ --- ┆ --- ┆ --- ┆ --- │
+    │ str ┆ f64 ┆ f64 ┆ f64 │
+    ╞═════╪═════╪═════╪═════╡
+    │ a   ┆ 1.0 ┆ 2.0 ┆ 3.0 │
+    │ b   ┆ 4.0 ┆ 5.0 ┆ 6.0 │
+    └─────┴─────┴─────┴─────┘
    * // Replace the auto generated column with column names from a generator function
-   * > function *namesGenerator() {
-   * ...     const baseName = "my_column_";
-   * ...     let count = 0;
-   * ...     let name = `${baseName}_${count}`;
-   * ...     count++;
-   * ...     yield name;
-   * ... }
-   * > df.transpose({includeHeader:false, columnNames:namesGenerator})
-   * shape: (2, 3)
-   * ┌─────────────┬─────────────┬─────────────┐
-   * │ my_column_0 ┆ my_column_1 ┆ my_column_2 │
-   * │ ---         ┆ ---         ┆ ---         │
-   * │ i64         ┆ i64         ┆ i64         │
-   * ╞═════════════╪═════════════╪═════════════╡
-   * │ 1           ┆ 2           ┆ 3           │
-   * ├╌╌╌╌╌╌╌╌╌╌╌╌╌┼╌╌╌╌╌╌╌╌╌╌╌╌╌┼╌╌╌╌╌╌╌╌╌╌╌╌╌┤
-   * │ 1           ┆ 2           ┆ 3           │
-   * └─────────────┴─────────────┴─────────────┘
+    function* namesGenerator() {
+      const baseName = "my_column_";
+      let count = 0;
+      while (true) {
+        const name = `${baseName}${count}`;
+        yield name;
+        count++;
+      }
+    }
+   * > df.transpose({includeHeader:false, columnNames:namesGenerator()});
+    shape: (2, 3)
+    ┌─────────────┬─────────────┬─────────────┐
+    │ my_column_0 ┆ my_column_1 ┆ my_column_2 │
+    │ ---         ┆ ---         ┆ ---         │
+    │ str         ┆ str         ┆ str         │
+    ╞═════════════╪═════════════╪═════════════╡
+    │ 1.0         ┆ 2.0         ┆ 3.0         │
+    │ 4.0         ┆ 5.0         ┆ 6.0         │
+    └─────────────┴─────────────┴─────────────┘
+    * > df = pl.DataFrame({id: ["i", "j", "k"], a: [1, 2, 3], b: [4, 5, 6]});
+    * > df.transpose( { columnNames: "id" });
+    shape: (2, 3)
+    ┌─────┬─────┬─────┐
+    │ i   ┆ j   ┆ k   │
+    │ --- ┆ --- ┆ --- │
+    │ f64 ┆ f64 ┆ f64 │
+    ╞═════╪═════╪═════╡
+    │ 1.0 ┆ 2.0 ┆ 3.0 │
+    │ 4.0 ┆ 5.0 ┆ 6.0 │
+    └─────┴─────┴─────┘
+    * > df.transpose( { includeHeader: true, headerName: "new_id", columnNames: "id" });
+    shape: (2, 4)
+    ┌────────┬─────┬─────┬─────┐
+    │ new_id ┆ i   ┆ j   ┆ k   │
+    │ ---    ┆ --- ┆ --- ┆ --- │
+    │ str    ┆ f64 ┆ f64 ┆ f64 │
+    ╞════════╪═════╪═════╪═════╡
+    │ a      ┆ 1.0 ┆ 2.0 ┆ 3.0 │
+    │ b      ┆ 4.0 ┆ 5.0 ┆ 6.0 │
+    └────────┴─────┴─────┴─────┘
    */
   transpose(options?: {
     includeHeader?: boolean;
@@ -2889,8 +2902,8 @@ export const _DataFrame = <S extends Schema>(_df: any): DataFrame<S> => {
     },
     transpose(options?) {
       const includeHeader = options?.includeHeader ?? false;
-      const headeName = options?.headerName ?? "column";
-      const keep_names_as = includeHeader ? headeName : undefined;
+      const headerName = options?.headerName ?? "column";
+      const keepNamesAs = includeHeader ? headerName : undefined;
       if (options?.columnNames) {
         function takeNItems(iterable: Iterable<string>, n: number) {
           const result: Array<string> = [];
@@ -2904,14 +2917,14 @@ export const _DataFrame = <S extends Schema>(_df: any): DataFrame<S> => {
           }
           return result;
         }
-        options.columnNames = Array.isArray(options.columnNames)
-          ? options.columnNames.slice(0, this.height)
-          : takeNItems(options.columnNames, this.height);
+        if (Array.isArray(options.columnNames)) {
+          options.columnNames = options.columnNames.slice(0, this.height);
+        } else if (typeof options.columnNames === "object") {
+          options.columnNames = takeNItems(options.columnNames, this.height);
+        }
       }
-      if (!options?.columnNames) {
-        return wrap("transpose", keep_names_as, undefined);
-      }
-      return wrap("transpose", keep_names_as, options.columnNames);
+
+      return wrap("transpose", keepNamesAs, options?.columnNames);
     },
     unique(
       opts?:

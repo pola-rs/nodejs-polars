@@ -1210,7 +1210,10 @@ describe("dataframe", () => {
       a: [1, 2, 3],
       b: [1, 2, 3],
     });
-    const actual = df.transpose({ includeHeader: false, columnNames: "abc" });
+    const actual = df.transpose({
+      includeHeader: false,
+      columnNames: ["a", "b", "c"],
+    });
     expect(actual).toFrameEqual(expected);
   });
   test("transpose:columnNames:array", () => {
