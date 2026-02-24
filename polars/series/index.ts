@@ -288,6 +288,45 @@ export interface Series<T extends DataType = any, Name extends string = string>
   extendConstant(value: any, n: number): Series;
   extendConstant(opt: { value: any; n: number }): Series;
   /**
+    Extend the memory backed by this Series with the values from another.
+
+    Different from `append`, which adds the chunks from `other` to the chunks of
+    this series, `extend` appends the data from `other` to the underlying memory
+    locations and thus may cause a reallocation (which is expensive).
+
+    If this does `not` cause a reallocation, the resulting data structure will not
+    have any extra chunks and thus will yield faster queries.
+
+    Prefer `extend` over `append` when you want to do a query after a single
+    append. For instance, during online operations where you add `n` rows
+    and rerun a query.
+
+    Prefer `append` over `extend` when you want to append many times
+    before doing a query. For instance, when you read in multiple files and want
+    to store them in a single `Series`. In the latter case, finish the sequence
+    of `append` operations with a `rechunk`.
+
+    @param other - Series to extend the series with.
+    @returns - This method modifies the series in-place. The series is returned for convenience only.
+    @see {@link append}
+    @example
+    ```
+    >>> const a = pl.Series("a", [1, 2, 3]);
+    >>> const b = pl.Series("b", [4, 5]);
+    >>> a.extend(b)
+    shape: (5,)
+    Series: 'a' [i64]
+    [
+        1
+        2
+        3
+        4
+        5
+    ]
+    ```
+   */
+  extend(other: Series): Series;
+  /**
    * __Fill null values with a filling strategy.__
    * ___
    * @param strategy - Filling Strategy
@@ -1476,6 +1515,10 @@ export function _Series(_s: any): Series {
         return wrap("extendConstant", o, n);
 
       return wrap("extendConstant", o.value, o.n);
+    },
+    extend(other: Series) {
+      _s.extend(other.inner());
+      return _Series(_s);
     },
     fillNull(strategy) {
       return typeof strategy === "string"

@@ -468,11 +468,6 @@ export interface LazyDataFrame<S extends Schema = any>
   median(): LazyDataFrame<S>;
   /**
    * @see {@link DataFrame.unpivot}
-   * @deprecated use `LazyFrame.unpivot` instead
-   */
-  melt(idVars: ColumnSelection, valueVars: ColumnSelection): LazyDataFrame;
-  /**
-   * @see {@link DataFrame.unpivot}
    */
   unpivot(
     idVars: ColumnSelection,
@@ -974,11 +969,9 @@ export const _LazyDataFrame = (_ldf: any): LazyDataFrame => {
     explode(...columns) {
       if (!columns.length) {
         const cols = selectionToExprList(_ldf.columns, false);
-
         return wrap("explode", cols);
       }
       const column = selectionToExprList(columns, false);
-
       return wrap("explode", column);
     },
     fetchSync(numRows, opts?) {
@@ -1221,6 +1214,10 @@ export const _LazyDataFrame = (_ldf: any): LazyDataFrame => {
         toleranceNum = options.tolerance;
       }
 
+      if (!leftOn || !rightOn) {
+        throw new TypeError("Missing leftOn or rightOn join on argument.");
+      }
+
       const ldf = _ldf.joinAsof(
         other._ldf,
         pli.col(leftOn),
@@ -1252,11 +1249,6 @@ export const _LazyDataFrame = (_ldf: any): LazyDataFrame => {
     },
     median() {
       return _LazyDataFrame(_ldf.median());
-    },
-    melt(ids, values) {
-      return _LazyDataFrame(
-        _ldf.unpivot(columnOrColumnsStrict(ids), columnOrColumnsStrict(values)),
-      );
     },
     unpivot(ids, values, options) {
       options = {

@@ -745,7 +745,7 @@ impl JsDataFrame {
     }
     #[napi(catch_unwind)]
     pub fn extend(&mut self, df: &JsDataFrame) -> napi::Result<()> {
-        self.df.extend(&df.df).map_err(JsPolarsErr::from)?;
+        self.df.extend(&df.df.clone()).map_err(JsPolarsErr::from)?;
         Ok(())
     }
     #[napi(catch_unwind)]
