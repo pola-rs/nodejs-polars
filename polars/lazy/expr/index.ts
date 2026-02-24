@@ -147,6 +147,26 @@ export interface Expr
    *```
    */
   alias(name: string): Expr;
+  /**
+     Method equivalent of bitwise "and" operator `expr & other & ...`.
+     This has the effect of combining logical boolean expressions, but operates bitwise on integers.
+     @param other One or more integer or boolean expressions to evaluate/combine.
+     @example
+     ```
+      const df = pl.DataFrame({ a: [1, 2, 3], b: [4, 5, 6] },{ schema: { a: pl.Int16, b: pl.Int16 } },);
+      df.select(pl.col("a").and(pl.col("b")).alias("a_and_b"));
+      shape: (3, 1)
+      ┌────────┐
+      │ a_or_b │
+      │ ---    │
+      │ i16    │
+      ╞════════╡
+      │ 0      │
+      │ 0      │
+      │ 2      │
+      └────────┘
+     ```
+   */
   and(other: any): Expr;
   /**
    * Compute the element-wise value for the inverse cosine.
@@ -681,6 +701,42 @@ export interface Expr
   not(): Expr;
   /** Count unique values. */
   nUnique(): Expr;
+  /** Count null values.
+  @example
+  ```
+  >>> const df = pl.DataFrame({"a": [null, 1, null], "b": [1, 2, null], "c": [1, 2, 3]});
+  >>> df.select(pl.col("a").nullCount())
+  shape: (1, 1)
+  ┌─────┐
+  │ a   │
+  │ --- │
+  │ u32 │
+  ╞═════╡
+  │ 2   │
+  └─────┘
+  ```
+  */
+  nullCount(): Expr;
+  /**
+   * Method equivalent of bitwise "or" operator `expr | other | ...`.
+    This has the effect of combining logical boolean expressions, but operates bitwise on integers.
+    @param other One or more expressions to combine with a bitwise "or".
+    @example
+    ```
+    >>> const df = pl.DataFrame({"a": [1, 2, 3], "b": [4, 5, 6]}, { schema: { a: pl.Int16, b: pl.Int16 } });
+    >>> df.select(pl.col("a").or(pl.col("b")).alias("a_or_b"));
+    shape: (3, 1)
+    ┌────────┐
+    │ a_or_b │
+    │ ---    │
+    │ i16    │
+    ╞════════╡
+    │ 5      │
+    │ 7      │
+    │ 7      │
+    └────────┘
+    ```
+   */
   or(other: any): Expr;
   /**
    * Apply window function over a subgroup.
@@ -777,6 +833,31 @@ export interface Expr
    * ```
    */
   prefix(prefix: string): Expr;
+  /**
+  Compute the product of an expression.
+
+  Notes
+  -----
+  If there are no non-null values, then the output is `1`.
+  If you would prefer empty products to return `None`, you can
+  use `pl.when(expr.count()>0).then(expr.product())` instead
+  of `expr.product()`.
+
+  @example
+  ```
+  >>> df = pl.DataFrame({"a": [1, 2, 3]});
+  >>> df.select(pl.col("a").product());
+  shape: (1, 1)
+  ┌─────┐
+  │ a   │
+  │ --- │
+  │ f64 │
+  ╞═════╡
+  │ 6.0 │
+  └─────┘
+  ```
+  */
+  product(): Expr;
   /** Get quantile value. */
   quantile(quantile: number | Expr): Expr;
   /**
@@ -1650,6 +1731,9 @@ export const _Expr = (_expr: any): Expr => {
     nUnique() {
       return _Expr(_expr.nUnique());
     },
+    nullCount() {
+      return _Expr(_expr.nullCount());
+    },
     or(other) {
       const expr = exprToLitOrExpr(other).inner();
 
@@ -1665,6 +1749,9 @@ export const _Expr = (_expr: any): Expr => {
     },
     prefix(prefix) {
       return _Expr(_expr.prefix(prefix));
+    },
+    product() {
+      return _Expr(_expr.product());
     },
     quantile(quantile, interpolation: InterpolationMethod = "nearest") {
       if (Expr.isExpr(quantile)) {

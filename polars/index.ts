@@ -60,6 +60,7 @@ export namespace pl {
   export import readJSONStream = io.readJSONStream;
 
   // lazy
+  export import all = lazy.all;
   export import col = lazy.col;
   export import nth = lazy.nth;
   export import cols = lazy.cols;

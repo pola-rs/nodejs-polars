@@ -392,6 +392,11 @@ impl JsSeries {
             .into())
     }
     #[napi(catch_unwind)]
+    pub fn product(&self) -> Result<JsAnyValue> {
+        let scalar = self.series.product().map_err(JsPolarsErr::from)?;
+        Ok(scalar.value().clone().into())
+    }
+    #[napi(catch_unwind)]
     pub fn chunk_lengths(&self) -> Vec<u32> {
         self.series.chunk_lengths().map(|i| i as u32).collect()
     }
