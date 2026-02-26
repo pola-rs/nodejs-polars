@@ -1131,14 +1131,13 @@ impl JsDataFrame {
         let hash = self.df.hash_rows(Some(hb)).map_err(JsPolarsErr::from)?;
         Ok(hash.into_series().into())
     }
-
     #[napi(catch_unwind)]
-    pub unsafe fn transpose(
+    pub fn transpose(
         &mut self,
         keep_names_as: Option<String>,
-        names: Option<Either<String, Vec<String>>>,
+        column_names: Option<Either<String, Vec<String>>>,
     ) -> napi::Result<JsDataFrame> {
-        let names = names.map(|e| match e {
+        let names = column_names.map(|e| match e {
             Either::A(s) => either::Either::Left(s),
             Either::B(v) => either::Either::Right(v),
         });
