@@ -72,7 +72,6 @@ export interface Series<T extends DataType = any, Name extends string = string>
    * Take absolute values
    */
   abs(): Series<T, Name>;
-  add(other: number | Series): Series;
   /**
    * __Rename this Series.__
    *
@@ -100,31 +99,14 @@ export interface Series<T extends DataType = any, Name extends string = string>
    * ]
    */
   append(other: Series): void;
-  // TODO!
-  // /**
-  //  * __Apply a function over elements in this Series and return a new Series.__
-  //  *
-  //  * If the function returns another datatype, the returnType arg should be set, otherwise the method will fail.
-  //  * ___
-  //  * @param {CallableFunction} func - function or lambda.
-  //  * @param {DataType} returnType - Output datatype. If none is given, the same datatype as this Series will be used.
-  //  * @returns {SeriesType} `Series<T> | Series<returnType>`
-  //  * @example
-  //  * ```
-  //  * >  const s = pl.Series("a", [1, 2, 3])
-  //  * >  s.apply(x => x + 10)
-  //  * shape: (3,)
-  //  * Series: 'a' [i64]
-  //  * [
-  //  *         11
-  //  *         12
-  //  *         13
-  //  * ]
-  //  * ```
-  //  */
-  // apply<U>(func: (s: T) => U): Series<U>
   /**
    * Get the index of the maximal value.
+   * @return int
+   * @example
+   * ```
+   * const s = pl.Series("a", [3, 2, 1]);
+   * s.argMax()
+   * ```
    */
   argMax(): Optional<number>;
   /**
@@ -133,7 +115,7 @@ export interface Series<T extends DataType = any, Name extends string = string>
    * @example
    * ```
    * const s = pl.Series("a", [3, 2, 1]);
-   * s.arg_min()
+   * s.argMin()
    * ```
    */
   argMin(): Optional<number>;

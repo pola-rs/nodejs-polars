@@ -790,7 +790,6 @@ describe("dataframe", () => {
       .nullCount();
     expect(actual.row(0)).toEqual([1, 0, 0, 2]);
   });
-  test.todo("pipe");
   test("quantile", () => {
     const actual = pl
       .DataFrame({
