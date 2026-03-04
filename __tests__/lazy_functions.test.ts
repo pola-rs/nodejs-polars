@@ -138,7 +138,7 @@ describe("lazy functions", () => {
     );
     expect(actual).toFrameEqual(expected);
   });
-  test.skip("intRange:eager", () => {
+  test("intRange:eager", () => {
     const df = pl.DataFrame({
       foo: [1, 1, 1],
     });
@@ -166,7 +166,7 @@ describe("lazy functions", () => {
     expect(result.schema).toStrictEqual(expected_schema);
   });
 
-  test.skip("intRanges:eager", () => {
+  test("intRanges:eager", () => {
     const start = pl.Series([1, 2]);
     const result = pl.intRanges(start, 4, 1, DataType.Int64, true);
     let expected = pl.Series("intRanges", [
