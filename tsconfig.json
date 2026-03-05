@@ -29,7 +29,7 @@
     "./benches/*",
     "./bin/*",
     "./docs/*",
-    "./jest.config.ts"
+    "jest.config.js"
   ],
   "typedocOptions": {
     "entryPointStrategy": "expand",

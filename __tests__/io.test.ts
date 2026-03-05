@@ -184,9 +184,7 @@ describe("read:csv", () => {
     const df = pl.readCSV(csvpath, { commentPrefix: "vegetables" });
     expect(df.shape).toEqual({ height: 20, width: 4 });
   });
-  it.todo("can read from a stream");
 });
-
 describe("read:json", () => {
   it("can read from a json file", () => {
     const df = pl.readJSON(jsonpath);

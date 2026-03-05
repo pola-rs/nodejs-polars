@@ -1354,22 +1354,6 @@ describe("expr.str", () => {
     );
     expect(actual).toFrameEqual(expected);
   });
-  // TODO: Remove skip when polars-plan will support for "dynamic pattern length in 'str.replace' expressions"
-  test.skip("str.replace:Expr3", () => {
-    const df = pl.DataFrame({
-      os: ["kali-linux", "debian-linux", "ubuntu-linux", "mac-sierra"],
-      pat: ["linux", "linux", "linux", "mac"],
-      val: ["windows", "acorn", "atari", "arm"],
-    });
-    const expected = pl.DataFrame({
-      os: ["kali-windows", "debian-acorn", "ubuntu-atari", "arm-sierra"],
-    });
-    const actual = df.select(
-      col("os").str.replace(col("pat"), col("val")).as("os"),
-    );
-    expect(actual).toFrameEqual(expected);
-  });
-
   test("str.replaceAll", () => {
     const df = pl.DataFrame({
       os: [
@@ -1416,26 +1400,6 @@ describe("expr.str", () => {
     });
     const actual = df.select(
       col("os").str.replaceAll("-", col("val")).as("os"),
-    );
-    expect(actual).toFrameEqual(expected);
-  });
-  // TODO: Remove skip when polars-plan will support for "dynamic pattern length in 'str.replace' expressions"
-  test.skip("str.replaceAll:Expr2", () => {
-    const df = pl.DataFrame({
-      os: [
-        "kali-linux-2021.3a",
-        null,
-        "ubuntu-linux-16.04",
-        "mac-sierra-10.12.1",
-      ],
-      pat: ["-", "-", "-", "."],
-      val: [":", ":", null, "_"],
-    });
-    const expected = pl.DataFrame({
-      os: ["kali:linux:2021.3a", null, null, "mac-sierra-10_12_1"],
-    });
-    const actual = df.select(
-      col("os").str.replaceAll(col("pat"), col("val")).as("os"),
     );
     expect(actual).toFrameEqual(expected);
   });
