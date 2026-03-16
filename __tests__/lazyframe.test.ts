@@ -260,6 +260,23 @@ describe("lazyframe", () => {
     });
     expect(actual).toFrameEqualIgnoringOrder(expected);
   });
+  test("dropNulls:string", () => {
+    const actual = pl
+      .DataFrame({
+        foo: [1, null, 2, 3],
+        bar: [6.0, 0.5, null, 8.0],
+        ham: ["a", "d", "b", "c"],
+      })
+      .lazy()
+      .dropNulls("foo")
+      .collectSync();
+    const expected = pl.DataFrame({
+      foo: [1, 2, 3],
+      bar: [6.0, null, 8.0],
+      ham: ["a", "b", "c"],
+    });
+    expect(actual).toFrameEqualIgnoringOrder(expected);
+  });
   test("dropNulls:rest", () => {
     const actual = pl
       .DataFrame({
@@ -294,6 +311,54 @@ describe("lazyframe", () => {
       list_1: [1, 2, 1, 3],
     });
     expect(actual).toFrameEqualIgnoringOrder(expected);
+  });
+  test("explode:all-columns", () => {
+    const actual = (
+      pl
+        .DataFrame({
+          list_1: [
+            [1, 2],
+            [3, 4],
+          ],
+          list_2: [
+            ["a", "b"],
+            ["c", "d"],
+          ],
+        })
+        .lazy() as any
+    )
+      .explode()
+      .collectSync();
+
+    const expected = pl.DataFrame({
+      list_1: [1, 2, 3, 4],
+      list_2: ["a", "b", "c", "d"],
+    });
+    expect(actual).toFrameEqual(expected);
+  });
+  test("explode:array", () => {
+    const actual = pl
+      .DataFrame({
+        id: [1, 2],
+        list_1: [
+          [1, 2],
+          [3, 4],
+        ],
+        list_2: [
+          ["a", "b"],
+          ["c", "d"],
+        ],
+      })
+      .lazy()
+      .explode(["list_1", "list_2"])
+      .collectSync();
+
+    const expected = pl.DataFrame({
+      id: [1, 1, 2, 2],
+      list_1: [1, 2, 3, 4],
+      list_2: ["a", "b", "c", "d"],
+    });
+    expect(actual).toFrameEqual(expected);
   });
   test("fetch", async () => {
     const df = pl.DataFrame({
@@ -1329,6 +1394,52 @@ describe("lazyframe", () => {
       .lazy();
     expect(actual).toBeDefined();
   });
+  test("LazyDataFrame.isLazyDataFrame", () => {
+    const ldf = pl.DataFrame({ a: [1, 2] }).lazy();
+    expect(pl.LazyDataFrame.isLazyDataFrame(ldf)).toBe(true);
+    expect(pl.LazyDataFrame.isLazyDataFrame({})).toBe(false);
+  });
+  test("LazyDataFrame.deserialize", () => {
+    const ldf = pl.DataFrame({ foo: [1, 2], bar: [3, 4] }).lazy();
+
+    const json = ldf.serialize("json");
+    const actualJson = pl.LazyDataFrame.deserialize(json, "json").collectSync();
+    expect(actualJson).toFrameEqual(ldf.collectSync());
+
+    const bincode = ldf.serialize("bincode");
+    const actualBincode = pl.LazyDataFrame.deserialize(
+      bincode,
+      "bincode",
+    ).collectSync();
+    expect(actualBincode).toFrameEqual(ldf.collectSync());
+  });
+  test("LazyDataFrame.fromExternal", () => {
+    const ldf = pl.DataFrame({ foo: [1, 2], bar: ["a", "b"] }).lazy();
+    const external = ldf.inner();
+
+    const cloned = pl.LazyDataFrame.fromExternal(external);
+
+    expect(pl.LazyDataFrame.isLazyDataFrame(cloned)).toBe(true);
+    expect(cloned.collectSync()).toFrameEqual(ldf.collectSync());
+  });
+  test("toJSON", () => {
+    const ldf = pl
+      .DataFrame({
+        foo: [1, 2],
+        bar: ["a", "b"],
+      })
+      .lazy();
+
+    const directJson = ldf.toJSON();
+    const rootJson = JSON.parse(JSON.stringify(ldf));
+    const nestedJson = JSON.parse(JSON.stringify({ ldf }));
+
+    expect(typeof directJson).toBe("string");
+    expect(JSON.parse(directJson)).toBeDefined();
+    expect(typeof rootJson).toBe("object");
+    expect(typeof nestedJson.ldf).toBe("string");
+    expect(JSON.parse(nestedJson.ldf)).toBeDefined();
+  });
   test("withColumns", () => {
     const actual = pl
       .DataFrame({
@@ -1375,6 +1486,23 @@ describe("lazyframe", () => {
 
     const expected = pl.DataFrame([
       pl.Series("apple", [1, 2, 9], pl.Int16),
+      pl.Series("bar", [6, 2, 8], pl.Int16),
+    ]);
+    expect(actual).toFrameEqual(expected);
+  });
+  test("withRowCount", () => {
+    const actual = pl
+      .DataFrame({
+        foo: [1, 2, 9],
+        bar: [6, 2, 8],
+      })
+      .lazy()
+      .withRowCount()
+      .collectSync();
+
+    const expected = pl.DataFrame([
+      pl.Series("row_nr", [0, 1, 2], pl.UInt32),
+      pl.Series("foo", [1, 2, 9], pl.Int16),
       pl.Series("bar", [6, 2, 8], pl.Int16),
     ]);
     expect(actual).toFrameEqual(expected);
@@ -1661,5 +1789,10 @@ describe("lazyframe", () => {
       bar: ["123", "456", "abc"],
     });
     expect(actual.collectSync()).toFrameEqual(expected);
+  });
+  test("unique:invalid argument", () => {
+    const ldf = pl.DataFrame({ foo: [1, 1, 2] }).lazy();
+    const fn = () => ldf.unique(123 as any);
+    expect(fn).toThrow(TypeError);
   });
 });
