@@ -76,6 +76,22 @@ describe("expr", () => {
     const actual = df().filter(col("bools").eq(false).and(col("int").eq(3)));
     expect(actual.height).toStrictEqual(1);
   });
+  test("all/any", () => {
+    const actual = pl
+      .DataFrame({ a: [true, null] })
+      .select(
+        col("a").all().alias("all_default"),
+        col("a").all({ ignoreNulls: false }).alias("all_keep_nulls"),
+        col("a").any().alias("any_default"),
+      );
+
+    const expected = pl.DataFrame({
+      all_default: [true],
+      all_keep_nulls: [null],
+      any_default: [true],
+    });
+    expect(actual).toFrameEqual(expected);
+  });
   test("arccos", () => {
     const df = pl.DataFrame({ a: [1, 2] });
     const expected = pl.DataFrame({ arccos: [0.0, Number.NaN] });
@@ -93,6 +109,24 @@ describe("expr", () => {
     const expected = pl.DataFrame({ arctan: [0.785398, 1.107149] });
     const actual = df.select(col("a").arctan().round(6).as("arctan"));
     expect(actual).toFrameEqual(expected);
+  });
+  test("arctan2", () => {
+    const actual = pl
+      .DataFrame({ x: [1.0, 0.0], y: [1.0, 1.0] })
+      .select(col("x").arctan2(col("y")).round(6).alias("a"));
+    const expected = pl.DataFrame({ a: [0.785398, 0.0] });
+    expect(actual).toFrameEqual(expected);
+  });
+  test("degrees and radians", () => {
+    const asDegrees = pl
+      .DataFrame({ a: [Math.PI] })
+      .select(col("a").degrees().round(6).alias("a"));
+    expect(asDegrees).toFrameEqual(pl.DataFrame({ a: [180.0] }));
+
+    const asRadians = pl
+      .DataFrame({ a: [180] })
+      .select(col("a").radians().round(6).alias("a"));
+    expect(asRadians).toFrameEqual(pl.DataFrame({ a: [3.141593] }));
   });
   test("argMax", () => {
     const actual = df().select(col("int").argMax()).row(0)[0];
@@ -181,6 +215,28 @@ describe("expr", () => {
     const actual = df.select(col("a").count().cast(pl.Float64));
     expect(actual).toFrameEqual(expected);
   });
+  test("valueCounts", () => {
+    const actual = pl
+      .DataFrame({ a: [1, 1, 2, 3] })
+      .select(col("a").valueCounts(true, false, "count"));
+
+    expect(actual.height).toBe(3);
+    expect(actual.width).toBe(1);
+
+    const rows = actual.toRecords() as unknown as Array<{
+      a: { count: number };
+    }>;
+    const counts = rows.map((r) => r.a.count).sort();
+    expect(counts).toEqual([1, 1, 2]);
+  });
+  test("uniqueCounts", () => {
+    const actual = pl
+      .DataFrame({ a: [1, 1, 2, 3] })
+      .select(col("a").uniqueCounts().alias("counts"));
+
+    expect(actual.height).toBe(3);
+    expect(actual.getColumn("counts").sum()).toBe(4);
+  });
   test.each`
     args                 | cumCount
     ${undefined}         | ${[1, 2, 3]}
@@ -263,6 +319,18 @@ describe("expr", () => {
     const actual1 = df.select(col("a").dot("b"));
     expect(actual0).toFrameEqual(expected);
     expect(actual1).toFrameEqual(expected);
+  });
+  test("dropNulls", () => {
+    const actual = pl
+      .DataFrame({ a: [1, null, 3] })
+      .select(col("a").dropNulls().alias("a"));
+    expect(actual).toFrameEqual(pl.DataFrame({ a: [1, 3] }));
+  });
+  test("dropNans", () => {
+    const actual = pl
+      .DataFrame({ a: [1.0, Number.NaN, 2.0] })
+      .select(col("a").dropNans().alias("a"));
+    expect(actual).toFrameEqual(pl.DataFrame({ a: [1.0, 2.0] }));
   });
   test.each`
     other       | eq
@@ -868,6 +936,13 @@ describe("expr", () => {
     actual = df.withColumns(col("n").sample(3).alias("sample"));
     expected = pl.DataFrame({ n: [1, 2, 3], sample: [1, 2, 3] });
     expect(actual).toFrameEqual(expected);
+  });
+  test("toPhysical", () => {
+    const actual = pl
+      .DataFrame({ a: ["x", "y", "x"] })
+      .select(col("a").cast(pl.Categorical).toPhysical().alias("a"));
+    expect(actual.height).toBe(3);
+    expect(actual.dtypes[0].variant).toBe("UInt32");
   });
   test("sample:invalid args", () => {
     expect(() => (col("n") as any).sample({})).toThrow(TypeError);

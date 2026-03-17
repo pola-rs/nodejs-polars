@@ -168,6 +168,65 @@ export interface Expr
      ```
    */
   and(other: any): Expr;
+
+  /**
+   * Check if all boolean values in the column are `true`.
+   * @param ignoreNulls - If `true` (default), null values are ignored. If `false`, any null is propagated and the result will be null if nulls are present.
+   * @returns Boolean expression.
+   * @example
+   * ```
+   * >>> const df = pl.DataFrame({ a: [true, true, null], b: [true, false, true] });
+   * >>> df.select(pl.col("a").all())
+   * shape: (1, 1)
+   * ┌──────┐
+   * │ a    │
+   * │ ---  │
+   * │ bool │
+   * ╞══════╡
+   * │ true │
+   * └──────┘
+   * >>> df.select(pl.col("b").all())
+   * shape: (1, 1)
+   * ┌───────┐
+   * │ b     │
+   * │ ---   │
+   * │ bool  │
+   * ╞═══════╡
+   * │ false │
+   * └───────┘
+   * ```
+   */
+  all(ignoreNulls?: boolean): Expr;
+  all({ ignoreNulls }: { ignoreNulls?: boolean }): Expr;
+  /**
+   * Check if any boolean value in the column is `true`.
+   * @param ignoreNulls - If `true` (default), null values are ignored. If `false`, any null is propagated and the result will be null if nulls are present.
+   * @returns Boolean expression.
+   * @example
+   * ```
+   * >>> const df = pl.DataFrame({ a: [false, false, null], b: [false, true, false] });
+   * >>> df.select(pl.col("a").any())
+   * shape: (1, 1)
+   * ┌───────┐
+   * │ a     │
+   * │ ---   │
+   * │ bool  │
+   * ╞═══════╡
+   * │ false │
+   * └───────┘
+   * >>> df.select(pl.col("b").any())
+   * shape: (1, 1)
+   * ┌──────┐
+   * │ b    │
+   * │ ---  │
+   * │ bool │
+   * ╞══════╡
+   * │ true │
+   * └──────┘
+   * ```
+   */
+  any(ignoreNulls?: boolean): Expr;
+  any({ ignoreNulls }: { ignoreNulls?: boolean }): Expr;
   /**
    * Compute the element-wise value for the inverse cosine.
    * @returns Expression of data type :class:`Float64`.
@@ -186,6 +245,27 @@ export interface Expr
    * ```
    */
   arccos(): Expr;
+  /**
+    Compute two argument arctan in radians.
+    Returns the angle (in radians) in the plane between the positive x-axis and the ray from the origin to (x,y).
+    * @param other Expression, column name, or literal used as the `x` component.
+    * @returns Expression of data type :class:`Float64`.
+    * @example
+    * ```
+      >>> const df = pl.DataFrame({"y": [1.0, 1.0], "x": [1.0, -1.0]})
+      >>> df.select(pl.col("y").arctan2("x").alias("angle"))
+      shape: (2, 1)
+      ┌──────────┐
+      │ angle    │
+      │ ---      │
+      │ f64      │
+      ╞══════════╡
+      │ 0.785398 │
+      │ 2.356194 │
+      └──────────┘
+    * ```
+    */
+  arctan2(other: any): Expr;
   /**
    * Compute the element-wise value for the inverse hyperbolic cosine.
    * @returns Expression of data type :class:`Float64`.
@@ -407,11 +487,17 @@ export interface Expr
    */
   diff(n: number, nullBehavior: "ignore" | "drop"): Expr;
   diff(o: { n: number; nullBehavior: "ignore" | "drop" }): Expr;
+  /** Convert an angle from radians to degrees, element-wise. */
+  degrees(): Expr;
   /**
    * Compute the dot/inner product between two Expressions
    * @param other Expression to compute dot product with
    */
   dot(other: any): Expr;
+  /** Drop NaN values from this expression. */
+  dropNans(): Expr;
+  /** Drop null values from this expression. */
+  dropNulls(): Expr;
   /**
    * Exclude certain columns from a wildcard/regex selection.
    *
@@ -860,6 +946,8 @@ export interface Expr
   product(): Expr;
   /** Get quantile value. */
   quantile(quantile: number | Expr): Expr;
+  /** Convert an angle from degrees to radians, element-wise. */
+  radians(): Expr;
   /**
    * Assign ranks to data, dealing with ties appropriately.
    * @param method : {'average', 'min', 'max', 'dense', 'ordinal', 'random'}
@@ -1257,12 +1345,29 @@ export interface Expr
    */
   unique(maintainOrder?: boolean): Expr;
   unique(opt: { maintainOrder: boolean }): Expr;
+  /** Count the number of occurrences for each unique value. */
+  uniqueCounts(): Expr;
   /** Returns a unit Series with the highest value possible for the dtype of this expression. */
   upperBound(): Expr;
+  /**
+   * Count unique values in this expression.
+   * @param sort Sort output by count in descending order.
+   * @param parallel Execute computation in parallel.
+   * @param name Name of the count/proportion field in the output struct.
+   * @param normalize If true, return relative frequencies.
+   */
+  valueCounts(
+    sort?: boolean,
+    parallel?: boolean,
+    name?: string,
+    normalize?: boolean,
+  ): Expr;
   /** Get variance. */
   var(): Expr;
   /** Alias for filter: @see {@link filter} */
   where(predicate: Expr): Expr;
+  /** Return the physical representation backing this expression's dtype. */
+  toPhysical(): Expr;
 }
 /** @ignore */
 export const _Expr = (_expr: any): Expr => {
@@ -1344,12 +1449,20 @@ export const _Expr = (_expr: any): Expr => {
     alias(name) {
       return _Expr(_expr.alias(name));
     },
+    all(ignoreNulls: any = true) {
+      ignoreNulls = ignoreNulls?.ignoreNulls ?? ignoreNulls;
+      return _Expr(_expr.all(ignoreNulls));
+    },
     inner() {
       return _expr;
     },
     and(other) {
       const expr = (exprToLitOrExpr(other, false) as any).inner();
       return _Expr(_expr.and(expr));
+    },
+    any(ignoreNulls: any = true) {
+      ignoreNulls = ignoreNulls?.ignoreNulls ?? ignoreNulls;
+      return _Expr(_expr.any(ignoreNulls));
     },
     arccos() {
       return _Expr(_expr.arccos());
@@ -1365,6 +1478,10 @@ export const _Expr = (_expr: any): Expr => {
     },
     arctan() {
       return _Expr(_expr.arctan());
+    },
+    arctan2(other) {
+      const expr = exprToLitOrExpr(other, false).inner();
+      return _Expr(_expr.arctan2(expr));
     },
     arctanh() {
       return _Expr(_expr.arctanh());
@@ -1451,10 +1568,19 @@ export const _Expr = (_expr: any): Expr => {
       }
       return _Expr(_expr.diff(exprToLitOrExpr(n.n, false), n.nullBehavior));
     },
+    degrees() {
+      return _Expr(_expr.degrees());
+    },
     dot(other) {
       const expr = (exprToLitOrExpr(other, false) as any).inner();
 
       return _Expr(_expr.dot(expr));
+    },
+    dropNans() {
+      return _Expr(_expr.dropNans());
+    },
+    dropNulls() {
+      return _Expr(_expr.dropNulls());
     },
     ewmMean(
       opts: {
@@ -1763,6 +1889,9 @@ export const _Expr = (_expr: any): Expr => {
 
       return _Expr(_expr.quantile(quantile, interpolation));
     },
+    radians() {
+      return _Expr(_expr.radians());
+    },
     rank(method: any = "average", descending = false) {
       return _Expr(
         _expr.rank(method?.method ?? method, method?.descending ?? descending),
@@ -1986,14 +2115,24 @@ export const _Expr = (_expr: any): Expr => {
       }
       return wrap("unique");
     },
+    uniqueCounts() {
+      return _Expr(_expr.uniqueCounts());
+    },
     upperBound() {
       return _Expr(_expr.upperBound());
+    },
+    valueCounts(sort = false, parallel = false, name?, normalize = false) {
+      name = name ?? (normalize ? "proportion" : "count");
+      return _Expr(_expr.valueCounts(sort, parallel, name, normalize));
     },
     where(expr) {
       return this.filter(expr);
     },
     var() {
       return _Expr(_expr.var());
+    },
+    toPhysical() {
+      return _Expr(_expr.toPhysical());
     },
     add: wrapExprArg("add"),
     sub: wrapExprArg("sub"),
