@@ -45,4 +45,14 @@ describe("when", () => {
     });
     expect(actual).toFrameEqual(expected);
   });
+
+  test("when(a).then(b).when(c).then(d).then(e) throws", () => {
+    expect(() => {
+      when(col("foo").eq(1))
+        .then(lit("foo=1"))
+        .when(col("foo").eq(3))
+        .then(lit("foo=3:first"))
+        .then(lit("foo=3:second"));
+    }).toThrow("_chainedthen.then is not a function");
+  });
 });

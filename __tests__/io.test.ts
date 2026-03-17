@@ -220,6 +220,40 @@ describe("read:json", () => {
     const actualCols = df.getColumns().map((x) => x.dtype);
     expect(actualCols).toEqual([pl.Int64, pl.String, pl.Null]);
   });
+
+  it("can read from an inline json string body", () => {
+    const body = JSON.stringify([
+      { foo: 1, bar: "x" },
+      { foo: 2, bar: "y" },
+    ]);
+    const df = pl.readJSON(body);
+
+    expect(df.shape).toEqual({ height: 2, width: 2 });
+    expect(df.getColumn("foo").toArray()).toEqual([1, 2]);
+  });
+});
+
+describe("read:records", () => {
+  it("can read records with a provided schema", () => {
+    const rows = [{ a: "1", b: "2" }];
+    const df = pl.readRecords(rows, { schema: { a: pl.Int64, b: pl.Int64 } });
+
+    expect(df.dtypes.map((dt) => dt.toJSON())).toEqual([
+      pl.Int64.toJSON(),
+      pl.Int64.toJSON(),
+    ]);
+    expect(df.toRecords()).toEqual([{ a: 1, b: 2 }]);
+  });
+
+  it("can read records with inferSchemaLength", () => {
+    const rows = [
+      { a: "1", b: "x" },
+      { a: "2", b: "y" },
+    ];
+    const df = pl.readRecords(rows, { inferSchemaLength: 1 });
+
+    expect(df.shape).toEqual({ height: 2, width: 2 });
+  });
 });
 
 describe("scan", () => {
@@ -327,6 +361,11 @@ describe("parquet", () => {
   test("read:options", () => {
     const df = pl.readParquet(parquetpath, { numRows: 4 });
     expect(df.shape).toEqual({ height: 4, width: 4 });
+  });
+
+  test("read:options:projection by numeric indices", () => {
+    const df = pl.readParquet(parquetpath, { columns: [0, 2] });
+    expect(df.shape).toEqual({ height: 27, width: 2 });
   });
 
   test("scan", () => {
@@ -640,6 +679,20 @@ describe("stream", () => {
     expect(df).toFrameEqual(expected);
   });
 
+  test("readCSV:endRows early-aborts after first emitted batch", async () => {
+    const readStream = new Stream.Readable({ read() {} });
+    readStream.push("a,b\n1,2\n2,3\n3,4\n4,5\n");
+    readStream.push(null);
+
+    const df = await pl.readCSVStream(readStream, {
+      batchSize: 2,
+      endRows: 0,
+    });
+
+    expect(df.shape).toEqual({ height: 1, width: 2 });
+    expect(df.toRecords()).toEqual([{ a: 1, b: 2 }]);
+  });
+
   test("readCSV:schema mismatch", async () => {
     const readStream = new Stream.Readable({ read() {} });
     readStream.push("a,b,c\n");
@@ -703,5 +756,50 @@ describe("stream", () => {
     await expect(
       pl.readJSONStream(readStream, { format: "lines" }),
     ).rejects.toBeDefined();
+  });
+});
+
+describe("io input validation", () => {
+  test("readCSV throws for non string/buffer input", () => {
+    expect(() => pl.readCSV(123 as unknown as string)).toThrow(
+      "must supply either a path or body",
+    );
+  });
+
+  test("readJSON throws for non string/buffer input", () => {
+    expect(() => pl.readJSON(123 as unknown as string)).toThrow(
+      "must supply either a path or body",
+    );
+  });
+
+  test("readParquet throws for non string/buffer input", () => {
+    expect(() => pl.readParquet(123 as unknown as string)).toThrow(
+      "must supply either a path or body",
+    );
+  });
+
+  test("readAvro throws for non string/buffer input", () => {
+    expect(() => pl.readAvro(123 as unknown as string)).toThrow(
+      "must supply either a path or body",
+    );
+  });
+
+  test("readIPC throws for non string/buffer input", () => {
+    expect(() => pl.readIPC(123 as unknown as string)).toThrow(
+      "must supply either a path or body",
+    );
+  });
+
+  test("readIPCStream throws for non string/buffer input", () => {
+    expect(() => pl.readIPCStream(123 as unknown as string)).toThrow(
+      "must supply either a path or body",
+    );
+  });
+
+  test("inline binary-format readers attempt to parse string bodies", () => {
+    expect(() => pl.readParquet("not parquet content")).toThrow();
+    expect(() => pl.readAvro("not avro content")).toThrow();
+    expect(() => pl.readIPC("not ipc content")).toThrow();
+    expect(() => pl.readIPCStream("not ipc stream content")).toThrow();
   });
 });
