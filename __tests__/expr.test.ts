@@ -2032,6 +2032,19 @@ describe("expr.lst", () => {
         .seriesEqual(expected),
     );
   });
+  test("lst.concat series", () => {
+    const s0 = pl.Series("a", [[1, 2], [3]]);
+    const s1 = pl.Series("a", [
+      [10, 20],
+      [30, 40],
+    ]);
+    const expected = pl.Series("a", [
+      [1, 2, 10, 20],
+      [3, 30, 40],
+    ]);
+    const actual = s0.lst.concat(s1);
+    expect(actual).toSeriesStrictEqual(expected);
+  });
   test("diff", () => {
     const s0 = pl.Series("a", [[1, 2, 3]]);
     const actual = s0.lst.diff();
@@ -2380,6 +2393,23 @@ describe("expr.dt", () => {
     ]);
     expect(actual).toFrameEqual(expected);
     expect(actualFromSeries).toFrameEqual(expected);
+  });
+  test("strftime", () => {
+    const dates = [
+      new Date(Date.parse("2021-03-01T00:00:00.000Z")),
+      new Date(Date.parse("2022-07-15T12:30:00.000Z")),
+    ];
+    const df = pl.DataFrame([pl.Series("date_col", dates, pl.Datetime)]);
+    const expected = pl.Series("formatted", ["2021-03-01", "2022-07-15"]);
+    const actual = df
+      .select(col("date_col").dt.strftime("%Y-%m-%d").alias("formatted"))
+      .toSeries();
+    const actualFromSeries = df
+      .getColumn("date_col")
+      .dt.strftime("%Y-%m-%d")
+      .rename("formatted");
+    expect(actual).toSeriesStrictEqual(expected);
+    expect(actualFromSeries).toSeriesStrictEqual(expected);
   });
 });
 describe("expr metadata", () => {
