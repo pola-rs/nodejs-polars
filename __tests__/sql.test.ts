@@ -1,6 +1,14 @@
-import pl from "@polars";
+import pl, { SQLContext } from "@polars";
 
 describe("sql", () => {
+  test("named SQLContext export creates a working context", () => {
+    const df = pl.DataFrame({ value: [1, 2, 3] });
+    const ctx = SQLContext({ df });
+
+    const actual = ctx.execute("SELECT * FROM df", { eager: true });
+    expect(actual).toFrameEqual(df);
+  });
+
   test("execute", () => {
     const df = pl.DataFrame({
       values: [

@@ -825,6 +825,90 @@ describe("series functions", () => {
       expect(actual).toFrameEqual(expected);
     }
   });
+
+  test("entrypoint alias getters expose the same wrappers", () => {
+    const listSeries = pl.Series("items", [[1, 2], [3], []]);
+    const dateSeries = pl.Series("dt", [new Date("2020-01-01T00:00:00.000Z")]);
+
+    expect(listSeries.list.lengths()).toSeriesEqual(listSeries.lst.lengths());
+    expect(dateSeries.date.year()).toSeriesEqual(dateSeries.dt.year());
+  });
+
+  test("filter and isIn accept array inputs", () => {
+    const actual = pl.Series([1, 2, 3]).filter([true, false, true] as any);
+    const expected = pl.Series([1, 3]);
+    expect(actual).toSeriesEqual(expected);
+
+    const membership = pl.Series([1, 2, 3]).isIn([2, 4]);
+    expect(membership).toSeriesEqual(pl.Series([false, true, false]));
+  });
+
+  test("hasValidity aliases hasNulls", () => {
+    expect(pl.Series([1, null, 3]).hasValidity()).toBe(true);
+    expect(pl.Series([1, 2, 3]).hasValidity()).toBe(false);
+  });
+
+  test("sample covers default and object n overloads", () => {
+    const s = pl.Series([1, 2, 3, 4, 5]);
+
+    expect(s.sample().len()).toBe(1);
+    expect(s.sample({ n: 2, withReplacement: false }).len()).toBe(2);
+  });
+
+  test("isFloat returns true for float series", () => {
+    expect(pl.Series("", [1.5, 2.5], pl.Float64).isFloat()).toBe(true);
+  });
+
+  test("shrinkToFit in place keeps series contents", () => {
+    const s = pl.Series("foo", [1, 2, 3]);
+
+    s.shrinkToFit(true);
+
+    expect(s).toSeriesEqual(pl.Series("foo", [1, 2, 3]));
+  });
+
+  test("slice supports object arguments", () => {
+    const actual = pl
+      .Series([1, 2, 3, 4])
+      .slice({ offset: 1, length: 2 } as any);
+    const expected = pl.Series([2, 3]);
+    expect(actual).toSeriesEqual(expected);
+  });
+
+  test("unique supports stable ordering", () => {
+    const actual = pl.Series([3, 1, 3, 2, 1]).unique(true);
+    const expected = pl.Series([3, 1, 2]);
+    expect(actual).toSeriesEqual(expected);
+  });
+
+  test("toJSON supports direct calls and JSON.stringify", () => {
+    const s = pl.Series("nums", [1, 2, 3]);
+    const nestedJson = JSON.parse(JSON.stringify({ values: s }));
+    const directJson = (s.toJSON as any)("");
+
+    expect(typeof s.toJSON()).toBe("string");
+    expect(Buffer.isBuffer(directJson)).toBe(true);
+    expect(nestedJson).toEqual({ values: s.toJSON() });
+  });
+
+  test("numeric proxy access supports get and set", () => {
+    const s = pl.Series([1, 2, 3]);
+
+    expect((s as any)[1]).toBe(2);
+
+    (s as any)[1] = 99;
+
+    expect(s).toSeriesEqual(pl.Series([1, 99, 3]));
+  });
+
+  test("isFinite and isInfinite throw InvalidOperationError for non-floats", () => {
+    expect(() => pl.Series(["foo"]).isFinite()).toThrow(
+      "Invalid operation: isFinite is not supported for DataType(String)",
+    );
+    expect(() => pl.Series(["foo"]).isInfinite()).toThrow(
+      "Invalid operation: isFinite is not supported for DataType(String)",
+    );
+  });
 });
 describe("comparators & math", () => {
   test("duration/add/series", () => {

@@ -50,6 +50,23 @@ describe("expr", () => {
       .sort({ by: "a" });
     expect(actual).toFrameEqual(expected);
   });
+  test("aggGroups:direct expr method", () => {
+    const df = pl.DataFrame({
+      group: ["one", "one", "two"],
+      value: [94, 95, 96],
+    });
+    const actual = df
+      .groupBy("group")
+      .agg(col("value").aggGroups().alias("groups"))
+      .sort({ by: "group" });
+    const expected = pl
+      .DataFrame({
+        group: ["one", "two"],
+        groups: [[0, 1], [2]],
+      })
+      .withColumn(pl.col("groups").cast(pl.List(pl.UInt32)));
+    expect(actual).toFrameEqual(expected);
+  });
   test("alias", () => {
     const name = "alias";
     const actual = pl.select(lit("a").alias(name));
@@ -134,6 +151,23 @@ describe("expr", () => {
     const expected = pl.DataFrame({ cos: [0.540302, -0.416147, -0.989992] });
     const actual = df.select(col("a").cos().round(6).as("cos"));
     expect(actual).toFrameEqual(expected);
+  });
+  test("hyperbolic and inverse hyperbolic trig wrappers", () => {
+    const df = pl.DataFrame({ a: [1.0, 2.0] });
+    expect(df.select(col("a").arccosh().round(6).as("arccosh"))).toFrameEqual(
+      pl.DataFrame({ arccosh: [0.0, 1.316958] }),
+    );
+    expect(df.select(col("a").arcsinh().round(6).as("arcsinh"))).toFrameEqual(
+      pl.DataFrame({ arcsinh: [0.881374, 1.443635] }),
+    );
+    expect(df.select(col("a").cosh().round(6).as("cosh"))).toFrameEqual(
+      pl.DataFrame({ cosh: [1.543081, 3.762196] }),
+    );
+
+    const tanhDf = pl.DataFrame({ a: [0.5] });
+    expect(
+      tanhDf.select(col("a").arctanh().round(6).as("arctanh")),
+    ).toFrameEqual(pl.DataFrame({ arctanh: [0.549306] }));
   });
   test("cot", () => {
     const df = pl.DataFrame({ a: [1, 2, 3] });
@@ -319,6 +353,12 @@ describe("expr", () => {
       c: ["a", "b", "c", "foo", "foo"],
     });
     const actual = df.withColumn(other.extendConstant("foo", 2));
+    expect(actual).toFrameEqual(expected);
+  });
+  test("extend:expr positional overload", () => {
+    const df = pl.DataFrame({ a: [1, 2, 3] });
+    const actual = df.select(col("a").extendConstant(9, 2));
+    const expected = pl.DataFrame({ a: [1, 2, 3, 9, 9] });
     expect(actual).toFrameEqual(expected);
   });
   test.each`
@@ -596,6 +636,12 @@ describe("expr", () => {
     const actual = df.select(col("a").list().alias("list"));
     expect(actual).toFrameEqual(expected);
   });
+  test("log1p", () => {
+    const df = pl.DataFrame({ a: [0, 1, 3] });
+    const expected = pl.DataFrame({ log1p: [0.0, 0.693147, 1.386294] });
+    const actual = df.select(col("a").log1p().round(6).as("log1p"));
+    expect(actual).toFrameEqual(expected);
+  });
   test("lowerBound", () => {
     const df = pl.DataFrame([
       pl.Series("int16", [1, 2, 3], pl.Int16),
@@ -822,6 +868,9 @@ describe("expr", () => {
     actual = df.withColumns(col("n").sample(3).alias("sample"));
     expected = pl.DataFrame({ n: [1, 2, 3], sample: [1, 2, 3] });
     expect(actual).toFrameEqual(expected);
+  });
+  test("sample:invalid args", () => {
+    expect(() => (col("n") as any).sample({})).toThrow(TypeError);
   });
   test("shift", () => {
     const df = pl.DataFrame({ a: [1, 2, 3, 4] });
@@ -1983,6 +2032,19 @@ describe("expr.lst", () => {
         .seriesEqual(expected),
     );
   });
+  test("lst.concat series", () => {
+    const s0 = pl.Series("a", [[1, 2], [3]]);
+    const s1 = pl.Series("a", [
+      [10, 20],
+      [30, 40],
+    ]);
+    const expected = pl.Series("a", [
+      [1, 2, 10, 20],
+      [3, 30, 40],
+    ]);
+    const actual = s0.lst.concat(s1);
+    expect(actual).toSeriesStrictEqual(expected);
+  });
   test("diff", () => {
     const s0 = pl.Series("a", [[1, 2, 3]]);
     const actual = s0.lst.diff();
@@ -2332,6 +2394,23 @@ describe("expr.dt", () => {
     expect(actual).toFrameEqual(expected);
     expect(actualFromSeries).toFrameEqual(expected);
   });
+  test("strftime", () => {
+    const dates = [
+      new Date(Date.parse("2021-03-01T00:00:00.000Z")),
+      new Date(Date.parse("2022-07-15T12:30:00.000Z")),
+    ];
+    const df = pl.DataFrame([pl.Series("date_col", dates, pl.Datetime)]);
+    const expected = pl.Series("formatted", ["2021-03-01", "2022-07-15"]);
+    const actual = df
+      .select(col("date_col").dt.strftime("%Y-%m-%d").alias("formatted"))
+      .toSeries();
+    const actualFromSeries = df
+      .getColumn("date_col")
+      .dt.strftime("%Y-%m-%d")
+      .rename("formatted");
+    expect(actual).toSeriesStrictEqual(expected);
+    expect(actualFromSeries).toSeriesStrictEqual(expected);
+  });
 });
 describe("expr metadata", () => {
   test("inspect & toString", () => {
@@ -2341,6 +2420,87 @@ describe("expr metadata", () => {
     const exprString = expr.toString();
     expect(actualInspect).toStrictEqual(expected);
     expect(exprString).toStrictEqual(expected);
+  });
+
+  test("toStringTag, isExpr, and toJSON", () => {
+    const expr = col("foo");
+    const nestedJson = JSON.parse(JSON.stringify({ expr }));
+    const directJson = (expr.toJSON as any)("");
+
+    expect(expr[Symbol.toStringTag]()).toBe("Expr");
+    expect(pl.Expr.isExpr(expr)).toBe(true);
+    expect(pl.Expr.isExpr({})).toBe(false);
+    expect(typeof expr.toJSON()).toBe("string");
+    expect(directJson).toBeDefined();
+    expect(typeof directJson).toBe("object");
+    expect(nestedJson).toEqual({ expr: expr.toJSON() });
+  });
+  test("isExpr handles throwing toStringTag access", () => {
+    const badExprLike = Object.defineProperty({}, Symbol.toStringTag, {
+      get() {
+        throw new Error("boom");
+      },
+    });
+
+    expect(pl.Expr.isExpr(badExprLike)).toBe(false);
+  });
+
+  test("date alias getter matches dt namespace", () => {
+    const df = pl.DataFrame([
+      pl.Series("datetime", [
+        new Date(Date.parse("2020-01-01T01:32:00.002+00:00")),
+        new Date(Date.parse("2020-01-01T02:02:01.030+00:00")),
+      ]),
+    ]);
+
+    const actual = df.select(pl.col("datetime").date.minute().alias("minute"));
+    const expected = df.select(pl.col("datetime").dt.minute().alias("minute"));
+
+    expect(actual).toFrameStrictEqual(expected);
+  });
+
+  test("expr serialize and deserialize round-trip", () => {
+    const expr = pl.col(["foo", "bar"]).sortBy("other");
+    const json = expr.serialize("json");
+    const bincode = expr.serialize("bincode");
+
+    expect(pl.Expr.deserialize(json, "json").toString()).toBe(expr.toString());
+    expect(pl.Expr.deserialize(bincode, "bincode").toString()).toBe(
+      expr.toString(),
+    );
+  });
+
+  test("supported object overloads behave like positional forms", () => {
+    const df = pl.DataFrame({
+      a: [1, 2, 3, 4],
+    });
+
+    expect(
+      df.select(col("a").shift({ periods: 1 }).alias("shifted")),
+    ).toFrameEqual(df.select(col("a").shift(1).alias("shifted")));
+
+    expect(df.select(col("a").tail({ length: 2 }).alias("tail"))).toFrameEqual(
+      df.select(col("a").tail(2).alias("tail")),
+    );
+
+    expect(
+      df.select(
+        col("a")
+          .gather({ index: [0, 2] } as any)
+          .alias("gathered"),
+      ),
+    ).toFrameEqual(df.select(col("a").gather([0, 2]).alias("gathered")));
+  });
+
+  test("reinterpret object overload matches positional form", () => {
+    const df = pl.DataFrame([pl.Series("a", [1n, 2n, 3n], pl.UInt64)]);
+
+    const actual = df
+      .select(col("a").reinterpret({ signed: false }))
+      .getColumn("a");
+    const expected = df.select(col("a").reinterpret(false)).getColumn("a");
+
+    expect(actual).toSeriesStrictEqual(expected);
   });
 });
 
@@ -2431,6 +2591,17 @@ describe("rolling", () => {
     );
 
     expect(actual).toFrameStrictEqual(expected);
+  });
+  test("rollingQuantile positional overload", () => {
+    const df = pl.DataFrame({ a: [1, 2, 3, 3, 2, 10, 8] });
+    const expected = pl.DataFrame({ a: [null, 2, 3, 3, 3, 10, 10] });
+    const actual = df.select(col("a").rollingQuantile(0.5, "nearest", 2));
+    expect(actual).toFrameStrictEqual(expected);
+  });
+  test("rollingQuantile requires a window size", () => {
+    expect(() => (col("a") as any).rollingQuantile({ quantile: 0.5 })).toThrow(
+      "window size is required",
+    );
   });
   // SEE https://github.com/pola-rs/polars/issues/4215
   test("rollingSkew", () => {

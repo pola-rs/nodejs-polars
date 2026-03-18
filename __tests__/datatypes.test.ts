@@ -1,4 +1,4 @@
-import { DataType } from "@polars/datatypes";
+import { DataType, Field } from "@polars/datatypes";
 
 describe("DataType variants", () => {
   describe("Simple types", () => {
@@ -156,5 +156,102 @@ describe("DataType variants", () => {
       expect(dt1.equals(dt2)).toBe(true);
       expect(dt1.equals(dt3)).toBe(false);
     });
+  });
+});
+
+describe("DataType behavior", () => {
+  it("toString and inspect include nested details", () => {
+    const dt = DataType.List(DataType.Int32);
+
+    expect(dt.toString()).toBe("DataType(List(DataType(Int32)))");
+    expect(dt[Symbol.for("nodejs.util.inspect.custom")]()).toBe(
+      "DataType(List(DataType(Int32)))",
+    );
+  });
+
+  it("toJSON serializes simple and nested dtypes", () => {
+    const simple = DataType.Int32;
+    const decimal = DataType.Decimal(10, 2);
+    const fixed = DataType.FixedSizeList(DataType.Int16, 3);
+
+    expect(simple.toJSON()).toEqual({ DataType: "Int32" });
+    expect(decimal.toJSON()).toEqual({
+      DataType: { Decimal: { precision: 10, scale: 2 } },
+    });
+    expect(fixed.toJSON()).toEqual({
+      DataType: {
+        FixedSizeList: {
+          type: { DataType: "Int16" },
+          size: 3,
+        },
+      },
+    });
+  });
+
+  it("asFixedSizeList returns fixed list or null", () => {
+    const fixed = DataType.FixedSizeList(DataType.UInt8, 4);
+    const list = DataType.List(DataType.UInt8);
+
+    expect(fixed.asFixedSizeList()).toBe(fixed);
+    expect(list.asFixedSizeList()).toBeNull();
+  });
+
+  it("Struct accepts object and Field[] constructors equivalently", () => {
+    const fromObject = DataType.Struct({
+      a: DataType.Int32,
+      b: DataType.Utf8,
+    });
+    const fromFields = DataType.Struct([
+      new Field("a", DataType.Int32),
+      new Field("b", DataType.Utf8),
+    ]);
+
+    expect(fromObject.equals(fromFields)).toBe(true);
+    const actual = fromFields.toJSON() as any;
+    expect(actual.DataType.Struct).toHaveLength(2);
+    expect(actual.DataType.Struct[0]).toEqual(new Field("a", DataType.Int32));
+    expect(actual.DataType.Struct[1]).toEqual(new Field("b", DataType.Utf8));
+  });
+
+  it("deserialize handles string/simple and complex nested variants", () => {
+    expect(DataType.deserialize("Int32")).toEqual(DataType.Int32);
+
+    const datetime = DataType.deserialize({
+      variant: "Datetime",
+      inner: ["us", "UTC"],
+    });
+    expect(datetime.equals(DataType.Datetime("us", "UTC"))).toBe(true);
+
+    const list = DataType.deserialize({
+      variant: "List",
+      inner: ["Int64"],
+    });
+    expect(list.equals(DataType.List(DataType.Int64))).toBe(true);
+
+    const fixed = DataType.deserialize({
+      variant: "FixedSizeList",
+      inner: ["Float32", 2],
+    });
+    expect(fixed.equals(DataType.FixedSizeList(DataType.Float32, 2))).toBe(
+      true,
+    );
+
+    const struct = DataType.deserialize({
+      variant: "Struct",
+      inner: [
+        [
+          { name: "id", dtype: "UInt32" },
+          { name: "label", dtype: "Utf8" },
+        ],
+      ],
+    });
+    expect(
+      struct.equals(
+        DataType.Struct({
+          id: DataType.UInt32,
+          label: DataType.Utf8,
+        }),
+      ),
+    ).toBe(true);
   });
 });

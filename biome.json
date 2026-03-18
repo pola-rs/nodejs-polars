@@ -10,7 +10,8 @@
       "suspicious": {
         "noExplicitAny": "off",
         "noImplicitAnyLet": "off",
-        "noThenProperty": "off"
+        "noThenProperty": "off",
+        "noApproximativeNumericConstant": "off"
       },
       "complexity": {
         "useLiteralKeys": "off",

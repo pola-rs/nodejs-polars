@@ -1609,6 +1609,7 @@ export const _Expr = (_expr: any): Expr => {
       return _Expr(_expr.forwardFill());
     },
     gather(indices) {
+      indices = indices?.index ?? indices;
       if (Array.isArray(indices)) {
         indices = pli.litSeries(Series("", indices, pli.Int64).inner());
       } else {
@@ -1696,7 +1697,7 @@ export const _Expr = (_expr: any): Expr => {
       return _Expr(_expr.list());
     },
     log1p() {
-      return _Expr(_expr.log1p());
+      return _Expr(_expr.log1P());
     },
     log(base?: number) {
       return _Expr(_expr.log(base ?? Math.E));
@@ -1831,12 +1832,21 @@ export const _Expr = (_expr: any): Expr => {
       warnIfUnsorted?,
     ) {
       if (typeof val === "number") {
-        return wrap("rollingQuantile", {
-          windowSize: `${windowSize}i`,
-          weights,
-          minPeriods,
-          center,
-        });
+        if (windowSize == null) {
+          throw new Error("window size is required");
+        }
+        return wrap(
+          "rollingQuantile",
+          val,
+          _interpolation ?? "nearest",
+          windowSize,
+          weights ?? null,
+          minPeriods ?? windowSize,
+          center ?? false,
+          by,
+          closedWindow,
+          warnIfUnsorted ?? true,
+        );
       }
       windowSize =
         val?.["windowSize"] ?? (typeof val === "number" ? val : null);
@@ -1901,6 +1911,7 @@ export const _Expr = (_expr: any): Expr => {
       throw new TypeError("must specify either 'frac' or 'n'");
     },
     shift(periods) {
+      periods = periods?.periods ?? periods;
       return _Expr(_expr.shift(exprToLitOrExpr(periods)._expr));
     },
     shiftAndFill(optOrPeriods, fillValue?) {
@@ -1960,6 +1971,7 @@ export const _Expr = (_expr: any): Expr => {
       return _Expr(_expr.sum());
     },
     tail(length) {
+      length = length?.length ?? length;
       return _Expr(_expr.tail(length));
     },
     tan() {

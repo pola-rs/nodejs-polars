@@ -2255,6 +2255,15 @@ describe("create", () => {
     const df = pl.DataFrame({ schema: [1] });
     expect(df.columns).toEqual(["schema"]);
   });
+  test("from object with series values", () => {
+    const src = pl.Series("original", [1, 2, 3], pl.Int32);
+    const df = pl.DataFrame({ renamed: src as any });
+
+    expect(df.columns).toEqual(["renamed"]);
+    expect(df.getColumn("renamed")).toSeriesEqual(
+      pl.Series("renamed", [1, 2, 3], pl.Int32),
+    );
+  });
   test("from empty-object", () => {
     const df = pl.DataFrame({});
     expect(df.isEmpty()).toStrictEqual(true);
@@ -2920,6 +2929,29 @@ describe("meta", () => {
     const dfString = df.toString();
     expect(actualInspect).toStrictEqual(expected);
     expect(dfString).toStrictEqual(expected);
+  });
+  test("toStringTag and DataFrame.isDataFrame", () => {
+    const df = pl.DataFrame({
+      a: [1],
+    });
+
+    expect(df[Symbol.toStringTag]).toStrictEqual("DataFrame");
+    expect(pl.DataFrame.isDataFrame(df)).toBe(true);
+    expect(pl.DataFrame.isDataFrame({})).toBe(false);
+  });
+  test("DataFrame.deserialize round-trip", () => {
+    const df = pl.DataFrame({
+      foo: [1, 2],
+      bar: ["a", "b"],
+    });
+
+    const json = df.serialize("json");
+    const fromJson = pl.DataFrame.deserialize(json, "json");
+    expect(fromJson).toFrameEqual(df);
+
+    const bincode = df.serialize("bincode");
+    const fromBincode = pl.DataFrame.deserialize(bincode, "bincode");
+    expect(fromBincode).toFrameEqual(df);
   });
 });
 test("Jupyter.display", () => {

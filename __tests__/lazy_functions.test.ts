@@ -39,6 +39,16 @@ describe("lazy functions", () => {
     });
     expect(actual).toFrameEqual(expected);
   });
+  test("col:datatype", () => {
+    const actual = pl
+      .DataFrame({
+        ints: [1, 2, 3],
+        strs: ["a", "b", "c"],
+      })
+      .select(col(DataType.Float64));
+    const expected = pl.DataFrame({ ints: [1, 2, 3] });
+    expect(actual).toFrameEqual(expected);
+  });
   test("cols", () => {
     const actual = pl
       .DataFrame({
@@ -148,6 +158,12 @@ describe("lazy functions", () => {
     );
     expect(actual).toFrameEqual(expected);
   });
+  test("intRange:len expr", () => {
+    const df = pl.DataFrame({ foo: [10, 20, 30] });
+    const actual = df.select(pl.intRange(pl.len()).alias("idx"));
+    const expected = pl.DataFrame({ idx: [0, 1, 2] });
+    expect(actual).toFrameEqual(expected);
+  });
   test.each`
     start  | end  | expected
     ${"a"} | ${"b"} | ${pl.Series("a", [[1, 2], [2, 3]])}
@@ -187,6 +203,16 @@ describe("lazy functions", () => {
       )
       .getColumn("int_nulls");
     const expected = pl.Series("int_nulls", [1, 0, 2]);
+    expect(actual).toSeriesEqual(expected);
+  });
+  test("argSortBy:scalar descending", () => {
+    const actual = pl
+      .DataFrame({
+        a: [0, 1, 1, 0],
+      })
+      .select(pl.argSortBy([pl.col("a")], true))
+      .toSeries();
+    const expected = pl.Series("a", [1, 2, 0, 3]);
     expect(actual).toSeriesEqual(expected);
   });
   test("avg", () => {
@@ -233,6 +259,21 @@ describe("lazy functions", () => {
     const actual = df
       .select(pl.concatString({ exprs: ["a", "b"], sep: "=" }).as("concat"))
       .getColumn("concat");
+    expect(actual).toSeriesEqual(expected);
+  });
+  test("concatString:ignoreNulls:false", () => {
+    const df = pl.DataFrame({
+      a: ["x", null],
+      b: ["y", "z"],
+    });
+    const actual = df
+      .select(
+        pl
+          .concatString({ exprs: ["a", "b"], sep: "=", ignoreNulls: false })
+          .as("concat"),
+      )
+      .getColumn("concat");
+    const expected = pl.Series("concat", ["x=y", null]);
     expect(actual).toSeriesEqual(expected);
   });
   test("count:series", () => {
@@ -295,6 +336,12 @@ describe("lazy functions", () => {
   test("first:df", () => {
     const actual = _df().select(pl.first("bools")).row(0)[0];
     expect(actual).toStrictEqual(false);
+  });
+  test("first:no-arg", () => {
+    const df = pl.DataFrame({ a: [5, 6, 7] });
+    const actual = df.select(pl.first());
+    const expected = pl.DataFrame({ a: [5, 6, 7] });
+    expect(actual).toFrameEqual(expected);
   });
   test("first:invalid", () => {
     const s = pl.Series("a", []);
@@ -401,6 +448,24 @@ describe("lazy functions", () => {
       .sort({ by: "a" });
     expect(actual).toFrameEqual(expected);
   });
+  test("groups helper", () => {
+    const df = pl.DataFrame({
+      g: ["x", "x", "y"],
+      v: [1, 2, 3],
+    });
+    const actual = df
+      .withRowIndex()
+      .groupBy("g")
+      .agg(pl.groups("index").alias("idx"))
+      .sort("g");
+    const expected = pl
+      .DataFrame({
+        g: ["x", "y"],
+        idx: [[0, 1], [2]],
+      })
+      .withColumn(pl.col("idx").cast(pl.List(pl.UInt32)));
+    expect(actual).toFrameEqual(expected);
+  });
   test("mean:series", () => {
     const actual = pl.mean(pl.Series([2, 2, 8]));
     expect(actual).toStrictEqual(4);
@@ -466,6 +531,11 @@ describe("lazy functions", () => {
     const actual = df.select(pl.quantile(col("a"), 0.5)).getColumn("a")[0];
     expect(actual).toStrictEqual(2);
   });
+  test("select helper", () => {
+    const actual = pl.select(pl.lit(1).alias("one"));
+    const expected = pl.DataFrame({ one: [1] });
+    expect(actual).toFrameEqual(expected);
+  });
   test("spearmanRankCorr", () => {
     const df = pl.DataFrame([
       pl.Series("A", [1, 2, 3, 4]),
@@ -508,6 +578,32 @@ describe("lazy functions", () => {
       ],
     });
     const actual = df.select(pl.col("a").lst.eval(pl.element().mul(2)));
+    expect(actual).toFrameEqual(expected);
+  });
+  test("horizontal aggregations", () => {
+    const df = pl.DataFrame({
+      a: [1, 8, 3],
+      b: [4, 5, null],
+      c: [10, 20, 30],
+      x: [false, false, true],
+      y: [false, true, null],
+    });
+
+    const actual = df.select(
+      pl.maxHorizontal([pl.col("a"), pl.col("b")]).alias("max"),
+      pl.minHorizontal([pl.col("a"), pl.col("b")]).alias("min"),
+      pl.sumHorizontal([pl.col("a"), pl.col("b")]).alias("sum"),
+      pl.allHorizontal([pl.col("x"), pl.col("y")]).alias("all"),
+      pl.anyHorizontal([pl.col("x"), pl.col("y")]).alias("any"),
+    );
+
+    const expected = pl.DataFrame({
+      max: [4, 8, 3],
+      min: [1, 5, 3],
+      sum: [5, 13, 3],
+      all: [false, false, null],
+      any: [false, true, true],
+    });
     expect(actual).toFrameEqual(expected);
   });
 });
