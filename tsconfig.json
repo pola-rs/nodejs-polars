@@ -12,7 +12,7 @@
     "resolveJsonModule": true,
     "noImplicitAny": false,
     "rootDir": ".",
-    "types": ["node", "jest"],
+    "types": ["node"],
     "paths": {
       "@polars": [
         "./"
@@ -29,8 +29,7 @@
     "./examples/*",
     "./benches/*",
     "./bin/*",
-    "./docs/*",
-    "jest.config.js"
+    "./docs/*"
   ],
   "typedocOptions": {
     "entryPointStrategy": "expand",

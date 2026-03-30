@@ -5,7 +5,7 @@ describe("complex types", () => {
     const arr = [["foo"], [], null];
     const s = pl.Series("", arr);
     const actual = s.toArray();
-    expect(actual).toEqual(arr);
+    assert.deepStrictEqual(actual, arr);
   });
   test("struct arrays round trip", () => {
     const arr = [
@@ -14,6 +14,6 @@ describe("complex types", () => {
     ];
     const s = pl.Series("", arr);
     const actual = s.toArray();
-    expect(actual).toEqual(arr);
+    assert.deepStrictEqual(actual, arr);
   });
 });

@@ -7,7 +7,7 @@ describe("lazy functions", () => {
     const other = pl.Series("other", [1, 2, 3]);
     const df = pl.DataFrame([expected, other]);
     const actual = df.select(col("foo"));
-    expect(actual).toFrameEqual(expected.toFrame());
+    assertFrameEqual(actual, expected.toFrame());
   });
   test("col:string[]", () => {
     const actual = pl
@@ -21,7 +21,7 @@ describe("lazy functions", () => {
       foo: [1, 2, 3],
       bar: [4, 5, 6],
     });
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
 
   test("col:series", () => {
@@ -37,7 +37,7 @@ describe("lazy functions", () => {
       foo: [1, 2, 3],
       bar: [4, 5, 6],
     });
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("col:datatype", () => {
     const actual = pl
@@ -47,7 +47,7 @@ describe("lazy functions", () => {
       })
       .select(col(DataType.Float64));
     const expected = pl.DataFrame({ ints: [1, 2, 3] });
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("cols", () => {
     const actual = pl
@@ -61,7 +61,7 @@ describe("lazy functions", () => {
       foo: [1, 2, 3],
       bar: [4, 5, 6],
     });
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   describe("lit", () => {
     test("string", () => {
@@ -75,7 +75,7 @@ describe("lazy functions", () => {
         foo: [1, 2, 3],
         lit_a: ["a", "a", "a"],
       });
-      expect(actual).toFrameEqual(expected);
+      assertFrameEqual(actual, expected);
     });
     test("number", () => {
       const actual = pl
@@ -88,7 +88,7 @@ describe("lazy functions", () => {
         foo: [1, 2, 3],
         number: [-99, -99, -99],
       });
-      expect(actual).toFrameEqual(expected);
+      assertFrameEqual(actual, expected);
     });
     test("bigint", () => {
       const actual = pl
@@ -101,7 +101,7 @@ describe("lazy functions", () => {
         foo: [1, 2, 3],
         bigint: [999283899189222n, 999283899189222n, 999283899189222n],
       });
-      expect(actual).toFrameEqual(expected);
+      assertFrameEqual(actual, expected);
     });
     test("series", () => {
       const actual = pl
@@ -114,7 +114,7 @@ describe("lazy functions", () => {
         foo: [1, 2, 3],
         "series:string": ["one", "one", "one"],
       });
-      expect(actual).toFrameEqual(expected);
+      assertFrameEqual(actual, expected);
     });
     test("null", () => {
       const actual = pl
@@ -127,7 +127,7 @@ describe("lazy functions", () => {
         foo: [1, 2, 3],
         nulls: [null, null, null],
       });
-      expect(actual).toFrameEqual(expected);
+      assertFrameEqual(actual, expected);
     });
   });
   test("intRange:positional", () => {
@@ -136,7 +136,7 @@ describe("lazy functions", () => {
     });
     const expected = pl.DataFrame({ foo: [1, 1] });
     const actual = df.filter(pl.col("foo").gtEq(pl.intRange(0, 3)));
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("intRange:named", () => {
     const df = pl.DataFrame({
@@ -146,7 +146,7 @@ describe("lazy functions", () => {
     const actual = df.filter(
       pl.col("foo").gtEq(pl.intRange({ start: 0, end: 3 })),
     );
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("intRange:eager", () => {
     const df = pl.DataFrame({
@@ -156,13 +156,13 @@ describe("lazy functions", () => {
     const actual = df.filter(
       pl.col("foo").gtEq(pl.intRange({ start: 0, end: 3, eager: true })),
     );
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("intRange:len expr", () => {
     const df = pl.DataFrame({ foo: [10, 20, 30] });
     const actual = df.select(pl.intRange(pl.len()).alias("idx"));
     const expected = pl.DataFrame({ idx: [0, 1, 2] });
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test.each`
     start  | end  | expected
@@ -172,14 +172,14 @@ describe("lazy functions", () => {
   `("$# cumMax", ({ start, end, expected }) => {
     const df = pl.DataFrame({ a: [1, 2], b: [3, 4] });
     const result = df.select(pl.intRanges(start, end)).toSeries();
-    expect(result).toSeriesEqual(expected);
+    assertSeriesEqual(result, expected);
   });
 
   test("intRanges:dtype", () => {
     const df = pl.DataFrame({ a: [1, 2], b: [3, 4] });
     const result = df.select(pl.intRanges("a", "b"));
     const expected_schema = { a: pl.List(pl.Int64) };
-    expect(result.schema).toStrictEqual(expected_schema);
+    assert.deepStrictEqual(result.schema, expected_schema);
   });
 
   test("intRanges:eager", () => {
@@ -189,12 +189,10 @@ describe("lazy functions", () => {
       [1, 2, 3],
       [2, 3],
     ]);
-    expect(result).toSeriesEqual(expected);
+    assertSeriesEqual(result, expected);
 
     expected = pl.Series("intRanges", [[5, 4, 3, 2, 1]]);
-    expect(pl.intRanges(5, 0, -1, DataType.Int64, true)).toSeriesEqual(
-      expected,
-    );
+    assertSeriesEqual(pl.intRanges(5, 0, -1, DataType.Int64, true), expected);
   });
   test("argSortBy", () => {
     const actual = _df()
@@ -203,7 +201,7 @@ describe("lazy functions", () => {
       )
       .getColumn("int_nulls");
     const expected = pl.Series("int_nulls", [1, 0, 2]);
-    expect(actual).toSeriesEqual(expected);
+    assertSeriesEqual(actual, expected);
   });
   test("argSortBy:scalar descending", () => {
     const actual = pl
@@ -213,14 +211,14 @@ describe("lazy functions", () => {
       .select(pl.argSortBy([pl.col("a")], true))
       .toSeries();
     const expected = pl.Series("a", [1, 2, 0, 3]);
-    expect(actual).toSeriesEqual(expected);
+    assertSeriesEqual(actual, expected);
   });
   test("avg", () => {
     const df = pl.DataFrame({ foo: [4, 5, 6, 4, 5, 6] });
     const expected = pl.select(lit(5).as("foo"));
     const actual = df.select(pl.avg("foo"));
 
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("concatList", () => {
     const s0 = pl.Series("a", [[1, 2]]);
@@ -229,7 +227,7 @@ describe("lazy functions", () => {
     const df = pl.DataFrame([s0, s1]);
 
     const actual = df.select(pl.concatList(["a", "b"]).as("a")).getColumn("a");
-    expect(actual).toSeriesEqual(expected);
+    assertSeriesEqual(actual, expected);
   });
   test("concatString", () => {
     const s0 = pl.Series("a", ["a", "b", "c"]);
@@ -239,7 +237,7 @@ describe("lazy functions", () => {
     const actual = df
       .select(pl.concatString(["a", "b"]).as("concat"))
       .getColumn("concat");
-    expect(actual).toSeriesEqual(expected);
+    assertSeriesEqual(actual, expected);
   });
   test("concatString:sep", () => {
     const s0 = pl.Series("a", ["a", "b", "c"]);
@@ -249,7 +247,7 @@ describe("lazy functions", () => {
     const actual = df
       .select(pl.concatString(["a", "b"], "=").as("concat"))
       .getColumn("concat");
-    expect(actual).toSeriesEqual(expected);
+    assertSeriesEqual(actual, expected);
   });
   test("concatString:named", () => {
     const s0 = pl.Series("a", ["a", "b", "c"]);
@@ -259,7 +257,7 @@ describe("lazy functions", () => {
     const actual = df
       .select(pl.concatString({ exprs: ["a", "b"], sep: "=" }).as("concat"))
       .getColumn("concat");
-    expect(actual).toSeriesEqual(expected);
+    assertSeriesEqual(actual, expected);
   });
   test("concatString:ignoreNulls:false", () => {
     const df = pl.DataFrame({
@@ -274,20 +272,20 @@ describe("lazy functions", () => {
       )
       .getColumn("concat");
     const expected = pl.Series("concat", ["x=y", null]);
-    expect(actual).toSeriesEqual(expected);
+    assertSeriesEqual(actual, expected);
   });
   test("count:series", () => {
     const s0 = pl.Series([1, 2, 3, 4, 5]);
     const expected = 5;
     const actual = pl.count(s0);
-    expect(actual).toStrictEqual(expected);
+    assert.deepStrictEqual(actual, expected);
   });
   test("count:column", () => {
     const s0 = pl.Series("a", [1, 2, 3, 4, 5]).cast(pl.Int32);
     const s1 = pl.Series("b", [11, 22, 33, 44, 55]).cast(pl.Int32);
     const expected = pl.select(lit(5).cast(pl.Int32).as("a"));
     const actual = pl.DataFrame([s0, s1]).select(pl.count("a"));
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("cov", () => {
     const df = pl.DataFrame([
@@ -295,7 +293,7 @@ describe("lazy functions", () => {
       pl.Series("B", [5, 4, 3, 2, 1]),
     ]);
     const actual = df.select(pl.cov("A", "B")).row(0)[0];
-    expect(actual).toStrictEqual(-2.5);
+    assert.deepStrictEqual(actual, -2.5);
   });
   test("cov:expr", () => {
     const df = pl.DataFrame([
@@ -303,7 +301,7 @@ describe("lazy functions", () => {
       pl.Series("B", [5, 4, 3, 2, 1]),
     ]);
     const actual = df.select(pl.cov(col("A"), col("B"))).row(0)[0];
-    expect(actual).toStrictEqual(-2.5);
+    assert.deepStrictEqual(actual, -2.5);
   });
   test("exclude", () => {
     const df = pl.DataFrame([
@@ -316,7 +314,7 @@ describe("lazy functions", () => {
       pl.Series("C", ["a", "b", "c", "d", "e"]),
     ]);
     const actual = df.select(pl.exclude("B"));
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("exclude:multiple", () => {
     const df = pl.DataFrame([
@@ -326,27 +324,27 @@ describe("lazy functions", () => {
     ]);
     const expected = pl.DataFrame([pl.Series("C", ["a", "b", "c", "d", "e"])]);
     const actual = df.select(pl.exclude("A", "B"));
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("first:series", () => {
     const s = pl.Series("a", [1, 2, 3]);
     const actual = pl.first(s);
-    expect(actual).toStrictEqual(1);
+    assert.deepStrictEqual(actual, 1);
   });
   test("first:df", () => {
     const actual = _df().select(pl.first("bools")).row(0)[0];
-    expect(actual).toStrictEqual(false);
+    assert.deepStrictEqual(actual, false);
   });
   test("first:no-arg", () => {
     const df = pl.DataFrame({ a: [5, 6, 7] });
     const actual = df.select(pl.first());
     const expected = pl.DataFrame({ a: [5, 6, 7] });
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("first:invalid", () => {
     const s = pl.Series("a", []);
     const fn = () => pl.first(s);
-    expect(fn).toThrow();
+    assert.throws(fn);
   });
   test("format:tag", () => {
     const df = pl.DataFrame({
@@ -359,7 +357,7 @@ describe("lazy functions", () => {
     const actual = df.select(
       pl.format`${lit("a")}=${col("a")};b=${col("b")}`.as("eq"),
     );
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("format:pattern", () => {
     const df = pl.DataFrame({
@@ -371,17 +369,17 @@ describe("lazy functions", () => {
       eq: ["a=a;b=1.0", "a=b;b=2.0", "a=c;b=3.0"],
     });
     const actual = df.select(fmt);
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("format:invalid", () => {
     const fn = () =>
       pl.format("{}{}={};b={}", lit("a"), col("a"), col("b")).as("eq");
-    expect(fn).toThrow();
+    assert.throws(fn);
   });
   test("head:series", () => {
     const expected = pl.Series("a", [1, 2]);
     const actual = pl.head(pl.Series("a", [1, 2, 3]), 2);
-    expect(actual).toSeriesEqual(expected);
+    assertSeriesEqual(actual, expected);
   });
   test("head:df", () => {
     const df = pl.DataFrame({
@@ -394,7 +392,7 @@ describe("lazy functions", () => {
     });
 
     const actual = df.select(pl.head("*", 1));
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("head:expr", () => {
     const df = pl.DataFrame({
@@ -407,11 +405,11 @@ describe("lazy functions", () => {
     });
 
     const actual = df.select(pl.head(col("*"), 1));
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("last:series", () => {
     const actual = pl.last(pl.Series("a", [1, 2, 3]));
-    expect(actual).toStrictEqual(3);
+    assert.deepStrictEqual(actual, 3);
   });
   test("last:string", () => {
     const df = pl.DataFrame({
@@ -419,7 +417,7 @@ describe("lazy functions", () => {
       b: ["foo", "bar", "baz"],
     });
     const actual = df.select(pl.last("b"));
-    expect(actual).toFrameEqual(pl.select(lit("baz").as("b")));
+    assertFrameEqual(actual, pl.select(lit("baz").as("b")));
   });
   test("last:col", () => {
     const df = pl.DataFrame({
@@ -427,11 +425,11 @@ describe("lazy functions", () => {
       b: ["foo", "bar", "baz"],
     });
     const actual = df.select(pl.last(col("b")));
-    expect(actual).toFrameEqual(pl.select(lit("baz").as("b")));
+    assertFrameEqual(actual, pl.select(lit("baz").as("b")));
   });
   test("last:invalid", () => {
     const fn = () => pl.last(pl.Series("a", []));
-    expect(fn).toThrow(RangeError);
+    assert.throws(fn, RangeError);
   });
   test("list", () => {
     const df = pl.DataFrame({
@@ -446,7 +444,7 @@ describe("lazy functions", () => {
       .groupBy("a")
       .agg(pl.list("b").keepName())
       .sort({ by: "a" });
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("groups helper", () => {
     const df = pl.DataFrame({
@@ -464,49 +462,49 @@ describe("lazy functions", () => {
         idx: [[0, 1], [2]],
       })
       .withColumn(pl.col("idx").cast(pl.List(pl.UInt32)));
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("mean:series", () => {
     const actual = pl.mean(pl.Series([2, 2, 8]));
-    expect(actual).toStrictEqual(4);
+    assert.deepStrictEqual(actual, 4);
   });
   test("mean:string", () => {
     const df = pl.DataFrame({ a: [2, 2, 8] });
     const actual = df.select(pl.mean("a")).getColumn("a")[0];
-    expect(actual).toStrictEqual(4);
+    assert.deepStrictEqual(actual, 4);
   });
   test("mean:col", () => {
     const df = pl.DataFrame({ a: [2, 2, 8] });
     const actual = df.select(pl.mean(col("a"))).getColumn("a")[0];
-    expect(actual).toStrictEqual(4);
+    assert.deepStrictEqual(actual, 4);
   });
   test("median:series", () => {
     const actual = pl.median(pl.Series([2, 2, 8]));
-    expect(actual).toStrictEqual(2);
+    assert.deepStrictEqual(actual, 2);
   });
   test("median:string", () => {
     const df = pl.DataFrame({ a: [2, 2, 8] });
     const actual = df.select(pl.median("a")).getColumn("a")[0];
-    expect(actual).toStrictEqual(2);
+    assert.deepStrictEqual(actual, 2);
   });
   test("median:col", () => {
     const df = pl.DataFrame({ a: [2, 2, 8] });
     const actual = df.select(pl.median(col("a"))).getColumn("a")[0];
-    expect(actual).toStrictEqual(2);
+    assert.deepStrictEqual(actual, 2);
   });
   test("nUnique:series", () => {
     const actual = pl.nUnique(pl.Series([2, 2, 8]));
-    expect(actual).toStrictEqual(2);
+    assert.deepStrictEqual(actual, 2);
   });
   test("nUnique:string", () => {
     const df = pl.DataFrame({ a: [2, 2, 8] });
     const actual = df.select(pl.nUnique("a")).getColumn("a")[0];
-    expect(actual).toStrictEqual(2);
+    assert.deepStrictEqual(actual, 2);
   });
   test("nUnique:col", () => {
     const df = pl.DataFrame({ a: [2, 2, 8] });
     const actual = df.select(pl.nUnique(col("a"))).getColumn("a")[0];
-    expect(actual).toStrictEqual(2);
+    assert.deepStrictEqual(actual, 2);
   });
   test("pearsonCorr", () => {
     const df = pl.DataFrame([
@@ -514,27 +512,27 @@ describe("lazy functions", () => {
       pl.Series("B", [2, 4, 6, 8]),
     ]);
     const actual = df.select(pl.pearsonCorr("A", "B").round(1)).row(0)[0];
-    expect(actual).toStrictEqual(1);
+    assert.deepStrictEqual(actual, 1);
   });
   test("quantile:series", () => {
     const s = pl.Series([1, 2, 3]);
     const actual = pl.quantile(s, 0.5);
-    expect(actual).toStrictEqual(2);
+    assert.deepStrictEqual(actual, 2);
   });
   test("quantile:string", () => {
     const df = pl.DataFrame({ a: [1, 2, 3] });
     const actual = df.select(pl.quantile("a", 0.5)).getColumn("a")[0];
-    expect(actual).toStrictEqual(2);
+    assert.deepStrictEqual(actual, 2);
   });
   test("quantile:col", () => {
     const df = pl.DataFrame({ a: [1, 2, 3] });
     const actual = df.select(pl.quantile(col("a"), 0.5)).getColumn("a")[0];
-    expect(actual).toStrictEqual(2);
+    assert.deepStrictEqual(actual, 2);
   });
   test("select helper", () => {
     const actual = pl.select(pl.lit(1).alias("one"));
     const expected = pl.DataFrame({ one: [1] });
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("spearmanRankCorr", () => {
     const df = pl.DataFrame([
@@ -542,25 +540,25 @@ describe("lazy functions", () => {
       pl.Series("B", [2, 4, 6, 8]),
     ]);
     const actual = df.select(pl.spearmanRankCorr("A", "B").round(1)).row(0)[0];
-    expect(actual).toStrictEqual(1);
+    assert.deepStrictEqual(actual, 1);
   });
   test("tail:series", () => {
     const s = pl.Series("a", [1, 2, 3]);
     const expected = pl.Series("a", [2, 3]);
     const actual = pl.tail(s, 2);
-    expect(actual).toSeriesEqual(expected);
+    assertSeriesEqual(actual, expected);
   });
   test("tail:string", () => {
     const df = pl.DataFrame({ a: [1, 2, 3] });
     const expected = pl.Series("a", [2, 3]);
     const actual = df.select(pl.tail("a", 2)).getColumn("a");
-    expect(actual).toSeriesEqual(expected);
+    assertSeriesEqual(actual, expected);
   });
   test("tail:col", () => {
     const df = pl.DataFrame({ a: [1, 2, 3] });
     const expected = pl.Series("a", [2, 3]);
     const actual = df.select(pl.tail(col("a"), 2)).getColumn("a");
-    expect(actual).toSeriesEqual(expected);
+    assertSeriesEqual(actual, expected);
   });
   test("element", () => {
     const df = pl.DataFrame({
@@ -578,7 +576,7 @@ describe("lazy functions", () => {
       ],
     });
     const actual = df.select(pl.col("a").lst.eval(pl.element().mul(2)));
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("horizontal aggregations", () => {
     const df = pl.DataFrame({
@@ -604,6 +602,6 @@ describe("lazy functions", () => {
       all: [false, false, null],
       any: [false, true, true],
     });
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
 });

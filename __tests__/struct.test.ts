@@ -8,8 +8,8 @@ describe("struct", () => {
     ];
     const name = "struct";
     const s = pl.Series(name, data);
-    expect(s.name).toEqual(name);
-    expect(s.toArray()).toEqual(data);
+    assert.deepStrictEqual(s.name, name);
+    assert.deepStrictEqual(s.toArray(), data);
   });
   test("pli.struct", () => {
     const expected = pl
@@ -21,7 +21,7 @@ describe("struct", () => {
     const foo = pl.Series("foo", [1]);
     const bar = pl.Series("bar", [2]);
     const actual = pl.struct([foo, bar]).rename("foo");
-    expect(actual).toSeriesEqual(expected);
+    assertSeriesEqual(actual, expected);
   });
   test("pli.struct dataframe", () => {
     const df = pl.DataFrame({
@@ -31,7 +31,7 @@ describe("struct", () => {
     const actual = df
       .select(pl.struct(pl.cols("foo", "bar")).alias("s"))
       .toSeries();
-    expect(actual).toSeriesEqual(df.toStruct("s"));
+    assertSeriesEqual(actual, df.toStruct("s"));
   });
   test("struct toArray", () => {
     const actual = pl
@@ -47,6 +47,6 @@ describe("struct", () => {
       { foo: 10, bar: null },
       { foo: 100, bar: 200 },
     ];
-    expect(actual).toEqual(expected);
+    assert.deepStrictEqual(actual, expected);
   });
 });

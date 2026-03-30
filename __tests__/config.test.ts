@@ -22,7 +22,7 @@ describe("config", () => {
 +-----+-----+------+------------+`;
 
     pl.Config.setAsciiTables(true);
-    expect(df.toString()).toEqual(asciiTable);
+    assert.deepStrictEqual(df.toString(), asciiTable);
 
     pl.Config.setAsciiTables(false);
 
@@ -36,9 +36,9 @@ describe("config", () => {
 │ 2.0 ┆ b   ┆ null ┆ [3.0]      │
 └─────┴─────┴──────┴────────────┘`;
 
-    expect(df.toString()).toEqual(utf8Table);
+    assert.deepStrictEqual(df.toString(), utf8Table);
     pl.Config.setAsciiTables();
-    expect(df.toString()).toEqual(utf8Table);
+    assert.deepStrictEqual(df.toString(), utf8Table);
   });
 
   test("setTblWidthChars", () => {
@@ -47,9 +47,9 @@ describe("config", () => {
       seq: ["ATGATAAAGGAG", "GCAACGCATATA"],
     });
     pl.Config.setTblWidthChars(12);
-    expect(df.toString().length).toEqual(209);
+    assert.deepStrictEqual(df.toString().length, 209);
     pl.Config.setTblWidthChars();
-    expect(df.toString().length).toEqual(205);
+    assert.deepStrictEqual(df.toString().length, 205);
   });
   test("setTblRows", () => {
     const df = pl.DataFrame({
@@ -57,9 +57,9 @@ describe("config", () => {
       xyz: [true, false, true, false],
     });
     pl.Config.setTblRows(2);
-    expect(df.toString().length).toEqual(157);
+    assert.deepStrictEqual(df.toString().length, 157);
     pl.Config.setTblRows();
-    expect(df.toString().length).toEqual(173);
+    assert.deepStrictEqual(df.toString().length, 173);
   });
   test("setTblCols", () => {
     const df = pl.DataFrame({
@@ -68,11 +68,11 @@ describe("config", () => {
       xyz: [true, false, true, false],
     });
     pl.Config.setTblCols(2);
-    expect(df.toString().length).toEqual(213);
+    assert.deepStrictEqual(df.toString().length, 213);
     pl.Config.setTblCols();
-    expect(df.toString().length).toEqual(233);
+    assert.deepStrictEqual(df.toString().length, 233);
     pl.Config.setTblCols(-1);
-    expect(df.toString().length).toEqual(233);
+    assert.deepStrictEqual(df.toString().length, 233);
   });
   test("setTblColumnDataTypeInline", () => {
     const df = pl.DataFrame({
@@ -81,9 +81,9 @@ describe("config", () => {
       xyz: [true, false, true, false],
     });
     pl.Config.setTblColumnDataTypeInline(true);
-    expect(df.toString().length).toEqual(325);
+    assert.deepStrictEqual(df.toString().length, 325);
     pl.Config.setTblColumnDataTypeInline();
-    expect(df.toString().length).toEqual(233);
+    assert.deepStrictEqual(df.toString().length, 233);
   });
   test("setTblHideColumnDataTypes", () => {
     const df = pl.DataFrame({
@@ -92,9 +92,9 @@ describe("config", () => {
       xyz: [true, false, true, false],
     });
     pl.Config.setTblHideColumnDataTypes(true);
-    expect(df.toString().length).toEqual(189);
+    assert.deepStrictEqual(df.toString().length, 189);
     pl.Config.setTblHideColumnDataTypes();
-    expect(df.toString().length).toEqual(233);
+    assert.deepStrictEqual(df.toString().length, 233);
   });
   test("setVerbose", () => {
     pl.Config.setVerbose(true);
@@ -106,12 +106,12 @@ describe("config", () => {
       y: [1234.5, 100000.0, -7654321.25],
     });
     pl.Config.setThousandsSeparator(true);
-    expect(df.toString().length).toEqual(292);
+    assert.deepStrictEqual(df.toString().length, 292);
     pl.Config.setThousandsSeparator("x");
-    expect(df.toString().length).toEqual(292);
+    assert.deepStrictEqual(df.toString().length, 292);
     const fn = () => pl.Config.setThousandsSeparator("xx");
-    expect(fn).toThrow(TypeError);
+    assert.throws(fn, TypeError);
     pl.Config.setThousandsSeparator();
-    expect(df.toString().length).toEqual(256);
+    assert.deepStrictEqual(df.toString().length, 256);
   });
 });

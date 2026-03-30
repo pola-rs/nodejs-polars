@@ -46,14 +46,15 @@ describe("datelike", () => {
       })
       .sort("dates");
     let out: any = trades.joinAsof(quotes, { on: "dates" });
-    expect(out.columns).toEqual([
+    assert.deepStrictEqual(out.columns, [
       "dates",
       "ticker",
       "bid",
       "ticker_right",
       "bid_right",
     ]);
-    expect(out.getColumn("dates").cast(pl.Float64).div(1000).toArray()).toEqual(
+    assert.deepStrictEqual(
+      out.getColumn("dates").cast(pl.Float64).div(1000).toArray(),
       [
         1464183000.023, 1464183000.038, 1464183000.048, 1464183000.048,
         1464183000.048,
@@ -63,10 +64,10 @@ describe("datelike", () => {
       .joinAsof(quotes, { on: "dates", strategy: "forward" })
       .getColumn("bid_right")
       .toArray();
-    expect(out).toEqual([720.5, 51.99, 720.5, 720.5, 720.5]);
+    assert.deepStrictEqual(out, [720.5, 51.99, 720.5, 720.5, 720.5]);
 
     out = trades.joinAsof(quotes, { on: "dates", by: "ticker" });
-    expect(out.getColumn("bid_right").toArray()).toEqual([
+    assert.deepStrictEqual(out.getColumn("bid_right").toArray(), [
       51.95,
       51.97,
       720.5,
@@ -74,7 +75,7 @@ describe("datelike", () => {
       null,
     ]);
     out = quotes.joinAsof(trades, { on: "dates", by: "ticker" });
-    expect(out.getColumn("bid_right").toArray()).toEqual([
+    assert.deepStrictEqual(out.getColumn("bid_right").toArray(), [
       null,
       51.95,
       51.95,
@@ -87,15 +88,42 @@ describe("datelike", () => {
     out = quotes
       .joinAsof(trades, { on: "dates", strategy: "backward", tolerance: "5ms" })
       ["bid_right"].toArray();
-    expect(out).toEqual([51.95, 51.95, null, 51.95, 98.0, 98.0, null, null]);
+    assert.deepStrictEqual(out, [
+      51.95,
+      51.95,
+      null,
+      51.95,
+      98.0,
+      98.0,
+      null,
+      null,
+    ]);
     out = quotes
       .joinAsof(trades, { on: "dates", strategy: "forward", tolerance: "5ms" })
       ["bid_right"].toArray();
-    expect(out).toEqual([51.95, 51.95, 51.95, null, 720.77, null, null, null]);
+    assert.deepStrictEqual(out, [
+      51.95,
+      51.95,
+      51.95,
+      null,
+      720.77,
+      null,
+      null,
+      null,
+    ]);
     out = quotes
       .joinAsof(trades, { on: "dates", strategy: "nearest", tolerance: "5ms" })
       ["bid_right"].toArray();
-    expect(out).toEqual([51.95, 51.95, 51.95, 51.95, 98.0, 98.0, null, null]);
+    assert.deepStrictEqual(out, [
+      51.95,
+      51.95,
+      51.95,
+      51.95,
+      98.0,
+      98.0,
+      null,
+      null,
+    ]);
   });
   test("asofjoin tolerance grouper", () => {
     const df1 = pl.DataFrame({
@@ -116,6 +144,6 @@ describe("datelike", () => {
       values: [100, null],
     });
 
-    expect(out).toFrameEqual(expected);
+    assertFrameEqual(out, expected);
   });
 });

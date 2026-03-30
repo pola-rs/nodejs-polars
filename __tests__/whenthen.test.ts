@@ -19,7 +19,7 @@ describe("when", () => {
       bar: [3, 4, 0],
       when: [-1, 1, 1],
     });
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("when(a).then(b).when(c).then(d).when(e).then(f).otherwise(g)", () => {
     const expr = when(col("foo").eq(1))
@@ -43,16 +43,16 @@ describe("when", () => {
       bar: [3, 4, 0, 1],
       when: ["foo=1", "foo=3", "bar=0, foo=4", "unknown"],
     });
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
 
   test("when(a).then(b).when(c).then(d).then(e) throws", () => {
-    expect(() => {
+    assert.throws(() => {
       when(col("foo").eq(1))
         .then(lit("foo=1"))
         .when(col("foo").eq(3))
         .then(lit("foo=3:first"))
         .then(lit("foo=3:second"));
-    }).toThrow("_chainedthen.then is not a function");
+    }, /_chainedthen\.then is not a function/);
   });
 });

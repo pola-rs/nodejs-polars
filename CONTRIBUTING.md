@@ -56,7 +56,7 @@ yarn build:debug
 
 - Run the tests
 ```
-yarn jest
+yarn test
 ```
 
 - Make your changes
