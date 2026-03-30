@@ -202,11 +202,14 @@ type ArrayLikeLooseRecordToSchema<T extends Record<string, ArrayLike<any>>> = {
     : never;
 };
 
-type ExtractJoinKeys<T> = T extends string[] ? T[number] : T;
-type ExtractSuffix<T extends JoinOptions> = T extends { suffix: infer Suffix }
+type ExtractJoinKeys<T> = T extends readonly string[] ? T[number] : T;
+type ExtractSuffix<T extends JoinOptions> = T extends {
+  suffix: infer Suffix extends string;
+}
   ? Suffix
   : "_right";
-export type JoinSchemas<
+type EnsureSchema<T> = T extends Schema ? T : never;
+type JoinSchemaShape<
   S1 extends Schema,
   S2 extends Schema,
   Opt extends JoinOptions,
@@ -231,6 +234,11 @@ export type JoinSchemas<
       : never;
   }
 >;
+export type JoinSchemas<
+  S1 extends Schema,
+  S2 extends Schema,
+  Opt extends JoinOptions,
+> = EnsureSchema<JoinSchemaShape<S1, S2, Opt>>;
 
 /**
  * A DataFrame is a two-dimensional data structure that represents data as a table

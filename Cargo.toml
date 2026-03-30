@@ -14,8 +14,8 @@ crate-type = ["cdylib", "lib"]
 
 [dependencies]
 bincode = { version = "2.0", features = ["serde"] }
-napi = { version = "3.8.3", default-features = false, features = [ "napi8", "serde-json" ] }
-napi-derive = { version = "3.5.2", default-features = false }
+napi = { version = "3.8.4", default-features = false, features = [ "napi8", "serde-json" ] }
+napi-derive = { version = "3.5.3", default-features = false }
 polars-core = { version = "0.53.0", default-features = false }
 polars-io = { version = "0.53.0", default-features = false }
 polars-lazy = { version = "0.53.0", default-features = false }

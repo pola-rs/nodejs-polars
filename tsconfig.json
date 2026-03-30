@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "target": "ES2023",
+    "target": "ES2024",
     "module": "commonjs",
     "outDir": "./bin",
     "esModuleInterop": true,
@@ -12,6 +12,7 @@
     "resolveJsonModule": true,
     "noImplicitAny": false,
     "baseUrl": "./polars",
+    "types": ["node", "jest"],
     "paths": {
       "@polars": [
         "./"
