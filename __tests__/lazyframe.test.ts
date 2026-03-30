@@ -1,5 +1,5 @@
 import fs from "node:fs";
-import pl from "@polars";
+import pl from "../polars";
 
 describe("lazyframe", () => {
   test("columns", () => {

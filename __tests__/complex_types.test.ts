@@ -1,4 +1,4 @@
-import pl from "@polars";
+import pl from "../polars";
 
 describe("complex types", () => {
   test("nested arrays round trip", () => {

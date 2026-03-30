@@ -1,4 +1,4 @@
-import pl from "@polars";
+import pl from "../polars";
 
 describe("concat", () => {
   it("can concat multiple dataframes using align", () => {

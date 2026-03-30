@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import { Stream } from "node:stream";
 /* eslint-disable newline-per-chained-call */
-import pl from "@polars";
+import pl from "../polars";
 
 describe("dataframe", () => {
   const df = pl.DataFrame([

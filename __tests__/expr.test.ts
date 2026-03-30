@@ -1,6 +1,6 @@
 /* eslint-disable newline-per-chained-call */
 
-import pl, { col, lit } from "@polars/index";
+import pl, { col, lit } from "../polars";
 
 const df = () => {
   const df = pl.DataFrame({

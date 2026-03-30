@@ -1,4 +1,4 @@
-import pl, { col, lit, when } from "@polars";
+import pl, { col, lit, when } from "../polars";
 
 describe("when", () => {
   test("when(a).then(b).otherwise(c)", () => {

@@ -1,4 +1,4 @@
-import { DataType, Field } from "@polars/datatypes";
+import { DataType, Field } from "../polars/datatypes";
 
 describe("DataType variants", () => {
   describe("Simple types", () => {

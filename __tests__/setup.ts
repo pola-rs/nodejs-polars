@@ -1,4 +1,4 @@
-import pl from "@polars/index";
+import pl from "../polars";
 
 expect.extend({
   toSeriesStrictEqual(actual, expected) {

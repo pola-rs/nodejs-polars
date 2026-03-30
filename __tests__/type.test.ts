@@ -1,5 +1,5 @@
-import { TimeUnit } from "@polars/datatypes";
-import pl from "@polars/index";
+import pl from "../polars";
+import { TimeUnit } from "../polars/datatypes";
 
 const expectType = <Type>(_: Type): void => void 0;
 
