@@ -49,7 +49,7 @@
     "lint:ts": "biome check {polars,__tests__} && biome format {polars,__tests__}",
     "lint": "yarn lint:ts && yarn format:rs",
     "prepublishOnly": "napi prepublish -t npm",
-    "test": "node --experimental-test-coverage --import tsx --import ./__tests__/setup.ts --test \"__tests__/**/*.test.ts\"",
+    "test": "node --experimental-test-coverage --import tsx --import ./__tests__/setup.ts --test ./__tests__/*.test.ts",
     "type": "tsc --noEmit -p tsconfig.test.json",
     "version": "napi version",
     "precommit": "yarn lint && yarn type && yarn test"
