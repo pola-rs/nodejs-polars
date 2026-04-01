@@ -1,4 +1,4 @@
-import pl, { SQLContext } from "@polars";
+import pl, { SQLContext } from "../polars";
 
 describe("sql", () => {
   test("named SQLContext export creates a working context", () => {

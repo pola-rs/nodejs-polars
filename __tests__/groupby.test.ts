@@ -1,4 +1,4 @@
-import pl from "@polars";
+import pl from "../polars";
 
 describe("groupby", () => {
   let df: pl.DataFrame;

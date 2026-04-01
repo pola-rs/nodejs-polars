@@ -1,6 +1,7 @@
 /* eslint-disable newline-per-chained-call */
-import pl, { DataType } from "@polars";
+
 import Chance from "chance";
+import pl, { DataType } from "../polars";
 
 describe("mapElements", () => {
   test("mapElements string", () => {
