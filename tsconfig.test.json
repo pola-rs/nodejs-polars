@@ -11,7 +11,7 @@
     "allowJs": true,
     "resolveJsonModule": true,
     "noImplicitAny": false,
-    "baseUrl": "./polars",
+    "types": ["node"],
     "paths": {
       "@polars": [
         "./"

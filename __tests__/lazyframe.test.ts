@@ -10,7 +10,7 @@ describe("lazyframe", () => {
       })
       .lazy();
     const actual = df.columns;
-    expect(actual).toEqual(["foo", "bar"]);
+    assert.deepStrictEqual(actual, ["foo", "bar"]);
   });
   test("collectSync", () => {
     const expected = pl.DataFrame({
@@ -18,7 +18,7 @@ describe("lazyframe", () => {
       bar: ["a", "b"],
     });
     const actual = expected.lazy().collectSync();
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("collect", async () => {
     const expected = pl.DataFrame({
@@ -26,7 +26,7 @@ describe("lazyframe", () => {
       bar: ["a", "b"],
     });
     const actual = await expected.lazy().collect();
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("collect:streaming", async () => {
     const expected = pl.DataFrame({
@@ -34,7 +34,7 @@ describe("lazyframe", () => {
       bar: ["a", "b"],
     });
     const actual = await expected.lazy().collect({ streaming: true });
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("describeOptimizedPlan", () => {
     const df = pl
@@ -45,9 +45,9 @@ describe("lazyframe", () => {
       .lazy();
     let actual = df.describeOptimizedPlan().replace(/\s+/g, " ");
     const expected = `DF ["foo", "bar"]; PROJECT */2 COLUMNS`;
-    expect(actual).toEqual(expected);
+    assert.deepStrictEqual(actual, expected);
     actual = df.describePlan().replace(/\s+/g, " ");
-    expect(actual).toEqual(expected);
+    assert.deepStrictEqual(actual, expected);
   });
   test("cache", () => {
     const df = pl.DataFrame({
@@ -57,9 +57,9 @@ describe("lazyframe", () => {
       foo: [1, 2, 3],
     });
     let actual = df.lazy().cache().collectSync();
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
     actual = df.lazy().clone().collectSync();
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("drop", () => {
     const df = pl.DataFrame({
@@ -74,7 +74,7 @@ describe("lazyframe", () => {
       ham: ["a", "b", "c"],
     });
     const actual = df.lazy().drop("apple").collectSync();
-    expect(actual).toFrameEqualIgnoringOrder(expected);
+    assertFrameEqualIgnoringOrder(actual, expected);
   });
   test("drop:array", () => {
     const df = pl.DataFrame({
@@ -88,7 +88,7 @@ describe("lazyframe", () => {
       bar: [6.0, 7.0, 8.0],
     });
     const actual = df.lazy().drop(["apple", "ham"]).collectSync();
-    expect(actual).toFrameEqualIgnoringOrder(expected);
+    assertFrameEqualIgnoringOrder(actual, expected);
   });
   test("drop:rest", () => {
     const df = pl.DataFrame({
@@ -102,7 +102,7 @@ describe("lazyframe", () => {
       bar: [6.0, 7.0, 8.0],
     });
     const actual = df.lazy().drop("apple", "ham").collectSync();
-    expect(actual).toFrameEqualIgnoringOrder(expected);
+    assertFrameEqualIgnoringOrder(actual, expected);
   });
   test("unique", () => {
     const ldf = pl
@@ -118,24 +118,24 @@ describe("lazyframe", () => {
       bar: [1, 2, 4],
       ham: ["a", "d", "c"],
     });
-    expect(actual).toFrameEqualIgnoringOrder(expected);
+    assertFrameEqualIgnoringOrder(actual, expected);
     actual = ldf.unique("foo", "first", true).collectSync();
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
     actual = ldf.unique("foo").collectSync();
-    expect(actual).toFrameEqualIgnoringOrder(expected);
+    assertFrameEqualIgnoringOrder(actual, expected);
     actual = ldf.unique(["foo"]).collectSync();
-    expect(actual).toFrameEqualIgnoringOrder(expected);
+    assertFrameEqualIgnoringOrder(actual, expected);
     actual = ldf.unique(["foo", "ham"], "first", true).collectSync();
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
     actual = ldf.unique(["foo", "ham"]).collectSync();
-    expect(actual).toFrameEqualIgnoringOrder(expected);
+    assertFrameEqualIgnoringOrder(actual, expected);
     actual = ldf.unique(["foo", "ham"], "none", true).collectSync();
     expected = pl.DataFrame({
       foo: [1, 3],
       bar: [1, 4],
       ham: ["a", "c"],
     });
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("unique:subset", () => {
     const ldf = pl
@@ -151,20 +151,20 @@ describe("lazyframe", () => {
       bar: [1, 2, 2],
       ham: ["a", "b", "c"],
     });
-    expect(actual).toFrameEqualIgnoringOrder(expected);
+    assertFrameEqualIgnoringOrder(actual, expected);
     actual = ldf.unique({ subset: ["ham"] }).collectSync();
-    expect(actual).toFrameEqualIgnoringOrder(expected);
+    assertFrameEqualIgnoringOrder(actual, expected);
     actual = ldf
       .unique({ subset: ["ham"], keep: "first", maintainOrder: true })
       .collectSync();
-    expect(actual).toFrameEqualIgnoringOrder(expected);
+    assertFrameEqualIgnoringOrder(actual, expected);
     actual = ldf.unique({ subset: ["ham"], keep: "last" }).collectSync();
     expected = pl.DataFrame({
       foo: [1, 2, 2],
       bar: [1, 2, 3],
       ham: ["a", "b", "c"],
     });
-    expect(actual).toFrameEqualIgnoringOrder(expected);
+    assertFrameEqualIgnoringOrder(actual, expected);
   });
   // run this test 100 times to make sure it is deterministic.
   test("unique:maintainOrder", () => {
@@ -183,7 +183,7 @@ describe("lazyframe", () => {
         bar: [0, 1, 2],
         ham: ["0", "a", "b"],
       });
-      expect(actual).toFrameEqual(expected);
+      assertFrameEqual(actual, expected);
     }
   });
   // run this test 100 times to make sure it is deterministic.
@@ -203,7 +203,7 @@ describe("lazyframe", () => {
         bar: [0, 1, 2],
         ham: ["0", "a", "b"],
       });
-      expect(actual).toFrameEqual(expected);
+      assertFrameEqual(actual, expected);
     }
   });
   // run this test 100 times to make sure it is deterministic.
@@ -223,7 +223,7 @@ describe("lazyframe", () => {
         bar: [0, 1, 2, 2],
         ham: ["0", "a", "b", "c"],
       });
-      expect(actual).toFrameEqual(expected);
+      assertFrameEqual(actual, expected);
     }
   });
   test("dropNulls", () => {
@@ -241,7 +241,7 @@ describe("lazyframe", () => {
       bar: [6.0, 7.0, 8.0],
       ham: ["a", "b", "c"],
     });
-    expect(actual).toFrameEqualIgnoringOrder(expected);
+    assertFrameEqualIgnoringOrder(actual, expected);
   });
   test("dropNulls:array", () => {
     const actual = pl
@@ -258,7 +258,7 @@ describe("lazyframe", () => {
       bar: [6.0, null, 8.0],
       ham: ["a", "b", "c"],
     });
-    expect(actual).toFrameEqualIgnoringOrder(expected);
+    assertFrameEqualIgnoringOrder(actual, expected);
   });
   test("dropNulls:string", () => {
     const actual = pl
@@ -275,7 +275,7 @@ describe("lazyframe", () => {
       bar: [6.0, null, 8.0],
       ham: ["a", "b", "c"],
     });
-    expect(actual).toFrameEqualIgnoringOrder(expected);
+    assertFrameEqualIgnoringOrder(actual, expected);
   });
   test("dropNulls:rest", () => {
     const actual = pl
@@ -292,7 +292,7 @@ describe("lazyframe", () => {
       bar: [6.0, 8.0],
       ham: ["a", "c"],
     });
-    expect(actual).toFrameEqualIgnoringOrder(expected);
+    assertFrameEqualIgnoringOrder(actual, expected);
   });
   test("explode", () => {
     const actual = pl
@@ -310,7 +310,7 @@ describe("lazyframe", () => {
       letters: ["c", "c", "a", "a"],
       list_1: [1, 2, 1, 3],
     });
-    expect(actual).toFrameEqualIgnoringOrder(expected);
+    assertFrameEqualIgnoringOrder(actual, expected);
   });
   test("explode:all-columns", () => {
     const actual = (
@@ -334,7 +334,7 @@ describe("lazyframe", () => {
       list_1: [1, 2, 3, 4],
       list_2: ["a", "b", "c", "d"],
     });
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("explode:array", () => {
     const actual = pl
@@ -358,7 +358,7 @@ describe("lazyframe", () => {
       list_1: [1, 2, 3, 4],
       list_2: ["a", "b", "c", "d"],
     });
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("fetch", async () => {
     const df = pl.DataFrame({
@@ -373,7 +373,7 @@ describe("lazyframe", () => {
       .lazy()
       .select("*")
       .fetch(1, { noOptimization: true });
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("fetchSync", () => {
     const df = pl.DataFrame({
@@ -385,9 +385,9 @@ describe("lazyframe", () => {
       bar: ["a"],
     });
     let actual = df.lazy().select("*").fetchSync(1);
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
     actual = df.lazy().select("*").fetchSync(1, { noOptimization: true });
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("first", () => {
     const df = pl.DataFrame({
@@ -399,7 +399,7 @@ describe("lazyframe", () => {
       bar: ["a"],
     });
     const actual: pl.DataFrame = df.lazy().first();
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("fillNull:zero", () => {
     const actual = pl
@@ -416,7 +416,7 @@ describe("lazyframe", () => {
       bar: [6.0, 0.5, 7.0, 8.0],
       ham: ["a", "d", "b", "c"],
     });
-    expect(actual).toFrameEqualIgnoringOrder(expected);
+    assertFrameEqualIgnoringOrder(actual, expected);
   });
   test("fillNull:expr", () => {
     const actual = pl
@@ -433,7 +433,7 @@ describe("lazyframe", () => {
       bar: [6.0, 0.5, 7.0, 8.0],
       ham: ["a", "d", "b", "c"],
     });
-    expect(actual).toFrameEqualIgnoringOrder(expected);
+    assertFrameEqualIgnoringOrder(actual, expected);
   });
   test("filter", () => {
     const actual = pl
@@ -448,7 +448,7 @@ describe("lazyframe", () => {
       foo: [2, 2],
       bar: [2, 3],
     });
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("filter:lit", () => {
     const actual = pl
@@ -463,7 +463,7 @@ describe("lazyframe", () => {
       foo: [2, 2],
       bar: [2, 3],
     });
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   describe("groupby", () => {
     test("groupBy", () => {
@@ -479,16 +479,16 @@ describe("lazyframe", () => {
         ham: ["a", "b"],
         foo: [3, 7],
       });
-      expect(actual).toFrameEqual(expected);
+      assertFrameEqual(actual, expected);
 
       actual = ldf.groupBy("ham", true).agg(pl.col("foo").sum()).collectSync();
-      expect(actual).toFrameEqual(expected);
+      assertFrameEqual(actual, expected);
 
       actual = ldf
         .groupBy("ham", { maintainOrder: true })
         .agg(pl.col("foo").sum())
         .collectSync();
-      expect(actual).toFrameEqual(expected);
+      assertFrameEqual(actual, expected);
 
       actual = ldf
         .groupBy("ham", { maintainOrder: true })
@@ -498,7 +498,7 @@ describe("lazyframe", () => {
         ham: ["a", "b"],
         foo: [1, 3],
       });
-      expect(actual).toFrameEqual(expected);
+      assertFrameEqual(actual, expected);
 
       actual = ldf
         .groupBy("ham", { maintainOrder: true })
@@ -508,7 +508,7 @@ describe("lazyframe", () => {
         ham: ["a", "b"],
         foo: [2, 4],
       });
-      expect(actual).toFrameEqual(expected);
+      assertFrameEqual(actual, expected);
       actual = ldf.groupBy("ham").len().collectSync();
       expected = pl.DataFrame(
         {
@@ -517,7 +517,7 @@ describe("lazyframe", () => {
         },
         { schema: { ham: pl.String, len: pl.UInt32 } },
       );
-      expect(actual).toFrameEqual(expected);
+      assertFrameEqual(actual, expected);
       actual = ldf.groupBy("ham").len("foo").collectSync();
       expected = pl.DataFrame(
         {
@@ -526,7 +526,7 @@ describe("lazyframe", () => {
         },
         { schema: { ham: pl.String, foo: pl.UInt32 } },
       );
-      expect(actual).toFrameEqual(expected);
+      assertFrameEqual(actual, expected);
     });
   });
   test("head", () => {
@@ -542,7 +542,7 @@ describe("lazyframe", () => {
       foo: [1],
       ham: ["a"],
     });
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   describe("join", () => {
     const df = pl.DataFrame({
@@ -566,7 +566,7 @@ describe("lazyframe", () => {
         apple: ["x", "y"],
         fooright: [1, 10],
       });
-      expect(actual).toFrameEqualIgnoringOrder(expected);
+      assertFrameEqualIgnoringOrder(actual, expected);
     });
     test("on:multiple-columns", () => {
       const actual = df
@@ -580,7 +580,7 @@ describe("lazyframe", () => {
         ham: ["a"],
         apple: ["x"],
       });
-      expect(actual).toFrameEqualIgnoringOrder(expected);
+      assertFrameEqualIgnoringOrder(actual, expected);
     });
     test("on:left&right", () => {
       const df = pl.DataFrame({
@@ -610,7 +610,7 @@ describe("lazyframe", () => {
         ham: ["a"],
         apple: ["x"],
       });
-      expect(actual).toFrameEqualIgnoringOrder(expected);
+      assertFrameEqualIgnoringOrder(actual, expected);
     });
     test("on:left&right", () => {
       const df = pl.DataFrame({
@@ -640,7 +640,7 @@ describe("lazyframe", () => {
         ham: ["a"],
         apple: ["x"],
       });
-      expect(actual).toFrameEqualIgnoringOrder(expected);
+      assertFrameEqualIgnoringOrder(actual, expected);
     });
     test("on throws error if only 'leftOn' is specified", () => {
       const df = pl.DataFrame({
@@ -660,7 +660,7 @@ describe("lazyframe", () => {
         df.lazy().join(otherDF, {
           leftOn: ["foo_left", "ham"],
         } as any);
-      expect(f).toThrow(TypeError);
+      assert.throws(f, TypeError);
     });
     test("on throws error if only 'rightOn' is specified", () => {
       const df = pl.DataFrame({
@@ -683,7 +683,7 @@ describe("lazyframe", () => {
             rightOn: ["foo_right", "ham"],
           } as any)
           .collectSync();
-      expect(f).toThrow(TypeError);
+      assert.throws(f, TypeError);
     });
     test("on takes precedence over left&right", () => {
       const df = pl.DataFrame({
@@ -714,7 +714,7 @@ describe("lazyframe", () => {
         apple: ["x", "y"],
         foo_right: [1, 10],
       });
-      expect(actual).toFrameEqualIgnoringOrder(expected);
+      assertFrameEqualIgnoringOrder(actual, expected);
     });
     test("how:left", () => {
       const actual = df
@@ -731,7 +731,7 @@ describe("lazyframe", () => {
         apple: ["x", "y", null],
         fooright: [1, 10, null],
       });
-      expect(actual).toFrameEqualIgnoringOrder(expected);
+      assertFrameEqualIgnoringOrder(actual, expected);
     });
     test("how:full", () => {
       const otherDF = pl
@@ -758,7 +758,7 @@ describe("lazyframe", () => {
         hamright: ["a", "d", null, null],
         fooright: [1, 10, null, null],
       });
-      expect(actual).toFrameEqualIgnoringOrder(expected);
+      assertFrameEqualIgnoringOrder(actual, expected);
       actual = df
         .lazy()
         .join(otherDF, {
@@ -774,7 +774,7 @@ describe("lazyframe", () => {
         apple: ["x", "y", null, null],
         fooright: [1, 10, null, null],
       });
-      expect(actual).toFrameEqualIgnoringOrder(expected);
+      assertFrameEqualIgnoringOrder(actual, expected);
     });
     test("suffix", () => {
       const actual = df
@@ -792,7 +792,7 @@ describe("lazyframe", () => {
         apple: ["x", "y", null],
         foo_other: [1, 10, null],
       });
-      expect(actual).toFrameEqualIgnoringOrder(expected);
+      assertFrameEqualIgnoringOrder(actual, expected);
     });
     test("coalesce:false", () => {
       const actual = df
@@ -812,31 +812,31 @@ describe("lazyframe", () => {
         ham_other: ["a", "b", null],
         foo_other: [1, 10, null],
       });
-      expect(actual).toFrameEqual(expected);
+      assertFrameEqual(actual, expected);
     });
     test("joinAsof", () => {
       let actual = df.lazy().joinAsof(otherDF, { on: "ham" }).collectSync();
-      expect(actual.shape).toEqual({ height: 3, width: 5 });
+      assert.deepStrictEqual(actual.shape, { height: 3, width: 5 });
       actual = df
         .lazy()
         .joinAsof(otherDF, { leftOn: "ham", rightOn: "ham" })
         .collectSync();
-      expect(actual.shape).toEqual({ height: 3, width: 5 });
+      assert.deepStrictEqual(actual.shape, { height: 3, width: 5 });
       let fn = () =>
         df.lazy().joinAsof(otherDF, { leftOn: "ham" }).collectSync();
-      expect(fn).toThrow();
+      assert.throws(fn);
       fn = () =>
         df
           .lazy()
           .joinAsof(otherDF, { leftOn: "ham", rightOn: "ham", byLeft: "ham" })
           .collectSync();
-      expect(fn).toThrow();
+      assert.throws(fn);
       fn = () =>
         df
           .lazy()
           .joinAsof(otherDF, { byLeft: "ham", byRight: "ham" })
           .collectSync();
-      expect(fn).toThrow();
+      assert.throws(fn);
       actual = df
         .lazy()
         .joinAsof(otherDF, {
@@ -846,7 +846,7 @@ describe("lazyframe", () => {
           byRight: "ham",
         })
         .collectSync();
-      expect(actual.shape).toEqual({ height: 3, width: 5 });
+      assert.deepStrictEqual(actual.shape, { height: 3, width: 5 });
       actual = df
         .lazy()
         .joinAsof(otherDF, {
@@ -856,12 +856,12 @@ describe("lazyframe", () => {
           byRight: ["ham"],
         })
         .collectSync();
-      expect(actual.shape).toEqual({ height: 3, width: 5 });
+      assert.deepStrictEqual(actual.shape, { height: 3, width: 5 });
       actual = df
         .lazy()
         .joinAsof(otherDF, { leftOn: "ham", rightOn: "ham", by: ["ham"] })
         .collectSync();
-      expect(actual.shape).toEqual({ height: 3, width: 5 });
+      assert.deepStrictEqual(actual.shape, { height: 3, width: 5 });
     });
   });
   test("last", () => {
@@ -877,7 +877,7 @@ describe("lazyframe", () => {
       foo: [3],
       ham: ["c"],
     });
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("limit", () => {
     const actual = pl
@@ -892,7 +892,7 @@ describe("lazyframe", () => {
       foo: [1],
       ham: ["a"],
     });
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("max", () => {
     const actual = pl
@@ -908,7 +908,7 @@ describe("lazyframe", () => {
       foo: [4],
       bar: [11],
     });
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("mean", () => {
     const actual = pl
@@ -924,7 +924,7 @@ describe("lazyframe", () => {
       foo: [2.75],
       bar: [1.75],
     });
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("median", () => {
     const actual = pl
@@ -940,7 +940,7 @@ describe("lazyframe", () => {
       foo: [2.5],
       bar: [1.5],
     });
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("min", () => {
     const actual = pl
@@ -956,7 +956,7 @@ describe("lazyframe", () => {
       foo: [2],
       bar: [1],
     });
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("quantile", () => {
     const actual = pl
@@ -968,7 +968,7 @@ describe("lazyframe", () => {
       .lazy()
       .quantile(0.5)
       .collectSync();
-    expect(actual.row(0)).toEqual([2, 7, null]);
+    assert.deepStrictEqual(actual.row(0), [2, 7, null]);
   });
   test("rename", () => {
     const actual = pl
@@ -984,7 +984,7 @@ describe("lazyframe", () => {
         ham: "ham_new",
       })
       .collectSync();
-    expect(actual.columns).toEqual(["foo_new", "bar_new", "ham_new"]);
+    assert.deepStrictEqual(actual.columns, ["foo_new", "bar_new", "ham_new"]);
   });
   test("reverse", () => {
     const actual = pl
@@ -1000,7 +1000,7 @@ describe("lazyframe", () => {
       foo: [4, 3, 2, 2],
       bar: [1, 1, 3, 2],
     });
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("tail", () => {
     const actual = pl
@@ -1015,7 +1015,7 @@ describe("lazyframe", () => {
       foo: [3],
       ham: ["c"],
     });
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("select:single", () => {
     const actual = pl
@@ -1028,9 +1028,9 @@ describe("lazyframe", () => {
       .select("ham")
       .collectSync();
     const ham = pl.Series("ham", ["a", "b", "c", null]);
-    expect(actual.width).toStrictEqual(1);
-    expect(() => actual.getColumn("foo")).toThrow();
-    expect(actual.getColumn("ham")).toSeriesEqual(ham);
+    assert.deepStrictEqual(actual.width, 1);
+    assert.throws(() => actual.getColumn("foo"));
+    assertSeriesEqual(actual.getColumn("ham"), ham);
   });
   test("select:strings", () => {
     const columns = ["ham", "foo"];
@@ -1045,9 +1045,9 @@ describe("lazyframe", () => {
       .collectSync();
     const foo = pl.Series("foo", [1, 2, 3, 1]);
     const ham = pl.Series("ham", ["a", "b", "c", null]);
-    expect(actual.width).toStrictEqual(2);
-    expect(actual.getColumn("foo")).toSeriesEqual(foo);
-    expect(actual.getColumn("ham")).toSeriesEqual(ham);
+    assert.deepStrictEqual(actual.width, 2);
+    assertSeriesEqual(actual.getColumn("foo"), foo);
+    assertSeriesEqual(actual.getColumn("ham"), ham);
   });
   test("select:expr", () => {
     const actual = pl
@@ -1061,9 +1061,9 @@ describe("lazyframe", () => {
       .collectSync();
     const foo = pl.Series("foo", [1, 2, 3, 1]);
     const ham = pl.Series("ham", ["a", "b", "c", null]);
-    expect(actual.width).toStrictEqual(2);
-    expect(actual.getColumn("foo")).toSeriesEqual(foo);
-    expect(actual.getColumn("ham")).toSeriesEqual(ham);
+    assert.deepStrictEqual(actual.width, 2);
+    assertSeriesEqual(actual.getColumn("foo"), foo);
+    assertSeriesEqual(actual.getColumn("ham"), ham);
   });
   test("shift:pos", () => {
     const actual = pl
@@ -1078,7 +1078,7 @@ describe("lazyframe", () => {
       foo: [null, 1, 2, 3],
       bar: [null, 6, 7, 8],
     });
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("shift:neg", () => {
     const actual = pl
@@ -1093,7 +1093,7 @@ describe("lazyframe", () => {
       foo: [2, 3, 1, null],
       bar: [7, 8, 1, null],
     });
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("shiftAndFill:positional", () => {
     const actual = pl
@@ -1108,7 +1108,7 @@ describe("lazyframe", () => {
       foo: [2, 3, 1, 99],
       bar: [7, 8, 1, 99],
     });
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("shiftAndFill:named", () => {
     const actual = pl
@@ -1123,7 +1123,7 @@ describe("lazyframe", () => {
       foo: [2, 3, 1, 99],
       bar: [7, 8, 1, 99],
     });
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("shiftAndFill:expr", () => {
     const actual = pl
@@ -1138,7 +1138,7 @@ describe("lazyframe", () => {
       foo: [2, 3, 1, 99],
       bar: [7, 8, 1, 99],
     });
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("slice:positional", () => {
     const actual = pl
@@ -1153,7 +1153,7 @@ describe("lazyframe", () => {
       foo: [1, 2],
       bar: [6, 7],
     });
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("slice:named", () => {
     const actual = pl
@@ -1168,7 +1168,7 @@ describe("lazyframe", () => {
       foo: [1, 2],
       bar: [6, 7],
     });
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("sort:positional", () => {
     const actual = pl
@@ -1183,7 +1183,7 @@ describe("lazyframe", () => {
       foo: [1, 1, 2, 3],
       bar: [1, 6, 7, 8],
     });
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("sort:named", () => {
     const actual = pl
@@ -1198,7 +1198,7 @@ describe("lazyframe", () => {
       foo: [3, 2, 1, 1],
       bar: [8, 7, 6, 1],
     });
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("sort:multi-args", () => {
     const actual = pl
@@ -1217,7 +1217,7 @@ describe("lazyframe", () => {
       bar: [2, 6, 7, 8],
       baz: ["A", "a", "b", "d"],
     });
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("sort:nulls_last:false", () => {
     const actual = pl
@@ -1230,7 +1230,7 @@ describe("lazyframe", () => {
     const expected = pl.DataFrame({
       foo: [null, 1, 2, 3],
     });
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("sort:nulls_last:true", () => {
     const actual = pl
@@ -1243,7 +1243,7 @@ describe("lazyframe", () => {
     const expected = pl.DataFrame({
       foo: [1, 2, 3, null],
     });
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("sum", () => {
     const actual = pl
@@ -1259,7 +1259,7 @@ describe("lazyframe", () => {
       foo: [11],
       bar: [17],
     });
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("std", () => {
     const actual = pl
@@ -1275,7 +1275,7 @@ describe("lazyframe", () => {
       foo: [0.9574271077563381],
       bar: [0.9574271077563381],
     });
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("var", () => {
     const actual = pl
@@ -1291,7 +1291,7 @@ describe("lazyframe", () => {
       foo: [0.9166666666666666],
       bar: [0.9166666666666666],
     });
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("withColumn", () => {
     const actual = pl
@@ -1308,7 +1308,7 @@ describe("lazyframe", () => {
       pl.Series("bar", [6, 2, 8], pl.Int16),
       pl.Series("col_a", ["a", "a", "a"], pl.Utf8),
     ]);
-    expect(actual).toFrameEqualIgnoringOrder(expected);
+    assertFrameEqualIgnoringOrder(actual, expected);
   });
   test("withColumn:series", async () => {
     const actual: pl.DataFrame = pl
@@ -1319,7 +1319,7 @@ describe("lazyframe", () => {
     const expected: pl.DataFrame = pl.DataFrame([
       pl.Series("series1", [1, 2, 3, 4], pl.Int16),
     ]);
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("withColumns:series", async () => {
     const actual: pl.DataFrame = pl
@@ -1334,7 +1334,7 @@ describe("lazyframe", () => {
       pl.Series("series1", [1, 2, 3, 4], pl.Int16),
       pl.Series("series2", [1, 2, 3, 4], pl.Int32),
     ]);
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("select:series", async () => {
     let actual: pl.DataFrame = pl
@@ -1349,7 +1349,7 @@ describe("lazyframe", () => {
       pl.Series("series1", [1, 2, 3, 4], pl.Int16),
       pl.Series("series2", [1, 2, 3, 4], pl.Int32),
     ]);
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
     actual = pl
       .DataFrame({ text: ["hello"] })
       .lazy()
@@ -1357,7 +1357,7 @@ describe("lazyframe", () => {
       .collectSync();
 
     expected = pl.DataFrame([pl.Series("series", [1, 2, 3])]);
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
 
     actual = pl
       .DataFrame({ text: ["hello"] })
@@ -1365,7 +1365,7 @@ describe("lazyframe", () => {
       .select("text", pl.Series("series", [1]))
       .collectSync();
     expected = pl.DataFrame({ text: ["hello"], series: [1] });
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("select:lit", () => {
     const df = pl.DataFrame({ a: [1] }, { schema: { a: pl.Float32 } });
@@ -1374,7 +1374,7 @@ describe("lazyframe", () => {
       a: [1],
       literal: [1],
     });
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
     actual = df
       .lazy()
       .select(pl.col("a").mul(2).alias("b"), pl.lit(2))
@@ -1383,7 +1383,7 @@ describe("lazyframe", () => {
       b: [2],
       literal: [2],
     });
-    expect(actual).toFrameEqual(expected2);
+    assertFrameEqual(actual, expected2);
   });
   test("inspect", () => {
     const actual = pl
@@ -1392,26 +1392,26 @@ describe("lazyframe", () => {
         bar: [6, 2, 8],
       })
       .lazy();
-    expect(actual).toBeDefined();
+    assert.notStrictEqual(actual, undefined);
   });
   test("LazyDataFrame.isLazyDataFrame", () => {
     const ldf = pl.DataFrame({ a: [1, 2] }).lazy();
-    expect(pl.LazyDataFrame.isLazyDataFrame(ldf)).toBe(true);
-    expect(pl.LazyDataFrame.isLazyDataFrame({})).toBe(false);
+    assert.strictEqual(pl.LazyDataFrame.isLazyDataFrame(ldf), true);
+    assert.strictEqual(pl.LazyDataFrame.isLazyDataFrame({}), false);
   });
   test("LazyDataFrame.deserialize", () => {
     const ldf = pl.DataFrame({ foo: [1, 2], bar: [3, 4] }).lazy();
 
     const json = ldf.serialize("json");
     const actualJson = pl.LazyDataFrame.deserialize(json, "json").collectSync();
-    expect(actualJson).toFrameEqual(ldf.collectSync());
+    assertFrameEqual(actualJson, ldf.collectSync());
 
     const bincode = ldf.serialize("bincode");
     const actualBincode = pl.LazyDataFrame.deserialize(
       bincode,
       "bincode",
     ).collectSync();
-    expect(actualBincode).toFrameEqual(ldf.collectSync());
+    assertFrameEqual(actualBincode, ldf.collectSync());
   });
   test("LazyDataFrame.fromExternal", () => {
     const ldf = pl.DataFrame({ foo: [1, 2], bar: ["a", "b"] }).lazy();
@@ -1419,8 +1419,8 @@ describe("lazyframe", () => {
 
     const cloned = pl.LazyDataFrame.fromExternal(external);
 
-    expect(pl.LazyDataFrame.isLazyDataFrame(cloned)).toBe(true);
-    expect(cloned.collectSync()).toFrameEqual(ldf.collectSync());
+    assert.strictEqual(pl.LazyDataFrame.isLazyDataFrame(cloned), true);
+    assertFrameEqual(cloned.collectSync(), ldf.collectSync());
   });
   test("toJSON", () => {
     const ldf = pl
@@ -1434,11 +1434,11 @@ describe("lazyframe", () => {
     const rootJson = JSON.parse(JSON.stringify(ldf));
     const nestedJson = JSON.parse(JSON.stringify({ ldf }));
 
-    expect(typeof directJson).toBe("string");
-    expect(JSON.parse(directJson)).toBeDefined();
-    expect(typeof rootJson).toBe("object");
-    expect(typeof nestedJson.ldf).toBe("string");
-    expect(JSON.parse(nestedJson.ldf)).toBeDefined();
+    assert.strictEqual(typeof directJson, "string");
+    assert.notStrictEqual(JSON.parse(directJson), undefined);
+    assert.strictEqual(typeof rootJson, "object");
+    assert.strictEqual(typeof nestedJson.ldf, "string");
+    assert.notStrictEqual(JSON.parse(nestedJson.ldf), undefined);
   });
   test("withColumns", () => {
     const actual = pl
@@ -1455,7 +1455,7 @@ describe("lazyframe", () => {
       pl.Series("col_a", ["a", "a", "a"], pl.Utf8),
       pl.Series("col_b", ["b", "b", "b"], pl.Utf8),
     ]);
-    expect(actual).toFrameEqualIgnoringOrder(expected);
+    assertFrameEqualIgnoringOrder(actual, expected);
   });
   test("withColumns:array", () => {
     const actual = pl
@@ -1472,7 +1472,7 @@ describe("lazyframe", () => {
       pl.Series("col_a", ["a", "a", "a"], pl.Utf8),
       pl.Series("col_b", ["b", "b", "b"], pl.Utf8),
     ]);
-    expect(actual).toFrameEqualIgnoringOrder(expected);
+    assertFrameEqualIgnoringOrder(actual, expected);
   });
   test("withColumnRenamed", () => {
     const actual = pl
@@ -1488,7 +1488,7 @@ describe("lazyframe", () => {
       pl.Series("apple", [1, 2, 9], pl.Int16),
       pl.Series("bar", [6, 2, 8], pl.Int16),
     ]);
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("withRowCount", () => {
     const actual = pl
@@ -1505,7 +1505,7 @@ describe("lazyframe", () => {
       pl.Series("foo", [1, 2, 9], pl.Int16),
       pl.Series("bar", [6, 2, 8], pl.Int16),
     ]);
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("withRowIndex", () => {
     const ldf = pl
@@ -1518,11 +1518,11 @@ describe("lazyframe", () => {
     let actual = ldf.withRowIndex().collectSync();
     let expected = ldf.collectSync();
     expected.insertAtIdx(0, pl.Series("index", [0, 1, 2], pl.Int16));
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
     actual = ldf.withRowIndex("idx", 100).collectSync();
     expected = ldf.collectSync();
     expected.insertAtIdx(0, pl.Series("idx", [100, 101, 102], pl.Int16));
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("tail", () => {
     const actual = pl
@@ -1538,7 +1538,7 @@ describe("lazyframe", () => {
       foo: [4],
       bar: [1],
     });
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("head", () => {
     const actual = pl
@@ -1554,7 +1554,7 @@ describe("lazyframe", () => {
       foo: [2],
       bar: [2],
     });
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("limit", () => {
     const actual = pl
@@ -1570,7 +1570,7 @@ describe("lazyframe", () => {
       foo: [2],
       bar: [2],
     });
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("str:padStart", () => {
     const actual = pl
@@ -1583,7 +1583,7 @@ describe("lazyframe", () => {
     const expected = pl.DataFrame({
       ham: ["--a", "--b", "--c"],
     });
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("str:padEnd", () => {
     const actual = pl
@@ -1596,7 +1596,7 @@ describe("lazyframe", () => {
     const expected = pl.DataFrame({
       ham: ["a--", "b--", "c--"],
     });
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("str:zFill", () => {
     const actual = pl
@@ -1609,7 +1609,7 @@ describe("lazyframe", () => {
     const expected = pl.DataFrame({
       ham: ["00a", "00b", "00c"],
     });
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("json:extract", () => {
     const expected = pl.DataFrame({
@@ -1635,7 +1635,7 @@ describe("lazyframe", () => {
     const actual = ldf
       .select(pl.col("json").str.jsonDecode(dtype))
       .collectSync();
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("sinkCSV:path", async () => {
     const ldf = pl
@@ -1650,7 +1650,7 @@ describe("lazyframe", () => {
       streaming: true,
       noOptimization: true,
     });
-    expect(newDF.sort("foo")).toFrameEqual(actualDf);
+    assertFrameEqual(newDF.sort("foo"), actualDf);
     fs.rmSync("./test.csv");
   });
   test("sinkCSV:noHeader", async () => {
@@ -1663,7 +1663,7 @@ describe("lazyframe", () => {
     await ldf.sinkCSV("./test.csv", { includeHeader: false }).collect();
     const newDF: pl.DataFrame = pl.readCSV("./test.csv", { hasHeader: false });
     const actualDf: pl.DataFrame = await ldf.collect();
-    expect(newDF.sort("column_1")).toFrameEqual(actualDf);
+    assertFrameEqual(newDF.sort("column_1"), actualDf);
     fs.rmSync("./test.csv");
   });
   test("sinkCSV:separator", async () => {
@@ -1676,7 +1676,7 @@ describe("lazyframe", () => {
     await ldf.sinkCSV("./test.csv", { separator: "|" }).collect();
     const newDF: pl.DataFrame = pl.readCSV("./test.csv", { sep: "|" });
     const actualDf: pl.DataFrame = await ldf.collect();
-    expect(newDF.sort("foo")).toFrameEqual(actualDf);
+    assertFrameEqual(newDF.sort("foo"), actualDf);
     fs.rmSync("./test.csv");
   });
   test("sinkCSV:nullValue", async () => {
@@ -1691,7 +1691,7 @@ describe("lazyframe", () => {
     const actualDf: pl.DataFrame = await (await ldf.collect()).withColumn(
       pl.col("bar").fillNull("BOOM"),
     );
-    expect(newDF.sort("foo")).toFrameEqual(actualDf);
+    assertFrameEqual(newDF.sort("foo"), actualDf);
     fs.rmSync("./test.csv");
   });
   test("sinkParquet:path", async () => {
@@ -1704,7 +1704,7 @@ describe("lazyframe", () => {
     await ldf.sinkParquet("./test.parquet").collect();
     const newDF: pl.DataFrame = pl.readParquet("./test.parquet");
     const actualDf: pl.DataFrame = await ldf.collect();
-    expect(newDF.sort("foo")).toFrameEqual(actualDf);
+    assertFrameEqual(newDF.sort("foo"), actualDf);
     fs.rmSync("./test.parquet");
   });
   test("sinkParquet:compression:gzip", async () => {
@@ -1717,7 +1717,7 @@ describe("lazyframe", () => {
     await ldf.sinkParquet("./test.parquet", { compression: "gzip" }).collect();
     const newDF: pl.DataFrame = pl.readParquet("./test.parquet");
     const actualDf: pl.DataFrame = await ldf.collect();
-    expect(newDF.sort("foo")).toFrameEqual(actualDf);
+    assertFrameEqual(newDF.sort("foo"), actualDf);
     fs.rmSync("./test.parquet");
   });
   test("sinkNdJson:path", async () => {
@@ -1729,7 +1729,7 @@ describe("lazyframe", () => {
       .lazy();
     await ldf.sinkNdJson("./test.ndjson").collect();
     let df = pl.scanJson("./test.ndjson").collectSync();
-    expect(df.shape).toEqual({ height: 3, width: 2 });
+    assert.deepStrictEqual(df.shape, { height: 3, width: 2 });
 
     await ldf
       .sinkNdJson("./test.ndjson", {
@@ -1739,7 +1739,7 @@ describe("lazyframe", () => {
       })
       .collect();
     df = pl.scanJson("./test.ndjson").collectSync();
-    expect(df.shape).toEqual({ height: 3, width: 2 });
+    assert.deepStrictEqual(df.shape, { height: 3, width: 2 });
 
     fs.rmSync("./test.ndjson");
   });
@@ -1752,7 +1752,7 @@ describe("lazyframe", () => {
       .lazy();
     await ldf.sinkIpc("./test.ipc").collect();
     let df = pl.scanIPC("./test.ipc").collectSync();
-    expect(df.shape).toEqual({ height: 3, width: 2 });
+    assert.deepStrictEqual(df.shape, { height: 3, width: 2 });
 
     await ldf
       .sinkIpc("./test.ipc", {
@@ -1763,7 +1763,7 @@ describe("lazyframe", () => {
       })
       .collect();
     df = pl.scanIPC("./test.ipc").collectSync();
-    expect(df.shape).toEqual({ height: 3, width: 2 });
+    assert.deepStrictEqual(df.shape, { height: 3, width: 2 });
     fs.rmSync("./test.ipc");
   });
   test("unpivot renamed", () => {
@@ -1788,11 +1788,11 @@ describe("lazyframe", () => {
       foo: ["asset_key_1", "asset_key_2", "asset_key_3"],
       bar: ["123", "456", "abc"],
     });
-    expect(actual.collectSync()).toFrameEqual(expected);
+    assertFrameEqual(actual.collectSync(), expected);
   });
   test("unique:invalid argument", () => {
     const ldf = pl.DataFrame({ foo: [1, 1, 2] }).lazy();
     const fn = () => ldf.unique(123 as any);
-    expect(fn).toThrow(TypeError);
+    assert.throws(fn, TypeError);
   });
 });

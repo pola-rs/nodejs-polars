@@ -1,26 +1,39 @@
-import {DataFrame} from "@polars/dataframe";
-import {Series} from "@polars/series";
+import { DataFrame } from "@polars/dataframe";
+import { Series } from "@polars/series";
 
 declare global {
-  namespace jest {
-    interface Matchers<R> {
-      toSeriesEqual(b: Series<any>): R;
-      toSeriesStrictEqual(b: Series<any>): R;
-      toFrameEqual(b: DataFrame, nullEqual?: boolean): R;
-      /**
-       * Compares two DataFrames, including the dtypes
-       *
-       * @example
-       * ```
-       * > df = pl.Dataframe([pl.Series("int32": [1,2], pl.Int32)])
-       * > other = pl.Dataframe([pl.Series("int32": [1,2], pl.UInt32)])
-       *
-       * > expect(df).toFrameEqual(other) // passes
-       * > expect(df).toFrameStrictEqual(other) // fails
-       * ```
-       */
-      toFrameStrictEqual(b: DataFrame): R;
-      toFrameEqualIgnoringOrder(b: DataFrame): R;
-    }
-  }
+  type DoneCallback = (error?: unknown) => void;
+  type CompatTestFn = {
+    (name: string, fn: any): void;
+    each(
+      cases: readonly unknown[] | TemplateStringsArray,
+      ...values: unknown[]
+    ): (name: string, fn: any) => void;
+  };
+
+  const describe: typeof import("node:test").describe;
+  const it: CompatTestFn;
+  const test: CompatTestFn;
+  const beforeAll: typeof import("node:test").before;
+  const beforeEach: typeof import("node:test").beforeEach;
+  const afterAll: typeof import("node:test").after;
+  const afterEach: typeof import("node:test").afterEach;
+  const assert: typeof import("node:assert/strict");
+  function assertSeriesEqual(actual: Series<any>, expected: Series<any>): void;
+  function assertSeriesStrictEqual(
+    actual: Series<any>,
+    expected: Series<any>,
+  ): void;
+  function assertFrameEqual(
+    actual: DataFrame,
+    expected: DataFrame,
+    nullEqual?: boolean,
+  ): void;
+  function assertFrameStrictEqual(actual: DataFrame, expected: DataFrame): void;
+  function assertFrameEqualIgnoringOrder(
+    actual: DataFrame,
+    expected: DataFrame,
+  ): void;
 }
+
+export {};

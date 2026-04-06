@@ -17,7 +17,7 @@ describe("groupby", () => {
       foo: [[1, 3], [3, 7], [5]],
       bar: [[2, 4], [4, 8], [6]],
     });
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("agg:column", () => {
     const actual = df
@@ -30,7 +30,7 @@ describe("groupby", () => {
       name: ["a", "b", "c"],
       foo: [1, 3, 5],
     });
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("agg:columns", () => {
     const actual = df
@@ -45,7 +45,7 @@ describe("groupby", () => {
       foo: [1, 3, 5],
       bar: [6, 12, 6],
     });
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("len", () => {
     let actual = df.groupBy("name").len().sort("name");
@@ -53,10 +53,10 @@ describe("groupby", () => {
       name: ["a", "b", "c"],
       name_count: [2, 2, 1],
     });
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
     // Test for single column DF
     actual = df.select("name").groupBy("name").len().sort("name");
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("first", () => {
     const actual = df.groupBy("name").first().sort("name");
@@ -65,7 +65,7 @@ describe("groupby", () => {
       foo: [1, 3, 5],
       bar: [2, 4, 6],
     });
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("head", () => {
     const actual = df.groupBy("name").head(1).sort("name");
@@ -74,7 +74,7 @@ describe("groupby", () => {
       foo: [[1], [3], [5]],
       bar: [[2], [4], [6]],
     });
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("last", () => {
     const actual = df.groupBy("name").last().sort("name");
@@ -84,7 +84,7 @@ describe("groupby", () => {
       foo: [3, 7, 5],
       bar: [4, 8, 6],
     });
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("tail", () => {
     const actual = df.groupBy("name").tail(1).sort("name");
@@ -93,7 +93,7 @@ describe("groupby", () => {
       foo: [[3], [7], [5]],
       bar: [[4], [8], [6]],
     });
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("max", () => {
     const actual = df.groupBy("name").max().sort("name");
@@ -102,7 +102,7 @@ describe("groupby", () => {
       foo: [3, 7, 5],
       bar: [4, 8, 6],
     });
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("mean", () => {
     const actual = df.groupBy("name").mean().sort("name");
@@ -111,7 +111,7 @@ describe("groupby", () => {
       foo: [2, 5, 5],
       bar: [3, 6, 6],
     });
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("median", () => {
     const actual = df.groupBy("name").median().sort("name");
@@ -120,7 +120,7 @@ describe("groupby", () => {
       foo: [2, 5, 5],
       bar: [3, 6, 6],
     });
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("min", () => {
     const actual = df.groupBy("name").min().sort("name");
@@ -129,7 +129,7 @@ describe("groupby", () => {
       foo: [1, 3, 5],
       bar: [2, 4, 6],
     });
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("nUnique", () => {
     const actual = df.groupBy("name").nUnique().sort("name");
@@ -138,7 +138,7 @@ describe("groupby", () => {
       foo: [2, 2, 1],
       bar: [2, 2, 1],
     });
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("sum", () => {
     const actual = df.groupBy("name").sum().sort("name");
@@ -147,7 +147,7 @@ describe("groupby", () => {
       foo: [4, 10, 5],
       bar: [6, 12, 6],
     });
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("quantile", () => {
     const actual = df.groupBy("name").quantile(1).sort("name");
@@ -156,7 +156,7 @@ describe("groupby", () => {
       foo: [3, 7, 5],
       bar: [4, 8, 6],
     });
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("groups", () => {
     const actual = df.groupBy("name").groups().sort("name");
@@ -164,7 +164,7 @@ describe("groupby", () => {
       name: ["a", "b", "c"],
       groups: [[0, 2], [1, 4], [3]],
     });
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("inspect", () => {
     const _actual = df
@@ -191,9 +191,9 @@ describe("groupby ops", () => {
     const out = df
       .groupByRolling({ indexColumn: "dt", period: "2d" })
       .agg(a.sum().as("sum_a"), a.min().as("min_a"), a.max().as("max_a"));
-    expect(out["sum_a"].toArray()).toEqual([3, 10, 15, 24, 11, 1]);
-    expect(out["max_a"].toArray()).toEqual([3, 7, 7, 9, 9, 1]);
-    expect(out["min_a"].toArray()).toEqual([3, 3, 3, 3, 2, 1]);
+    assert.deepStrictEqual(out["sum_a"].toArray(), [3, 10, 15, 24, 11, 1]);
+    assert.deepStrictEqual(out["max_a"].toArray(), [3, 7, 7, 9, 9, 1]);
+    assert.deepStrictEqual(out["min_a"].toArray(), [3, 3, 3, 3, 2, 1]);
   });
   test("dynamic - 1", () => {
     const df = pl.DataFrame({
@@ -223,7 +223,7 @@ describe("groupby ops", () => {
       new Date("2021-04-29"),
     ];
     const actual = out.getColumn("event_date");
-    expect(actual.toArray()).toEqual(expected);
+    assert.deepStrictEqual(actual.toArray(), expected);
   });
   test("dynamic - 2", () => {
     const df = pl.DataFrame({
@@ -253,7 +253,7 @@ describe("groupby ops", () => {
       new Date("2021-04-29"),
     ];
     const actual = out.getColumn("event_date").toArray();
-    expect(actual).toEqual(expected);
+    assert.deepStrictEqual(actual, expected);
   });
   test("dynamic-int", () => {
     const out = pl
@@ -271,7 +271,7 @@ describe("groupby ops", () => {
       .agg(pl.col("a").list().alias("lst"));
     const actual = out.getColumn("lst").toArray();
     const expected = [[2, 3], [3]];
-    expect(actual).toEqual(expected);
+    assert.deepStrictEqual(actual, expected);
   });
   test("default negative every offset dynamic groupby", () => {
     const dates = [
@@ -301,6 +301,6 @@ describe("groupby ops", () => {
       ],
       idx: [[0, 1], [2], [3]],
     });
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
 });

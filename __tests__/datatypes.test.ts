@@ -4,129 +4,129 @@ describe("DataType variants", () => {
   describe("Simple types", () => {
     it("Null should have variant 'Null'", () => {
       const dt = DataType.Null;
-      expect(dt.variant).toBe("Null");
+      assert.strictEqual(dt.variant, "Null");
     });
 
     it("Bool should have variant 'Bool'", () => {
       const dt = DataType.Bool;
-      expect(dt.variant).toBe("Bool");
+      assert.strictEqual(dt.variant, "Bool");
     });
 
     it("Int8 should have variant 'Int8'", () => {
       const dt = DataType.Int8;
-      expect(dt.variant).toBe("Int8");
+      assert.strictEqual(dt.variant, "Int8");
     });
 
     it("Int16 should have variant 'Int16'", () => {
       const dt = DataType.Int16;
-      expect(dt.variant).toBe("Int16");
+      assert.strictEqual(dt.variant, "Int16");
     });
 
     it("Int32 should have variant 'Int32'", () => {
       const dt = DataType.Int32;
-      expect(dt.variant).toBe("Int32");
+      assert.strictEqual(dt.variant, "Int32");
     });
 
     it("Int64 should have variant 'Int64'", () => {
       const dt = DataType.Int64;
-      expect(dt.variant).toBe("Int64");
+      assert.strictEqual(dt.variant, "Int64");
     });
 
     it("UInt8 should have variant 'UInt8'", () => {
       const dt = DataType.UInt8;
-      expect(dt.variant).toBe("UInt8");
+      assert.strictEqual(dt.variant, "UInt8");
     });
 
     it("UInt16 should have variant 'UInt16'", () => {
       const dt = DataType.UInt16;
-      expect(dt.variant).toBe("UInt16");
+      assert.strictEqual(dt.variant, "UInt16");
     });
 
     it("UInt32 should have variant 'UInt32'", () => {
       const dt = DataType.UInt32;
-      expect(dt.variant).toBe("UInt32");
+      assert.strictEqual(dt.variant, "UInt32");
     });
 
     it("UInt64 should have variant 'UInt64'", () => {
       const dt = DataType.UInt64;
-      expect(dt.variant).toBe("UInt64");
+      assert.strictEqual(dt.variant, "UInt64");
     });
 
     it("Float32 should have variant 'Float32'", () => {
       const dt = DataType.Float32;
-      expect(dt.variant).toBe("Float32");
+      assert.strictEqual(dt.variant, "Float32");
     });
 
     it("Float64 should have variant 'Float64'", () => {
       const dt = DataType.Float64;
-      expect(dt.variant).toBe("Float64");
+      assert.strictEqual(dt.variant, "Float64");
     });
 
     it("Date should have variant 'Date'", () => {
       const dt = DataType.Date;
-      expect(dt.variant).toBe("Date");
+      assert.strictEqual(dt.variant, "Date");
     });
 
     it("Time should have variant 'Time'", () => {
       const dt = DataType.Time;
-      expect(dt.variant).toBe("Time");
+      assert.strictEqual(dt.variant, "Time");
     });
 
     it("Object should have variant 'Object'", () => {
       const dt = DataType.Object;
-      expect(dt.variant).toBe("Object");
+      assert.strictEqual(dt.variant, "Object");
     });
 
     it("Utf8 should have variant 'Utf8'", () => {
       const dt = DataType.Utf8;
-      expect(dt.variant).toBe("Utf8");
+      assert.strictEqual(dt.variant, "Utf8");
     });
 
     it("String should have variant 'String'", () => {
       const dt = DataType.String;
-      expect(dt.variant).toBe("String");
+      assert.strictEqual(dt.variant, "String");
     });
 
     it("Categorical should have variant 'Categorical'", () => {
       const dt = DataType.Categorical;
-      expect(dt.variant).toBe("Categorical");
+      assert.strictEqual(dt.variant, "Categorical");
     });
   });
 
   describe("Complex types", () => {
     it("Decimal should have variant 'Decimal'", () => {
       const dt = DataType.Decimal();
-      expect(dt.variant).toBe("Decimal");
+      assert.strictEqual(dt.variant, "Decimal");
     });
 
     it("Decimal with precision and scale should have variant 'Decimal'", () => {
       const dt = DataType.Decimal(10, 2);
-      expect(dt.variant).toBe("Decimal");
+      assert.strictEqual(dt.variant, "Decimal");
     });
 
     it("Datetime should have variant 'Datetime'", () => {
       const dt = DataType.Datetime();
-      expect(dt.variant).toBe("Datetime");
+      assert.strictEqual(dt.variant, "Datetime");
     });
 
     it("Datetime with timeUnit should have variant 'Datetime'", () => {
       const dt = DataType.Datetime("ms");
-      expect(dt.variant).toBe("Datetime");
+      assert.strictEqual(dt.variant, "Datetime");
     });
 
     it("Datetime with timeUnit and timeZone should have variant 'Datetime'", () => {
       const dt = DataType.Datetime("ms", "America/New_York");
-      expect(dt.variant).toBe("Datetime");
+      assert.strictEqual(dt.variant, "Datetime");
     });
 
     it("List should have variant 'List'", () => {
       const dt = DataType.List(DataType.Int32);
-      expect(dt.variant).toBe("List");
+      assert.strictEqual(dt.variant, "List");
     });
 
     it("FixedSizeList should have variant 'FixedSizeList'", () => {
       const dt = DataType.FixedSizeList(DataType.Float64, 5);
-      expect(dt.variant).toBe("FixedSizeList");
+      assert.strictEqual(dt.variant, "FixedSizeList");
     });
 
     it("Struct should have variant 'Struct'", () => {
@@ -134,7 +134,7 @@ describe("DataType variants", () => {
         a: DataType.Int32,
         b: DataType.Utf8,
       });
-      expect(dt.variant).toBe("Struct");
+      assert.strictEqual(dt.variant, "Struct");
     });
   });
 
@@ -144,8 +144,8 @@ describe("DataType variants", () => {
       const dt2 = DataType.Int32;
       const dt3 = DataType.Int64;
 
-      expect(dt1.equals(dt2)).toBe(true);
-      expect(dt1.equals(dt3)).toBe(false);
+      assert.strictEqual(dt1.equals(dt2), true);
+      assert.strictEqual(dt1.equals(dt3), false);
     });
 
     it("should use variant for complex type comparison", () => {
@@ -153,8 +153,8 @@ describe("DataType variants", () => {
       const dt2 = DataType.List(DataType.Int32);
       const dt3 = DataType.List(DataType.Float64);
 
-      expect(dt1.equals(dt2)).toBe(true);
-      expect(dt1.equals(dt3)).toBe(false);
+      assert.strictEqual(dt1.equals(dt2), true);
+      assert.strictEqual(dt1.equals(dt3), false);
     });
   });
 });
@@ -163,8 +163,9 @@ describe("DataType behavior", () => {
   it("toString and inspect include nested details", () => {
     const dt = DataType.List(DataType.Int32);
 
-    expect(dt.toString()).toBe("DataType(List(DataType(Int32)))");
-    expect(dt[Symbol.for("nodejs.util.inspect.custom")]()).toBe(
+    assert.strictEqual(dt.toString(), "DataType(List(DataType(Int32)))");
+    assert.strictEqual(
+      dt[Symbol.for("nodejs.util.inspect.custom")](),
       "DataType(List(DataType(Int32)))",
     );
   });
@@ -174,11 +175,11 @@ describe("DataType behavior", () => {
     const decimal = DataType.Decimal(10, 2);
     const fixed = DataType.FixedSizeList(DataType.Int16, 3);
 
-    expect(simple.toJSON()).toEqual({ DataType: "Int32" });
-    expect(decimal.toJSON()).toEqual({
+    assert.deepStrictEqual(simple.toJSON(), { DataType: "Int32" });
+    assert.deepStrictEqual(decimal.toJSON(), {
       DataType: { Decimal: { precision: 10, scale: 2 } },
     });
-    expect(fixed.toJSON()).toEqual({
+    assert.deepStrictEqual(fixed.toJSON(), {
       DataType: {
         FixedSizeList: {
           type: { DataType: "Int16" },
@@ -192,8 +193,8 @@ describe("DataType behavior", () => {
     const fixed = DataType.FixedSizeList(DataType.UInt8, 4);
     const list = DataType.List(DataType.UInt8);
 
-    expect(fixed.asFixedSizeList()).toBe(fixed);
-    expect(list.asFixedSizeList()).toBeNull();
+    assert.strictEqual(fixed.asFixedSizeList(), fixed);
+    assert.strictEqual(list.asFixedSizeList(), null);
   });
 
   it("Struct accepts object and Field[] constructors equivalently", () => {
@@ -206,33 +207,40 @@ describe("DataType behavior", () => {
       new Field("b", DataType.Utf8),
     ]);
 
-    expect(fromObject.equals(fromFields)).toBe(true);
+    assert.strictEqual(fromObject.equals(fromFields), true);
     const actual = fromFields.toJSON() as any;
-    expect(actual.DataType.Struct).toHaveLength(2);
-    expect(actual.DataType.Struct[0]).toEqual(new Field("a", DataType.Int32));
-    expect(actual.DataType.Struct[1]).toEqual(new Field("b", DataType.Utf8));
+    assert.strictEqual(actual.DataType.Struct.length, 2);
+    assert.deepStrictEqual(
+      actual.DataType.Struct[0],
+      new Field("a", DataType.Int32),
+    );
+    assert.deepStrictEqual(
+      actual.DataType.Struct[1],
+      new Field("b", DataType.Utf8),
+    );
   });
 
   it("deserialize handles string/simple and complex nested variants", () => {
-    expect(DataType.deserialize("Int32")).toEqual(DataType.Int32);
+    assert.deepStrictEqual(DataType.deserialize("Int32"), DataType.Int32);
 
     const datetime = DataType.deserialize({
       variant: "Datetime",
       inner: ["us", "UTC"],
     });
-    expect(datetime.equals(DataType.Datetime("us", "UTC"))).toBe(true);
+    assert.strictEqual(datetime.equals(DataType.Datetime("us", "UTC")), true);
 
     const list = DataType.deserialize({
       variant: "List",
       inner: ["Int64"],
     });
-    expect(list.equals(DataType.List(DataType.Int64))).toBe(true);
+    assert.strictEqual(list.equals(DataType.List(DataType.Int64)), true);
 
     const fixed = DataType.deserialize({
       variant: "FixedSizeList",
       inner: ["Float32", 2],
     });
-    expect(fixed.equals(DataType.FixedSizeList(DataType.Float32, 2))).toBe(
+    assert.strictEqual(
+      fixed.equals(DataType.FixedSizeList(DataType.Float32, 2)),
       true,
     );
 
@@ -245,13 +253,14 @@ describe("DataType behavior", () => {
         ],
       ],
     });
-    expect(
+    assert.strictEqual(
       struct.equals(
         DataType.Struct({
           id: DataType.UInt32,
           label: DataType.Utf8,
         }),
       ),
-    ).toBe(true);
+      true,
+    );
   });
 });

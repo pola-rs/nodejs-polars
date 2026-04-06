@@ -10,7 +10,7 @@ describe("serde", () => {
     const deserde = pl.LazyDataFrame.deserialize(buf, "json");
     const expected = df.collectSync();
     const actual = deserde.collectSync();
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
 
   test("lazyframe:bincode", () => {
@@ -19,7 +19,7 @@ describe("serde", () => {
     const deserde = pl.LazyDataFrame.deserialize(buf, "bincode");
     const expected = df.collectSync();
     const actual = deserde.collectSync();
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("expr:json", () => {
     const expr = pl.cols("foo", "bar").sortBy("other");
@@ -27,14 +27,14 @@ describe("serde", () => {
     const buf = expr.serialize("json");
     const actual = pl.Expr.deserialize(buf, "json");
 
-    expect(actual.toString()).toEqual(expr.toString());
+    assert.deepStrictEqual(actual.toString(), expr.toString());
   });
   test("expr:bincode", () => {
     const expr = pl.cols("foo", "bar").sortBy("other");
     const buf = expr.serialize("bincode");
     const actual = pl.Expr.deserialize(buf, "bincode");
 
-    expect(actual.toString()).toEqual(expr.toString());
+    assert.deepStrictEqual(actual.toString(), expr.toString());
   });
   test("dataframe:json", () => {
     const df = pl.DataFrame({
@@ -43,7 +43,7 @@ describe("serde", () => {
     });
     const buf = df.serialize("json");
     const expected = pl.DataFrame.deserialize(buf, "json");
-    expect(df).toFrameEqual(expected);
+    assertFrameEqual(df, expected);
   });
   test("dataframe:bincode", () => {
     const df = pl.DataFrame({
@@ -52,7 +52,7 @@ describe("serde", () => {
     });
     const buf = df.serialize("bincode");
     const expected = pl.DataFrame.deserialize(buf, "bincode");
-    expect(df).toFrameEqual(expected);
+    assertFrameEqual(df, expected);
   });
 
   test("dataframe:unsupported", () => {
@@ -64,23 +64,23 @@ describe("serde", () => {
     const buf = df.serialize("bincode");
     const de = () => pl.DataFrame.deserialize(buf, "yaml" as any);
     const mismatch = () => pl.DataFrame.deserialize(buf, "json");
-    expect(ser).toThrow();
-    expect(de).toThrow();
-    expect(mismatch).toThrow();
+    assert.throws(ser);
+    assert.throws(de);
+    assert.throws(mismatch);
   });
   test("series:json", () => {
     const s = pl.Series("foo", [1, 2, 3]);
 
     const buf = s.serialize("json");
     const expected = pl.Series.deserialize(buf, "json");
-    expect(s).toSeriesEqual(expected);
+    assertSeriesEqual(s, expected);
   });
   test("series:bincode", () => {
     const s = pl.Series("foo", [1, 2, 3]);
 
     const buf = s.serialize("bincode");
     const expected = pl.Series.deserialize(buf, "bincode");
-    expect(s).toSeriesEqual(expected);
+    assertSeriesEqual(s, expected);
   });
 
   test("series:unsupported", () => {
@@ -89,8 +89,8 @@ describe("serde", () => {
     const buf = s.serialize("bincode");
     const de = () => pl.Series.deserialize(buf, "yaml" as any);
     const mismatch = () => pl.Series.deserialize(buf, "json");
-    expect(ser).toThrow();
-    expect(de).toThrow();
-    expect(mismatch).toThrow();
+    assert.throws(ser);
+    assert.throws(de);
+    assert.throws(mismatch);
   });
 });

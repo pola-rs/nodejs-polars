@@ -6,7 +6,7 @@ describe("sql", () => {
     const ctx = SQLContext({ df });
 
     const actual = ctx.execute("SELECT * FROM df", { eager: true });
-    expect(actual).toFrameEqual(df);
+    assertFrameEqual(actual, df);
   });
 
   test("execute", () => {
@@ -21,9 +21,9 @@ describe("sql", () => {
     const ctx = pl.SQLContext({ df });
     const actual = ctx.execute("SELECT * FROM df").collectSync();
 
-    expect(actual).toFrameEqual(df);
+    assertFrameEqual(actual, df);
     const actual2 = ctx.execute("SELECT * FROM df", { eager: true });
-    expect(actual2).toFrameEqual(df);
+    assertFrameEqual(actual2, df);
   });
 
   test("register and query dataframe", () => {
@@ -34,12 +34,12 @@ describe("sql", () => {
 
     const expected = pl.DataFrame({ hello: ["world"] });
 
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
     ctx.register("null_frame", null);
 
     const actual2 = ctx.execute("SELECT * FROM null_frame", { eager: true });
     const expected2 = pl.DataFrame();
-    expect(actual2).toFrameEqual(expected2);
+    assertFrameEqual(actual2, expected2);
   });
   test("register many", () => {
     const lf1 = pl.DataFrame({ a: [1, 2, 3], b: ["m", "n", "o"] });
@@ -49,7 +49,7 @@ describe("sql", () => {
     const ctx = pl.SQLContext().registerMany({ tbl1: lf1, tbl2: lf2 });
     const tables = ctx.tables();
 
-    expect(tables).toEqual(expect.arrayContaining(["tbl1", "tbl2"]));
+    assert.ok(["tbl1", "tbl2"].every((item) => tables.includes(item)));
   });
   test("inspect", () => {
     const df = pl.DataFrame({
@@ -62,7 +62,7 @@ describe("sql", () => {
 
     const expected = "SQLContext: {df}";
 
-    expect(actual).toEqual(expected);
+    assert.deepStrictEqual(actual, expected);
   });
   test("constructor with LazyFrames", () => {
     const lf1 = pl.DataFrame({ a: [1, 2, 3], b: ["m", "n", "o"] }).lazy();
@@ -70,7 +70,7 @@ describe("sql", () => {
 
     const ctx = pl.SQLContext({ tbl1: lf1, tbl2: lf2 });
     const tables = ctx.tables();
-    expect(tables).toEqual(expect.arrayContaining(["tbl1", "tbl2"]));
+    assert.ok(["tbl1", "tbl2"].every((item) => tables.includes(item)));
   });
   test("unregister", () => {
     const df = pl.DataFrame({ hello: ["world"] });
@@ -81,10 +81,10 @@ describe("sql", () => {
     ctx.unregister("df");
 
     const tables = ctx.tables();
-    expect(tables).toEqual(["df2", "df3"]);
+    assert.deepStrictEqual(tables, ["df2", "df3"]);
 
     ctx.unregister(["df2", "df3"]);
     const tables2 = ctx.tables();
-    expect(tables2).toEqual([]);
+    assert.deepStrictEqual(tables2, []);
   });
 });

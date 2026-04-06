@@ -5,7 +5,7 @@ describe("concat", () => {
     const b = pl.DataFrame({ a: ["a", "b", "c"], c: [5.5, 6.0, 7.5] });
     // Single concat should return self
     const actual = pl.concat([b], { how: "align" });
-    expect(actual).toFrameEqual(b);
+    assertFrameEqual(actual, b);
   });
   it("can concat multiple dataframes using align", () => {
     const df1 = pl.DataFrame({ a: [1, 2], x: [3, 4] });
@@ -19,7 +19,7 @@ describe("concat", () => {
       y: [null, 5, 6],
       z: [7, null, 8],
     });
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
 
     actual = pl.concat([df1, df2, df3], { how: "alignLeft" });
     expected = pl.DataFrame({
@@ -28,7 +28,7 @@ describe("concat", () => {
       y: [null, 5],
       z: [7, null],
     });
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
 
     actual = pl.concat([df1, df2, df3], { how: "alignRight" });
     const expectedRight = pl.DataFrame({
@@ -37,7 +37,7 @@ describe("concat", () => {
       y: [null, 6],
       z: [7, 8],
     });
-    expect(actual).toFrameEqual(expectedRight);
+    assertFrameEqual(actual, expectedRight);
 
     actual = pl.concat([df1, df2, df3], { how: "alignInner" });
     const expectedInner = pl.DataFrame({
@@ -46,7 +46,7 @@ describe("concat", () => {
       y: [],
       z: [],
     });
-    expect(actual).toFrameEqual(expectedInner);
+    assertFrameEqual(actual, expectedInner);
 
     const a = pl.DataFrame({
       a: ["a", "b", "d", "e", "e"],
@@ -65,7 +65,7 @@ describe("concat", () => {
       c: [5.5, 6.0, 7.5, null, null, null],
       d: ["w", "x", "y", "z", null, null],
     });
-    expect(actual).toFrameEqual(expectedAlign);
+    assertFrameEqual(actual, expectedAlign);
   });
   it("can concat multiple lazy dataframes using align", () => {
     const df1 = pl.DataFrame({ a: [1, 2], x: [3, 4] }).lazy();
@@ -81,7 +81,7 @@ describe("concat", () => {
       y: [null, 5, 6],
       z: [7, null, 8],
     });
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
     actual = pl.concat([df1, df2, df3], { how: "alignLeft" }).collectSync();
     expected = pl.DataFrame({
       a: [1, 2],
@@ -89,7 +89,7 @@ describe("concat", () => {
       y: [null, 5],
       z: [7, null],
     });
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
 
     actual = pl.concat([df1, df2, df3], { how: "alignRight" }).collectSync();
     const expectedRight = pl.DataFrame({
@@ -98,7 +98,7 @@ describe("concat", () => {
       y: [null, 6],
       z: [7, 8],
     });
-    expect(actual).toFrameEqual(expectedRight);
+    assertFrameEqual(actual, expectedRight);
 
     actual = pl.concat([df1, df2, df3], { how: "alignInner" }).collectSync();
     const expectedInner = pl.DataFrame({
@@ -107,7 +107,7 @@ describe("concat", () => {
       y: [],
       z: [],
     });
-    expect(actual).toFrameEqual(expectedInner);
+    assertFrameEqual(actual, expectedInner);
   });
   it("can concat multiple dataframes vertically", () => {
     const df1 = pl.DataFrame({
@@ -123,7 +123,7 @@ describe("concat", () => {
       a: [1, 2, 3, 4, 5, 6],
       b: ["a", "b", "c", "d", "e", "f"],
     });
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   it("can concat multiple dataframes vertically relaxed", () => {
     const df1 = pl.DataFrame(
@@ -147,7 +147,7 @@ describe("concat", () => {
       a: [1, 2, 3, 4.5, 5.5, 6],
       b: ["a", "b", "c", "d", "e", "f"],
     });
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   it("can concat multiple lazy dataframes vertically", () => {
     const df1 = pl
@@ -167,7 +167,7 @@ describe("concat", () => {
       a: [1, 2, 3, 4, 5, 6],
       b: ["a", "b", "c", "d", "e", "f"],
     });
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   it("can concat multiple lazy dataframes horizontally", () => {
     const df1 = pl
@@ -189,7 +189,7 @@ describe("concat", () => {
       c: [4, 5, 6],
       d: ["d", "e", "f"],
     });
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   it("can concat multiple dataframes diagonally relaxed", () => {
     const df1 = pl.DataFrame(
@@ -214,7 +214,7 @@ describe("concat", () => {
       b: ["b", null],
       d: [null, 4.5],
     });
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   it("can concat multiple lazy dataframes diagonally", () => {
     const df1 = pl
@@ -235,7 +235,7 @@ describe("concat", () => {
       b: [3, null],
       d: [null, 4],
     });
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   it("can concat multiple series vertically", () => {
     const s1 = pl.Series("a", [1, 2, 3]);
@@ -243,15 +243,15 @@ describe("concat", () => {
     const actual = pl.concat([s1, s2]);
     const expected = pl.Series("a", [1, 2, 3, 4, 5, 6]);
 
-    expect(actual).toSeriesEqual(expected);
+    assertSeriesEqual(actual, expected);
   });
   it("cant concat empty list", () => {
     const fn = () => pl.concat([]);
-    expect(fn).toThrow();
+    assert.throws(fn);
   });
   it("can only concat series and df", () => {
     const fn = () => pl.concat([[1] as any, [2] as any]);
-    expect(fn).toThrow();
+    assert.throws(fn);
   });
   test("horizontal concat", () => {
     const a = pl.DataFrame({ a: ["a", "b"], b: [1, 2] });
@@ -268,7 +268,7 @@ describe("concat", () => {
       d: [1, 2, 1, 2],
       e: [1, 2, 1, 2],
     });
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("diagonal concat", () => {
     const df1 = pl.DataFrame({ a: [1], b: [3] });
@@ -279,7 +279,7 @@ describe("concat", () => {
       b: [3, null],
       c: [null, 4],
     });
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
 });
 describe("repeat", () => {
@@ -291,11 +291,11 @@ describe("repeat", () => {
       Array.from({ length: 4 }, () => value),
     );
 
-    expect(actual).toSeriesEqual(expected);
+    assertSeriesEqual(actual, expected);
   });
   it("fail to repeat a date value", () => {
     const fn = () => pl.repeat(new Date(), 4, "foo");
-    expect(fn).toThrow();
+    assert.throws(fn);
   });
 });
 describe("horizontal", () => {
@@ -307,7 +307,7 @@ describe("horizontal", () => {
     });
     const actual = df.select(pl.allHorizontal([pl.col("b"), pl.col("c")]));
     const expected = pl.DataFrame({ b: [false, false, false, null, false] });
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   it("compute the bitwise OR horizontally across columns.", () => {
     const df = pl.DataFrame({
@@ -317,7 +317,7 @@ describe("horizontal", () => {
     });
     const actual = df.select(pl.anyHorizontal([pl.col("b"), pl.col("c")]));
     const expected = pl.DataFrame({ b: [true, true, false, true, null] });
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   it("any and all expression", () => {
     const lf = pl.DataFrame({
@@ -334,7 +334,7 @@ describe("horizontal", () => {
       null_in_row: [false, true, true, true],
       all_null_in_row: [false, false, false, true],
     });
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   it("min + max across columns", () => {
     const df = pl.DataFrame({ a: [1], b: [2], c: [3], d: [4] });
@@ -349,7 +349,7 @@ describe("horizontal", () => {
     );
 
     const expected = pl.DataFrame({ a: [1], b: [2], c: [3], d: [4], t: [3] });
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
 
   it("sum min and max across columns", () => {
@@ -359,8 +359,8 @@ describe("horizontal", () => {
       pl.maxHorizontal([pl.col("a"), pl.col("b").pow(2)]).alias("max"),
       pl.minHorizontal([pl.col("a"), pl.col("b").pow(2)]).alias("min"),
     );
-    expect(out["sum"]).toSeriesEqual(pl.Series("sum", [2.0, 4.0, 6.0]));
-    expect(out["max"]).toSeriesEqual(pl.Series("max", [1.0, 4.0, 9.0]));
-    expect(out["min"]).toSeriesEqual(pl.Series("min", [1.0, 2.0, 3.0]));
+    assertSeriesEqual(out["sum"], pl.Series("sum", [2.0, 4.0, 6.0]));
+    assertSeriesEqual(out["max"], pl.Series("max", [1.0, 4.0, 9.0]));
+    assertSeriesEqual(out["min"], pl.Series("min", [1.0, 2.0, 3.0]));
   });
 });

@@ -20,56 +20,56 @@ describe("mapElements", () => {
       ["AA", "BB", "CC", "OtherD", "", ""],
       pl.String,
     );
-    expect(actual).toSeriesEqual(expected);
+    assertSeriesEqual(actual, expected);
   });
   test("mapElements int", () => {
     const mapping: Record<number, number> = { 1: 11, 2: 22, 3: 33, 4: 44 };
     const funcMap = (k: number): number => mapping[k] ?? "";
     let actual = pl.Series("foo", [1, 2, 3, 5], pl.Int32).mapElements(funcMap);
     let expected = pl.Series("foo", [11, 22, 33, null], pl.Int32);
-    expect(actual).toSeriesEqual(expected);
+    assertSeriesEqual(actual, expected);
     const multiFunc = (k: number): number => k * 2;
     actual = pl.Series("foo", [1, 2, 3, 5], pl.Int32).mapElements(multiFunc);
     expected = pl.Series("foo", [2, 4, 6, 10], pl.Int32);
-    expect(actual).toSeriesEqual(expected);
+    assertSeriesEqual(actual, expected);
     const funcStr = (k: number): string => `${k}x`;
     actual = pl.Series("foo", [1, 2, 3, 5], pl.Int32).mapElements(funcStr);
     expected = pl.Series("foo", ["1x", "2x", "3x", "5x"], pl.String);
-    expect(actual).toSeriesEqual(expected);
+    assertSeriesEqual(actual, expected);
   });
 });
 describe("from lists", () => {
   test("bool", () => {
     const expected = [[true, false], [true], [null], []];
     const actual = pl.Series(expected).toArray();
-    expect(actual).toEqual(expected);
+    assert.deepStrictEqual(actual, expected);
   });
   test("number", () => {
     const expected = [[1, 2], [3], [null], []];
     const actual = pl.Series(expected).toArray();
-    expect(actual).toEqual(expected);
+    assert.deepStrictEqual(actual, expected);
   });
   test("bigint", () => {
     const expected = [[1n, 2n], [3n], [null], []];
     const actual = pl.Series(expected).toArray();
-    expect(actual).toEqual(expected);
+    assert.deepStrictEqual(actual, expected);
   });
   test("string", () => {
     const expected = [[], [null], ["a"], [null], ["b", "c"]];
     const actual = pl.Series(expected).toArray();
-    expect(actual).toEqual(expected);
+    assert.deepStrictEqual(actual, expected);
   });
   test("fromArray", () => {
     const actual = pl.Series.from("foo", [1, 2, 3]);
     const expected = pl.Series("foo", [1, 2, 3]);
-    expect(actual).toSeriesEqual(expected);
+    assertSeriesEqual(actual, expected);
     const actual2 = pl.Series.from([1, 2, 3]);
-    expect(actual2).toSeriesEqual(expected);
+    assertSeriesEqual(actual2, expected);
   });
   test("of", () => {
     const actual = pl.Series.of([1, 2, 3]);
     const expected = pl.Series("", [1, 2, 3]);
-    expect(actual).toSeriesEqual(expected);
+    assertSeriesEqual(actual, expected);
   });
 });
 describe("typedArrays", () => {
@@ -77,19 +77,19 @@ describe("typedArrays", () => {
     const int8Array = new Int8Array([1, 2, 3]);
     const actual = pl.Series(int8Array).toArray();
     const expected = [...int8Array];
-    expect(actual).toEqual(expected);
+    assert.deepStrictEqual(actual, expected);
   });
   test("int8:list", () => {
     const int8Arrays = [new Int8Array([1, 2, 3]), new Int8Array([33, 44, 55])];
     const expected = int8Arrays.map((i) => [...i]);
     const actual = pl.Series(int8Arrays).toArray();
-    expect(actual).toEqual(expected);
+    assert.deepStrictEqual(actual, expected);
   });
   test("int16", () => {
     const int16Array = new Int16Array([1, 2, 3]);
     const actual = pl.Series(int16Array).toArray();
     const expected = Array.from(int16Array);
-    expect(actual).toEqual(expected);
+    assert.deepStrictEqual(actual, expected);
   });
   test("int16:list", () => {
     const int16Arrays = [
@@ -98,12 +98,12 @@ describe("typedArrays", () => {
     ];
     const actual = pl.Series(int16Arrays).toArray();
     const expected = int16Arrays.map((i) => [...i]);
-    expect(actual).toEqual(expected);
+    assert.deepStrictEqual(actual, expected);
   });
   test("int32", () => {
     const int32Array = new Int32Array([1, 2, 3]);
     const actual = pl.Series(int32Array).toArray();
-    expect(actual).toEqual([...int32Array]);
+    assert.deepStrictEqual(actual, [...int32Array]);
   });
   test("int32:list", () => {
     const int32Arrays = [
@@ -112,7 +112,7 @@ describe("typedArrays", () => {
     ];
     const actual = pl.Series(int32Arrays).toArray();
     const expected = int32Arrays.map((i) => [...i]);
-    expect(actual).toEqual(expected);
+    assert.deepStrictEqual(actual, expected);
   });
 
   // serde downcasts int64 to 'number'
@@ -124,7 +124,7 @@ describe("typedArrays", () => {
       Number.parseInt(v, 10),
     );
 
-    expect(actual).toEqual(expected);
+    assert.deepStrictEqual(actual, expected);
   });
   // serde downcasts int64 to 'number'
   test("int64:list", () => {
@@ -138,13 +138,13 @@ describe("typedArrays", () => {
       [1, 2, 3],
       [33, 44, 55],
     ];
-    expect(actual).toEqual(expected);
+    assert.deepStrictEqual(actual, expected);
   });
   test("uint8", () => {
     const uint8Array = new Uint8Array([1, 2, 3]);
     const actual = pl.Series(uint8Array).toArray();
     const expected = [...uint8Array];
-    expect(actual).toEqual(expected);
+    assert.deepStrictEqual(actual, expected);
   });
   test("uint8:list", () => {
     const uint8Arrays = [
@@ -153,13 +153,13 @@ describe("typedArrays", () => {
     ];
     const actual = pl.Series(uint8Arrays).toArray();
     const expected = uint8Arrays.map((i) => [...i]);
-    expect(actual).toEqual(expected);
+    assert.deepStrictEqual(actual, expected);
   });
   test("uint16", () => {
     const uint16Array = new Uint16Array([1, 2, 3]);
     const actual = pl.Series(uint16Array).toArray();
     const expected = [...uint16Array];
-    expect(actual).toEqual(expected);
+    assert.deepStrictEqual(actual, expected);
   });
   test("uint16:list", () => {
     const uint16Arrays = [
@@ -168,13 +168,13 @@ describe("typedArrays", () => {
     ];
     const actual = pl.Series(uint16Arrays).toArray();
     const expected = uint16Arrays.map((i) => [...i]);
-    expect(actual).toEqual(expected);
+    assert.deepStrictEqual(actual, expected);
   });
   test("uint32", () => {
     const uint32Array = new Uint32Array([1, 2, 3]);
     const actual = pl.Series(uint32Array).toArray();
     const expected = [...uint32Array];
-    expect(actual).toEqual(expected);
+    assert.deepStrictEqual(actual, expected);
   });
   test("uint32:list", () => {
     const uint32Arrays = [
@@ -183,13 +183,13 @@ describe("typedArrays", () => {
     ];
     const actual = pl.Series(uint32Arrays).toArray();
     const expected = uint32Arrays.map((i) => [...i]);
-    expect(actual).toEqual(expected);
+    assert.deepStrictEqual(actual, expected);
   });
   test("uint64", () => {
     const uint64Array = new BigUint64Array([1n, 2n, 3n]);
     const actual = pl.Series(uint64Array).toArray();
     const expected = [...uint64Array];
-    expect(actual).toEqual(expected);
+    assert.deepStrictEqual(actual, expected);
   });
   test("uint64:list", () => {
     const uint64Arrays = [
@@ -198,13 +198,13 @@ describe("typedArrays", () => {
     ];
     const actual = pl.Series(uint64Arrays).toArray();
     const expected = uint64Arrays.map((i) => [...i]);
-    expect(actual).toEqual(expected);
+    assert.deepStrictEqual(actual, expected);
   });
   test("float32", () => {
     const float32Array = new Float32Array([1, 2, 3]);
     const actual = pl.Series(float32Array).toArray();
     const expected = [...float32Array];
-    expect(actual).toEqual(expected);
+    assert.deepStrictEqual(actual, expected);
   });
   test("float32:list", () => {
     const float32Arrays = [
@@ -213,13 +213,13 @@ describe("typedArrays", () => {
     ];
     const actual = pl.Series(float32Arrays).toArray();
     const expected = float32Arrays.map((i) => [...i]);
-    expect(actual).toEqual(expected);
+    assert.deepStrictEqual(actual, expected);
   });
   test("float64", () => {
     const float64Array = new Float64Array([1, 2, 3]);
     const actual = pl.Series(float64Array).toArray();
     const expected = [...float64Array];
-    expect(actual).toEqual(expected);
+    assert.deepStrictEqual(actual, expected);
   });
   test("float64:list", () => {
     const float64Arrays = [
@@ -228,25 +228,30 @@ describe("typedArrays", () => {
     ];
     const actual = pl.Series(float64Arrays).toArray();
     const expected = float64Arrays.map((i) => [...i]);
-    expect(actual).toEqual(expected);
+    assert.deepStrictEqual(actual, expected);
   });
   test("toTypedArray", () => {
     const float64Array = new Float64Array([1, 2, 3]);
     const actual = pl.Series(float64Array).toTypedArray();
-    expect(JSON.stringify(actual)).toEqual(JSON.stringify(float64Array));
+    assert.deepStrictEqual(
+      JSON.stringify(actual),
+      JSON.stringify(float64Array),
+    );
   });
 
   test("decimal", () => {
     const expected = [1n, 2n, 3n];
     const expectedDtype = pl.Decimal(10, 2);
-    expect(expectedDtype.equals(expectedDtype)).toBeTruthy();
+    assert.ok(expectedDtype.equals(expectedDtype));
     const actual = pl.Series("", expected, expectedDtype);
-    expect(actual.dtype).toEqual(expectedDtype);
+    assert.deepStrictEqual(actual.dtype, expectedDtype);
     try {
       actual.toArray();
     } catch (e: any) {
-      expect(e.message).toContain(
-        "Decimal is not a supported type in javascript, please convert to string or number before collecting to js",
+      assert.ok(
+        e.message.includes(
+          "Decimal is not a supported type in javascript, please convert to string or number before collecting to js",
+        ),
       );
     }
   });
@@ -258,12 +263,12 @@ describe("typedArrays", () => {
       [4, 5, 6],
     ];
     const actual = pl.Series("", expected, expectedDtype);
-    expect(actual.dtype).toEqual(expectedDtype);
+    assert.deepStrictEqual(actual.dtype, expectedDtype);
     const actualValues = actual.toArray();
-    expect(actualValues).toEqual(expected);
+    assert.deepStrictEqual(actualValues, expected);
     const lst = expectedDtype.asFixedSizeList();
-    expect(lst?.inner[0]).toEqual(pl.Float32);
-    expect(expectedDtype.equals(expectedDtype)).toBeTruthy();
+    assert.deepStrictEqual(lst?.inner[0], pl.Float32);
+    assert.ok(expectedDtype.equals(expectedDtype));
   });
 });
 describe("series", () => {
@@ -288,9 +293,9 @@ describe("series", () => {
     `("defaults to $type for $values", ({ values, dtype }) => {
       const name = chance.string();
       const s = pl.Series(name, values, dtype);
-      expect(s.name).toStrictEqual(name);
-      expect(s.length).toStrictEqual(values.length);
-      expect(s.dtype).toStrictEqual(dtype);
+      assert.deepStrictEqual(s.name, name);
+      assert.deepStrictEqual(s.length, values.length);
+      assert.deepStrictEqual(s.dtype, dtype);
     });
 
     it.each`
@@ -301,9 +306,9 @@ describe("series", () => {
     `("defaults to $type for $values", ({ values, dtype }) => {
       const name = chance.string();
       const s = pl.Series(name, values);
-      expect(s.name).toStrictEqual(name);
-      expect(s.length).toStrictEqual(values.length);
-      expect(s.dtype).toStrictEqual(dtype);
+      assert.deepStrictEqual(s.name, name);
+      assert.deepStrictEqual(s.length, values.length);
+      assert.deepStrictEqual(s.dtype, dtype);
     });
   });
 });
@@ -322,7 +327,7 @@ describe("series functions", () => {
     try {
       series[getter];
     } catch (err) {
-      expect(err).not.toBeDefined();
+      assert.strictEqual(err, undefined);
     }
   });
   it.each`
@@ -498,7 +503,7 @@ describe("series functions", () => {
     try {
       series[method](...args);
     } catch (err) {
-      expect(err).not.toBeDefined();
+      assert.strictEqual(err, undefined);
     }
   });
 
@@ -622,17 +627,19 @@ describe("series functions", () => {
     ${"bitxor"}          | ${pl.Series("bit", [1, 2, 3], pl.Int32).bitxor(pl.Series("bit", [0, 1, 1], pl.Int32))} | ${pl.Series("bit", [1, 3, 2])}
   `("$# $name: expected matches actual ", ({ expected, actual }) => {
     if (pl.Series.isSeries(expected) && pl.Series.isSeries(actual)) {
-      expect(actual).toSeriesEqual(expected);
+      assertSeriesEqual(actual, expected);
     } else {
-      expect(actual).toEqual(expected);
+      assert.deepStrictEqual(actual, expected);
     }
   });
   it("describe", () => {
-    expect(() => pl.Series([]).describe()).toThrow(
-      "Series must contain at least one value",
+    assert.throws(
+      () => pl.Series([]).describe(),
+      /Series must contain at least one value/,
     );
-    expect(() => pl.Series("dt", [null], pl.Date).describe()).toThrow(
-      "Invalid operation: describe is not supported for DataType(Date)",
+    assert.throws(
+      () => pl.Series("dt", [null], pl.Date).describe(),
+      /Invalid operation: describe is not supported for DataType\(Date\)/,
     );
     {
       const actual = pl.Series([true, false, true]).describe();
@@ -640,7 +647,7 @@ describe("series functions", () => {
         statistic: ["sum", "null_count", "count"],
         value: [false, null, null],
       });
-      expect(actual).toFrameEqual(expected);
+      assertFrameEqual(actual, expected);
     }
     {
       const actual = pl.Series(["a", "b", "c", null]).describe();
@@ -648,7 +655,7 @@ describe("series functions", () => {
         statistic: ["unique", "null_count", "count"],
         value: [4, 1, 4],
       });
-      expect(actual).toFrameEqual(expected);
+      assertFrameEqual(actual, expected);
     }
   });
   it("series:valueCounts", () => {
@@ -658,7 +665,7 @@ describe("series functions", () => {
         a: [2, 1, 3],
         count: [2, 1, 1],
       });
-      expect(actual).toFrameEqual(expected);
+      assertFrameEqual(actual, expected);
     }
     {
       const actual = pl
@@ -668,7 +675,7 @@ describe("series functions", () => {
         a: [2, 1, 3],
         proportion: [0.5, 0.25, 0.25],
       });
-      expect(actual).toFrameEqual(expected);
+      assertFrameEqual(actual, expected);
     }
     {
       const actual = pl
@@ -678,7 +685,7 @@ describe("series functions", () => {
         a: [2, 1, 3],
         foo: [2, 1, 1],
       });
-      expect(actual).toFrameEqual(expected);
+      assertFrameEqual(actual, expected);
     }
     {
       const actual = pl
@@ -688,35 +695,35 @@ describe("series functions", () => {
         a: [2, 1, 3],
         foo: [0.5, 0.25, 0.25],
       });
-      expect(actual).toFrameEqual(expected);
+      assertFrameEqual(actual, expected);
     }
   });
   it("set: expected matches actual", () => {
     const expected = pl.Series([99, 2, 3]);
     const mask = pl.Series([true, false, false]);
     const actual = pl.Series([1, 2, 3]).set(mask, 99);
-    expect(actual).toSeriesEqual(expected);
+    assertSeriesEqual(actual, expected);
   });
   it("set: throws error", () => {
     const mask = pl.Series([true]);
-    expect(() => pl.Series([1, 2, 3]).set(mask, 99)).toThrow();
+    assert.throws(() => pl.Series([1, 2, 3]).set(mask, 99));
   });
   it("scatter:array expected matches actual", () => {
     const expected = pl.Series([99, 2, 99]);
     const actual = pl.Series([1, 2, 3]);
     actual.scatter([0, 2], 99);
-    expect(actual).toSeriesEqual(expected);
+    assertSeriesEqual(actual, expected);
   });
   it("scatter:series expected matches actual", () => {
     const expected = pl.Series([99, 2, 99]);
     const indices = pl.Series([0, 2]);
     const actual = pl.Series([1, 2, 3]);
     actual.scatter(indices, 99);
-    expect(actual).toSeriesEqual(expected);
+    assertSeriesEqual(actual, expected);
   });
   it("scatter: throws error", () => {
     const mask = pl.Series([true]);
-    expect(() => pl.Series([1, 2, 3]).set(mask, 99)).toThrow();
+    assert.throws(() => pl.Series([1, 2, 3]).set(mask, 99));
   });
   it.each`
     name            | fn                                                  | errorType
@@ -725,7 +732,7 @@ describe("series functions", () => {
     ${"rollingMax"} | ${() => pl.Series(["foo"]).rollingMax(null as any)} | ${Error}
     ${"sample"}     | ${() => pl.Series(["foo"]).sample(null as any)}     | ${Error}
   `("$# $name throws an error ", ({ fn, errorType }) => {
-    expect(fn).toThrow(errorType);
+    assert.throws(fn, errorType);
   });
   test("reinterpret", () => {
     const s = pl.Series("reinterpret", [1, 2], pl.Int64);
@@ -734,62 +741,63 @@ describe("series functions", () => {
     const unsigned = s.reinterpret(false);
     const signed = unsigned.reinterpret(true);
 
-    expect(unsigned).toSeriesStrictEqual(unsignedExpected);
-    expect(signed).toSeriesStrictEqual(signedExpected);
+    assertSeriesStrictEqual(unsigned, unsignedExpected);
+    assertSeriesStrictEqual(signed, signedExpected);
   });
   test("reinterpret:invalid", () => {
     const s = pl.Series("reinterpret", [1, 2]);
     const fn = () => s.reinterpret();
-    expect(fn).toThrow();
+    assert.throws(fn);
   });
   test("extendConstant", () => {
     const s = pl.Series("extended", [1], pl.UInt16);
     const expected = pl.Series("extended", [1, null, null], pl.UInt16);
     const actual = s.extendConstant(null, 2);
-    expect(actual).toSeriesStrictEqual(expected);
+    assertSeriesStrictEqual(actual, expected);
   });
   test("extend", () => {
     const a = pl.Series("a", [1, 2, 3]);
     const b = pl.Series("b", [4, 5]);
     const actual = a.extend(b);
     const expected = pl.Series("a", [1, 2, 3, 4, 5]);
-    expect(a).toSeriesEqual(expected);
-    expect(actual).toSeriesEqual(expected);
+    assertSeriesEqual(a, expected);
+    assertSeriesEqual(actual, expected);
   });
   test("round invalid", () => {
     const s = pl.Series([true, false]);
     const fn = () => s.round(2);
-    expect(fn).toThrow();
+    assert.throws(fn);
   });
   test("round:positional", () => {
     const s = pl.Series([1.1111, 2.2222]);
     const expected = pl.Series([1.11, 2.22]);
     const actual = s.round(2);
-    expect(actual).toSeriesEqual(expected);
+    assertSeriesEqual(actual, expected);
   });
   test("round:halfawayfromzero", () => {
     const s = pl.Series([1.5, 2.5, -1.5, -2.5]);
     const expected = pl.Series([2, 3, -2, -3]);
     const actual = s.round(0, "halfawayfromzero");
-    expect(actual).toSeriesEqual(expected);
+    assertSeriesEqual(actual, expected);
   });
   test("round:halfawayfromzero:opt", () => {
     const s = pl.Series([1.5, 2.5, -1.5, -2.5]);
     const expected = pl.Series([2, 3, -2, -3]);
     const actual = s.round({ decimals: 0, mode: "halfawayfromzero" });
-    expect(actual).toSeriesEqual(expected);
+    assertSeriesEqual(actual, expected);
   });
   test("round:named", () => {
     const s = pl.Series([1.1111, 2.2222]);
     const expected = pl.Series([1.11, 2.22]);
     const actual = s.round({ decimals: 2 });
-    expect(actual).toSeriesEqual(expected);
+    assertSeriesEqual(actual, expected);
   });
   test("toTypedArray handles nulls", () => {
     const s = pl.Series("ints and nulls", [1, 2, 3, null, 5], pl.UInt8);
-    expect(() => s.toTypedArray()).toThrow();
-    expect(() => s.dropNulls().toTypedArray()).not.toThrow();
-    expect(s.dropNulls().toTypedArray()).toStrictEqual(
+    assert.throws(() => s.toTypedArray());
+    assert.doesNotThrow(() => s.dropNulls().toTypedArray());
+    assert.deepStrictEqual(
+      s.dropNulls().toTypedArray(),
       new Uint8Array([1, 2, 3, 5]),
     );
   });
@@ -797,7 +805,7 @@ describe("series functions", () => {
     const s = pl.Series.from("foo", [1, 2, 3]);
     const actual = s.values().next();
     const expected = { done: false, value: 1 };
-    expect(actual).toEqual(expected);
+    assert.deepStrictEqual(actual, expected);
   });
   test("from:Uint8ClampedArray", () => {
     const actual: pl.Series = pl.Series.from(
@@ -805,7 +813,7 @@ describe("series functions", () => {
       new Uint8ClampedArray([3, 2, 1]),
     );
     const expected = pl.Series("Uint8ClampedArray", [3, 2, 1], pl.UInt8);
-    expect(actual).toSeriesEqual(expected);
+    assertSeriesEqual(actual, expected);
   });
   test("toDummies", () => {
     const s = pl.Series("a", [1, 2, 3]);
@@ -815,7 +823,7 @@ describe("series functions", () => {
         { "a_1.0": [1, 0, 0], "a_2.0": [0, 1, 0], "a_3.0": [0, 0, 1] },
         { schema: { "a_1.0": pl.UInt8, "a_2.0": pl.UInt8, "a_3.0": pl.UInt8 } },
       );
-      expect(actual).toFrameEqual(expected);
+      assertFrameEqual(actual, expected);
     }
     {
       const actual = s.toDummies(":", true, false);
@@ -823,7 +831,7 @@ describe("series functions", () => {
         { "a:2.0": [0, 1, 0], "a:3.0": [0, 0, 1] },
         { schema: { "a:2.0": pl.UInt8, "a:3.0": pl.UInt8 } },
       );
-      expect(actual).toFrameEqual(expected);
+      assertFrameEqual(actual, expected);
     }
   });
 
@@ -831,33 +839,33 @@ describe("series functions", () => {
     const listSeries = pl.Series("items", [[1, 2], [3], []]);
     const dateSeries = pl.Series("dt", [new Date("2020-01-01T00:00:00.000Z")]);
 
-    expect(listSeries.list.lengths()).toSeriesEqual(listSeries.lst.lengths());
-    expect(dateSeries.date.year()).toSeriesEqual(dateSeries.dt.year());
+    assertSeriesEqual(listSeries.list.lengths(), listSeries.lst.lengths());
+    assertSeriesEqual(dateSeries.date.year(), dateSeries.dt.year());
   });
 
   test("filter and isIn accept array inputs", () => {
     const actual = pl.Series([1, 2, 3]).filter([true, false, true] as any);
     const expected = pl.Series([1, 3]);
-    expect(actual).toSeriesEqual(expected);
+    assertSeriesEqual(actual, expected);
 
     const membership = pl.Series([1, 2, 3]).isIn([2, 4]);
-    expect(membership).toSeriesEqual(pl.Series([false, true, false]));
+    assertSeriesEqual(membership, pl.Series([false, true, false]));
   });
 
   test("hasValidity aliases hasNulls", () => {
-    expect(pl.Series([1, null, 3]).hasValidity()).toBe(true);
-    expect(pl.Series([1, 2, 3]).hasValidity()).toBe(false);
+    assert.strictEqual(pl.Series([1, null, 3]).hasValidity(), true);
+    assert.strictEqual(pl.Series([1, 2, 3]).hasValidity(), false);
   });
 
   test("sample covers default and object n overloads", () => {
     const s = pl.Series([1, 2, 3, 4, 5]);
 
-    expect(s.sample().len()).toBe(1);
-    expect(s.sample({ n: 2, withReplacement: false }).len()).toBe(2);
+    assert.strictEqual(s.sample().len(), 1);
+    assert.strictEqual(s.sample({ n: 2, withReplacement: false }).len(), 2);
   });
 
   test("isFloat returns true for float series", () => {
-    expect(pl.Series("", [1.5, 2.5], pl.Float64).isFloat()).toBe(true);
+    assert.strictEqual(pl.Series("", [1.5, 2.5], pl.Float64).isFloat(), true);
   });
 
   test("shrinkToFit in place keeps series contents", () => {
@@ -865,7 +873,7 @@ describe("series functions", () => {
 
     s.shrinkToFit(true);
 
-    expect(s).toSeriesEqual(pl.Series("foo", [1, 2, 3]));
+    assertSeriesEqual(s, pl.Series("foo", [1, 2, 3]));
   });
 
   test("slice supports object arguments", () => {
@@ -873,13 +881,13 @@ describe("series functions", () => {
       .Series([1, 2, 3, 4])
       .slice({ offset: 1, length: 2 } as any);
     const expected = pl.Series([2, 3]);
-    expect(actual).toSeriesEqual(expected);
+    assertSeriesEqual(actual, expected);
   });
 
   test("unique supports stable ordering", () => {
     const actual = pl.Series([3, 1, 3, 2, 1]).unique(true);
     const expected = pl.Series([3, 1, 2]);
-    expect(actual).toSeriesEqual(expected);
+    assertSeriesEqual(actual, expected);
   });
 
   test("toJSON supports direct calls and JSON.stringify", () => {
@@ -887,27 +895,29 @@ describe("series functions", () => {
     const nestedJson = JSON.parse(JSON.stringify({ values: s }));
     const directJson = (s.toJSON as any)("");
 
-    expect(typeof s.toJSON()).toBe("string");
-    expect(Buffer.isBuffer(directJson)).toBe(true);
-    expect(nestedJson).toEqual({ values: s.toJSON() });
+    assert.strictEqual(typeof s.toJSON(), "string");
+    assert.strictEqual(Buffer.isBuffer(directJson), true);
+    assert.deepStrictEqual(nestedJson, { values: s.toJSON() });
   });
 
   test("numeric proxy access supports get and set", () => {
     const s = pl.Series([1, 2, 3]);
 
-    expect((s as any)[1]).toBe(2);
+    assert.strictEqual((s as any)[1], 2);
 
     (s as any)[1] = 99;
 
-    expect(s).toSeriesEqual(pl.Series([1, 99, 3]));
+    assertSeriesEqual(s, pl.Series([1, 99, 3]));
   });
 
   test("isFinite and isInfinite throw InvalidOperationError for non-floats", () => {
-    expect(() => pl.Series(["foo"]).isFinite()).toThrow(
-      "Invalid operation: isFinite is not supported for DataType(String)",
+    assert.throws(
+      () => pl.Series(["foo"]).isFinite(),
+      /Invalid operation: isFinite is not supported for DataType\(String\)/,
     );
-    expect(() => pl.Series(["foo"]).isInfinite()).toThrow(
-      "Invalid operation: isFinite is not supported for DataType(String)",
+    assert.throws(
+      () => pl.Series(["foo"]).isInfinite(),
+      /Invalid operation: isFinite is not supported for DataType\(String\)/,
     );
   });
 });
@@ -918,127 +928,127 @@ describe("comparators & math", () => {
     const ds = pl.Series("dt", [dt], pl.Datetime("ms", ""));
     const expected = dt.getMilliseconds() + 1;
     const actual = ds.add(drs).values().next().value.getMilliseconds();
-    expect(actual).toEqual(expected);
+    assert.deepStrictEqual(actual, expected);
   });
   test("add/plus/series", () => {
     const s = pl.Series([1, 2, 3]);
     const expected = pl.Series([2, 4, 6]);
-    expect(s.add(s)).toSeriesEqual(expected);
-    expect(s.plus(s)).toSeriesEqual(expected);
+    assertSeriesEqual(s.add(s), expected);
+    assertSeriesEqual(s.plus(s), expected);
   });
   test("minus/series", () => {
     const s = pl.Series([1, 2, 3]);
-    expect(s.plus(s).minus(s)).toSeriesEqual(s);
-    expect(s.add(s).sub(s)).toSeriesEqual(s);
+    assertSeriesEqual(s.plus(s).minus(s), s);
+    assertSeriesEqual(s.add(s).sub(s), s);
   });
   test("eq/series", () => {
     const s = pl.Series([1, 2, 3]);
     const s2 = pl.Series([1, 3, 3]);
     const expected = pl.Series([true, false, true]);
-    expect(s.eq(s2)).toSeriesEqual(expected);
-    expect(s.equals(s2)).toSeriesEqual(expected);
+    assertSeriesEqual(s.eq(s2), expected);
+    assertSeriesEqual(s.equals(s2), expected);
   });
   test("gt/series", () => {
     const s = pl.Series([1, 2, 3]);
     const s2 = pl.Series([2, 2, 4]);
     const expected = pl.Series([true, false, true]);
-    expect(s2.gt(s)).toSeriesEqual(expected);
-    expect(s2.greaterThan(s)).toSeriesEqual(expected);
+    assertSeriesEqual(s2.gt(s), expected);
+    assertSeriesEqual(s2.greaterThan(s), expected);
   });
   test("gteq/series", () => {
     const s = pl.Series([1, 2, 3]);
     const s2 = pl.Series([2, 2, 4]);
     const expected = pl.Series([true, true, true]);
-    expect(s2.gtEq(s)).toSeriesEqual(expected);
-    expect(s2.greaterThanEquals(s)).toSeriesEqual(expected);
+    assertSeriesEqual(s2.gtEq(s), expected);
+    assertSeriesEqual(s2.greaterThanEquals(s), expected);
   });
   test("rem/modulo/series", () => {
     const s = pl.Series([1, 2, 3]);
     const s2 = pl.Series([2, 3, 4]);
-    expect(s.rem(s2)).toSeriesEqual(s);
-    expect(s.modulo(s2)).toSeriesEqual(s);
+    assertSeriesEqual(s.rem(s2), s);
+    assertSeriesEqual(s.modulo(s2), s);
   });
   test("div/series", () => {
     const s = pl.Series([1, 2, 3]);
     const expected = pl.Series([2, 2, 2]);
-    expect(s.plus(s).div(s)).toSeriesEqual(expected);
-    expect(s.plus(s).divideBy(s)).toSeriesEqual(expected);
+    assertSeriesEqual(s.plus(s).div(s), expected);
+    assertSeriesEqual(s.plus(s).divideBy(s), expected);
   });
   test("add/plus", () => {
     const s = pl.Series([1, 2]);
     const expected = pl.Series([2, 3]);
-    expect(s.add(1)).toSeriesEqual(expected);
-    expect(s.plus(1)).toSeriesEqual(expected);
+    assertSeriesEqual(s.add(1), expected);
+    assertSeriesEqual(s.plus(1), expected);
   });
   test("sub/minus", () => {
     const s = pl.Series([1, 2]);
     const expected = pl.Series([0, 1]);
-    expect(s.sub(1)).toSeriesEqual(expected);
-    expect(s.minus(1)).toSeriesEqual(expected);
+    assertSeriesEqual(s.sub(1), expected);
+    assertSeriesEqual(s.minus(1), expected);
   });
   test("mul/multiplyBy", () => {
     const s = pl.Series([1, 2]);
     const expected = pl.Series([10, 20]);
-    expect(s.mul(10)).toSeriesEqual(expected);
-    expect(s.multiplyBy(10)).toSeriesEqual(expected);
+    assertSeriesEqual(s.mul(10), expected);
+    assertSeriesEqual(s.multiplyBy(10), expected);
   });
   test("div/divideBy", () => {
     const s = pl.Series([2, 4]);
     const expected = pl.Series([1, 2]);
-    expect(s.div(2)).toSeriesEqual(expected);
-    expect(s.divideBy(2)).toSeriesEqual(expected);
+    assertSeriesEqual(s.div(2), expected);
+    assertSeriesEqual(s.divideBy(2), expected);
   });
   test("div/divideBy", () => {
     const s = pl.Series([2, 4]);
     const expected = pl.Series([1, 2]);
-    expect(s.div(2)).toSeriesEqual(expected);
-    expect(s.divideBy(2)).toSeriesEqual(expected);
+    assertSeriesEqual(s.div(2), expected);
+    assertSeriesEqual(s.divideBy(2), expected);
   });
   test("rem/modulo", () => {
     const s = pl.Series([1, 2]);
     const expected = pl.Series([1, 0]);
-    expect(s.rem(2)).toSeriesEqual(expected);
-    expect(s.modulo(2)).toSeriesEqual(expected);
+    assertSeriesEqual(s.rem(2), expected);
+    assertSeriesEqual(s.modulo(2), expected);
   });
   test("eq/equals", () => {
     const s = pl.Series([1, 2]);
     const expected = pl.Series([true, false]);
-    expect(s.eq(1)).toSeriesEqual(expected);
-    expect(s.equals(1)).toSeriesEqual(expected);
+    assertSeriesEqual(s.eq(1), expected);
+    assertSeriesEqual(s.equals(1), expected);
   });
   test("neq/notEquals", () => {
     const s = pl.Series([1, 2]);
     const expected = pl.Series([false, true]);
-    expect(s.neq(1)).toSeriesEqual(expected);
-    expect(s.notEquals(1)).toSeriesEqual(expected);
+    assertSeriesEqual(s.neq(1), expected);
+    assertSeriesEqual(s.notEquals(1), expected);
   });
   test("gt/greaterThan", () => {
     const s = pl.Series([1, 2]);
     const expected = pl.Series([false, true]);
-    expect(s.gt(1)).toSeriesEqual(expected);
-    expect(s.greaterThan(1)).toSeriesEqual(expected);
+    assertSeriesEqual(s.gt(1), expected);
+    assertSeriesEqual(s.greaterThan(1), expected);
   });
   test("gtEq/equals", () => {
     const s = pl.Series([1, 2]);
     const expected = pl.Series([true, true]);
-    expect(s.gtEq(1)).toSeriesEqual(expected);
-    expect(s.greaterThanEquals(1)).toSeriesEqual(expected);
+    assertSeriesEqual(s.gtEq(1), expected);
+    assertSeriesEqual(s.greaterThanEquals(1), expected);
   });
   test("lt/lessThan", () => {
     const s = pl.Series([1, 2]);
     const expected = pl.Series([false, false]);
-    expect(s.lt(1)).toSeriesEqual(expected);
-    expect(s.lessThan(1)).toSeriesEqual(expected);
+    assertSeriesEqual(s.lt(1), expected);
+    assertSeriesEqual(s.lessThan(1), expected);
   });
   test("ltEq/lessThanEquals", () => {
     const s = pl.Series([1, 2]);
     const expected = pl.Series([true, false]);
-    expect(s.ltEq(1)).toSeriesEqual(expected);
-    expect(s.lessThanEquals(1)).toSeriesEqual(expected);
+    assertSeriesEqual(s.ltEq(1), expected);
+    assertSeriesEqual(s.lessThanEquals(1), expected);
     let fn = () => s.ltEq("1");
-    expect(fn).toThrow("Not a number nor a series");
+    assert.throws(fn, /Not a number nor a series/);
     fn = () => s.lessThanEquals("1");
-    expect(fn).toThrow("Not a number nor a series");
+    assert.throws(fn, /Not a number nor a series/);
   });
 });
 describe("StringFunctions", () => {
@@ -1053,33 +1063,33 @@ describe("StringFunctions", () => {
     ${"lengths"}     | ${pl.Series(["apple", "ham"]).str.lengths()}   | ${pl.Series([5, 3])}
     ${"slice"}       | ${pl.Series(["apple", "ham"]).str.slice(1)}    | ${pl.Series(["pple", "am"])}
   `("$# $name expected matches actual", ({ expected, actual }) => {
-    expect(expected).toSeriesEqual(actual);
+    assertSeriesEqual(expected, actual);
   });
   test("hex encode", () => {
     const s = pl.Series("strings", ["foo", "bar", null]);
     const expected = pl.Series("encoded", ["666f6f", "626172", null]);
     const encoded = s.str.encode("hex").alias("encoded");
-    expect(encoded).toSeriesEqual(expected);
+    assertSeriesEqual(encoded, expected);
   });
   test("hex decode", () => {
     const s = pl.Series("encoded", ["666f6f", "626172", "invalid", null]);
     const expected = pl.Series("decoded", ["foo", "bar", null, null]);
     const decoded = s.str.decode("hex").alias("decoded");
-    expect(decoded).toSeriesEqual(expected);
+    assertSeriesEqual(decoded, expected);
   });
   test("hex decode strict", () => {
     const s = pl.Series("encoded", ["666f6f", "626172", "invalid", null]);
     const fn0 = () => s.str.decode("hex", true).alias("decoded");
     const fn1 = () =>
       s.str.decode({ encoding: "hex", strict: true }).alias("decoded");
-    expect(fn0).toThrow();
-    expect(fn1).toThrow();
+    assert.throws(fn0);
+    assert.throws(fn1);
   });
   test("encode base64", () => {
     const s = pl.Series("strings", ["foo", "bar"]);
     const expected = pl.Series("encoded", ["Zm9v", "YmFy"]);
     const encoded = s.str.encode("base64").alias("encoded");
-    expect(encoded).toSeriesEqual(expected);
+    assertSeriesEqual(encoded, expected);
   });
   test("base64 decode strict", () => {
     const s = pl.Series("encoded", [
@@ -1091,27 +1101,27 @@ describe("StringFunctions", () => {
     const fn0 = () => s.str.decode("base64", true).alias("decoded");
     const fn1 = () =>
       s.str.decode({ encoding: "base64", strict: true }).alias("decoded");
-    expect(fn0).toThrow();
-    expect(fn1).toThrow();
+    assert.throws(fn0);
+    assert.throws(fn1);
   });
   test("base64 decode", () => {
     const s = pl.Series("encoded", ["Zm9v", "YmFy", "invalid", null]);
     const decoded = pl.Series("decoded", ["foo", "bar", null, null]);
 
     const actual = s.str.decode("base64").alias("decoded");
-    expect(actual).toSeriesEqual(decoded);
+    assertSeriesEqual(actual, decoded);
   });
   test("inspect", () => {
     const s = pl.Series("strings", ["foo", "bar"]);
     const actualInspect = s[Symbol.for("nodejs.util.inspect.custom")]();
     const serString = s.toString();
-    expect(actualInspect).toStrictEqual(serString);
+    assert.deepStrictEqual(actualInspect, serString);
   });
   test("str contains", () => {
     const s = pl.Series(["linux-kali", "linux-debian", "windows-vista"]);
     const expected = pl.Series([true, true, false]);
     const encoded = s.str.contains("linux");
-    expect(encoded).toSeriesEqual(expected);
+    assertSeriesEqual(encoded, expected);
   });
 });
 describe("series struct", () => {
@@ -1121,12 +1131,12 @@ describe("series struct", () => {
     const actualFields = actual.struct.fields;
     const expectedKeys = new Set(expected.flatMap((item) => Object.keys(item)));
     const expectedFields = [...expectedKeys];
-    expect(actualFields).toEqual(expectedFields);
+    assert.deepStrictEqual(actualFields, expectedFields);
   });
   test("struct:field", () => {
     const expected = [{ foo: 1, bar: 2, ham: "c" }];
     const actual = pl.Series(expected).struct.field("foo").toArray();
-    expect(actual).toEqual([expected[0]["foo"]]);
+    assert.deepStrictEqual(actual, [expected[0]["foo"]]);
   });
   test("struct:frame", () => {
     const array = [{ foo: 1, bar: 2, ham: "c" }];
@@ -1136,7 +1146,7 @@ describe("series struct", () => {
       bar: [2],
       ham: ["c"],
     });
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("struct:renameFields", () => {
     const expected = [{ foo: 1, bar: 2, ham: "c" }];
@@ -1144,7 +1154,7 @@ describe("series struct", () => {
       .Series(expected)
       .struct.renameFields(["foo", "bar", "ham"])
       .toArray();
-    expect(actual).toEqual(expected);
+    assert.deepStrictEqual(actual, expected);
   });
   test("struct:nth", () => {
     const arr = [
@@ -1154,19 +1164,19 @@ describe("series struct", () => {
     ];
     const expected = [1, null, 2];
     const actual = pl.Series(arr).struct.nth(0).toArray();
-    expect(actual).toEqual(expected);
+    assert.deepStrictEqual(actual, expected);
   });
 });
 describe("generics", () => {
   const series = pl.Series([1, 2, 3]);
   test("dtype", () => {
-    expect(series.dtype).toStrictEqual(DataType.Float64);
+    assert.deepStrictEqual(series.dtype, DataType.Float64);
   });
   test("to array", () => {
     const arr = series.toArray();
-    expect<number[]>(arr).toStrictEqual([1, 2, 3]);
+    assert.deepStrictEqual(arr, [1, 2, 3]);
     const arr2 = [...series];
-    expect<number[]>(arr2).toStrictEqual([1, 2, 3]);
+    assert.deepStrictEqual(arr2, [1, 2, 3]);
   });
 });
 describe("series date", () => {
@@ -1178,11 +1188,11 @@ describe("series date", () => {
     ]);
     const actual = s.dt.truncate("30m").dt.minute().alias("30m");
     const expected = pl.Series("30min", [30, 0, 30], pl.Int8);
-    expect(actual).toSeriesStrictEqual(expected);
+    assertSeriesStrictEqual(actual, expected);
 
     const actual2 = s.dt.truncate("1h").dt.hour().alias("1hr");
     const expected2 = pl.Series("1hr", [1, 2, 4], pl.Int8);
-    expect(actual2).toSeriesStrictEqual(expected2);
+    assertSeriesStrictEqual(actual2, expected2);
   });
   test("round time", () => {
     const s = pl.Series("datetime", [
@@ -1192,10 +1202,10 @@ describe("series date", () => {
     ]);
     const actual = s.dt.round("30m").dt.minute().alias("30m");
     const expected = pl.Series("30min", [30, 0, 30], pl.Int8);
-    expect(actual).toSeriesStrictEqual(expected);
+    assertSeriesStrictEqual(actual, expected);
 
     const actual2 = s.dt.round("1h").dt.hour().alias("1hr");
     const expected2 = pl.Series("1hr", [2, 2, 5], pl.Int8);
-    expect(actual2).toSeriesStrictEqual(expected2);
+    assertSeriesStrictEqual(actual2, expected2);
   });
 });

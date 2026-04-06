@@ -29,7 +29,7 @@ describe("expr", () => {
     const expected = pl.Series("abs", [1, 2, 3]);
     const df = pl.DataFrame({ a: [1, -2, -3] });
     const actual = df.select(col("a").as("abs").abs()).getColumn("abs");
-    expect(actual).toSeriesEqual(expected);
+    assertSeriesEqual(actual, expected);
   });
   test("aggGroups", () => {
     // aggGroups is deprecated, use: df.withRowIndex().groupBy(...).agg(pl.col('index'))` instead.
@@ -48,7 +48,7 @@ describe("expr", () => {
       .groupBy("a")
       .agg(col("index"))
       .sort({ by: "a" });
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("aggGroups:direct expr method", () => {
     const df = pl.DataFrame({
@@ -65,16 +65,16 @@ describe("expr", () => {
         groups: [[0, 1], [2]],
       })
       .withColumn(pl.col("groups").cast(pl.List(pl.UInt32)));
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("alias", () => {
     const name = "alias";
     const actual = pl.select(lit("a").alias(name));
-    expect(actual.columns[0]).toStrictEqual(name);
+    assert.deepStrictEqual(actual.columns[0], name);
   });
   test("and", () => {
     const actual = df().filter(col("bools").eq(false).and(col("int").eq(3)));
-    expect(actual.height).toStrictEqual(1);
+    assert.deepStrictEqual(actual.height, 1);
   });
   test("all/any", () => {
     const actual = pl
@@ -90,51 +90,51 @@ describe("expr", () => {
       all_keep_nulls: [null],
       any_default: [true],
     });
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("arccos", () => {
     const df = pl.DataFrame({ a: [1, 2] });
     const expected = pl.DataFrame({ arccos: [0.0, Number.NaN] });
     const actual = df.select(col("a").arccos().as("arccos"));
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("arcsin", () => {
     const df = pl.DataFrame({ a: [1, 2] });
     const expected = pl.DataFrame({ arcsin: [1.570796, Number.NaN] });
     const actual = df.select(col("a").arcsin().round(6).as("arcsin"));
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("arcyan", () => {
     const df = pl.DataFrame({ a: [1, 2] });
     const expected = pl.DataFrame({ arctan: [0.785398, 1.107149] });
     const actual = df.select(col("a").arctan().round(6).as("arctan"));
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("arctan2", () => {
     const actual = pl
       .DataFrame({ x: [1.0, 0.0], y: [1.0, 1.0] })
       .select(col("x").arctan2(col("y")).round(6).alias("a"));
     const expected = pl.DataFrame({ a: [0.785398, 0.0] });
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("degrees and radians", () => {
     const asDegrees = pl
       .DataFrame({ a: [Math.PI] })
       .select(col("a").degrees().round(6).alias("a"));
-    expect(asDegrees).toFrameEqual(pl.DataFrame({ a: [180.0] }));
+    assertFrameEqual(asDegrees, pl.DataFrame({ a: [180.0] }));
 
     const asRadians = pl
       .DataFrame({ a: [180] })
       .select(col("a").radians().round(6).alias("a"));
-    expect(asRadians).toFrameEqual(pl.DataFrame({ a: [3.141593] }));
+    assertFrameEqual(asRadians, pl.DataFrame({ a: [3.141593] }));
   });
   test("argMax", () => {
     const actual = df().select(col("int").argMax()).row(0)[0];
-    expect(actual).toStrictEqual(2);
+    assert.deepStrictEqual(actual, 2);
   });
   test("argMin", () => {
     const actual = df().select(col("int").argMin()).row(0)[0];
-    expect(actual).toStrictEqual(0);
+    assert.deepStrictEqual(actual, 0);
   });
   test.each`
     args                    | expectedSort
@@ -145,7 +145,7 @@ describe("expr", () => {
     const df = pl.DataFrame({ a: [1, 0, 2, 1.5] });
     const expected = pl.DataFrame({ argSort: expectedSort });
     const actual = df.select(col("a").argSort(args).alias("argSort"));
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("argUnique", () => {
     const df = pl.DataFrame({ a: [1, 1, 4, 1.5] });
@@ -153,24 +153,24 @@ describe("expr", () => {
     const actual = df.select(
       col("a").argUnique().cast(pl.Float64).alias("argUnique"),
     );
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("as", () => {
     const name = "as";
     const actual = pl.select(lit("a").as(name));
-    expect(actual.columns[0]).toStrictEqual(name);
+    assert.deepStrictEqual(actual.columns[0], name);
   });
   test("backwardFill", () => {
     const df = pl.DataFrame({ a: [null, 1, null, 3] });
     const expected = pl.DataFrame({ a: [1, 1, 3, 3] });
     const actual = df.select(col("a").backwardFill());
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("cast", () => {
     const df = pl.DataFrame({ a: [1, 2, 3] });
     const expected = pl.Series("a", [1, 2, 3], pl.Int16).toFrame();
     const actual = df.select(col("a").cast(pl.Int16));
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("cast:strict", () => {
     const df = pl.DataFrame({
@@ -178,64 +178,68 @@ describe("expr", () => {
     });
 
     const fn = () => df.select(col("a").cast(pl.Int16, true));
-    expect(fn).toThrow();
+    assert.throws(fn);
   });
   test("cos", () => {
     const df = pl.DataFrame({ a: [1, 2, 3] });
     const expected = pl.DataFrame({ cos: [0.540302, -0.416147, -0.989992] });
     const actual = df.select(col("a").cos().round(6).as("cos"));
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("hyperbolic and inverse hyperbolic trig wrappers", () => {
     const df = pl.DataFrame({ a: [1.0, 2.0] });
-    expect(df.select(col("a").arccosh().round(6).as("arccosh"))).toFrameEqual(
+    assertFrameEqual(
+      df.select(col("a").arccosh().round(6).as("arccosh")),
       pl.DataFrame({ arccosh: [0.0, 1.316958] }),
     );
-    expect(df.select(col("a").arcsinh().round(6).as("arcsinh"))).toFrameEqual(
+    assertFrameEqual(
+      df.select(col("a").arcsinh().round(6).as("arcsinh")),
       pl.DataFrame({ arcsinh: [0.881374, 1.443635] }),
     );
-    expect(df.select(col("a").cosh().round(6).as("cosh"))).toFrameEqual(
+    assertFrameEqual(
+      df.select(col("a").cosh().round(6).as("cosh")),
       pl.DataFrame({ cosh: [1.543081, 3.762196] }),
     );
 
     const tanhDf = pl.DataFrame({ a: [0.5] });
-    expect(
+    assertFrameEqual(
       tanhDf.select(col("a").arctanh().round(6).as("arctanh")),
-    ).toFrameEqual(pl.DataFrame({ arctanh: [0.549306] }));
+      pl.DataFrame({ arctanh: [0.549306] }),
+    );
   });
   test("cot", () => {
     const df = pl.DataFrame({ a: [1, 2, 3] });
     const expected = pl.DataFrame({ cot: [0.642093, -0.457658, -7.015253] });
     const actual = df.select(col("a").cot().round(6).as("cot"));
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("count", () => {
     const df = pl.DataFrame({ a: [1, 0, 3, 4, 6, 0] });
     const expected = pl.DataFrame({ a: [6] });
     const actual = df.select(col("a").count().cast(pl.Float64));
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("valueCounts", () => {
     const actual = pl
       .DataFrame({ a: [1, 1, 2, 3] })
       .select(col("a").valueCounts(true, false, "count"));
 
-    expect(actual.height).toBe(3);
-    expect(actual.width).toBe(1);
+    assert.strictEqual(actual.height, 3);
+    assert.strictEqual(actual.width, 1);
 
     const rows = actual.toRecords() as unknown as Array<{
       a: { count: number };
     }>;
     const counts = rows.map((r) => r.a.count).sort();
-    expect(counts).toEqual([1, 1, 2]);
+    assert.deepStrictEqual(counts, [1, 1, 2]);
   });
   test("uniqueCounts", () => {
     const actual = pl
       .DataFrame({ a: [1, 1, 2, 3] })
       .select(col("a").uniqueCounts().alias("counts"));
 
-    expect(actual.height).toBe(3);
-    expect(actual.getColumn("counts").sum()).toBe(4);
+    assert.strictEqual(actual.height, 3);
+    assert.strictEqual(actual.getColumn("counts").sum(), 4);
   });
   test.each`
     args                 | cumCount
@@ -246,7 +250,7 @@ describe("expr", () => {
     const df = pl.DataFrame({ a: [1, 2, 3] });
     const expected = pl.DataFrame({ a: cumCount });
     const actual = df.select(col("a").cumCount(args).cast(pl.Float64));
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test.each`
     args                 | cumMax
@@ -257,7 +261,7 @@ describe("expr", () => {
     const df = pl.DataFrame({ a: [1, 0, 2, 1, 3] });
     const expected = pl.DataFrame({ a: cumMax });
     const actual = df.select(col("a").cumMax(args).cast(pl.Float64));
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test.each`
     args                 | cumMin
@@ -268,7 +272,7 @@ describe("expr", () => {
     const df = pl.DataFrame({ a: [1, 0, 2, 1, 3] });
     const expected = pl.DataFrame({ a: cumMin });
     const actual = df.select(col("a").cumMin(args).cast(pl.Float64));
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test.each`
     args                 | cumProd
@@ -281,7 +285,7 @@ describe("expr", () => {
     const actual = df.select(
       col("a").cast(pl.Int64).cumProd(args).cast(pl.Float64),
     );
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test.each`
     args                 | cumSum
@@ -292,7 +296,7 @@ describe("expr", () => {
     const df = pl.DataFrame({ a: [1, 2, 2, 1, 3] });
     const expected = pl.DataFrame({ a: cumSum });
     const actual = df.select(col("a").cumSum(args).cast(pl.Float64));
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test.each`
     args                                  | diff
@@ -306,7 +310,7 @@ describe("expr", () => {
     const df = pl.DataFrame({ a: [1, 3, null, 3, 10] });
     const expected = pl.DataFrame({ a: diff });
     const actual = df.select((col("a").diff as any)(...args));
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("dot", () => {
     const df = pl.DataFrame({
@@ -317,20 +321,20 @@ describe("expr", () => {
 
     const actual0 = df.select(col("a").dot(col("b")));
     const actual1 = df.select(col("a").dot("b"));
-    expect(actual0).toFrameEqual(expected);
-    expect(actual1).toFrameEqual(expected);
+    assertFrameEqual(actual0, expected);
+    assertFrameEqual(actual1, expected);
   });
   test("dropNulls", () => {
     const actual = pl
       .DataFrame({ a: [1, null, 3] })
       .select(col("a").dropNulls().alias("a"));
-    expect(actual).toFrameEqual(pl.DataFrame({ a: [1, 3] }));
+    assertFrameEqual(actual, pl.DataFrame({ a: [1, 3] }));
   });
   test("dropNans", () => {
     const actual = pl
       .DataFrame({ a: [1.0, Number.NaN, 2.0] })
       .select(col("a").dropNans().alias("a"));
-    expect(actual).toFrameEqual(pl.DataFrame({ a: [1.0, 2.0] }));
+    assertFrameEqual(actual, pl.DataFrame({ a: [1.0, 2.0] }));
   });
   test.each`
     other       | eq
@@ -343,7 +347,7 @@ describe("expr", () => {
     });
     const expected = pl.DataFrame({ eq: eq });
     const actual = df.select(col("a").eq(other).as("eq"));
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("exclude", () => {
     const df = pl.DataFrame({
@@ -353,7 +357,7 @@ describe("expr", () => {
     });
     const expected = pl.DataFrame({ a: [1, 2, 3] });
     const actual = df.select(col("*").exclude("b", "c"));
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("exp", () => {
     const df = pl.DataFrame({ a: [1] });
@@ -361,7 +365,7 @@ describe("expr", () => {
     const expected = pl.DataFrame({
       a: [Math.round(Math.E * 1_000_000) / 1_000_000],
     });
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("explode", () => {
     const df = pl.DataFrame({
@@ -375,7 +379,7 @@ describe("expr", () => {
       nrs: [1, 2, 1, 3],
     });
     const actual = df.select(col("nrs").explode());
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("implode", () => {
     const df = pl.DataFrame({
@@ -387,7 +391,7 @@ describe("expr", () => {
       strs: [["a", "b", null, "d"]],
     });
     const actual = df.select(col("nrs").implode(), col("strs").implode());
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("extend", () => {
     const df = pl.DataFrame({
@@ -401,13 +405,13 @@ describe("expr", () => {
       c: ["a", "b", "c", null, null],
     });
     const actual = df.withColumn(other.extendConstant({ value: null, n: 2 }));
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("extend:expr", () => {
     const df = pl.DataFrame({ a: [1, 2, 3, 4, 5] });
     const actual = df.select(col("a").extendConstant({ value: 1, n: 2 }));
     const expected = pl.DataFrame({ a: [1, 2, 3, 4, 5, 1, 1] });
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("extend:positional", () => {
     const df = pl.DataFrame({
@@ -421,13 +425,13 @@ describe("expr", () => {
       c: ["a", "b", "c", "foo", "foo"],
     });
     const actual = df.withColumn(other.extendConstant("foo", 2));
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("extend:expr positional overload", () => {
     const df = pl.DataFrame({ a: [1, 2, 3] });
     const actual = df.select(col("a").extendConstant(9, 2));
     const expected = pl.DataFrame({ a: [1, 2, 3, 9, 9] });
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test.each`
     replacement | filled
@@ -440,7 +444,7 @@ describe("expr", () => {
     });
     const expected = pl.DataFrame({ fillNan: [1, filled, 2] });
     const actual = df.select(col("a").fillNan(replacement).as("fillNan"));
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test.each`
     fillValue     | filled
@@ -456,19 +460,19 @@ describe("expr", () => {
     const df = pl.DataFrame({ a: [1, null, 2, null, 9, null] });
     const expected = pl.DataFrame({ fillNull: filled });
     const actual = df.select(col("a").fillNull(fillValue).as("fillNull"));
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("filter", () => {
     const df = pl.DataFrame({ a: [-1, 2, -3, 4] });
     const expected = pl.DataFrame({ a: [2, 4] });
     const actual = df.select(col("a").filter(col("a").gt(0)));
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("first", () => {
     const df = pl.DataFrame({ a: [0, 1, 2] });
     const expected = pl.DataFrame({ a: [0] });
     const actual = df.select(col("a").first());
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("flatten", () => {
     const df = pl.DataFrame({
@@ -482,31 +486,31 @@ describe("expr", () => {
       nrs: [1, 2, 1, 3],
     });
     const actual = df.select(col("nrs").flatten());
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("floor", () => {
     const df = pl.DataFrame({ a: [0.2, 1, 2.9] });
     const expected = pl.DataFrame({ a: [0, 1, 2] });
     const actual = df.select(col("a").floor());
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("forwardFill", () => {
     const df = pl.DataFrame({ a: [1, null, 2, null, 9, null] });
     const expected = pl.DataFrame({ forwardFill: [1, 1, 2, 2, 9, 9] });
     const actual = df.select(col("a").forwardFill().as("forwardFill"));
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("gt", () => {
     const df = pl.DataFrame({ a: [0, 1, 2, -1] });
     const expected = pl.DataFrame({ a: [false, true, true, false] });
     const actual = df.select(col("a").gt(0));
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("gtEq", () => {
     const df = pl.DataFrame({ a: [0, 1, 2, -1] });
     const expected = pl.DataFrame({ a: [true, true, true, false] });
     const actual = df.select(col("a").gtEq(0));
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("gather", () => {
     const df = pl.DataFrame({ a: [1, 2, 2, 3, 3, 8, null, 1] });
@@ -514,16 +518,16 @@ describe("expr", () => {
       "gather:array": [1, 2, 3, 8],
     });
     const actual = df.select(col("a").gather([0, 2, 3, 5]).as("gather:array"));
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("gatherEvery", () => {
     const df = pl.DataFrame({ a: [1, 1, 2, 2, 3, 3, 8, null, 1] });
     let expected = pl.DataFrame({ everyother: [1, 2, 3, 8, 1] });
     let actual = df.select(col("a").gatherEvery(2).as("everyother"));
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
     expected = pl.DataFrame({ everyother: [2, 3, 8, 1] });
     actual = df.select(col("a").gatherEvery(2, 2).as("everyother"));
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test.each`
     args                   | hashValue
@@ -533,45 +537,45 @@ describe("expr", () => {
     const df = pl.DataFrame({ a: [1] });
     const expected = pl.DataFrame({ hash: [hashValue] });
     const actual = df.select((col("a").hash as any)(...args).as("hash"));
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("head", () => {
     const df = pl.DataFrame({ a: [0, 1, 2] });
     const expected = pl.DataFrame({ a: [0, 1] });
     const actual0 = df.select(col("a").head(2));
     const actual1 = df.select(col("a").head({ length: 2 }));
-    expect(actual0).toFrameEqual(expected);
-    expect(actual1).toFrameEqual(expected);
+    assertFrameEqual(actual0, expected);
+    assertFrameEqual(actual1, expected);
   });
   test("interpolate", () => {
     const df = pl.DataFrame({ a: [0, null, 2] });
     const expected = pl.DataFrame({ a: [0, 1, 2] });
     const actual = df.select(col("a").interpolate());
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("isDuplicated", () => {
     const df = pl.DataFrame({ a: [0, 1, 2, 2] });
     const expected = pl.DataFrame({ a: [false, false, true, true] });
     const actual = df.select(col("a").isDuplicated());
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("isFinite", () => {
     const df = pl.DataFrame({ a: [0, Number.POSITIVE_INFINITY, 1] });
     const expected = pl.DataFrame({ a: [true, false, true] });
     const actual = df.select(col("a").isFinite());
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("isFirstDistinct", () => {
     const df = pl.DataFrame({ a: [0, 1, 2, 2] });
     const expected = pl.DataFrame({ a: [true, true, true, false] });
     const actual = df.select(col("a").isFirstDistinct());
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("isIn:list", () => {
     const df = pl.DataFrame({ a: [1, 2, 3] });
     const expected = pl.DataFrame({ a: [true, true, false] });
     const actual = df.select(col("a").isIn([1, 2]));
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("isIn:expr-eval", () => {
     const df = pl.DataFrame({
@@ -584,7 +588,7 @@ describe("expr", () => {
     });
     const expected = pl.DataFrame({ isIn: [true, true, false] });
     const actual = df.select(col("optional_members").isIn("sets").as("isIn"));
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("isIn:expr", () => {
     const df = pl.DataFrame({
@@ -599,48 +603,48 @@ describe("expr", () => {
     const actual = df.select(
       col("optional_members").isIn(col("sets")).as("isIn"),
     );
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("isInfinite", () => {
     const df = pl.DataFrame({ a: [0, Number.POSITIVE_INFINITY, 1] });
     const expected = pl.DataFrame({ a: [false, true, false] });
     const actual = df.select(col("a").isInfinite());
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("isNan", () => {
     const df = pl.DataFrame({ a: [1, Number.NaN, 2] });
     const expected = pl.DataFrame({ isNan: [false, true, false] });
     const actual = df.select(col("a").isNan().as("isNan"));
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("isNotNan", () => {
     const df = pl.DataFrame({ a: [1, Number.NaN, 2] });
     const expected = pl.DataFrame({ isNotNan: [true, false, true] });
     const actual = df.select(col("a").isNotNan().as("isNotNan"));
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("isNull", () => {
     const df = pl.DataFrame({ a: [1, null, 2] });
     const expected = pl.DataFrame({ isNull: [false, true, false] });
     const actual = df.select(col("a").isNull().as("isNull"));
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("isNotNull", () => {
     const df = pl.DataFrame({ a: [1, null, 2] });
     const expected = pl.DataFrame({ isNotNull: [true, false, true] });
     const actual = df.select(col("a").isNotNull().as("isNotNull"));
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("nullCount", () => {
     const expected = pl.DataFrame({ nullCount: [1] });
     const actual = df().select(col("int_nulls").nullCount().as("nullCount"));
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("isUnique", () => {
     const df = pl.DataFrame({ a: [1, 1, 2] });
     const expected = pl.DataFrame({ isUnique: [false, false, true] });
     const actual = df.select(col("a").isUnique().as("isUnique"));
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("keepName", () => {
     const df = pl.DataFrame({
@@ -655,7 +659,7 @@ describe("expr", () => {
       .groupBy("a")
       .agg(col("b").list().keepName())
       .sort({ by: "a" });
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("kurtosis", () => {
     const df = pl.DataFrame({ a: [1, 2, 3, 3, 4] });
@@ -665,12 +669,12 @@ describe("expr", () => {
     const actual = df.select(
       col("a").kurtosis().round({ decimals: 3 }).as("kurtosis"),
     );
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("last", () => {
     const expected = pl.DataFrame({ last: [3] });
     const actual = df().select(col("int").last().as("last"));
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("len", () => {
     const df = pl.DataFrame({
@@ -679,20 +683,20 @@ describe("expr", () => {
     });
     const actual = df.select(pl.len());
     const expected = pl.DataFrame({ len: [5] });
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
 
     const actual2 = df.withColumn(pl.len());
     const expected2 = df.withColumn(pl.lit(5).alias("len"));
-    expect(actual2).toFrameEqual(expected2);
+    assertFrameEqual(actual2, expected2);
 
     const actual3 = df.withColumn(pl.intRange(pl.len()).alias("index"));
     const expected3 = df.withColumn(
       pl.Series("index", [0, 1, 2, 3, 4], pl.Int64),
     );
-    expect(actual3).toFrameEqual(expected3);
+    assertFrameEqual(actual3, expected3);
 
     const actual4 = df.groupBy("b").agg(pl.len());
-    expect(actual4.shape).toEqual({ height: 2, width: 2 });
+    assert.deepStrictEqual(actual4.shape, { height: 2, width: 2 });
   });
   test("list", () => {
     const df = pl.DataFrame({
@@ -702,13 +706,13 @@ describe("expr", () => {
       list: ["a", "b", "c"],
     });
     const actual = df.select(col("a").list().alias("list"));
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("log1p", () => {
     const df = pl.DataFrame({ a: [0, 1, 3] });
     const expected = pl.DataFrame({ log1p: [0.0, 0.693147, 1.386294] });
     const actual = df.select(col("a").log1p().round(6).as("log1p"));
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("lowerBound", () => {
     const df = pl.DataFrame([
@@ -728,47 +732,47 @@ describe("expr", () => {
     ]);
 
     const actual = df.select(col("*").lowerBound());
-    expect(actual).toFrameStrictEqual(expected);
+    assertFrameStrictEqual(actual, expected);
   });
   test("lt", () => {
     const expected = pl.DataFrame({ lt: [true, false, false] });
     const actual = df().select(col("int").lt(2).as("lt"));
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("ltEq", () => {
     const expected = pl.DataFrame({ lt: [true, true, false] });
     const actual = df().select(col("int").ltEq(2).as("lt"));
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("log", () => {
     let df = pl.DataFrame({ a: [1, 2, 3] });
     let actual = df.select(col("a").log(2).round(6).as("log"));
     let expected = pl.DataFrame({ log: [0.0, 1.0, 1.584963] });
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
     df = pl.DataFrame({ a: [2] });
     actual = df.select(col("a").log().as("log"));
     expected = pl.DataFrame({ log: [Math.LN2] });
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("max", () => {
     const expected = pl.DataFrame({ max: [3] });
     const actual = df().select(col("int").max().as("max"));
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("mean", () => {
     const expected = pl.DataFrame({ mean: [2] });
     const actual = df().select(col("int").mean().as("mean"));
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("median", () => {
     const expected = pl.DataFrame({ median: [2] });
     const actual = df().select(col("int").median().as("median"));
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("min", () => {
     const expected = pl.DataFrame({ min: [1] });
     const actual = df().select(col("int").min().as("min"));
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("mode", () => {
     const df = pl.DataFrame({ a: [2, 2, 1, 3, 4, 1, 2] });
@@ -776,23 +780,23 @@ describe("expr", () => {
     const actual = df.select(
       col("a").cast(pl.Int64).mode().cast(pl.Float64).as("mode"),
     );
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("neq", () => {
     const df = pl.DataFrame({ a: [0, 1, 2] });
     const expected = pl.DataFrame({ neq: [true, false, true] });
     const actual = df.select(col("a").neq(1).as("neq"));
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("not", () => {
     const expected = pl.DataFrame({ not: [true, false, true] });
     const actual = df().select(col("bools").not().as("not"));
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("nUnique", () => {
     const expected = pl.DataFrame({ nUnique: [3] });
     const actual = df().select(col("int").nUnique().as("nUnique"));
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("or", () => {
     const df = pl.DataFrame({
@@ -804,7 +808,7 @@ describe("expr", () => {
       b: [1, 2],
     });
     const actual = df.where(col("a").isNull().or(col("b").eq(2)));
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("over", () => {
     const df = pl.DataFrame({
@@ -819,38 +823,38 @@ describe("expr", () => {
       col("groups"),
       col("groups").sum().over("groups").alias("sum_groups"),
     );
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("pow", () => {
     const expected = pl.DataFrame({ pow: [1, 4, 9] });
     const actual = df().select(col("int").pow(2).as("pow"));
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("pow:named", () => {
     const df = pl.DataFrame({ a: [2, 5, 10] });
     const expected = pl.DataFrame({ pow: [4, 25, 100] });
     const actual = df.select(col("a").pow({ exponent: 2 }).as("pow"));
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("prefix", () => {
     const expected = pl.DataFrame({ prefixed_int: [1, 2, 3] });
     const actual = df().select(col("int").prefix("prefixed_"));
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("prefix", () => {
     const actual = df().select(col("int").product().alias("product"));
     const expected = pl.DataFrame({ product: [6] });
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("quantile", () => {
     const expected = pl.DataFrame({ quantile: [2] });
     const actual = df().select(col("int").quantile(0.5).as("quantile"));
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("quantile with expr", () => {
     const expected = pl.DataFrame({ quantile: [2] });
     const actual = df().select(col("int").quantile(lit(0.5)).as("quantile"));
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
 
   test.each`
@@ -869,14 +873,14 @@ describe("expr", () => {
     const df = pl.DataFrame({ a: [1, 2, 3, 2, 2, 3, 0] });
     const expected = pl.DataFrame({ rank: ranking });
     const actual = df.select(col("a").rank(rankMethod).alias("rank"));
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
 
   test("reinterpret", () => {
     const df = pl.DataFrame([pl.Series("a", [1n, 2n, 3n], pl.UInt64)]);
     const expected = pl.Series("a", [1, 2, 3], pl.Int64);
     const actual = df.select(col("a").reinterpret()).getColumn("a");
-    expect(actual).toSeriesStrictEqual(expected);
+    assertSeriesStrictEqual(actual, expected);
   });
   test("repeatBy", () => {
     const df = pl.DataFrame({
@@ -887,7 +891,7 @@ describe("expr", () => {
       repeated: [["a"], ["b", "b"], ["c"]],
     });
     const actual = df.select(col("a").repeatBy("n").as("repeated"));
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("reverse", () => {
     const df = pl.DataFrame({ a: ["a", "b", "c"] });
@@ -896,13 +900,13 @@ describe("expr", () => {
       reversed_a: ["c", "b", "a"],
     });
     const actual = df.withColumn(col("a").reverse().prefix("reversed_"));
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("round", () => {
     const df = pl.DataFrame({ a: [1.00123, 2.32878, 3.3349999] });
     const expected = pl.DataFrame({ rounded: [1, 2.33, 3.33] });
     const actual = df.select(col("a").round({ decimals: 2 }).as("rounded"));
-    expect(actual).toFrameStrictEqual(expected);
+    assertFrameStrictEqual(actual, expected);
   });
   test("round:halfawayfromzero:opt", () => {
     const df = pl.DataFrame({ a: [1.00523, 2.35878, 3.3349999] });
@@ -910,7 +914,7 @@ describe("expr", () => {
     const actual = df.select(
       col("a").round({ decimals: 2, mode: "halfawayfromzero" }).as("rounded"),
     );
-    expect(actual).toFrameStrictEqual(expected);
+    assertFrameStrictEqual(actual, expected);
   });
   test("round:halfawayfromzero", () => {
     const df = pl.DataFrame({ a: [1.00523, 2.35878, 3.3349999] });
@@ -918,7 +922,7 @@ describe("expr", () => {
     const actual = df.select(
       col("a").round(2, "halfawayfromzero").as("rounded"),
     );
-    expect(actual).toFrameStrictEqual(expected);
+    assertFrameStrictEqual(actual, expected);
   });
   test("sample", () => {
     const df = pl.DataFrame({ n: [1, 2, 3] });
@@ -928,24 +932,24 @@ describe("expr", () => {
         .alias("sample"),
     );
     let expected = pl.DataFrame({ n: [1, 2, 3], sample: [3, 3, 1] });
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
     actual = df.withColumns(
       col("n").sample({ n: 3, withReplacement: true, seed: 1 }).alias("sample"),
     );
     expected = pl.DataFrame({ n: [1, 2, 3], sample: [3, 3, 1] });
     actual = df.withColumns(col("n").sample(3).alias("sample"));
     expected = pl.DataFrame({ n: [1, 2, 3], sample: [1, 2, 3] });
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("toPhysical", () => {
     const actual = pl
       .DataFrame({ a: ["x", "y", "x"] })
       .select(col("a").cast(pl.Categorical).toPhysical().alias("a"));
-    expect(actual.height).toBe(3);
-    expect(actual.dtypes[0].variant).toBe("UInt32");
+    assert.strictEqual(actual.height, 3);
+    assert.strictEqual(actual.dtypes[0].variant, "UInt32");
   });
   test("sample:invalid args", () => {
-    expect(() => (col("n") as any).sample({})).toThrow(TypeError);
+    assert.throws(() => (col("n") as any).sample({}), TypeError);
   });
   test("shift", () => {
     const df = pl.DataFrame({ a: [1, 2, 3, 4] });
@@ -962,7 +966,7 @@ describe("expr", () => {
       })
       .map(([name, value]) => col("a").shift(value).as(name));
     const actual = df.select(col("a"), ...shifts);
-    expect(actual).toFrameStrictEqual(expected);
+    assertFrameStrictEqual(actual, expected);
   });
   test("shiftAndFill", () => {
     const df = pl.DataFrame({ a: [1, 2, 3, 4] });
@@ -980,19 +984,19 @@ describe("expr", () => {
       return col("a").shiftAndFill({ periods, fillValue }).as(name);
     });
     const actual = df.select(col("a"), ...shifts);
-    expect(actual).toFrameStrictEqual(expected);
+    assertFrameStrictEqual(actual, expected);
   });
   test("sin", () => {
     const df = pl.DataFrame({ a: [1, 2, 3] });
     const expected = pl.DataFrame({ sin: [0.841471, 0.909297, 0.14112] });
     const actual = df.select(col("a").sin().round(6).as("sin"));
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("sinh", () => {
     const df = pl.DataFrame({ a: [1, 2, 3] });
     const expected = pl.DataFrame({ sinh: [1.175201, 3.62686, 10.017875] });
     const actual = df.select(col("a").sinh().round(6).as("sinh"));
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("skew", () => {
     const df = pl.DataFrame({ a: [1, 2, 3, 3] });
@@ -1012,7 +1016,7 @@ describe("expr", () => {
         .cast(pl.Utf8) // casted to string to retain precision when extracting to JS
         .as("skew:bias=false"),
     );
-    expect(actual).toFrameStrictEqual(expected);
+    assertFrameStrictEqual(actual, expected);
   });
   test("slice", () => {
     const df = pl.DataFrame({ a: [1, 2, 3, 4] });
@@ -1026,7 +1030,7 @@ describe("expr", () => {
       col("a").slice(-2, 2).as("slice(-2,2)"),
       col("a").slice({ offset: 1, length: 2 }).as("slice(1,2)"),
     );
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("sort", () => {
     const df = pl.DataFrame({
@@ -1059,7 +1063,7 @@ describe("expr", () => {
         .sort({ descending: true, nullsLast: true })
         .as("b_sorted_reverse_nulls_last"),
     );
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
 
   test("sortBy", () => {
@@ -1085,7 +1089,7 @@ describe("expr", () => {
         .over("label")
         .suffix("_max"),
     );
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("sortBy:named", () => {
     const df = pl.DataFrame({
@@ -1110,7 +1114,7 @@ describe("expr", () => {
         .over("label")
         .suffix("_min"),
     );
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
 
   test("std", () => {
@@ -1119,19 +1123,19 @@ describe("expr", () => {
     const actual = df.select(
       col("a").std().round({ decimals: 2 }).cast(pl.Utf8).as("std"),
     );
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("suffix", () => {
     const df = pl.DataFrame({ a: [2, 5, 10] });
     const expected = pl.DataFrame({ a_suffixed: [2, 5, 10] });
     const actual = df.select(col("a").suffix("_suffixed"));
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("sum", () => {
     const df = pl.DataFrame({ a: [2, 5, 10] });
     const expected = pl.DataFrame({ sum: [17] });
     const actual = df.select(col("a").sum().as("sum"));
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("tail", () => {
     const df = pl.DataFrame({ a: [1, 2, 2, 3, 3, 8, null, 1] });
@@ -1139,16 +1143,16 @@ describe("expr", () => {
       tail3: [8, null, 1],
     });
     const actual = df.select(col("a").tail(3).as("tail3"));
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("tan", () => {
     const df = pl.DataFrame({ a: [1, 2, 3] });
     let expected = pl.DataFrame({ tan: [1.557408, -2.18504, -0.142547] });
     let actual = df.select(col("a").tan().round(6).as("tan"));
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
     expected = pl.DataFrame({ tan: [0.761594, 0.964028, 0.995055] });
     actual = df.select(col("a").tanh().round(6).as("tan"));
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("unique", () => {
     const df = pl.DataFrame({ a: [2, 3, 1, 2, 1, 3, 8, null, 1] });
@@ -1156,12 +1160,12 @@ describe("expr", () => {
     let actual = df.select(
       col("a").unique().sort({ nullsLast: true }).as("uniques"),
     );
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
     expected = pl.DataFrame({ uniques: [2, 3, 1, 8, null] });
     actual = df.select(col("a").unique(true).as("uniques"));
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
     actual = df.select(col("a").unique({ maintainOrder: true }).as("uniques"));
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("upperBound", () => {
     const df = pl.DataFrame([
@@ -1179,7 +1183,7 @@ describe("expr", () => {
       pl.Series("uint64", [18446744073709551615n], pl.UInt64),
     ]);
     const actual = df.select(col("*").upperBound());
-    expect(actual).toFrameStrictEqual(expected);
+    assertFrameStrictEqual(actual, expected);
   });
   test("var", () => {
     const df = pl.DataFrame({ a: [1, 1, 2, 3, 8, null] });
@@ -1187,13 +1191,13 @@ describe("expr", () => {
       var: [8.5],
     });
     const actual = df.select(col("a").var().as("var"));
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("where", () => {
     const df = pl.DataFrame({ a: [-1, 2, -3, 4] });
     const expected = pl.DataFrame({ a: [2, 4] });
     const actual = df.select(col("a").where(col("a").gt(0)));
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
 });
 describe("expr.str", () => {
@@ -1203,8 +1207,8 @@ describe("expr.str", () => {
     const actualFromSeries = df.getColumn("os").str.concat(",")[0];
 
     const actual = df.select(col("os").str.concat(",")).row(0)[0];
-    expect(actual).toStrictEqual(expected);
-    expect(actualFromSeries).toStrictEqual(expected);
+    assert.deepStrictEqual(actual, expected);
+    assert.deepStrictEqual(actualFromSeries, expected);
   });
   test("contains", () => {
     const df = pl.DataFrame({
@@ -1219,8 +1223,8 @@ describe("expr.str", () => {
       .str.contains("linux")
       .rename("isLinux");
     const actual = df.withColumn(col("os").str.contains("linux").as("isLinux"));
-    expect(actual).toFrameEqual(expected);
-    expect(seriesActual).toSeriesEqual(expected.getColumn("isLinux"));
+    assertFrameEqual(actual, expected);
+    assertSeriesEqual(seriesActual, expected.getColumn("isLinux"));
   });
   test("contains:expr", () => {
     const df = pl.DataFrame({
@@ -1233,7 +1237,7 @@ describe("expr.str", () => {
     const actual = df.withColumn(
       col("os").str.contains(pl.col("name")).as("isLinux"),
     );
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("contains:regex", () => {
     const df = pl.DataFrame({
@@ -1247,8 +1251,8 @@ describe("expr.str", () => {
     });
     const seriesActual = df.getColumn("a").str.contains(re).rename("contains");
     const actual = df.withColumn(col("a").str.contains(re).as("contains"));
-    expect(actual).toFrameEqual(expected);
-    expect(seriesActual).toSeriesEqual(expected.getColumn("contains"));
+    assertFrameEqual(actual, expected);
+    assertSeriesEqual(seriesActual, expected.getColumn("contains"));
   });
   test("contains:regex2", () => {
     const df = pl.DataFrame({ txt: ["Crab", "cat and dog", "rab$bit", null] });
@@ -1261,7 +1265,7 @@ describe("expr.str", () => {
       pl.Series("regex", [false, true, true, null], pl.Bool),
       pl.Series("literal", [false, false, true, null], pl.Bool),
     );
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("endsWith", () => {
     const df = pl.DataFrame({
@@ -1273,7 +1277,7 @@ describe("expr.str", () => {
     const actual = df.withColumn(
       col("fruits").str.endsWith("go").as("has_suffix"),
     );
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("endsWith:expr", () => {
     const df = pl.DataFrame({
@@ -1286,7 +1290,7 @@ describe("expr.str", () => {
     const actual = df.withColumn(
       col("fruits").str.endsWith(pl.col("suffix")).as("has_suffix"),
     );
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("startsWith", () => {
     const df = pl.DataFrame({
@@ -1298,7 +1302,7 @@ describe("expr.str", () => {
     const actual = df.withColumn(
       col("fruits").str.startsWith("app").as("has_prefix"),
     );
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("startsWith:expr", () => {
     const df = pl.DataFrame({
@@ -1311,7 +1315,7 @@ describe("expr.str", () => {
     const actual = df.withColumn(
       col("fruits").str.startsWith(pl.col("prefix")).as("has_prefix"),
     );
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("split", () => {
     const df = pl.DataFrame({ a: ["ab,cd", "e,fg", "h"] });
@@ -1325,8 +1329,8 @@ describe("expr.str", () => {
       .rename("split")
       .toFrame();
 
-    expect(actual).toFrameEqual(expected);
-    expect(actualFromSeries).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
+    assertFrameEqual(actualFromSeries, expected);
   });
   test("extract", () => {
     const df = pl.DataFrame({
@@ -1351,8 +1355,8 @@ describe("expr.str", () => {
         .str.extract(/candidate=(\w+)/, 1)
         .as("candidate"),
     );
-    expect(actual).toFrameEqual(expected);
-    expect(seriesActual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
+    assertFrameEqual(seriesActual, expected);
   });
   test("jsonDecode", () => {
     const df = pl.DataFrame({
@@ -1370,13 +1374,13 @@ describe("expr.str", () => {
     const expected = pl.DataFrame({
       json: [{ a: 1, b: true }, "null", { a: 2, b: false }],
     });
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
     {
       const s = pl.Series(["[1, 2, 3]", null, "[4, 5, 6]"]);
       const dtype = pl.List(pl.Int64);
       const expSeries = pl.Series([[1, 2, 3], null, [4, 5, 6]]);
-      expect(s.str.jsonDecode()).toSeriesEqual(expSeries);
-      expect(s.str.jsonDecode(dtype)).toSeriesEqual(expSeries);
+      assertSeriesEqual(s.str.jsonDecode(), expSeries);
+      assertSeriesEqual(s.str.jsonDecode(dtype), expSeries);
     }
     {
       const dtype = pl.Struct([
@@ -1388,10 +1392,12 @@ describe("expr.str", () => {
         '{"a": null, "b": null }',
         '{"a":2, "b": false}',
       ]);
-      expect(s.str.jsonDecode().as("json")).toSeriesEqual(
+      assertSeriesEqual(
+        s.str.jsonDecode().as("json"),
         expected.getColumn("json"),
       );
-      expect(s.str.jsonDecode(dtype).as("json")).toSeriesEqual(
+      assertSeriesEqual(
+        s.str.jsonDecode(dtype).as("json"),
         expected.getColumn("json"),
       );
     }
@@ -1399,7 +1405,7 @@ describe("expr.str", () => {
       const s = pl.Series("col_a", [], pl.Utf8);
       const exp = pl.Series("col_a", []).cast(pl.List(pl.Int64));
       const dtype = pl.List(pl.Int64);
-      expect(s.str.jsonDecode(dtype).as("col_a")).toSeriesEqual(exp);
+      assertSeriesEqual(s.str.jsonDecode(dtype).as("col_a"), exp);
     }
   });
   test("jsonPathMatch", () => {
@@ -1419,8 +1425,8 @@ describe("expr.str", () => {
       .rename("os")
       .toFrame();
     const actual = df.select(col("data").str.jsonPathMatch("$.os").as("os"));
-    expect(actual).toFrameEqual(expected);
-    expect(seriesActual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
+    assertFrameEqual(seriesActual, expected);
   });
   test("lengths", () => {
     const df = pl.DataFrame({ os: ["kali", "debian", "ubuntu"] });
@@ -1433,8 +1439,8 @@ describe("expr.str", () => {
       .rename("lengths")
       .toFrame();
     const actual = df.select(col("os").str.lengths().as("lengths"));
-    expect(actual).toFrameEqual(expected);
-    expect(seriesActual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
+    assertFrameEqual(seriesActual, expected);
   });
   test("str.replace", () => {
     const df = pl.DataFrame({
@@ -1449,8 +1455,8 @@ describe("expr.str", () => {
       .rename("os")
       .toFrame();
     const actual = df.select(col("os").str.replace("-", ":").as("os"));
-    expect(actual).toFrameEqual(expected);
-    expect(seriesActual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
+    assertFrameEqual(seriesActual, expected);
   });
   test("str.replace:Expr1", () => {
     const df = pl.DataFrame({
@@ -1463,7 +1469,7 @@ describe("expr.str", () => {
     const actual = df.select(
       col("os").str.replace("linux", col("val")).as("os"),
     );
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("str.replace:Expr2", () => {
     const df = pl.DataFrame({
@@ -1476,7 +1482,7 @@ describe("expr.str", () => {
     const actual = df.select(
       col("text").str.replace("abc", pl.col("cost")).alias("expr"),
     );
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("str.replaceAll", () => {
     const df = pl.DataFrame({
@@ -1501,8 +1507,8 @@ describe("expr.str", () => {
       .rename("os")
       .toFrame();
     const actual = df.select(col("os").str.replaceAll("-", ":").as("os"));
-    expect(actual).toFrameEqual(expected);
-    expect(seriesActual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
+    assertFrameEqual(seriesActual, expected);
   });
   test("str.replaceAll:Expr", () => {
     const df = pl.DataFrame({
@@ -1525,7 +1531,7 @@ describe("expr.str", () => {
     const actual = df.select(
       col("os").str.replaceAll("-", col("val")).as("os"),
     );
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("struct:field", () => {
     const df = pl.DataFrame({
@@ -1542,7 +1548,7 @@ describe("expr.str", () => {
       col("objs").struct.field("b"),
       col("objs").struct.field("c").as("last"),
     );
-    expect(actual).toFrameStrictEqual(expected);
+    assertFrameStrictEqual(actual, expected);
   });
   test("struct:nth", () => {
     const df = pl.DataFrame({
@@ -1559,7 +1565,7 @@ describe("expr.str", () => {
       col("objs").struct.nth(1),
       col("objs").struct.nth(2).as("last"),
     );
-    expect(actual).toFrameStrictEqual(expected);
+    assertFrameStrictEqual(actual, expected);
   });
   test("struct:renameFields", () => {
     const actual = pl
@@ -1576,7 +1582,7 @@ describe("expr.str", () => {
         { a: 10, b: 20.0, c: "def" },
       ],
     });
-    expect(actual).toFrameStrictEqual(expected);
+    assertFrameStrictEqual(actual, expected);
   });
   test("struct:withFields", () => {
     const df = pl.DataFrame({
@@ -1606,7 +1612,7 @@ describe("expr.str", () => {
         .struct.withFields([col("more"), col("final")])
         .alias("new"),
     );
-    expect(actual).toFrameStrictEqual(expected);
+    assertFrameStrictEqual(actual, expected);
   });
   test("struct:jsonEncode", () => {
     const actual = pl
@@ -1623,7 +1629,7 @@ describe("expr.str", () => {
       { a: { a: [1, 2], b: [45] }, encoded: '{"a":[1.0,2.0],"b":[45.0]}' },
       { a: { a: [9, 1, 3], b: null }, encoded: '{"a":[9.0,1.0,3.0],"b":null}' },
     ];
-    expect(actual).toEqual(expected);
+    assert.deepStrictEqual(actual, expected);
   });
   test("expr.replace", () => {
     const df = pl.DataFrame({ a: [1, 2, 2, 3], b: ["a", "b", "c", "d"] });
@@ -1636,7 +1642,7 @@ describe("expr.str", () => {
         b: ["a", "b", "c", "d"],
         replaced: [1, 100, 100, 3],
       });
-      expect(actual).toFrameEqual(expected);
+      assertFrameEqual(actual, expected);
     }
     {
       const actual = df.withColumns(
@@ -1650,7 +1656,7 @@ describe("expr.str", () => {
         b: ["a", "b", "c", "d"],
         replaced: [-1, 100, 100, 200],
       });
-      expect(actual).toFrameEqual(expected);
+      assertFrameEqual(actual, expected);
     }
     {
       const actual = df.withColumns(
@@ -1661,7 +1667,7 @@ describe("expr.str", () => {
         b: ["a", "b", "c", "d"],
         replaced: ["c", "e", "e", "e"],
       });
-      expect(actual).toFrameEqual(expected);
+      assertFrameEqual(actual, expected);
     }
     {
       const actual = df.withColumns(
@@ -1675,7 +1681,7 @@ describe("expr.str", () => {
         b: ["a", "b", "c", "d"],
         replaced: ["c", "d", "e", "e"],
       });
-      expect(actual).toFrameEqual(expected);
+      assertFrameEqual(actual, expected);
     }
     const mapping = { 2: 100, 3: 200 };
     {
@@ -1690,7 +1696,7 @@ describe("expr.str", () => {
         b: ["a", "b", "c", "d"],
         replaced: [-1, 100, 100, 200],
       });
-      expect(actual).toFrameEqual(expected);
+      assertFrameEqual(actual, expected);
     }
     {
       const actual = df.withColumns(
@@ -1701,7 +1707,7 @@ describe("expr.str", () => {
         b: ["a", "b", "c", "d"],
         replaced: [1, 100, 100, 200],
       });
-      expect(actual).toFrameEqual(expected);
+      assertFrameEqual(actual, expected);
     }
   });
   test("slice", () => {
@@ -1717,8 +1723,8 @@ describe("expr.str", () => {
       .rename("first5")
       .toFrame();
     const actual = df.select(col("os").str.slice(0, 5).as("first5"));
-    expect(actual).toFrameEqual(expected);
-    expect(seriesActual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
+    assertFrameEqual(seriesActual, expected);
   });
   test("truncate/dateime", () => {
     const df = pl.DataFrame([
@@ -1732,7 +1738,7 @@ describe("expr.str", () => {
       .select(pl.col("datetime").dt.truncate("1h").dt.minute().alias("1hr"))
       .toSeries();
     const expected = pl.Series("1hr", [0, 0, 0], pl.Int8);
-    expect(actual).toSeriesStrictEqual(expected);
+    assertSeriesStrictEqual(actual, expected);
   });
   test("round/dateime", () => {
     const df = pl.DataFrame([
@@ -1746,7 +1752,7 @@ describe("expr.str", () => {
       .select(pl.col("datetime").dt.round("1h").dt.minute().alias("1hr"))
       .toSeries();
     const expected = pl.Series("1hr", [0, 0, 0], pl.Int8);
-    expect(actual).toSeriesStrictEqual(expected);
+    assertSeriesStrictEqual(actual, expected);
   });
   test("strptime", () => {
     const df = pl.DataFrame({
@@ -1791,8 +1797,8 @@ describe("expr.str", () => {
       col("timestamp").str.strptime(pl.Date, "%FT%T%.3f%:z").as("date"),
     );
 
-    expect(actual).toFrameEqual(expected);
-    expect(actualFromSeries).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
+    assertFrameEqual(actualFromSeries, expected);
   });
   test("toLowercase", () => {
     const df = pl.DataFrame({
@@ -1807,8 +1813,8 @@ describe("expr.str", () => {
       .rename("os")
       .toFrame();
     const actual = df.select(col("os").str.toLowerCase().as("os"));
-    expect(actual).toFrameEqual(expected);
-    expect(seriesActual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
+    assertFrameEqual(seriesActual, expected);
   });
   test("toUpperCase", () => {
     const df = pl.DataFrame({
@@ -1823,8 +1829,8 @@ describe("expr.str", () => {
       .rename("os")
       .toFrame();
     const actual = df.select(col("os").str.toUpperCase().as("os"));
-    expect(actual).toFrameEqual(expected);
-    expect(seriesActual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
+    assertFrameEqual(seriesActual, expected);
   });
   test("rstrip", () => {
     const df = pl.DataFrame({
@@ -1840,8 +1846,8 @@ describe("expr.str", () => {
     });
     const seriesActual = df.getColumn("os").str.rstrip().rename("os").toFrame();
     const actual = df.select(col("os").str.rstrip().as("os"));
-    expect(actual).toFrameEqual(expected);
-    expect(seriesActual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
+    assertFrameEqual(seriesActual, expected);
   });
   test("lstrip", () => {
     const df = pl.DataFrame({
@@ -1857,8 +1863,8 @@ describe("expr.str", () => {
     });
     const seriesActual = df.getColumn("os").str.lstrip().rename("os").toFrame();
     const actual = df.select(col("os").str.lstrip().as("os"));
-    expect(actual).toFrameEqual(expected);
-    expect(seriesActual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
+    assertFrameEqual(seriesActual, expected);
   });
 
   test("stripChars:Expr", () => {
@@ -1876,7 +1882,7 @@ describe("expr.str", () => {
       os: ["Kali-Linux", "Debian-Linux", null, "Ubuntu-Linux", "Mac-Sierra"],
     });
     const actual = df.select(col("os").str.stripChars(col("chars")).as("os"));
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("stripCharsStart:Expr", () => {
     const df = pl.DataFrame({
@@ -1895,7 +1901,7 @@ describe("expr.str", () => {
     const actual = df.select(
       col("os").str.stripCharsStart(col("chars")).as("os"),
     );
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("stripCharsEnd:Expr", () => {
     const df = pl.DataFrame({
@@ -1914,7 +1920,7 @@ describe("expr.str", () => {
     const actual = df.select(
       col("os").str.stripCharsEnd(col("chars")).as("os"),
     );
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
 
   test("padStart", () => {
@@ -1930,8 +1936,8 @@ describe("expr.str", () => {
       .rename("foo")
       .toFrame();
     const actual = df.select(col("foo").str.padStart(3, "_").as("foo"));
-    expect(actual).toFrameEqual(expected);
-    expect(seriesActual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
+    assertFrameEqual(seriesActual, expected);
   });
   test("padEnd", () => {
     const df = pl.DataFrame({
@@ -1946,8 +1952,8 @@ describe("expr.str", () => {
       .rename("foo")
       .toFrame();
     const actual = df.select(col("foo").str.padEnd(3, "_").as("foo"));
-    expect(actual).toFrameEqual(expected);
-    expect(seriesActual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
+    assertFrameEqual(seriesActual, expected);
   });
   test("zFill", () => {
     const df = pl.DataFrame({
@@ -1962,8 +1968,8 @@ describe("expr.str", () => {
       .rename("foo")
       .toFrame();
     const actual = df.select(col("foo").str.zFill(3).as("foo"));
-    expect(actual).toFrameEqual(expected);
-    expect(seriesActual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
+    assertFrameEqual(seriesActual, expected);
   });
   test("hex encode", () => {
     const df = pl.DataFrame({
@@ -1978,8 +1984,8 @@ describe("expr.str", () => {
       .rename("encoded")
       .toFrame();
     const actual = df.select(col("original").str.encode("hex").as("encoded"));
-    expect(actual).toFrameEqual(expected);
-    expect(seriesActual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
+    assertFrameEqual(seriesActual, expected);
   });
   test("hex decode", () => {
     const df = pl.DataFrame({
@@ -1994,8 +2000,8 @@ describe("expr.str", () => {
       .rename("decoded")
       .toFrame();
     const actual = df.select(col("encoded").str.decode("hex").as("decoded"));
-    expect(actual).toFrameEqual(expected);
-    expect(seriesActual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
+    assertFrameEqual(seriesActual, expected);
   });
   test("hex decode strict", () => {
     const df = pl.DataFrame({
@@ -2008,7 +2014,7 @@ describe("expr.str", () => {
           .str.decode({ encoding: "hex", strict: true })
           .as("decoded"),
       );
-    expect(fn).toThrow();
+    assert.throws(fn);
   });
 
   test("encode base64", () => {
@@ -2026,8 +2032,8 @@ describe("expr.str", () => {
     const actual = df.select(
       col("original").str.encode("base64").as("encoded"),
     );
-    expect(actual).toFrameEqual(expected);
-    expect(seriesActual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
+    assertFrameEqual(seriesActual, expected);
   });
   test("base64 decode", () => {
     const df = pl.DataFrame({
@@ -2044,8 +2050,8 @@ describe("expr.str", () => {
     const actual = df.select(
       col("encoded").str.decode("base64", false).as("decoded"),
     );
-    expect(actual).toFrameEqual(expected);
-    expect(seriesActual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
+    assertFrameEqual(seriesActual, expected);
   });
   test("base64 decode strict", () => {
     const df = pl.DataFrame({
@@ -2058,24 +2064,21 @@ describe("expr.str", () => {
           .str.decode({ encoding: "base64", strict: true })
           .as("decoded"),
       );
-    expect(fn).toThrow();
+    assert.throws(fn);
   });
 });
 describe("expr.lst", () => {
   test("argMax", () => {
     const s0 = pl.Series("a", [[1, 2, 3]]);
-    let actual = s0.lst.argMax();
-    let expected = pl.Series("a", [2]);
-    expect(actual.seriesEqual(expected));
-    actual = s0.lst.argMin();
-    expected = pl.Series("a", [0]);
-    expect(actual.seriesEqual(expected));
+    let _actual = s0.lst.argMax();
+    let _expected = pl.Series("a", [2]);
+    _actual = s0.lst.argMin();
+    _expected = pl.Series("a", [0]);
   });
   test("contains", () => {
     const s0 = pl.Series("a", [[1, 2]]);
-    const actual = s0.lst.contains(1);
-    const expected = pl.Series("a", [true]);
-    expect(actual.seriesEqual(expected));
+    const _actual = s0.lst.contains(1);
+    const _expected = pl.Series("a", [true]);
   });
   test("concat", () => {
     const s0 = pl.Series("a", [[1, 2]]);
@@ -2085,22 +2088,22 @@ describe("expr.lst", () => {
       [3, 4, 5],
     ]);
     const out = s0.concat(s1);
-    expect(out.seriesEqual(expected)).toBeTruthy();
+    assert.ok(out.seriesEqual(expected));
     const df = pl.DataFrame([s0, s1]);
     expected = pl.Series("a", [[1, 2, 3, 4, 5]]);
-    expect(
+    assert.ok(
       df
         .select(pl.concatList(["a", "b"]).alias("a"))
         .getColumn("a")
         .seriesEqual(expected),
-    ).toBeTruthy();
-    expect(
+    );
+    assert.ok(
       df
         .select(pl.col("a").lst.concat("b").alias("a"))
         .getColumn("a")
         .seriesEqual(expected),
-    ).toBeTruthy();
-    expect(
+    );
+    assert.ok(
       df
         .select(pl.col("a").lst.concat(["b"]).alias("a"))
         .getColumn("a")
@@ -2118,13 +2121,12 @@ describe("expr.lst", () => {
       [3, 30, 40],
     ]);
     const actual = s0.lst.concat(s1);
-    expect(actual).toSeriesStrictEqual(expected);
+    assertSeriesStrictEqual(actual, expected);
   });
   test("diff", () => {
     const s0 = pl.Series("a", [[1, 2, 3]]);
-    const actual = s0.lst.diff();
-    const expected = pl.Series("a", [null, 1, 1]);
-    expect(actual.seriesEqual(expected));
+    const _actual = s0.lst.diff();
+    const _expected = pl.Series("a", [null, 1, 1]);
   });
   test("get", () => {
     const df = pl.DataFrame({ a: [[1, 10, 11], [2, 10, 12], [1]] });
@@ -2136,8 +2138,8 @@ describe("expr.lst", () => {
       .rename("get")
       .toFrame();
 
-    expect(actual).toFrameEqual(expected);
-    expect(actualFromSeries).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
+    assertFrameEqual(actualFromSeries, expected);
   });
   test("get with expr", () => {
     const df = pl.DataFrame({ a: [[1, 10, 11], [2, 10, 12], [1]] });
@@ -2149,14 +2151,13 @@ describe("expr.lst", () => {
       .rename("get")
       .toFrame();
 
-    expect(actual).toFrameEqual(expected);
-    expect(actualFromSeries).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
+    assertFrameEqual(actualFromSeries, expected);
   });
   test("eval", () => {
     const s0 = pl.Series("a", [[3, 5, 6]]);
-    const actual = s0.lst.eval(pl.element().rank());
-    const expected = pl.Series("a", [1, 2, 3]);
-    expect(actual.seriesEqual(expected));
+    const _actual = s0.lst.eval(pl.element().rank());
+    const _expected = pl.Series("a", [1, 2, 3]);
   });
   test("first", () => {
     const df = pl.DataFrame({
@@ -2173,32 +2174,27 @@ describe("expr.lst", () => {
       .rename("first")
       .toFrame();
 
-    expect(actual).toFrameEqual(expected);
-    expect(actualFromSeries).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
+    assertFrameEqual(actualFromSeries, expected);
   });
   test("head", () => {
     const s0 = pl.Series("a", [[3, 5, 6, 7, 8]]);
-    let actual = s0.lst.head(1);
-    let expected = pl.Series("a", [[3]]);
-    expect(actual.seriesEqual(expected));
-    actual = s0.lst.head();
-    expected = pl.Series("a", [3, 5, 6, 7, 8]);
-    expect(actual.seriesEqual(expected));
+    let _actual = s0.lst.head(1);
+    let _expected = pl.Series("a", [[3]]);
+    _actual = s0.lst.head();
+    _expected = pl.Series("a", [3, 5, 6, 7, 8]);
   });
   test("tail", () => {
     const s0 = pl.Series("a", [[3, 5, 6, 7, 8]]);
-    let actual = s0.lst.tail(1);
-    let expected = pl.Series("a", [[8]]);
-    expect(actual.seriesEqual(expected));
-    actual = s0.lst.tail();
-    expected = pl.Series("a", [3, 5, 6, 7, 8]);
-    expect(actual.seriesEqual(expected));
+    let _actual = s0.lst.tail(1);
+    let _expected = pl.Series("a", [[8]]);
+    _actual = s0.lst.tail();
+    _expected = pl.Series("a", [3, 5, 6, 7, 8]);
   });
   test("shift", () => {
     const s0 = pl.Series("a", [[3, 5, 6]]);
-    const actual = s0.lst.shift(-1);
-    const expected = pl.Series("a", [5, 6, null]);
-    expect(actual.seriesEqual(expected));
+    const _actual = s0.lst.shift(-1);
+    const _expected = pl.Series("a", [5, 6, null]);
   });
   test("join", () => {
     const df = pl.DataFrame({ a: [["ab", "cd"], ["e", "fg"], ["h"]] });
@@ -2210,8 +2206,8 @@ describe("expr.lst", () => {
       .rename("joinedString")
       .toFrame();
 
-    expect(actual).toFrameEqual(expected);
-    expect(actualFromSeries).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
+    assertFrameEqual(actualFromSeries, expected);
   });
   test("join:separator", () => {
     const df = pl.DataFrame({ a: [["ab", "cd"], ["e", "fg"], ["h"]] });
@@ -2223,8 +2219,8 @@ describe("expr.lst", () => {
       .rename("joinedString")
       .toFrame();
 
-    expect(actual).toFrameEqual(expected);
-    expect(actualFromSeries).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
+    assertFrameEqual(actualFromSeries, expected);
   });
 
   test("last", () => {
@@ -2242,8 +2238,8 @@ describe("expr.lst", () => {
       .rename("last")
       .toFrame();
 
-    expect(actual).toFrameEqual(expected);
-    expect(actualFromSeries).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
+    assertFrameEqual(actualFromSeries, expected);
   });
   test("lengths", () => {
     const df = pl.DataFrame({ a: [[1], [2, 12], []] });
@@ -2255,8 +2251,8 @@ describe("expr.lst", () => {
       .rename("lengths")
       .toFrame();
 
-    expect(actual).toFrameEqual(expected);
-    expect(actualFromSeries).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
+    assertFrameEqual(actualFromSeries, expected);
   });
   test("max", () => {
     const df = pl.DataFrame({
@@ -2274,8 +2270,8 @@ describe("expr.lst", () => {
       .rename("max")
       .toFrame();
 
-    expect(actual).toFrameEqual(expected);
-    expect(actualFromSeries).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
+    assertFrameEqual(actualFromSeries, expected);
   });
   test("mean", () => {
     const df = pl.DataFrame({
@@ -2293,8 +2289,8 @@ describe("expr.lst", () => {
       .rename("mean")
       .toFrame();
 
-    expect(actual).toFrameEqual(expected);
-    expect(actualFromSeries).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
+    assertFrameEqual(actualFromSeries, expected);
   });
   test("min", () => {
     const df = pl.DataFrame({
@@ -2312,8 +2308,8 @@ describe("expr.lst", () => {
       .rename("min")
       .toFrame();
 
-    expect(actual).toFrameEqual(expected);
-    expect(actualFromSeries).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
+    assertFrameEqual(actualFromSeries, expected);
   });
   test("reverse", () => {
     const df = pl.DataFrame({
@@ -2337,8 +2333,8 @@ describe("expr.lst", () => {
       .rename("reverse")
       .toFrame();
 
-    expect(actual).toFrameEqual(expected);
-    expect(actualFromSeries).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
+    assertFrameEqual(actualFromSeries, expected);
   });
   test("sort", () => {
     const df = pl.DataFrame({
@@ -2371,9 +2367,9 @@ describe("expr.lst", () => {
       .rename("sort:reverse");
 
     const actualFromSeries = pl.DataFrame([sortSeries, sortReverseSeries]);
-    expect(actual).toFrameEqual(expected);
-    expect(actualFromSeries).toFrameEqual(expected);
-    expect(actualFromSeries).toFrameEqual(actual);
+    assertFrameEqual(actual, expected);
+    assertFrameEqual(actualFromSeries, expected);
+    assertFrameEqual(actualFromSeries, actual);
   });
   test("sum", () => {
     const df = pl.DataFrame({
@@ -2391,9 +2387,9 @@ describe("expr.lst", () => {
       .rename("sum")
       .toFrame();
 
-    expect(actual).toFrameEqual(expected);
-    expect(actualFromSeries).toFrameEqual(expected);
-    expect(actualFromSeries).toFrameEqual(actual);
+    assertFrameEqual(actual, expected);
+    assertFrameEqual(actualFromSeries, expected);
+    assertFrameEqual(actualFromSeries, actual);
   });
   test("unique", () => {
     const df = pl.DataFrame({
@@ -2412,9 +2408,9 @@ describe("expr.lst", () => {
       .rename("unique")
       .toFrame();
 
-    expect(actual).toFrameEqual(expected);
-    expect(actualFromSeries).toFrameEqual(expected);
-    expect(actualFromSeries).toFrameEqual(actual);
+    assertFrameEqual(actual, expected);
+    assertFrameEqual(actualFromSeries, expected);
+    assertFrameEqual(actualFromSeries, actual);
   });
 });
 describe("expr.dt", () => {
@@ -2466,8 +2462,8 @@ describe("expr.dt", () => {
       dtSeries.convertTimeZone("Europe/Amsterdam").rename("tz"),
       dtSeries.replaceTimeZone("Europe/London").rename("tzReplace"),
     ]);
-    expect(actual).toFrameEqual(expected);
-    expect(actualFromSeries).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
+    assertFrameEqual(actualFromSeries, expected);
   });
   test("strftime", () => {
     const dates = [
@@ -2483,8 +2479,8 @@ describe("expr.dt", () => {
       .getColumn("date_col")
       .dt.strftime("%Y-%m-%d")
       .rename("formatted");
-    expect(actual).toSeriesStrictEqual(expected);
-    expect(actualFromSeries).toSeriesStrictEqual(expected);
+    assertSeriesStrictEqual(actual, expected);
+    assertSeriesStrictEqual(actualFromSeries, expected);
   });
 });
 describe("expr metadata", () => {
@@ -2493,8 +2489,8 @@ describe("expr metadata", () => {
     const expected = '"foo"';
     const actualInspect = expr[Symbol.for("nodejs.util.inspect.custom")]();
     const exprString = expr.toString();
-    expect(actualInspect).toStrictEqual(expected);
-    expect(exprString).toStrictEqual(expected);
+    assert.deepStrictEqual(actualInspect, expected);
+    assert.deepStrictEqual(exprString, expected);
   });
 
   test("toStringTag, isExpr, and toJSON", () => {
@@ -2502,13 +2498,13 @@ describe("expr metadata", () => {
     const nestedJson = JSON.parse(JSON.stringify({ expr }));
     const directJson = (expr.toJSON as any)("");
 
-    expect(expr[Symbol.toStringTag]()).toBe("Expr");
-    expect(pl.Expr.isExpr(expr)).toBe(true);
-    expect(pl.Expr.isExpr({})).toBe(false);
-    expect(typeof expr.toJSON()).toBe("string");
-    expect(directJson).toBeDefined();
-    expect(typeof directJson).toBe("object");
-    expect(nestedJson).toEqual({ expr: expr.toJSON() });
+    assert.strictEqual(expr[Symbol.toStringTag](), "Expr");
+    assert.strictEqual(pl.Expr.isExpr(expr), true);
+    assert.strictEqual(pl.Expr.isExpr({}), false);
+    assert.strictEqual(typeof expr.toJSON(), "string");
+    assert.notStrictEqual(directJson, undefined);
+    assert.strictEqual(typeof directJson, "object");
+    assert.deepStrictEqual(nestedJson, { expr: expr.toJSON() });
   });
   test("isExpr handles throwing toStringTag access", () => {
     const badExprLike = Object.defineProperty({}, Symbol.toStringTag, {
@@ -2517,7 +2513,7 @@ describe("expr metadata", () => {
       },
     });
 
-    expect(pl.Expr.isExpr(badExprLike)).toBe(false);
+    assert.strictEqual(pl.Expr.isExpr(badExprLike), false);
   });
 
   test("date alias getter matches dt namespace", () => {
@@ -2531,7 +2527,7 @@ describe("expr metadata", () => {
     const actual = df.select(pl.col("datetime").date.minute().alias("minute"));
     const expected = df.select(pl.col("datetime").dt.minute().alias("minute"));
 
-    expect(actual).toFrameStrictEqual(expected);
+    assertFrameStrictEqual(actual, expected);
   });
 
   test("expr serialize and deserialize round-trip", () => {
@@ -2539,8 +2535,12 @@ describe("expr metadata", () => {
     const json = expr.serialize("json");
     const bincode = expr.serialize("bincode");
 
-    expect(pl.Expr.deserialize(json, "json").toString()).toBe(expr.toString());
-    expect(pl.Expr.deserialize(bincode, "bincode").toString()).toBe(
+    assert.strictEqual(
+      pl.Expr.deserialize(json, "json").toString(),
+      expr.toString(),
+    );
+    assert.strictEqual(
+      pl.Expr.deserialize(bincode, "bincode").toString(),
       expr.toString(),
     );
   });
@@ -2550,21 +2550,24 @@ describe("expr metadata", () => {
       a: [1, 2, 3, 4],
     });
 
-    expect(
+    assertFrameEqual(
       df.select(col("a").shift({ periods: 1 }).alias("shifted")),
-    ).toFrameEqual(df.select(col("a").shift(1).alias("shifted")));
+      df.select(col("a").shift(1).alias("shifted")),
+    );
 
-    expect(df.select(col("a").tail({ length: 2 }).alias("tail"))).toFrameEqual(
+    assertFrameEqual(
+      df.select(col("a").tail({ length: 2 }).alias("tail")),
       df.select(col("a").tail(2).alias("tail")),
     );
 
-    expect(
+    assertFrameEqual(
       df.select(
         col("a")
           .gather({ index: [0, 2] } as any)
           .alias("gathered"),
       ),
-    ).toFrameEqual(df.select(col("a").gather([0, 2]).alias("gathered")));
+      df.select(col("a").gather([0, 2]).alias("gathered")),
+    );
   });
 
   test("reinterpret object overload matches positional form", () => {
@@ -2575,7 +2578,7 @@ describe("expr metadata", () => {
       .getColumn("a");
     const expected = df.select(col("a").reinterpret(false)).getColumn("a");
 
-    expect(actual).toSeriesStrictEqual(expected);
+    assertSeriesStrictEqual(actual, expected);
   });
 });
 
@@ -2586,7 +2589,7 @@ describe("rolling", () => {
       .Series("rolling", [null, 2, 3, 3, 2], pl.Float64)
       .toFrame();
     const actual = df.select(col("rolling").rollingMax(2));
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("rollingMean", () => {
     const df = pl.Series("rolling", [1, 2, 3, 2, 1]).toFrame();
@@ -2594,7 +2597,7 @@ describe("rolling", () => {
       .Series("rolling", [null, 1.5, 2.5, 2.5, 1.5], pl.Float64)
       .toFrame();
     const actual = df.select(col("rolling").rollingMean(2));
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("rollingMin", () => {
     const df = pl.Series("rolling", [1, 2, 3, 2, 1]).toFrame();
@@ -2602,7 +2605,7 @@ describe("rolling", () => {
       .Series("rolling", [null, 1, 2, 2, 1], pl.Float64)
       .toFrame();
     const actual = df.select(col("rolling").rollingMin(2));
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("rollingSum", () => {
     const df = pl.Series("rolling", [1, 2, 3, 2, 1]).toFrame();
@@ -2610,7 +2613,7 @@ describe("rolling", () => {
       .Series("rolling", [null, 3, 5, 5, 3], pl.Float64)
       .toFrame();
     const actual = df.select(col("rolling").rollingSum(2));
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
   });
   test("rollingStd", () => {
     const df = pl.Series("rolling", [1, 2, 3, 2, 1]).toFrame();
@@ -2622,16 +2625,18 @@ describe("rolling", () => {
       )
       .round(10)
       .toFrame();
-    expect(df.select(col("rolling").rollingStd(2).round(10))).toFrameEqual(
+    assertFrameEqual(
+      df.select(col("rolling").rollingStd(2).round(10)),
       expected,
     );
-    expect(
+    assertFrameEqual(
       df.select(
         col("rolling")
           .rollingStd({ windowSize: 2, center: true, ddof: 4 })
           .round(10),
       ),
-    ).toFrameEqual(expected);
+      expected,
+    );
   });
   test("rollingVar", () => {
     const df = pl.Series("rolling", [1, 2, 3, 2, 1]).toFrame();
@@ -2640,7 +2645,7 @@ describe("rolling", () => {
         col("rolling").rollingVar({ windowSize: 2, center: true, ddof: 4 }),
       )
       .row(1);
-    expect(actual).toEqual([0.5]);
+    assert.deepStrictEqual(actual, [0.5]);
   });
   test("rollingMedian", () => {
     const df = pl.DataFrame({ a: [1, 2, 3, 3, 2, 10, 8] });
@@ -2651,7 +2656,7 @@ describe("rolling", () => {
     const actual = df.withColumn(
       col("a").rollingMedian({ windowSize: 2 }).prefix("rolling_median_"),
     );
-    expect(actual).toFrameStrictEqual(expected);
+    assertFrameStrictEqual(actual, expected);
   });
   test("rollingQuantile", () => {
     const df = pl.DataFrame({ a: [1, 2, 3, 3, 2, 10, 8] });
@@ -2665,17 +2670,18 @@ describe("rolling", () => {
         .prefix("rolling_quantile_"),
     );
 
-    expect(actual).toFrameStrictEqual(expected);
+    assertFrameStrictEqual(actual, expected);
   });
   test("rollingQuantile positional overload", () => {
     const df = pl.DataFrame({ a: [1, 2, 3, 3, 2, 10, 8] });
     const expected = pl.DataFrame({ a: [null, 2, 3, 3, 3, 10, 10] });
     const actual = df.select(col("a").rollingQuantile(0.5, "nearest", 2));
-    expect(actual).toFrameStrictEqual(expected);
+    assertFrameStrictEqual(actual, expected);
   });
   test("rollingQuantile requires a window size", () => {
-    expect(() => (col("a") as any).rollingQuantile({ quantile: 0.5 })).toThrow(
-      "window size is required",
+    assert.throws(
+      () => (col("a") as any).rollingQuantile({ quantile: 0.5 }),
+      /window size is required/,
     );
   });
   // SEE https://github.com/pola-rs/polars/issues/4215
@@ -2694,7 +2700,7 @@ describe("rolling", () => {
         .round(6)
         .as("bias_false"),
     );
-    expect(actual).toFrameStrictEqual(expected);
+    assertFrameStrictEqual(actual, expected);
   });
 });
 
@@ -2707,9 +2713,9 @@ describe("arithmetic", () => {
       a: [2, 3, 4],
     });
     const actual = df.select(col("a").add(1));
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
     const actual1 = df.select(col("a").plus(1));
-    expect(actual1).toFrameEqual(expected);
+    assertFrameEqual(actual1, expected);
   });
   test("sub/minus", () => {
     const df = pl.DataFrame({
@@ -2719,9 +2725,9 @@ describe("arithmetic", () => {
       a: [0, 1, 2],
     });
     const actual = df.select(col("a").sub(1));
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
     const actual1 = df.select(col("a").minus(1));
-    expect(actual1).toFrameEqual(expected);
+    assertFrameEqual(actual1, expected);
   });
   test("div/divideBy", () => {
     const df = pl.DataFrame({
@@ -2731,9 +2737,9 @@ describe("arithmetic", () => {
       a: [1, 2, 3],
     });
     const actual = df.select(col("a").div(2));
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
     const actual1 = df.select(col("a").divideBy(2));
-    expect(actual1).toFrameEqual(expected);
+    assertFrameEqual(actual1, expected);
   });
   test("mul/multiplyBy", () => {
     const df = pl.DataFrame({
@@ -2743,9 +2749,9 @@ describe("arithmetic", () => {
       a: [2, 4, 6],
     });
     const actual = df.select(col("a").mul(2));
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
     const actual1 = df.select(col("a").multiplyBy(2));
-    expect(actual1).toFrameEqual(expected);
+    assertFrameEqual(actual1, expected);
   });
   test("rem/modulo", () => {
     const df = pl.DataFrame({
@@ -2755,9 +2761,9 @@ describe("arithmetic", () => {
       a: [1, 0, 1],
     });
     const actual = df.select(col("a").rem(2));
-    expect(actual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
     const actual1 = df.select(col("a").modulo(2));
-    expect(actual1).toFrameEqual(expected);
+    assertFrameEqual(actual1, expected);
   });
 });
 
@@ -2773,8 +2779,8 @@ describe("Round<T>", () => {
 
     const actual = df.select(col("ceil").ceil().as("ceil"));
 
-    expect(actual).toFrameEqual(expected);
-    expect(seriesActual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
+    assertFrameEqual(seriesActual, expected);
   });
 
   test("clip", () => {
@@ -2787,8 +2793,8 @@ describe("Round<T>", () => {
 
     const seriesActual = pl.Series([1, 2, 3, 4, 5]).clip(2, 4).toArray();
 
-    expect(exprActual).toEqual(expected);
-    expect(seriesActual).toEqual(expected);
+    assert.deepStrictEqual(exprActual, expected);
+    assert.deepStrictEqual(seriesActual, expected);
   });
   test("floor", () => {
     const df = pl.Series("foo", [1.1, 2.2]).as("floor").toFrame();
@@ -2801,23 +2807,23 @@ describe("Round<T>", () => {
 
     const actual = df.select(col("floor").floor().as("floor"));
 
-    expect(actual).toFrameEqual(expected);
-    expect(seriesActual).toFrameEqual(expected);
+    assertFrameEqual(actual, expected);
+    assertFrameEqual(seriesActual, expected);
   });
   test("round", () => {});
   test("round invalid dtype", () => {
     const df = pl.DataFrame({ a: ["1", "2"] });
     const seriesFn = () => df["a"].round({ decimals: 1 });
     const exprFn = () => df.select(col("a").round({ decimals: 1 }));
-    expect(seriesFn).toThrow();
-    expect(exprFn).toThrow();
+    assert.throws(seriesFn);
+    assert.throws(exprFn);
   });
   test("clip invalid dtype", () => {
     const df = pl.DataFrame({ a: ["1", "2"] });
     const seriesFn = () => df["a"].clip({ min: 1, max: 2 });
     const exprFn = () => df.select(col("a").clip(1, 2));
-    expect(seriesFn).toThrow();
-    expect(exprFn).toThrow();
+    assert.throws(seriesFn);
+    assert.throws(exprFn);
   });
 });
 
@@ -2830,8 +2836,8 @@ describe("EWM", () => {
       const seriesActual = df.getColumn("s").ewmMean().rename("ewmMean");
       const actual = df.withColumn(col("s").ewmMean().as("ewmMean"));
 
-      expect(actual).toFrameEqual(expected);
-      expect(seriesActual).toSeriesEqual(expected.getColumn("ewmMean"));
+      assertFrameEqual(actual, expected);
+      assertSeriesEqual(seriesActual, expected.getColumn("ewmMean"));
     }
     {
       const seriesActual = df
@@ -2844,8 +2850,8 @@ describe("EWM", () => {
           .as("ewmMean"),
       );
 
-      expect(actual).toFrameEqual(expected);
-      expect(seriesActual).toSeriesEqual(expected.getColumn("ewmMean"));
+      assertFrameEqual(actual, expected);
+      assertSeriesEqual(seriesActual, expected.getColumn("ewmMean"));
     }
     {
       const seriesActual = df
@@ -2859,8 +2865,8 @@ describe("EWM", () => {
       );
 
       expected = pl.DataFrame({ s, ewmMean: [2.0, 3.5, 3.25] });
-      expect(actual).toFrameEqual(expected);
-      expect(seriesActual).toSeriesEqual(expected.getColumn("ewmMean"));
+      assertFrameEqual(actual, expected);
+      assertSeriesEqual(seriesActual, expected.getColumn("ewmMean"));
     }
     {
       const seriesActual = df
@@ -2871,8 +2877,8 @@ describe("EWM", () => {
         col("s").ewmMean(0.5, false, 1, true).as("ewmMean"),
       );
 
-      expect(actual).toFrameEqual(expected);
-      expect(seriesActual).toSeriesEqual(expected.getColumn("ewmMean"));
+      assertFrameEqual(actual, expected);
+      assertSeriesEqual(seriesActual, expected.getColumn("ewmMean"));
     }
     {
       const s = pl.Series("a", [2, 3, 5, 7, 4]);
@@ -2891,7 +2897,7 @@ describe("EWM", () => {
       );
 
       expected = pl.DataFrame({ ewmMean: [null, 2.66667, 4, 5.6, 4.77419], s });
-      expect(seriesActual).toSeriesEqual(expected.getColumn("ewmMean"));
+      assertSeriesEqual(seriesActual, expected.getColumn("ewmMean"));
     }
   });
 
@@ -2903,8 +2909,8 @@ describe("EWM", () => {
     let seriesActual = df.getColumn("s").ewmStd().round(5).rename("ewmStd");
     let actual = df.withColumn(col("s").ewmStd().round(5).as("ewmStd"));
 
-    expect(actual).toFrameEqual(expected);
-    expect(seriesActual).toSeriesEqual(expected.getColumn("ewmStd"));
+    assertFrameEqual(actual, expected);
+    assertSeriesEqual(seriesActual, expected.getColumn("ewmStd"));
 
     seriesActual = df
       .getColumn("s")
@@ -2918,8 +2924,8 @@ describe("EWM", () => {
         .as("ewmStd"),
     );
 
-    expect(actual).toFrameEqual(expected);
-    expect(seriesActual).toSeriesEqual(expected.getColumn("ewmStd"));
+    assertFrameEqual(actual, expected);
+    assertSeriesEqual(seriesActual, expected.getColumn("ewmStd"));
 
     seriesActual = df
       .getColumn("s")
@@ -2930,8 +2936,8 @@ describe("EWM", () => {
       col("s").ewmStd(0.5, true, 1, false).round(5).as("ewmStd"),
     );
 
-    expect(actual).toFrameEqual(expected);
-    expect(seriesActual).toSeriesEqual(expected.getColumn("ewmStd"));
+    assertFrameEqual(actual, expected);
+    assertSeriesEqual(seriesActual, expected.getColumn("ewmStd"));
   });
 
   test("ewmVar", () => {
@@ -2942,8 +2948,8 @@ describe("EWM", () => {
     let seriesActual = df.getColumn("s").ewmVar().round(5).rename("ewmVar");
     let actual = df.withColumn(col("s").ewmVar().round(5).as("ewmVar"));
 
-    expect(actual).toFrameEqual(expected);
-    expect(seriesActual).toSeriesEqual(expected.getColumn("ewmVar"));
+    assertFrameEqual(actual, expected);
+    assertSeriesEqual(seriesActual, expected.getColumn("ewmVar"));
 
     seriesActual = df
       .getColumn("s")
@@ -2957,8 +2963,8 @@ describe("EWM", () => {
         .as("ewmVar"),
     );
 
-    expect(actual).toFrameEqual(expected);
-    expect(seriesActual).toSeriesEqual(expected.getColumn("ewmVar"));
+    assertFrameEqual(actual, expected);
+    assertSeriesEqual(seriesActual, expected.getColumn("ewmVar"));
 
     seriesActual = df
       .getColumn("s")
@@ -2969,7 +2975,7 @@ describe("EWM", () => {
       col("s").ewmVar(0.5, true, 1, false).round(5).as("ewmVar"),
     );
 
-    expect(actual).toFrameEqual(expected);
-    expect(seriesActual).toSeriesEqual(expected.getColumn("ewmVar"));
+    assertFrameEqual(actual, expected);
+    assertSeriesEqual(seriesActual, expected.getColumn("ewmVar"));
   });
 });
