@@ -672,6 +672,66 @@ export interface Series<T extends DataType = any, Name extends string = string>
   */
   mapElements(fn: (v: any) => any): Series;
   /**
+   * Returns whether any of the values in the column are `true`.
+   *
+   * Only works on columns of data type Boolean.
+   *
+   * @param ignoreNulls - Whether to ignore null values
+   * - If set to `true` (default), null values are ignored. If there are no non-null values, the output is `true`.
+   * - If set to `false`, Kleene logic is used to deal with nulls: if the column contains any null values and no `false` values, the output is `null`.
+   *
+   * @example
+   * ```
+   * > pl.Series([true, true]).all()
+   * true
+   * > pl.Series([false, true]).all()
+   * false
+   * > pl.Series([null, true]).all()
+   * true
+   * > pl.Series([null, true]).all(false)
+   * null
+   * ```
+   */
+  all(ignoreNulls?: boolean): number;
+  /**
+   * Returns whether any of the values in the column are `true`.
+   *
+   * Only works on columns of data type Boolean.
+   *
+   * @param ignoreNulls - Whether to ignore null values
+   * - If set to `true` (default), null values are ignored. If there are no non-null values, the output is `false`.
+   * - If set to `false`, Kleene logic is used to deal with nulls: if the column contains any null values and no `true` values, the output is `null`.
+   *
+   * @example
+   * ```
+   * > pl.Series([true, false]).any()
+   * true
+   * > pl.Series([false, false]).any()
+   * false
+   * > pl.Series([null, false]).any()
+   * false
+   * > pl.Series([null, false]).any(false)
+   * null
+   * ```
+   */
+  any(ignoreNulls?: boolean): number;
+  /**
+   * Negate a boolean Series.
+   * @example
+   * ```
+   * > s = pl.Series("a", [true, false, false])
+   * > s.not()
+   * shape: (3,)
+   * Series: 'a' [bool]
+   * [
+   *     false
+   *     true
+   *     true
+   * ]
+   * ```
+   */
+  not(): Series;
+  /**
    * Get the maximum value in this Series.
    * @example
    * ```
