@@ -787,10 +787,29 @@ impl JsSeries {
     }
 
     #[napi(catch_unwind)]
+    pub fn all(&self, ignore_nulls: bool) -> napi::Result<Option<bool>> {
+        let bool = self.series.bool().map_err(JsPolarsErr::from)?;
+        Ok(if ignore_nulls {
+            Some(bool.all())
+        } else {
+            bool.all_kleene()
+        })
+    }
+    #[napi(catch_unwind)]
+    pub fn any(&self, ignore_nulls: bool) -> napi::Result<Option<bool>> {
+        let bool = self.series.bool().map_err(JsPolarsErr::from)?;
+        Ok(if ignore_nulls {
+            Some(bool.any())
+        } else {
+            bool.any_kleene()
+        })
+    }
+    #[napi(catch_unwind)]
     pub fn _not(&self) -> napi::Result<JsSeries> {
         let bool = self.series.bool().map_err(JsPolarsErr::from)?;
         Ok((!bool).into_series().into())
     }
+
     #[napi(catch_unwind)]
     pub fn as_str(&self) -> napi::Result<String> {
         Ok(format!("{:?}", self.series))

@@ -499,6 +499,11 @@ describe("series functions", () => {
     ${numSeries()}  | ${"unique"}          | ${[]}
     ${numSeries()}  | ${"valueCounts"}     | ${[]}
     ${numSeries()}  | ${"zipWith"}         | ${[boolSeries(), other()]}
+    ${boolSeries()} | ${"all"}             | ${[]}
+    ${boolSeries()} | ${"all"}             | ${[false]}
+    ${boolSeries()} | ${"any"}             | ${[]}
+    ${boolSeries()} | ${"any"}             | ${[false]}
+    ${boolSeries()} | ${"not"}             | ${[]}
   `("$# $method is callable", ({ series, method, args }) => {
     try {
       series[method](...args);
@@ -625,6 +630,15 @@ describe("series functions", () => {
     ${"bitand"}          | ${pl.Series("bit", [1, 2, 3], pl.Int32).bitand(pl.Series("bit", [0, 1, 1], pl.Int32))} | ${pl.Series("bit", [0, 0, 1])}
     ${"bitor"}           | ${pl.Series("bit", [1, 2, 3], pl.Int32).bitor(pl.Series("bit", [0, 1, 1], pl.Int32))}  | ${pl.Series("bit", [1, 3, 3])}
     ${"bitxor"}          | ${pl.Series("bit", [1, 2, 3], pl.Int32).bitxor(pl.Series("bit", [0, 1, 1], pl.Int32))} | ${pl.Series("bit", [1, 3, 2])}
+    ${"all"}             | ${pl.Series("foo", [true, true], pl.Bool).all()}                                       | ${true}
+    ${"all"}             | ${pl.Series("foo", [false, true], pl.Bool).all()}                                      | ${false}
+    ${"all"}             | ${pl.Series("foo", [null, true], pl.Bool).all()}                                       | ${true}
+    ${"all"}             | ${pl.Series("foo", [null, true], pl.Bool).all(false)}                                  | ${null}
+    ${"any"}             | ${pl.Series("foo", [true, false], pl.Bool).any()}                                      | ${true}
+    ${"any"}             | ${pl.Series("foo", [false, false], pl.Bool).any()}                                     | ${false}
+    ${"any"}             | ${pl.Series("foo", [null, false], pl.Bool).any()}                                      | ${false}
+    ${"any"}             | ${pl.Series("foo", [null, false], pl.Bool).any(false)}                                 | ${null}
+    ${"not"}             | ${pl.Series("foo", [true, false, false], pl.Bool).not()}                               | ${pl.Series("foo", [false, true, true], pl.Bool)}
   `("$# $name: expected matches actual ", ({ expected, actual }) => {
     if (pl.Series.isSeries(expected) && pl.Series.isSeries(actual)) {
       assertSeriesEqual(actual, expected);

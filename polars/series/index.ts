@@ -652,7 +652,7 @@ export interface Series<T extends DataType = any, Name extends string = string>
   /**
    * Map a custom/user-defined function (UDF) over elements in this Series.
    * @param fn - Custom function to call
-   * 
+   *
    * @example
    * ```
    * > const mapping: Record<string, string> = { A: 'AA', B: 'BB', C: 'CC', D: 'OtherD', };
@@ -671,6 +671,66 @@ export interface Series<T extends DataType = any, Name extends string = string>
   * ```
   */
   mapElements(fn: (v: any) => any): Series;
+  /**
+   * Returns whether any of the values in the column are `true`.
+   *
+   * Only works on columns of data type Boolean.
+   *
+   * @param ignoreNulls - Whether to ignore null values
+   * - If set to `true` (default), null values are ignored. If there are no non-null values, the output is `true`.
+   * - If set to `false`, Kleene logic is used to deal with nulls: if the column contains any null values and no `false` values, the output is `null`.
+   *
+   * @example
+   * ```
+   * > pl.Series([true, true]).all()
+   * true
+   * > pl.Series([false, true]).all()
+   * false
+   * > pl.Series([null, true]).all()
+   * true
+   * > pl.Series([null, true]).all(false)
+   * null
+   * ```
+   */
+  all(ignoreNulls?: boolean): number;
+  /**
+   * Returns whether any of the values in the column are `true`.
+   *
+   * Only works on columns of data type Boolean.
+   *
+   * @param ignoreNulls - Whether to ignore null values
+   * - If set to `true` (default), null values are ignored. If there are no non-null values, the output is `false`.
+   * - If set to `false`, Kleene logic is used to deal with nulls: if the column contains any null values and no `true` values, the output is `null`.
+   *
+   * @example
+   * ```
+   * > pl.Series([true, false]).any()
+   * true
+   * > pl.Series([false, false]).any()
+   * false
+   * > pl.Series([null, false]).any()
+   * false
+   * > pl.Series([null, false]).any(false)
+   * null
+   * ```
+   */
+  any(ignoreNulls?: boolean): number;
+  /**
+   * Negate a boolean Series.
+   * @example
+   * ```
+   * > s = pl.Series("a", [true, false, false])
+   * > s.not()
+   * shape: (3,)
+   * Series: 'a' [bool]
+   * [
+   *     false
+   *     true
+   *     true
+   * ]
+   * ```
+   */
+  not(): Series;
   /**
    * Get the maximum value in this Series.
    * @example
@@ -1679,6 +1739,15 @@ export function _Series(_s: any): Series {
     },
     mapElements(fn: (v: any) => any) {
       return Series(this.name, [...this.values()].map(fn));
+    },
+    all(ignoreNulls = true) {
+      return _s.all(ignoreNulls) as any;
+    },
+    any(ignoreNulls = true) {
+      return _s.any(ignoreNulls) as any;
+    },
+    not() {
+      return wrap("not");
     },
     max() {
       return _s.max() as any;
