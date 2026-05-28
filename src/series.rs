@@ -523,7 +523,7 @@ impl JsSeries {
     }
 
     #[napi(catch_unwind)]
-    pub unsafe fn sort(&mut self, descending: bool, nulls_last: bool) -> napi::Result<JsSeries> {
+    pub fn sort(&mut self, descending: bool, nulls_last: bool) -> napi::Result<JsSeries> {
         let sorted: Series = self
             .series
             .sort(

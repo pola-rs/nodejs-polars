@@ -250,7 +250,7 @@ describe("typedArrays", () => {
     } catch (e: any) {
       assert.ok(
         e.message.includes(
-          "Decimal is not a supported type in javascript, please convert to string or number before collecting to js",
+          "Decimal is not supported, please convert to string or number before collecting to js",
         ),
       );
     }

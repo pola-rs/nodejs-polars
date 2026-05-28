@@ -48,7 +48,11 @@ impl ToSeries for Array<'_> {
         let len = self.len();
         let mut v: Vec<AnyValue> = Vec::with_capacity(len as usize);
         for i in 0..len {
-            let av: Wrap<AnyValue> = self.get(i).unwrap().unwrap_or(Wrap(AnyValue::Null));
+            let av: Wrap<AnyValue> = self
+                .get(i)
+                .ok()
+                .flatten()
+                .unwrap_or(Wrap(AnyValue::Null));
             v.push(av.0);
         }
         Series::new(name.into(), v)
@@ -58,11 +62,19 @@ impl ToSeries for Array<'_> {
 impl ToSeries for Unknown<'_> {
     fn to_series(&self, name: &str) -> Series {
         let obj = unsafe { self.cast::<Object>() };
-        let len = obj.as_ref().unwrap().get_array_length_unchecked().unwrap();
+        let obj = match obj.as_ref() {
+            Ok(obj) => obj,
+            Err(_) => return Series::new(name.into(), Vec::<AnyValue>::new()),
+        };
+
+        let len = obj.get_array_length_unchecked().unwrap_or(0);
         let mut v: Vec<AnyValue> = Vec::with_capacity(len as usize);
         for i in 0..len {
-            let unknown: Unknown = obj.as_ref().unwrap().clone().get_element(i).unwrap();
-            let av = AnyValue::from_js(unknown).unwrap();
+            let av = obj
+                .get_element::<Unknown>(i)
+                .ok()
+                .and_then(|unknown| AnyValue::from_js(unknown).ok())
+                .unwrap_or(AnyValue::Null);
             v.push(av);
         }
         Series::new(name.into(), v)
@@ -88,8 +100,11 @@ impl ToNapiValue for Wrap<&Series> {
                     let mut row = Object::new(&env)?;
                     for col in df.columns() {
                         let key = col.name();
-                        let val = col.get(idx);
-                        row.set(key, Wrap(val.unwrap()))?;
+                        let cell_value = col.get(idx)
+                            .or_else(|_| Err(napi::Error::from_reason(
+                                format!("Failed to get value at index {} in column {}", idx, key)
+                            )))?;
+                        row.set(key, Wrap(cell_value))?;
                     }
                     rows.set(idx as u32, row)?;
                 }
@@ -98,8 +113,8 @@ impl ToNapiValue for Wrap<&Series> {
             _ => {
                 let mut arr = env.create_array(len as u32)?;
 
-                for (idx, val) in s.iter().enumerate() {
-                    arr.set(idx as u32, Wrap(val))?;
+                for (idx, cell_value) in s.iter().enumerate() {
+                    arr.set(idx as u32, Wrap(cell_value))?;
                 }
                 Array::to_napi_value(napi_env, arr)
             }
@@ -109,6 +124,21 @@ impl ToNapiValue for Wrap<&Series> {
 
 impl<'a> ToNapiValue for Wrap<AnyValue<'a>> {
     unsafe fn to_napi_value(env: sys::napi_env, val: Self) -> Result<sys::napi_value> {
+        let to_js_date = |epoch_time: f64| -> Result<sys::napi_value> {
+            let mut ptr = std::ptr::null_mut();
+            check_status!(
+                napi::sys::napi_create_date(env, epoch_time, &mut ptr),
+                "Failed to convert rust datetime/date into napi value",
+            )?;
+            Ok(ptr)
+        };
+
+        let unsupported = |dtype: &str| {
+            napi::Error::from_reason(format!(
+                "{dtype} is not supported, please convert to string or number before collecting to js"
+            ))
+        };
+
         match val.0 {
             AnyValue::Null => napi::bindgen_prelude::Null::to_napi_value(env, napi::bindgen_prelude::Null),
             AnyValue::Boolean(b) => bool::to_napi_value(env, b),
@@ -127,53 +157,35 @@ impl<'a> ToNapiValue for Wrap<AnyValue<'a>> {
             AnyValue::Float64(n) => f64::to_napi_value(env, n),
             AnyValue::String(s) => String::to_napi_value(env, s.to_owned()),
             AnyValue::StringOwned(s) => String::to_napi_value(env, s.to_string()),
-            AnyValue::Date(v) => {
-                let mut ptr = std::ptr::null_mut();
-
-                // Multiple days to get to Epoch time
-                let epoch_time: f64 = (v as f64) * 86400000.0;
-
-                check_status!(
-                    napi::sys::napi_create_date(env, epoch_time, &mut ptr),
-                    "Failed to convert rust type `AnyValue::Date` into napi value",
-                )?;
-                Ok(ptr)
-            }
-            AnyValue::Datetime(v, time_unit, _) | AnyValue::DatetimeOwned(v, time_unit, _)  => {
-                let mut ptr = std::ptr::null_mut();
-
-                let div = match time_unit {
+            // Convert Date (days) to epoch milliseconds expected by JS Date.
+            AnyValue::Date(v) => to_js_date((v as f64) * 86400000.0),
+            AnyValue::Datetime(v, time_unit, _) | AnyValue::DatetimeOwned(v, time_unit, _) => {
+                let divisor = match time_unit {
                     TimeUnit::Milliseconds => 1.0,
                     TimeUnit::Microseconds => 1_000.0,
                     TimeUnit::Nanoseconds => 1_000_000.0,
                 };
 
-                // Value representing the number of milliseconds since January 1, 1970, 00:00:00 UTC.
-                let epoch_time: f64 = (v as f64) / div;
-                check_status!(
-                    napi::sys::napi_create_date(env, epoch_time, &mut ptr),
-                    "Failed to convert rust type `AnyValue::Date` into napi value",
-                )?;
-                Ok(ptr)
+                // JS Date stores milliseconds since Unix epoch.
+                to_js_date((v as f64) / divisor)
             }
             AnyValue::Categorical(cat, &ref lmap) | AnyValue::CategoricalOwned(cat, ref lmap) => {
                 let s = unsafe { lmap.cat_to_str_unchecked(cat) };
-                let ptr = String::to_napi_value(env, s.to_string());
-                Ok(ptr.unwrap())
-            },
+                String::to_napi_value(env, s.to_string())
+            }
             AnyValue::Duration(v, _) => i64::to_napi_value(env, v),
             AnyValue::Time(v) => String::to_napi_value(env, time64ns_to_time(v).format("%T%.f").to_string()),
             AnyValue::List(ser) => Wrap::<&Series>::to_napi_value(env, Wrap(&ser)),
             ref av @ AnyValue::Struct(_, _, flds) => struct_dict(env, av._iter_struct_av(), flds),
             AnyValue::Array(ser, _) => Wrap::<&Series>::to_napi_value(env, Wrap(&ser)),
-            AnyValue::Enum(_, _) => Err(napi::Error::from_reason("Enum is not a supported, please convert to string or number before collecting to js")),
-            AnyValue::Object(_) => Err(napi::Error::from_reason("Object is not a supported, please convert to string or number before collecting to js")),
-            AnyValue::ObjectOwned(_) => Err(napi::Error::from_reason("ObjectOwned is not a supported, please convert to string or number before collecting to js")),
-            AnyValue::StructOwned(_) => Err(napi::Error::from_reason("StructOwned is not a supported, please convert to string or number before collecting to js")),
-            AnyValue::Binary(_) => Err(napi::Error::from_reason("Binary is not a supported, please convert to string or number before collecting to js")),
-            AnyValue::BinaryOwned(_) => Err(napi::Error::from_reason("BinaryOwned is not a supported, please convert to string or number before collecting to js")),
-            AnyValue::Decimal(_,_,_) => Err(napi::Error::from_reason("Decimal is not a supported type in javascript, please convert to string or number before collecting to js")),
-            AnyValue::EnumOwned(_,_) => Err(napi::Error::from_reason("EnumOwned is not a supported, please convert to string or number before collecting to js")),
+            AnyValue::Enum(_, _) => Err(unsupported("Enum")),
+            AnyValue::Object(_) => Err(unsupported("Object")),
+            AnyValue::ObjectOwned(_) => Err(unsupported("ObjectOwned")),
+            AnyValue::StructOwned(_) => Err(unsupported("StructOwned")),
+            AnyValue::Binary(_) => Err(unsupported("Binary")),
+            AnyValue::BinaryOwned(_) => Err(unsupported("BinaryOwned")),
+            AnyValue::Decimal(_, _, _) => Err(unsupported("Decimal")),
+            AnyValue::EnumOwned(_, _) => Err(unsupported("EnumOwned")),
         }
     }
 }
@@ -286,9 +298,9 @@ impl FromNapiValue for Wrap<ChunkedArray<UInt64Type>> {
 impl FromNapiValue for Wrap<Expr> {
     unsafe fn from_napi_value(env: sys::napi_env, napi_val: sys::napi_value) -> JsResult<Self> {
         let obj = Object::from_napi_value(env, napi_val)?;
-        let expr: &JsExpr = obj
-            .get("_expr")?
-            .expect(&format!("field {} should exist", "_expr"));
+        let expr: &JsExpr = obj.get("_expr")?.ok_or_else(|| {
+            napi::Error::from_reason("field '_expr' should exist".to_owned())
+        })?;
         Ok(Wrap(expr.inner.clone()))
     }
 }
@@ -296,9 +308,9 @@ impl FromNapiValue for Wrap<Expr> {
 impl FromNapiValue for Wrap<JsExpr> {
     unsafe fn from_napi_value(env: sys::napi_env, napi_val: sys::napi_value) -> JsResult<Self> {
         let obj = Object::from_napi_value(env, napi_val)?;
-        let expr: &JsExpr = obj
-            .get("_expr")?
-            .expect(&format!("field {} should exist", "_expr"));
+        let expr: &JsExpr = obj.get("_expr")?.ok_or_else(|| {
+            napi::Error::from_reason("field '_expr' should exist".to_owned())
+        })?;
         Ok(Wrap(expr.clone()))
     }
 }
@@ -429,11 +441,11 @@ impl FromNapiValue for Wrap<Option<IpcCompression>> {
 
 impl ToNapiValue for Wrap<Option<IpcCompression>> {
     unsafe fn to_napi_value(env: sys::napi_env, val: Self) -> Result<sys::napi_value> {
-        let s = match val.0.unwrap() {
-            IpcCompression::LZ4 => "lz4",
-            IpcCompression::ZSTD(_) => "zstd",
-        };
-        String::to_napi_value(env, s.to_owned())
+        match val.0 {
+            Some(IpcCompression::LZ4) => String::to_napi_value(env, "lz4".to_owned()),
+            Some(IpcCompression::ZSTD(_)) => String::to_napi_value(env, "zstd".to_owned()),
+            None => napi::bindgen_prelude::Null::to_napi_value(env, napi::bindgen_prelude::Null),
+        }
     }
 }
 
@@ -447,7 +459,7 @@ impl FromNapiValue for Wrap<UniqueKeepStrategy> {
             "none" => UniqueKeepStrategy::None,
             v => {
                 return Err(napi::Error::from_reason(format!(
-                    "UniqueKeepStrategy must be one of {{'first', 'last'}}, got {v}"
+                    "UniqueKeepStrategy must be one of {{'first', 'last', 'any', 'none'}}, got {v}"
                 )))
             }
         };
@@ -754,7 +766,12 @@ impl FromNapiValue for Wrap<TimeUnit> {
             "ns" => TimeUnit::Nanoseconds,
             "us" => TimeUnit::Microseconds,
             "ms" => TimeUnit::Milliseconds,
-            _ => panic!("not a valid timeunit"),
+            v => {
+                return Err(napi::Error::new(
+                    Status::InvalidArg,
+                    format!("`timeUnit` must be one of {{'ns', 'us', 'ms'}}, got {v}"),
+                ))
+            }
         };
 
         Ok(Wrap(tu))
@@ -783,35 +800,71 @@ impl FromNapiValue for Wrap<DataType> {
                     "Utf8" => DataType::String,
                     "String" => DataType::String,
                     "List" => {
-                        let inner = obj.get::<Array>("inner")?.unwrap();
-                        let inner_dtype: Object = inner.get::<Object>(0)?.unwrap();
-                        let napi_dt = Object::to_napi_value(env, inner_dtype).unwrap();
+                        let inner = obj.get::<Array>("inner")?.ok_or_else(|| {
+                            Error::new(Status::InvalidArg, "List requires 'inner'".to_owned())
+                        })?;
+                        let inner_dtype: Object = inner.get::<Object>(0)?.ok_or_else(|| {
+                            Error::new(
+                                Status::InvalidArg,
+                                "List 'inner' must contain a dtype at index 0".to_owned(),
+                            )
+                        })?;
+                        let napi_dt = Object::to_napi_value(env, inner_dtype)?;
 
                         let dt = Wrap::<DataType>::from_napi_value(env, napi_dt)?;
                         DataType::List(Box::new(dt.0))
                     }
                     "FixedSizeList" => {
-                        let inner = obj.get::<Array>("inner")?.unwrap();
-                        let inner_dtype: Object = inner.get::<Object>(0)?.unwrap();
-                        let napi_dt = Object::to_napi_value(env, inner_dtype).unwrap();
+                        let inner = obj.get::<Array>("inner")?.ok_or_else(|| {
+                            Error::new(
+                                Status::InvalidArg,
+                                "FixedSizeList requires 'inner'".to_owned(),
+                            )
+                        })?;
+                        let inner_dtype: Object = inner.get::<Object>(0)?.ok_or_else(|| {
+                            Error::new(
+                                Status::InvalidArg,
+                                "FixedSizeList 'inner' must contain a dtype at index 0"
+                                    .to_owned(),
+                            )
+                        })?;
+                        let napi_dt = Object::to_napi_value(env, inner_dtype)?;
 
                         let dt = Wrap::<DataType>::from_napi_value(env, napi_dt)?;
 
-                        let size = inner.get::<i32>(1)?.unwrap();
+                        let size = inner.get::<i32>(1)?.ok_or_else(|| {
+                            Error::new(
+                                Status::InvalidArg,
+                                "FixedSizeList 'inner' must contain a size at index 1"
+                                    .to_owned(),
+                            )
+                        })?;
 
                         DataType::Array(Box::new(dt.0), size as usize)
                     }
 
                     "Date" => DataType::Date,
                     "Datetime" => {
-                        let tu = obj.get::<Wrap<TimeUnit>>("timeUnit")?.unwrap();
-                        let tz = obj.get::<Option<String>>("timeZone")?.unwrap();
+                        let tu = obj.get::<Wrap<TimeUnit>>("timeUnit")?.ok_or_else(|| {
+                            Error::new(
+                                Status::InvalidArg,
+                                "Datetime requires 'timeUnit'".to_owned(),
+                            )
+                        })?;
+                        let tz = obj
+                            .get::<Option<String>>("timeZone")?
+                            .unwrap_or_default();
                         let time_zone = TimeZone::opt_try_new(tz).map_err(JsPolarsErr::from)?;
                         DataType::Datetime(tu.0, time_zone)
                     }
                     "Time" => DataType::Time,
                     "Duration" => {
-                        let tu = obj.get::<Wrap<TimeUnit>>("timeUnit")?.unwrap();
+                        let tu = obj.get::<Wrap<TimeUnit>>("timeUnit")?.ok_or_else(|| {
+                            Error::new(
+                                Status::InvalidArg,
+                                "Duration requires 'timeUnit'".to_owned(),
+                            )
+                        })?;
                         DataType::Duration(tu.0)
                     }
                     "Object" => DataType::Object("object"),
@@ -824,26 +877,56 @@ impl FromNapiValue for Wrap<DataType> {
                         DataType::Categorical(categories.clone(), categories.clone().mapping())
                     }
                     "Struct" => {
-                        let inner = obj.get::<Array>("fields")?.unwrap();
+                        let inner = obj.get::<Array>("fields")?.ok_or_else(|| {
+                            Error::new(Status::InvalidArg, "Struct requires 'fields'".to_owned())
+                        })?;
                         let mut fldvec: Vec<Field> = Vec::with_capacity(inner.len() as usize);
                         for i in 0..inner.len() {
-                            let inner_dtype: Object = inner.get::<Object>(i)?.unwrap();
-                            let napi_dt = Object::to_napi_value(env, inner_dtype).unwrap();
+                            let inner_dtype: Object = inner.get::<Object>(i)?.ok_or_else(|| {
+                                Error::new(
+                                    Status::InvalidArg,
+                                    format!("Struct 'fields'[{i}] must be an object"),
+                                )
+                            })?;
+                            let napi_dt = Object::to_napi_value(env, inner_dtype)?;
                             let obj = Object::from_napi_value(env, napi_dt)?;
-                            let name = obj.get::<String>("name")?.unwrap();
-                            let dt = obj.get::<Wrap<DataType>>("dtype")?.unwrap();
+                            let name = obj.get::<String>("name")?.ok_or_else(|| {
+                                Error::new(
+                                    Status::InvalidArg,
+                                    format!("Struct 'fields'[{i}] missing 'name'"),
+                                )
+                            })?;
+                            let dt = obj.get::<Wrap<DataType>>("dtype")?.ok_or_else(|| {
+                                Error::new(
+                                    Status::InvalidArg,
+                                    format!("Struct 'fields'[{i}] missing 'dtype'"),
+                                )
+                            })?;
                             let fld = Field::new(name.into(), dt.0);
                             fldvec.push(fld);
                         }
                         DataType::Struct(fldvec)
                     }
                     "Decimal" => {
-                        let inner = obj.get::<Array>("inner")?.unwrap(); // [precision, scale]
-                        let precision = inner.get::<Option<i32>>(0)?.unwrap().map(|x| x as usize);
-                        let scale = inner.get::<Option<i32>>(1)?.unwrap().map(|x| x as usize);
+                        let inner = obj.get::<Array>("inner")?.ok_or_else(|| {
+                            Error::new(Status::InvalidArg, "Decimal requires 'inner'".to_owned())
+                        })?; // [precision, scale]
+                        let precision = inner
+                            .get::<Option<i32>>(0)?
+                            .unwrap_or(None)
+                            .map(|x| x as usize);
+                        let scale = inner
+                            .get::<Option<i32>>(1)?
+                            .unwrap_or(None)
+                            .map(|x| x as usize);
                         DataType::Decimal(precision.unwrap_or(0), scale.unwrap_or(0))
                     }
-                    tp => panic!("Type {} not implemented in str_to_polarstype", tp),
+                    tp => {
+                        return Err(Error::new(
+                            Status::InvalidArg,
+                            format!("Type {tp} not implemented in str_to_polarstype"),
+                        ))
+                    }
                 };
                 Ok(Wrap(dtype))
             }
@@ -865,7 +948,12 @@ impl FromNapiValue for Wrap<Schema> {
                 Ok(Wrap(
                     keys.iter()
                         .map(|key| {
-                            let value = obj.get::<Object>(&key)?.unwrap();
+                            let value = obj.get::<Object>(&key)?.ok_or_else(|| {
+                                Error::new(
+                                    Status::InvalidArg,
+                                    format!("schema field '{key}' must be an object dtype"),
+                                )
+                            })?;
                             let napi_val = Object::to_napi_value(env, value)?;
                             let dtype = Wrap::<DataType>::from_napi_value(env, napi_val)?;
 
@@ -952,11 +1040,11 @@ impl FromNapiValue for Wrap<SortOptions> {
         let descending = obj.get::<bool>("descending")?.unwrap_or(false);
         let nulls_last = obj
             .get::<bool>("nulls_last")?
-            .or_else(|| obj.get::<bool>("nullsLast").expect("expect nullsLast"))
+            .or_else(|| obj.get::<bool>("nullsLast").ok().flatten())
             .unwrap_or(false);
         let multithreaded = obj.get::<bool>("multithreaded")?.unwrap_or(false);
         let maintain_order: bool = obj.get::<bool>("maintainOrder")?.unwrap_or(true);
-        let limit = obj.get::<_>("limit")?.unwrap();
+        let limit = obj.get::<_>("limit")?.flatten();
         let options = SortOptions {
             descending,
             nulls_last,
@@ -1110,36 +1198,86 @@ impl From<&Series> for TypedArrayBuffer {
         let dt = series.dtype();
         match dt {
             DataType::Int8 => TypedArrayBuffer::Int8(Int8Array::with_data_copied(
-                series.i8().unwrap().rechunk().cont_slice().unwrap(),
+                series
+                    .i8()
+                    .expect("dtype matched Int8 but i8 view failed")
+                    .rechunk()
+                    .cont_slice()
+                    .expect("Int8 typed array export requires contiguous, non-null data"),
             )),
             DataType::Int16 => TypedArrayBuffer::Int16(Int16Array::with_data_copied(
-                series.i16().unwrap().rechunk().cont_slice().unwrap(),
+                series
+                    .i16()
+                    .expect("dtype matched Int16 but i16 view failed")
+                    .rechunk()
+                    .cont_slice()
+                    .expect("Int16 typed array export requires contiguous, non-null data"),
             )),
             DataType::Int32 => TypedArrayBuffer::Int32(Int32Array::with_data_copied(
-                series.i32().unwrap().rechunk().cont_slice().unwrap(),
+                series
+                    .i32()
+                    .expect("dtype matched Int32 but i32 view failed")
+                    .rechunk()
+                    .cont_slice()
+                    .expect("Int32 typed array export requires contiguous, non-null data"),
             )),
             DataType::Int64 => TypedArrayBuffer::Int64(BigInt64Array::with_data_copied(
-                series.i64().unwrap().rechunk().cont_slice().unwrap(),
+                series
+                    .i64()
+                    .expect("dtype matched Int64 but i64 view failed")
+                    .rechunk()
+                    .cont_slice()
+                    .expect("Int64 typed array export requires contiguous, non-null data"),
             )),
             DataType::UInt8 => TypedArrayBuffer::UInt8(Uint8Array::with_data_copied(
-                series.u8().unwrap().rechunk().cont_slice().unwrap(),
+                series
+                    .u8()
+                    .expect("dtype matched UInt8 but u8 view failed")
+                    .rechunk()
+                    .cont_slice()
+                    .expect("UInt8 typed array export requires contiguous, non-null data"),
             )),
             DataType::UInt16 => TypedArrayBuffer::UInt16(Uint16Array::with_data_copied(
-                series.u16().unwrap().rechunk().cont_slice().unwrap(),
+                series
+                    .u16()
+                    .expect("dtype matched UInt16 but u16 view failed")
+                    .rechunk()
+                    .cont_slice()
+                    .expect("UInt16 typed array export requires contiguous, non-null data"),
             )),
             DataType::UInt32 => TypedArrayBuffer::UInt32(Uint32Array::with_data_copied(
-                series.u32().unwrap().rechunk().cont_slice().unwrap(),
+                series
+                    .u32()
+                    .expect("dtype matched UInt32 but u32 view failed")
+                    .rechunk()
+                    .cont_slice()
+                    .expect("UInt32 typed array export requires contiguous, non-null data"),
             )),
             DataType::UInt64 => TypedArrayBuffer::UInt64(BigUint64Array::with_data_copied(
-                series.u64().unwrap().rechunk().cont_slice().unwrap(),
+                series
+                    .u64()
+                    .expect("dtype matched UInt64 but u64 view failed")
+                    .rechunk()
+                    .cont_slice()
+                    .expect("UInt64 typed array export requires contiguous, non-null data"),
             )),
             DataType::Float32 => TypedArrayBuffer::Float32(Float32Array::with_data_copied(
-                series.f32().unwrap().rechunk().cont_slice().unwrap(),
+                series
+                    .f32()
+                    .expect("dtype matched Float32 but f32 view failed")
+                    .rechunk()
+                    .cont_slice()
+                    .expect("Float32 typed array export requires contiguous, non-null data"),
             )),
             DataType::Float64 => TypedArrayBuffer::Float64(Float64Array::with_data_copied(
-                series.f64().unwrap().rechunk().cont_slice().unwrap(),
+                series
+                    .f64()
+                    .expect("dtype matched Float64 but f64 view failed")
+                    .rechunk()
+                    .cont_slice()
+                    .expect("Float64 typed array export requires contiguous, non-null data"),
             )),
-            dt => panic!("to_list() not implemented for {:?}", dt),
+            dt => panic!("toTypedArray is not implemented for {:?}", dt),
         }
     }
 }
@@ -1240,9 +1378,10 @@ impl ToNapiValue for Wrap<DataType> {
                 obj.set("inner", inner_arr)?;
                 Object::to_napi_value(env, obj)
             }
-            _ => {
-                todo!()
-            }
+            dt => Err(Error::new(
+                Status::InvalidArg,
+                format!("DataType {:?} is not supported for JS conversion", dt),
+            )),
         }
     }
 }
@@ -1317,7 +1456,7 @@ impl FromJsUnknown for AnyValue<'_> {
                     Err(JsPolarsErr::Other("Unsupported Data type".to_owned()).into())
                 }
             }
-            _ => panic!("not supported"),
+            t => Err(JsPolarsErr::Other(format!("Unsupported Data type: {t}")).into()),
         }
     }
 }
@@ -1337,7 +1476,7 @@ impl FromJsUnknown for DataType {
                     Ok(DataType::String)
                 }
             }
-            _ => panic!("not supported"),
+            t => Err(JsPolarsErr::Other(format!("Unsupported Data type: {t}")).into()),
         }
     }
 }
@@ -1364,8 +1503,8 @@ impl FromJsUnknown for i64 {
                 Ok(big.get_i64().0)
             }
             ValueType::Number => {
-                let s: BigInt = unsafe { val.cast()? };
-                Ok(s.get_i64().0)
+                let n: f64 = unsafe { val.cast()? };
+                Ok(n as i64)
             }
             dt => Err(JsPolarsErr::Other(format!("cannot cast {} to i64", dt)).into()),
         }
@@ -1380,8 +1519,8 @@ impl FromJsUnknown for u64 {
                 Ok(big.get_u64().1)
             }
             ValueType::Number => {
-                let s: BigInt = unsafe { val.cast()? };
-                Ok(s.get_u64().1)
+                let n: f64 = unsafe { val.cast()? };
+                Ok(n as u64)
             }
             dt => Err(JsPolarsErr::Other(format!("cannot cast {} to u64", dt)).into()),
         }
