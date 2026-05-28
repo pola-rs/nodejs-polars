@@ -32,23 +32,29 @@ impl From<DataFrame> for JsDataFrame {
     }
 }
 
-pub(crate) fn to_series_collection(ps: Array) -> Vec<Column> {
-    let len = ps.len();
-    (0..len)
-        .map(|idx| {
-            let item: &JsSeries = ps.get(idx).unwrap().unwrap();
-            item.series.clone().into()
-        })
-        .collect()
+pub(crate) fn to_series_collection(ps: Array) -> napi::Result<Vec<Column>> {
+    let mut columns = Vec::new();
+    for idx in 0..ps.len() {
+        let item = ps
+            .get::<&JsSeries>(idx)?
+            .ok_or_else(|| {
+                napi::Error::from_reason(format!("Expected Series at index {idx}"))
+            })?;
+        columns.push(item.series.clone().into());
+    }
+
+    Ok(columns)
 }
 pub(crate) fn to_jsseries_collection(s: Vec<Series>) -> Vec<JsSeries> {
-    let mut s = std::mem::ManuallyDrop::new(s);
+    s.into_iter().map(JsSeries::new).collect()
+}
 
-    let p = s.as_mut_ptr() as *mut JsSeries;
-    let len = s.len();
-    let cap = s.capacity();
-
-    unsafe { Vec::from_raw_parts(p, len, cap) }
+fn parse_single_byte(value: &str, field_name: &str) -> napi::Result<u8> {
+    value
+        .as_bytes()
+        .first()
+        .copied()
+        .ok_or_else(|| napi::Error::from_reason(format!("{field_name} cannot be empty")))
 }
 
 #[napi(object)]
@@ -91,6 +97,8 @@ fn mmap_reader_to_df<'a>(
     csv: impl MmapBytesReader + 'a,
     options: ReadCsvOptions,
 ) -> napi::Result<JsDataFrame> {
+    let separator = parse_single_byte(options.sep.as_deref().unwrap_or(","), "sep")?;
+    let eol_char = parse_single_byte(&options.eol_char, "eol_char")?;
     let null_values = options.null_values.map(|w| w.0);
     let row_count = options.row_count.map(RowIndex::from);
     let projection = options
@@ -144,14 +152,14 @@ fn mmap_reader_to_df<'a>(
         .with_raise_if_empty(options.raise_if_empty)
         .with_parse_options(
             CsvParseOptions::default()
-                .with_separator(options.sep.unwrap_or(",".to_owned()).as_bytes()[0])
+                .with_separator(separator)
                 .with_encoding(encoding)
                 .with_missing_is_null(options.missing_is_null)
                 .with_comment_prefix(options.comment_prefix.as_deref())
                 .with_null_values(null_values)
                 .with_try_parse_dates(options.try_parse_dates)
                 .with_quote_char(quote_char)
-                .with_eol_char(options.eol_char.as_bytes()[0])
+                .with_eol_char(eol_char)
                 .with_truncate_ragged_lines(options.truncate_ragged_lines),
         )
         .into_reader_with_file_handle(csv)
@@ -190,18 +198,17 @@ pub fn read_json(
 ) -> napi::Result<JsDataFrame> {
     let infer_schema_length =
         NonZeroUsize::new(options.infer_schema_length.unwrap_or(100) as usize);
-    let batch_size = options.batch_size.unwrap_or(10000) as usize;
-    let batch_size = NonZeroUsize::new(batch_size).unwrap();
-    let format: JsonFormat = options
-        .format
-        .map(|s| match s.as_ref() {
-            "lines" => Ok(JsonFormat::JsonLines),
-            "json" => Ok(JsonFormat::Json),
-            _ => Err(napi::Error::from_reason(
-                "format must be 'json' or `lines'".to_owned(),
-            )),
-        })
-        .unwrap()?;
+    let batch_size = NonZeroUsize::new(options.batch_size.unwrap_or(10000) as usize)
+        .ok_or_else(|| napi::Error::from_reason("batch_size must be greater than 0".to_owned()))?;
+    let format = match options.format.as_deref().unwrap_or("json") {
+        "lines" => JsonFormat::JsonLines,
+        "json" => JsonFormat::Json,
+        _ => {
+            return Err(napi::Error::from_reason(
+                "format must be 'json' or 'lines'".to_owned(),
+            ))
+        }
+    };
     let df = match path_or_buffer {
         Either::A(path) => {
             let f = File::open(&path)?;
@@ -476,12 +483,9 @@ impl JsDataFrame {
     #[napi(factory, catch_unwind)]
     pub fn deserialize(buf: Buffer, format: String) -> napi::Result<JsDataFrame> {
         let df: DataFrame = match format.as_ref() {
-            "bincode" => {
-                bincode::serde::decode_from_slice(&buf, bin_config())
-                    .map_err(|err| napi::Error::from_reason(err.to_string()))
-                    .unwrap()
-                    .0
-            }
+            "bincode" => bincode::serde::decode_from_slice(&buf, bin_config())
+                .map(|(df, _)| df)
+                .map_err(|err| napi::Error::from_reason(err.to_string()))?,
             "json" => serde_json::from_slice(&buf)
                 .map_err(|err| napi::Error::from_reason(err.to_string()))?,
             _ => {
@@ -494,13 +498,7 @@ impl JsDataFrame {
     }
     #[napi(constructor)]
     pub fn from_columns(columns: Array) -> napi::Result<JsDataFrame> {
-        let len = columns.len();
-        let cols: Vec<Column> = (0..len)
-            .map(|idx| {
-                let item: &JsSeries = columns.get(idx).unwrap().unwrap();
-                item.series.clone().into()
-            })
-            .collect();
+        let cols = to_series_collection(columns)?;
 
         let df =
             DataFrame::new(cols.first().map_or(0, |c| c.len()), cols).map_err(JsPolarsErr::from)?;
@@ -733,13 +731,13 @@ impl JsDataFrame {
     }
     #[napi(catch_unwind)]
     pub fn hstack_mut(&mut self, columns: Array) -> napi::Result<()> {
-        let columns = to_series_collection(columns);
+        let columns = to_series_collection(columns)?;
         self.df.hstack_mut(&columns).map_err(JsPolarsErr::from)?;
         Ok(())
     }
     #[napi(catch_unwind)]
     pub fn hstack(&self, columns: Array) -> napi::Result<JsDataFrame> {
-        let columns = to_series_collection(columns);
+        let columns = to_series_collection(columns)?;
         let df = self.df.hstack(&columns).map_err(JsPolarsErr::from)?;
         Ok(df.into())
     }
