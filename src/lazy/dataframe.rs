@@ -67,7 +67,25 @@ fn single_byte_required(value: &str, field: &str) -> napi::Result<u8> {
             "{field} must be a non-empty string"
         )));
     }
-    Ok(value.as_bytes()[0])
+
+    let mut chars = value.chars();
+    let ch = chars.next().ok_or_else(|| {
+        napi::Error::from_reason(format!("{field} must be a non-empty string"))
+    })?;
+
+    if chars.next().is_some() {
+        return Err(napi::Error::from_reason(format!(
+            "{field} must be exactly one ASCII character"
+        )));
+    }
+
+    if !ch.is_ascii() {
+        return Err(napi::Error::from_reason(format!(
+            "{field} must be exactly one ASCII character"
+        )));
+    }
+
+    Ok(ch as u8)
 }
 
 #[napi]
