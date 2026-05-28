@@ -309,7 +309,10 @@ impl JsSeries {
 
     #[napi(getter, catch_unwind)]
     pub fn inner_dtype(&self) -> Option<JsDataType> {
-        self.series.dtype().inner_dtype().map(|dt| dt.into())
+        self.series
+            .dtype()
+            .inner_dtype()
+            .and_then(|dt| JsDataType::try_from(dt).ok())
     }
     #[napi(getter, catch_unwind)]
     pub fn name(&self) -> String {
@@ -403,7 +406,7 @@ impl JsSeries {
     #[napi(catch_unwind)]
     pub fn product(&self) -> Result<JsAnyValue> {
         let scalar = self.series.product().map_err(JsPolarsErr::from)?;
-        Ok(scalar.value().clone().into())
+        scalar.value().clone().try_into()
     }
     #[napi(catch_unwind)]
     pub fn chunk_lengths(&self) -> Vec<u32> {
@@ -848,13 +851,17 @@ impl JsSeries {
         }
     }
     #[napi(catch_unwind)]
-    pub fn quantile(&self, quantile: f64, interpolation: Wrap<QuantileMethod>) -> JsAnyValue {
+    pub fn quantile(
+        &self,
+        quantile: f64,
+        interpolation: Wrap<QuantileMethod>,
+    ) -> Result<JsAnyValue> {
         let binding = self
             .series
             .quantile_reduce(quantile, interpolation.0)
-            .expect("invalid quantile");
+            .map_err(JsPolarsErr::from)?;
         let v = binding.as_any_value();
-        v.into()
+        v.clone().try_into()
     }
     /// Rechunk and return a pointer to the start of the Series.
     /// Only implemented for numeric types

@@ -1555,14 +1555,21 @@ impl JsExpr {
         self.inner.clone().ewm_var(options).into()
     }
     #[napi(catch_unwind)]
-    pub fn extend_constant(&self, value: Option<JsAnyValue>, n: i64) -> Self {
-        self.inner
+    pub fn extend_constant(&self, value: Option<JsAnyValue>, n: i64) -> Result<Self> {
+        let value = value
+            .map(<AnyValue<'static> as TryFrom<JsAnyValue>>::try_from)
+            .transpose()?;
+
+        let expr = self
+            .inner
             .clone()
             .apply(
                 move |s| s.extend_constant(value.clone().into(), n as usize),
                 |_, f| Ok(f.clone()),
             )
-            .into()
+            .into();
+
+        Ok(expr)
     }
     #[napi(catch_unwind)]
     pub fn any(&self, drop_nulls: bool) -> JsExpr {
