@@ -334,7 +334,11 @@ impl FromNapiValue for Wrap<QuantileMethod> {
             "higher" => QuantileMethod::Higher,
             "midpoint" => QuantileMethod::Midpoint,
             "linear" => QuantileMethod::Linear,
-            _ => return Err(napi::Error::from_reason("not supported".to_owned())),
+            v => {
+                return Err(napi::Error::from_reason(format!(
+                    "`interpolation` must be one of {{'nearest', 'lower', 'higher', 'midpoint', 'linear'}}, got {v}",
+                )))
+            }
         };
         Ok(Wrap(interpol))
     }
@@ -349,7 +353,7 @@ impl FromNapiValue for Wrap<StartBy> {
             "monday" => StartBy::Monday,
             v => {
                 return Err(napi::Error::from_reason(format!(
-                    "closed must be one of {{'window', 'datapoint', 'monday'}}, got {v}",
+                    "`startBy` must be one of {{'window', 'datapoint', 'monday'}}, got {v}",
                 )))
             }
         };
@@ -382,10 +386,10 @@ impl FromNapiValue for Wrap<ClosedWindow> {
             "both" => ClosedWindow::Both,
             "left" => ClosedWindow::Left,
             "right" => ClosedWindow::Right,
-            _ => {
-                return Err(napi::Error::from_reason(
-                    "closed should be any of {'none', 'left', 'right', 'both'}".to_owned(),
-                ))
+            v => {
+                return Err(napi::Error::from_reason(format!(
+                    "`closed` must be one of {{'none', 'left', 'right', 'both'}}, got {v}",
+                )))
             }
         };
         Ok(Wrap(cw))
@@ -402,10 +406,10 @@ impl FromNapiValue for Wrap<RankMethod> {
             "dense" => RankMethod::Dense,
             "ordinal" => RankMethod::Ordinal,
             "random" => RankMethod::Random,
-            _ => {
-                return Err(napi::Error::from_reason(
-                    "use one of {'average', 'min', 'max', 'dense', 'ordinal', 'random'}".to_owned(),
-                ))
+            v => {
+                return Err(napi::Error::from_reason(format!(
+                    "`method` must be one of {{'average', 'min', 'max', 'dense', 'ordinal', 'random'}}, got {v}",
+                )))
             }
         };
         Ok(Wrap(method))
@@ -528,7 +532,7 @@ impl FromNapiValue for Wrap<FillNullStrategy> {
             "one" => FillNullStrategy::One,
             v => {
                 return Err(napi::Error::from_reason(format!(
-                    "{v} strategy not supported",
+                    "`strategy` must be one of {{'backward', 'forward', 'min', 'max', 'mean', 'zero', 'one'}}, got {v}",
                 )))
             }
         };
@@ -580,10 +584,10 @@ impl FromNapiValue for Wrap<RoundMode> {
         let method = match method.as_ref() {
             "halftoeven" => RoundMode::HalfToEven,
             "halfawayfromzero" => RoundMode::HalfAwayFromZero,
-            _ => {
-                return Err(napi::Error::from_reason(
-                    "use one of {'halftoeven', 'halfawayfromzero'}".to_owned(),
-                ))
+            v => {
+                return Err(napi::Error::from_reason(format!(
+                    "`mode` must be one of {{'halftoeven', 'halfawayfromzero'}}, got {v}",
+                )))
             }
         };
         Ok(Wrap(method))
@@ -621,7 +625,11 @@ impl FromNapiValue for Wrap<SyncOnCloseType> {
             "none" => SyncOnCloseType::None,
             "data" => SyncOnCloseType::Data,
             "all" => SyncOnCloseType::All,
-            _ => return Err(napi::Error::from_reason("not supported".to_owned())),
+            v => {
+                return Err(napi::Error::from_reason(format!(
+                    "`syncOnClose` must be one of {{'none', 'data', 'all'}}, got {v}",
+                )))
+            }
         };
         Ok(Wrap(soct))
     }
@@ -777,6 +785,27 @@ impl FromNapiValue for Wrap<TimeUnit> {
         Ok(Wrap(tu))
     }
 }
+
+fn invalid_arg(message: impl Into<String>) -> Error<Status> {
+    Error::new(Status::InvalidArg, message.into())
+}
+
+fn required_object_prop<T>(obj: &Object<'_>, key: &str, context: &str) -> napi::Result<T>
+where
+    T: FromNapiValue,
+{
+    obj.get::<T>(key)?
+        .ok_or_else(|| invalid_arg(format!("{context} requires '{key}'")))
+}
+
+fn required_array_item<T>(arr: &Array<'_>, idx: u32, message: impl Into<String>) -> napi::Result<T>
+where
+    T: FromNapiValue,
+{
+    arr.get::<T>(idx)?
+        .ok_or_else(|| invalid_arg(message.into()))
+}
+
 impl FromNapiValue for Wrap<DataType> {
     unsafe fn from_napi_value(env: sys::napi_env, napi_val: sys::napi_value) -> napi::Result<Self> {
         let ty = type_of!(env, napi_val)?;
@@ -800,57 +829,41 @@ impl FromNapiValue for Wrap<DataType> {
                     "Utf8" => DataType::String,
                     "String" => DataType::String,
                     "List" => {
-                        let inner = obj.get::<Array>("inner")?.ok_or_else(|| {
-                            Error::new(Status::InvalidArg, "List requires 'inner'".to_owned())
-                        })?;
-                        let inner_dtype: Object = inner.get::<Object>(0)?.ok_or_else(|| {
-                            Error::new(
-                                Status::InvalidArg,
-                                "List 'inner' must contain a dtype at index 0".to_owned(),
-                            )
-                        })?;
+                        let inner: Array = required_object_prop(&obj, "inner", "List")?;
+                        let inner_dtype: Object = required_array_item(
+                            &inner,
+                            0,
+                            "List 'inner' must contain a dtype at index 0",
+                        )?;
                         let napi_dt = Object::to_napi_value(env, inner_dtype)?;
 
                         let dt = Wrap::<DataType>::from_napi_value(env, napi_dt)?;
                         DataType::List(Box::new(dt.0))
                     }
                     "FixedSizeList" => {
-                        let inner = obj.get::<Array>("inner")?.ok_or_else(|| {
-                            Error::new(
-                                Status::InvalidArg,
-                                "FixedSizeList requires 'inner'".to_owned(),
-                            )
-                        })?;
-                        let inner_dtype: Object = inner.get::<Object>(0)?.ok_or_else(|| {
-                            Error::new(
-                                Status::InvalidArg,
-                                "FixedSizeList 'inner' must contain a dtype at index 0"
-                                    .to_owned(),
-                            )
-                        })?;
+                        let inner: Array = required_object_prop(&obj, "inner", "FixedSizeList")?;
+                        let inner_dtype: Object = required_array_item(
+                            &inner,
+                            0,
+                            "FixedSizeList 'inner' must contain a dtype at index 0",
+                        )?;
                         let napi_dt = Object::to_napi_value(env, inner_dtype)?;
 
                         let dt = Wrap::<DataType>::from_napi_value(env, napi_dt)?;
 
-                        let size = inner.get::<i32>(1)?.ok_or_else(|| {
-                            Error::new(
-                                Status::InvalidArg,
-                                "FixedSizeList 'inner' must contain a size at index 1"
-                                    .to_owned(),
-                            )
-                        })?;
+                        let size: i32 = required_array_item(
+                            &inner,
+                            1,
+                            "FixedSizeList 'inner' must contain a size at index 1",
+                        )?;
 
                         DataType::Array(Box::new(dt.0), size as usize)
                     }
 
                     "Date" => DataType::Date,
                     "Datetime" => {
-                        let tu = obj.get::<Wrap<TimeUnit>>("timeUnit")?.ok_or_else(|| {
-                            Error::new(
-                                Status::InvalidArg,
-                                "Datetime requires 'timeUnit'".to_owned(),
-                            )
-                        })?;
+                        let tu: Wrap<TimeUnit> =
+                            required_object_prop(&obj, "timeUnit", "Datetime")?;
                         let tz = obj
                             .get::<Option<String>>("timeZone")?
                             .unwrap_or_default();
@@ -859,12 +872,8 @@ impl FromNapiValue for Wrap<DataType> {
                     }
                     "Time" => DataType::Time,
                     "Duration" => {
-                        let tu = obj.get::<Wrap<TimeUnit>>("timeUnit")?.ok_or_else(|| {
-                            Error::new(
-                                Status::InvalidArg,
-                                "Duration requires 'timeUnit'".to_owned(),
-                            )
-                        })?;
+                        let tu: Wrap<TimeUnit> =
+                            required_object_prop(&obj, "timeUnit", "Duration")?;
                         DataType::Duration(tu.0)
                     }
                     "Object" => DataType::Object("object"),
@@ -877,40 +886,30 @@ impl FromNapiValue for Wrap<DataType> {
                         DataType::Categorical(categories.clone(), categories.clone().mapping())
                     }
                     "Struct" => {
-                        let inner = obj.get::<Array>("fields")?.ok_or_else(|| {
-                            Error::new(Status::InvalidArg, "Struct requires 'fields'".to_owned())
-                        })?;
+                        let inner: Array = required_object_prop(&obj, "fields", "Struct")?;
                         let mut fldvec: Vec<Field> = Vec::with_capacity(inner.len() as usize);
                         for i in 0..inner.len() {
-                            let inner_dtype: Object = inner.get::<Object>(i)?.ok_or_else(|| {
-                                Error::new(
-                                    Status::InvalidArg,
-                                    format!("Struct 'fields'[{i}] must be an object"),
-                                )
-                            })?;
+                            let inner_dtype: Object = required_array_item(
+                                &inner,
+                                i,
+                                format!("Struct 'fields'[{i}] must be an object"),
+                            )?;
                             let napi_dt = Object::to_napi_value(env, inner_dtype)?;
                             let obj = Object::from_napi_value(env, napi_dt)?;
-                            let name = obj.get::<String>("name")?.ok_or_else(|| {
-                                Error::new(
-                                    Status::InvalidArg,
-                                    format!("Struct 'fields'[{i}] missing 'name'"),
-                                )
+                            let name: String = obj.get::<String>("name")?.ok_or_else(|| {
+                                invalid_arg(format!("Struct 'fields'[{i}] missing 'name'"))
                             })?;
-                            let dt = obj.get::<Wrap<DataType>>("dtype")?.ok_or_else(|| {
-                                Error::new(
-                                    Status::InvalidArg,
-                                    format!("Struct 'fields'[{i}] missing 'dtype'"),
-                                )
-                            })?;
+                            let dt: Wrap<DataType> =
+                                obj.get::<Wrap<DataType>>("dtype")?.ok_or_else(|| {
+                                    invalid_arg(format!("Struct 'fields'[{i}] missing 'dtype'"))
+                                })?;
                             let fld = Field::new(name.into(), dt.0);
                             fldvec.push(fld);
                         }
                         DataType::Struct(fldvec)
                     }
                     "Decimal" => {
-                        let inner = obj.get::<Array>("inner")?.ok_or_else(|| {
-                            Error::new(Status::InvalidArg, "Decimal requires 'inner'".to_owned())
-                        })?; // [precision, scale]
+                        let inner: Array = required_object_prop(&obj, "inner", "Decimal")?; // [precision, scale]
                         let precision = inner
                             .get::<Option<i32>>(0)?
                             .unwrap_or(None)
@@ -922,18 +921,14 @@ impl FromNapiValue for Wrap<DataType> {
                         DataType::Decimal(precision.unwrap_or(0), scale.unwrap_or(0))
                     }
                     tp => {
-                        return Err(Error::new(
-                            Status::InvalidArg,
-                            format!("Type {tp} not implemented in str_to_polarstype"),
-                        ))
+                        return Err(invalid_arg(format!(
+                            "Type {tp} not implemented in str_to_polarstype"
+                        )))
                     }
                 };
                 Ok(Wrap(dtype))
             }
-            _ => Err(Error::new(
-                Status::InvalidArg,
-                "not a valid conversion to 'DataType'".to_owned(),
-            )),
+            _ => Err(invalid_arg("not a valid conversion to 'DataType'")),
         }
     }
 }
@@ -949,10 +944,7 @@ impl FromNapiValue for Wrap<Schema> {
                     keys.iter()
                         .map(|key| {
                             let value = obj.get::<Object>(&key)?.ok_or_else(|| {
-                                Error::new(
-                                    Status::InvalidArg,
-                                    format!("schema field '{key}' must be an object dtype"),
-                                )
+                                invalid_arg(format!("schema field '{key}' must be an object dtype"))
                             })?;
                             let napi_val = Object::to_napi_value(env, value)?;
                             let dtype = Wrap::<DataType>::from_napi_value(env, napi_val)?;
@@ -962,10 +954,7 @@ impl FromNapiValue for Wrap<Schema> {
                         .collect::<Result<Schema>>()?,
                 ))
             }
-            _ => Err(Error::new(
-                Status::InvalidArg,
-                "not a valid conversion to 'Schema'".to_owned(),
-            )),
+            _ => Err(invalid_arg("not a valid conversion to 'Schema'")),
         }
     }
 }
@@ -1008,10 +997,7 @@ impl FromNapiValue for Wrap<ParallelStrategy> {
             "row_groups" => ParallelStrategy::RowGroups,
             "none" => ParallelStrategy::None,
             _ => {
-                return Err(Error::new(
-                    Status::InvalidArg,
-                    "expected one of {'auto', 'columns', 'row_groups', 'none'}".to_owned(),
-                ))
+                return Err(invalid_arg("expected one of {'auto', 'columns', 'row_groups', 'none'}"))
             }
         };
         Ok(Wrap(unit))
@@ -1025,10 +1011,7 @@ impl FromNapiValue for Wrap<InterpolationMethod> {
             "linear" => InterpolationMethod::Linear,
             "nearest" => InterpolationMethod::Nearest,
             _ => {
-                return Err(Error::new(
-                    Status::InvalidArg,
-                    "expected one of {'linear', 'nearest'}".to_owned(),
-                ))
+                return Err(invalid_arg("expected one of {'linear', 'nearest'}"))
             }
         };
         Ok(Wrap(unit))
@@ -1064,9 +1047,10 @@ impl FromNapiValue for Wrap<QuoteStyle> {
             "necessary" => QuoteStyle::Necessary,
             "non_numeric" => QuoteStyle::NonNumeric,
             "never" => QuoteStyle::Never,
-            _ => return Err(Error::new(Status::InvalidArg,
-                format!("`quote_style` must be one of {{'always', 'necessary', 'non_numeric', 'never'}}, got '{}'", quote_style_str),
-                )),
+            _ => return Err(invalid_arg(format!(
+                "`quote_style` must be one of {{'always', 'necessary', 'non_numeric', 'never'}}, got '{}'",
+                quote_style_str
+            ))),
         };
         Ok(Wrap(parsed))
     }
@@ -1151,10 +1135,9 @@ impl FromNapiValue for Wrap<JoinType> {
             "anti" => JoinType::Anti,
             "cross" => JoinType::Cross,
             v =>
-                return Err(Error::new(
-                    Status::InvalidArg,
-                    format!("how must be one of {{'inner', 'left', 'right', 'full', 'semi', 'anti', 'cross'}}, got {v}")
-                ))
+                return Err(invalid_arg(format!(
+                    "how must be one of {{'inner', 'left', 'right', 'full', 'semi', 'anti', 'cross'}}, got {v}"
+                )))
         };
         Ok(Wrap(parsed))
     }
@@ -1168,8 +1151,7 @@ impl FromNapiValue for Wrap<Engine> {
             "cpu" | "in-memory" => Engine::InMemory,
             "streaming" => Engine::Streaming,
             v => {
-                return Err(Error::new(
-                    Status::InvalidArg,
+                return Err(invalid_arg(
                     format!(
                     "`engine` must be one of {{'auto', 'in-memory', 'streaming', 'cpu'}}, got {v}",
                 ),
@@ -1618,7 +1600,10 @@ pub(crate) fn parse_fill_null_strategy(
         "one" => FillNullStrategy::One,
         e => {
             return Err(napi::Error::from_reason(
-                format!("Strategy {e} not supported").to_owned(),
+                format!(
+                    "`strategy` must be one of {{'forward', 'backward', 'min', 'max', 'mean', 'zero', 'one'}}, got {e}"
+                )
+                .to_owned(),
             ))
         }
     };
