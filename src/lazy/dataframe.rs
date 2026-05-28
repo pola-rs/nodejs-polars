@@ -53,6 +53,23 @@ fn bin_config() -> bincode::config::Configuration {
         .with_variable_int_encoding()
 }
 
+fn unexpected_serialization_format_error() -> napi::Error {
+    napi::Error::from_reason("unexpected format. \n supported options are 'json', 'bincode'".to_owned())
+}
+
+fn single_byte_option(value: Option<String>, field: &str) -> napi::Result<Option<u8>> {
+    value.map(|s| single_byte_required(&s, field)).transpose()
+}
+
+fn single_byte_required(value: &str, field: &str) -> napi::Result<u8> {
+    if value.is_empty() {
+        return Err(napi::Error::from_reason(format!(
+            "{field} must be a non-empty string"
+        )));
+    }
+    Ok(value.as_bytes()[0])
+}
+
 #[napi]
 impl JsLazyFrame {
     #[napi(catch_unwind)]
@@ -67,11 +84,7 @@ impl JsLazyFrame {
                 .map_err(|err| napi::Error::from_reason(err.to_string()))?,
             "json" => serde_json::to_vec(&self.ldf.logical_plan)
                 .map_err(|err| napi::Error::from_reason(err.to_string()))?,
-            _ => {
-                return Err(napi::Error::from_reason(
-                    "unexpected format. \n supported options are 'json', 'bincode'".to_owned(),
-                ))
-            }
+            _ => return Err(unexpected_serialization_format_error()),
         };
         Ok(Buffer::from(buf))
     }
@@ -79,19 +92,12 @@ impl JsLazyFrame {
     #[napi(factory, catch_unwind)]
     pub fn deserialize(buf: Buffer, format: String) -> napi::Result<JsLazyFrame> {
         let lp: DslPlan = match format.as_ref() {
-            "bincode" => {
-                bincode::serde::decode_from_slice(&buf, bin_config())
-                    .map_err(|err| napi::Error::from_reason(err.to_string()))
-                    .unwrap()
-                    .0
-            }
+            "bincode" => bincode::serde::decode_from_slice(&buf, bin_config())
+                .map_err(|err| napi::Error::from_reason(err.to_string()))?
+                .0,
             "json" => serde_json::from_slice(&buf)
                 .map_err(|err| napi::Error::from_reason(err.to_string()))?,
-            _ => {
-                return Err(napi::Error::from_reason(
-                    "unexpected format. \n supported options are 'json', 'bincode'".to_owned(),
-                ))
-            }
+            _ => return Err(unexpected_serialization_format_error()),
         };
         Ok(LazyFrame::from(lp).into())
     }
@@ -641,7 +647,7 @@ impl JsLazyFrame {
     ) -> napi::Result<JsLazyFrame> {
         let compression_str = options.compression.unwrap_or("zstd".to_string());
         let compression = parse_parquet_compression(compression_str, options.compression_level)?;
-        let statistics = if options.statistics.expect("Expect statistics") {
+        let statistics = if options.statistics.unwrap_or(true) {
             StatisticsOptions::full()
         } else {
             StatisticsOptions::empty()
@@ -713,7 +719,7 @@ impl JsLazyFrame {
     #[napi(catch_unwind)]
     pub fn sink_ipc(&self, path: String, options: SinkIpcOptions) -> napi::Result<JsLazyFrame> {
         let cloud_options = parse_cloud_options(&path, options.cloud_options);
-        let compat_level: CompatLevel = match options.compat_level.unwrap().as_str() {
+        let compat_level: CompatLevel = match options.compat_level.as_deref().unwrap_or("newest") {
             "newest" => CompatLevel::newest(),
             "oldest" => CompatLevel::oldest(),
             _ => {
@@ -780,13 +786,9 @@ pub fn scan_csv(path: String, options: ScanCsvOptions) -> napi::Result<JsLazyFra
     let n_rows = options.n_rows.map(|i| i as usize);
     let row_count = options.row_count.map(RowIndex::from);
     let missing_utf8_is_empty_string: bool = options.missing_utf8_is_empty_string.unwrap_or(false);
-    let quote_char = options.quote_char.map_or(None, |q| {
-        if q.is_empty() {
-            None
-        } else {
-            Some(q.as_bytes()[0])
-        }
-    });
+    let quote_char = single_byte_option(options.quote_char, "quote_char")?;
+    let separator = single_byte_required(options.sep.as_deref().unwrap_or(","), "sep")?;
+    let eol_char = single_byte_required(&options.eol_char, "eol_char")?;
 
     let overwrite_dtype = options.overwrite_dtype.map(|overwrite_dtype| {
         overwrite_dtype
@@ -806,7 +808,7 @@ pub fn scan_csv(path: String, options: ScanCsvOptions) -> napi::Result<JsLazyFra
 
     let r = LazyCsvReader::new(PlRefPath::new(&path))
         .with_infer_schema_length(Some(options.infer_schema_length.unwrap_or(100) as usize))
-        .with_separator(options.sep.unwrap_or(",".to_owned()).as_bytes()[0])
+        .with_separator(separator)
         .with_has_header(options.has_header.unwrap_or(true))
         .with_ignore_errors(options.ignore_errors)
         .with_skip_rows(options.skip_rows.unwrap_or(0) as usize)
@@ -821,7 +823,7 @@ pub fn scan_csv(path: String, options: ScanCsvOptions) -> napi::Result<JsLazyFra
                 .map_or(None, |s| Some(PlSmallStr::from_string(s))),
         )
         .with_quote_char(quote_char)
-        .with_eol_char(options.eol_char.as_bytes()[0])
+        .with_eol_char(eol_char)
         .with_rechunk(options.rechunk.unwrap_or(false))
         .with_skip_rows_after_header(options.skip_rows_after_header as usize)
         .with_encoding(encoding)
