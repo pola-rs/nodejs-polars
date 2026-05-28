@@ -32,10 +32,7 @@ impl From<dsl::Expr> for JsExpr {
 }
 impl ToExprs for Vec<JsExpr> {
     fn to_exprs(self) -> Vec<Expr> {
-        // Safety
-        // repr is transparent
-        // and has only got one inner field`
-        unsafe { std::mem::transmute(self) }
+        self.into_iter().map(|expr| expr.inner).collect()
     }
 }
 
@@ -53,6 +50,25 @@ fn bin_config() -> bincode::config::Configuration {
         .with_variable_int_encoding()
 }
 
+fn polars_to_napi_error<E>(err: E) -> napi::Error
+where
+    JsPolarsErr: From<E>,
+{
+    napi::Error::from_reason(JsPolarsErr::from(err).to_string())
+}
+
+fn display_to_napi_error<E: std::fmt::Display>(err: E) -> napi::Error {
+    napi::Error::from_reason(err.to_string())
+}
+
+fn selector_expected_error() -> napi::Error {
+    napi::Error::from_reason("expression is not a selector".to_owned())
+}
+
+fn empty_fill_char_error() -> napi::Error {
+    napi::Error::from_reason("fill_char cannot be empty".to_owned())
+}
+
 #[napi]
 impl JsExpr {
     #[napi(catch_unwind)]
@@ -62,10 +78,10 @@ impl JsExpr {
     #[napi(catch_unwind)]
     pub fn serialize(&self, format: String) -> napi::Result<Buffer> {
         let buf = match format.as_ref() {
-            "bincode" => bincode::serde::encode_to_vec(&self.inner, bin_config())
-                .map_err(|err| napi::Error::from_reason(err.to_string()))?,
-            "json" => serde_json::to_vec(&self.inner)
-                .map_err(|err| napi::Error::from_reason(err.to_string()))?,
+            "bincode" => {
+                bincode::serde::encode_to_vec(&self.inner, bin_config()).map_err(display_to_napi_error)?
+            }
+            "json" => serde_json::to_vec(&self.inner).map_err(display_to_napi_error)?,
             _ => {
                 return Err(napi::Error::from_reason(
                     "unexpected format. \n supported options are 'json', 'bincode'".to_owned(),
@@ -77,23 +93,15 @@ impl JsExpr {
 
     #[napi(factory, catch_unwind)]
     pub fn deserialize(buf: Buffer, format: String) -> napi::Result<JsExpr> {
-        // Safety
-        // we skipped the serializing/deserializing of the static in lifetime in `DataType`
-        // so we actually don't have a lifetime at all when serializing.
-
-        // &[u8] still has a lifetime. But its ok, because we drop it immediately
-        // in this scope
         let bytes: &[u8] = &buf;
-        let bytes = unsafe { std::mem::transmute::<&'_ [u8], &'static [u8]>(bytes) };
         let expr: Expr = match format.as_ref() {
             "bincode" => {
                 bincode::serde::decode_from_slice(bytes, bin_config())
-                    .map_err(|err| napi::Error::from_reason(err.to_string()))
-                    .unwrap()
+                    .map_err(display_to_napi_error)
+                    ?
                     .0
             }
-            "json" => serde_json::from_slice(bytes)
-                .map_err(|err| napi::Error::from_reason(err.to_string()))?,
+            "json" => serde_json::from_slice(bytes).map_err(display_to_napi_error)?,
             _ => {
                 return Err(napi::Error::from_reason(
                     "unexpected format. \n supported options are 'json', 'bincode'".to_owned(),
@@ -669,7 +677,7 @@ impl JsExpr {
         exact: bool,
         cache: bool,
         ambiguous: Option<Wrap<Expr>>,
-    ) -> JsExpr {
+    ) -> JsResult<JsExpr> {
         let options = StrptimeOptions {
             format: format.map_or(None, |s| Some(PlSmallStr::from_string(s))),
             strict,
@@ -679,12 +687,13 @@ impl JsExpr {
         let ambiguous = ambiguous
             .map(|e| e.0)
             .unwrap_or(dsl::lit(String::from("raise")));
-        let time_zone = TimeZone::opt_try_new(time_zone).unwrap();
-        self.inner
+        let time_zone = TimeZone::opt_try_new(time_zone).map_err(JsPolarsErr::from)?;
+        Ok(self
+            .inner
             .clone()
             .str()
             .to_datetime(time_unit.map(|tu| tu.0), time_zone, options, ambiguous)
-            .into()
+            .into())
     }
 
     #[napi(catch_unwind)]
@@ -753,21 +762,31 @@ impl JsExpr {
     }
 
     #[napi(catch_unwind)]
-    pub fn str_pad_start(&self, length: &JsExpr, fill_char: String) -> Self {
-        self.inner
+    pub fn str_pad_start(&self, length: &JsExpr, fill_char: String) -> JsResult<JsExpr> {
+        let fill_char = fill_char
+            .chars()
+            .next()
+            .ok_or_else(empty_fill_char_error)?;
+        Ok(self
+            .inner
             .clone()
             .str()
-            .pad_start(length.inner.clone(), fill_char.chars().nth(0).unwrap())
-            .into()
+            .pad_start(length.inner.clone(), fill_char)
+            .into())
     }
 
     #[napi(catch_unwind)]
-    pub fn str_pad_end(&self, length: &JsExpr, fill_char: String) -> Self {
-        self.inner
+    pub fn str_pad_end(&self, length: &JsExpr, fill_char: String) -> JsResult<JsExpr> {
+        let fill_char = fill_char
+            .chars()
+            .next()
+            .ok_or_else(empty_fill_char_error)?;
+        Ok(self
+            .inner
             .clone()
             .str()
-            .pad_end(length.inner.clone(), fill_char.chars().nth(0).unwrap())
-            .into()
+            .pad_end(length.inner.clone(), fill_char)
+            .into())
     }
 
     #[napi(catch_unwind)]
@@ -1193,27 +1212,23 @@ impl JsExpr {
         self.inner.clone().name().suffix(&suffix).into()
     }
     #[napi(catch_unwind)]
-    pub fn exclude(&self, columns: Vec<String>) -> JsExpr {
-        self.inner
+    pub fn exclude(&self, columns: Vec<String>) -> JsResult<JsExpr> {
+        let selector = self
+            .inner
             .clone()
             .into_selector()
-            .unwrap()
-            .exclude_cols(columns)
-            .as_expr()
-            .into()
+            .ok_or_else(selector_expected_error)?;
+        Ok(selector.exclude_cols(columns).as_expr().into())
     }
     #[napi(catch_unwind)]
-    pub fn exclude_dtype(&self, dtypes: Vec<Wrap<DataType>>) -> JsExpr {
-        // Safety:
-        // Wrap is transparent.
-        let dtypes: Vec<DataType> = unsafe { std::mem::transmute(dtypes) };
-        self.inner
+    pub fn exclude_dtype(&self, dtypes: Vec<Wrap<DataType>>) -> JsResult<JsExpr> {
+        let dtypes: Vec<DataType> = dtypes.into_iter().map(|dt| dt.0).collect();
+        let selector = self
+            .inner
             .clone()
             .into_selector()
-            .unwrap()
-            .exclude_dtype(&dtypes)
-            .as_expr()
-            .into()
+            .ok_or_else(selector_expected_error)?;
+        Ok(selector.exclude_dtype(&dtypes).as_expr().into())
     }
     #[napi(catch_unwind)]
     pub fn interpolate(&self, method: Wrap<InterpolationMethod>) -> JsExpr {
@@ -1414,9 +1429,7 @@ impl JsExpr {
         descending: bool,
         seed: Option<Wrap<u64>>,
     ) -> JsExpr {
-        // Safety:
-        // Wrap is transparent.
-        let seed: Option<u64> = unsafe { std::mem::transmute(seed) };
+        let seed: Option<u64> = seed.map(|s| s.0);
         let options = RankOptions {
             method: method.0,
             descending,
@@ -1755,9 +1768,7 @@ pub fn cols(names: Vec<String>) -> JsExpr {
 
 #[napi(catch_unwind)]
 pub fn dtype_cols(dtypes: Vec<Wrap<DataType>>) -> JsExpr {
-    // Safety
-    // Wrap is transparent
-    let dtypes: Vec<DataType> = unsafe { std::mem::transmute(dtypes) };
+    let dtypes: Vec<DataType> = dtypes.into_iter().map(|dt| dt.0).collect();
     dsl::dtype_cols(dtypes).as_selector().as_expr().into()
 }
 
@@ -1773,12 +1784,13 @@ pub fn int_ranges(
     step: Wrap<Expr>,
     dtype: Option<Wrap<DataType>>,
 ) -> JsExpr {
-    let dtype = dtype.map(|d| d.0 as DataType);
+    let dtype = dtype.map(|d| d.0);
+    let range_dtype = dtype.clone().unwrap_or(DataType::Int64);
 
-    let mut result = dsl::int_ranges(start.0, end.0, step.0, dtype.clone().unwrap());
+    let mut result = dsl::int_ranges(start.0, end.0, step.0, range_dtype.clone());
 
-    if dtype.is_some() && dtype.clone().unwrap() != DataType::Int64 {
-        result = result.cast(DataType::List(Box::new(dtype.clone().unwrap())));
+    if range_dtype != DataType::Int64 {
+        result = result.cast(DataType::List(Box::new(range_dtype)));
     }
 
     result.into()
@@ -1854,44 +1866,34 @@ pub fn as_struct(exprs: Vec<&JsExpr>) -> JsExpr {
 }
 
 #[napi(catch_unwind)]
-pub fn all_horizontal(exprs: Vec<&JsExpr>) -> JsExpr {
+pub fn all_horizontal(exprs: Vec<&JsExpr>) -> JsResult<JsExpr> {
     let exprs = exprs.to_exprs();
-    dsl::all_horizontal(exprs)
-        .map_err(JsPolarsErr::from)
-        .unwrap()
-        .into()
+    let expr = dsl::all_horizontal(exprs).map_err(polars_to_napi_error)?;
+    Ok(expr.into())
 }
 
 #[napi(catch_unwind)]
-pub fn any_horizontal(exprs: Vec<&JsExpr>) -> JsExpr {
+pub fn any_horizontal(exprs: Vec<&JsExpr>) -> JsResult<JsExpr> {
     let exprs = exprs.to_exprs();
-    dsl::any_horizontal(exprs)
-        .map_err(JsPolarsErr::from)
-        .unwrap()
-        .into()
+    let expr = dsl::any_horizontal(exprs).map_err(polars_to_napi_error)?;
+    Ok(expr.into())
 }
 #[napi(catch_unwind)]
-pub fn min_horizontal(exprs: Vec<&JsExpr>) -> JsExpr {
+pub fn min_horizontal(exprs: Vec<&JsExpr>) -> JsResult<JsExpr> {
     let exprs = exprs.to_exprs();
-    dsl::min_horizontal(exprs)
-        .map_err(JsPolarsErr::from)
-        .unwrap()
-        .into()
+    let expr = dsl::min_horizontal(exprs).map_err(polars_to_napi_error)?;
+    Ok(expr.into())
 }
 
 #[napi(catch_unwind)]
-pub fn max_horizontal(exprs: Vec<&JsExpr>) -> JsExpr {
+pub fn max_horizontal(exprs: Vec<&JsExpr>) -> JsResult<JsExpr> {
     let exprs = exprs.to_exprs();
-    dsl::max_horizontal(exprs)
-        .map_err(JsPolarsErr::from)
-        .unwrap()
-        .into()
+    let expr = dsl::max_horizontal(exprs).map_err(polars_to_napi_error)?;
+    Ok(expr.into())
 }
 #[napi(catch_unwind)]
-pub fn sum_horizontal(exprs: Vec<&JsExpr>, ignore_nulls: bool) -> JsExpr {
+pub fn sum_horizontal(exprs: Vec<&JsExpr>, ignore_nulls: bool) -> JsResult<JsExpr> {
     let exprs = exprs.to_exprs();
-    dsl::sum_horizontal(exprs, ignore_nulls)
-        .map_err(JsPolarsErr::from)
-        .unwrap()
-        .into()
+    let expr = dsl::sum_horizontal(exprs, ignore_nulls).map_err(polars_to_napi_error)?;
+    Ok(expr.into())
 }

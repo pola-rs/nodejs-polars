@@ -1030,9 +1030,7 @@ impl JsDataFrame {
             self.df.partition_by(groups, include_key)
         }
         .map_err(JsPolarsErr::from)?;
-        // Safety:
-        // Repr mem layout
-        Ok(unsafe { std::mem::transmute::<Vec<DataFrame>, Vec<JsDataFrame>>(out) })
+        Ok(out.into_iter().map(JsDataFrame::new).collect())
     }
 
     #[napi(catch_unwind)]
