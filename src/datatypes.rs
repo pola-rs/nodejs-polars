@@ -2,6 +2,19 @@ use crate::prelude::*;
 use crate::series::JsSeries;
 use napi::bindgen_prelude::TypedArrayType;
 
+const JS_ANYVALUE_ERROR: &str = "Unknown JS variables cannot be represented as a JsAnyValue";
+
+fn invalid_js_anyvalue_error() -> Error {
+    Error::new(Status::InvalidArg, JS_ANYVALUE_ERROR.to_owned())
+}
+
+fn unsupported_conversion_error(from: &str, to: &str, value: &str) -> Error {
+    Error::new(
+        Status::InvalidArg,
+        format!("Unsupported conversion from {from} to {to}: {value}"),
+    )
+}
+
 #[napi(js_name = "DataType")]
 pub enum JsDataType {
     Int8,
@@ -27,79 +40,99 @@ pub enum JsDataType {
     Struct,
 }
 impl JsDataType {
-    pub fn from_str(s: &str) -> Self {
+    pub fn from_str(s: &str) -> JsResult<Self> {
+        s.try_into()
+    }
+}
+
+impl TryFrom<&str> for JsDataType {
+    type Error = napi::Error;
+
+    fn try_from(s: &str) -> napi::Result<Self> {
         match s {
-            "Int8" => JsDataType::Int8,
-            "Int16" => JsDataType::Int16,
-            "Int32" => JsDataType::Int32,
-            "Int64" => JsDataType::Int64,
-            "UInt8" => JsDataType::UInt8,
-            "UInt16" => JsDataType::UInt16,
-            "UInt32" => JsDataType::UInt32,
-            "UInt64" => JsDataType::UInt64,
-            "Float32" => JsDataType::Float32,
-            "Float64" => JsDataType::Float64,
-            "Bool" => JsDataType::Bool,
-            "Utf8" => JsDataType::Utf8,
-            "String" => JsDataType::String,
-            "List" => JsDataType::List,
-            "Date" => JsDataType::Date,
-            "Datetime" => JsDataType::Datetime,
-            "Time" => JsDataType::Time,
-            "Duration" => JsDataType::Duration,
-            "Object" => JsDataType::Object,
-            "Categorical" => JsDataType::Categorical,
-            "Struct" => JsDataType::Struct,
-            _ => panic!("not a valid dtype"),
+            "Int8" => Ok(JsDataType::Int8),
+            "Int16" => Ok(JsDataType::Int16),
+            "Int32" => Ok(JsDataType::Int32),
+            "Int64" => Ok(JsDataType::Int64),
+            "UInt8" => Ok(JsDataType::UInt8),
+            "UInt16" => Ok(JsDataType::UInt16),
+            "UInt32" => Ok(JsDataType::UInt32),
+            "UInt64" => Ok(JsDataType::UInt64),
+            "Float32" => Ok(JsDataType::Float32),
+            "Float64" => Ok(JsDataType::Float64),
+            "Bool" => Ok(JsDataType::Bool),
+            "Utf8" => Ok(JsDataType::Utf8),
+            "String" => Ok(JsDataType::String),
+            "List" => Ok(JsDataType::List),
+            "Date" => Ok(JsDataType::Date),
+            "Datetime" => Ok(JsDataType::Datetime),
+            "Time" => Ok(JsDataType::Time),
+            "Duration" => Ok(JsDataType::Duration),
+            "Object" => Ok(JsDataType::Object),
+            "Categorical" => Ok(JsDataType::Categorical),
+            "Struct" => Ok(JsDataType::Struct),
+            _ => Err(unsupported_conversion_error("&str", "JsDataType", s)),
         }
     }
 }
 
-impl From<&DataType> for JsDataType {
-    fn from(dt: &DataType) -> Self {
+impl TryFrom<&DataType> for JsDataType {
+    type Error = napi::Error;
+
+    fn try_from(dt: &DataType) -> napi::Result<Self> {
         use JsDataType::*;
         match dt {
-            DataType::Int8 => Int8,
-            DataType::Int16 => Int16,
-            DataType::Int32 => Int32,
-            DataType::Int64 => Int64,
-            DataType::UInt8 => UInt8,
-            DataType::UInt16 => UInt16,
-            DataType::UInt32 => UInt32,
-            DataType::UInt64 => UInt64,
-            DataType::Float32 => Float32,
-            DataType::Float64 => Float64,
-            DataType::Boolean => Bool,
-            DataType::String => Utf8,
-            DataType::List(_) => List,
-            DataType::Date => Date,
-            DataType::Datetime(_, _) => Datetime,
-            DataType::Time => Time,
-            DataType::Duration(_) => Duration,
-            DataType::Object(..) => Object,
-            DataType::Categorical(..) => Categorical,
-            DataType::Struct(_) => Struct,
-            _ => panic!("null or unknown not expected here"),
+            DataType::Int8 => Ok(Int8),
+            DataType::Int16 => Ok(Int16),
+            DataType::Int32 => Ok(Int32),
+            DataType::Int64 => Ok(Int64),
+            DataType::UInt8 => Ok(UInt8),
+            DataType::UInt16 => Ok(UInt16),
+            DataType::UInt32 => Ok(UInt32),
+            DataType::UInt64 => Ok(UInt64),
+            DataType::Float32 => Ok(Float32),
+            DataType::Float64 => Ok(Float64),
+            DataType::Boolean => Ok(Bool),
+            DataType::String => Ok(Utf8),
+            DataType::List(_) => Ok(List),
+            DataType::Date => Ok(Date),
+            DataType::Datetime(_, _) => Ok(Datetime),
+            DataType::Time => Ok(Time),
+            DataType::Duration(_) => Ok(Duration),
+            DataType::Object(..) => Ok(Object),
+            DataType::Categorical(..) => Ok(Categorical),
+            DataType::Struct(_) => Ok(Struct),
+            other => Err(unsupported_conversion_error(
+                "DataType",
+                "JsDataType",
+                &format!("{other:?}"),
+            )),
         }
     }
 }
 
-impl From<TypedArrayType> for JsDataType {
-    fn from(dt: TypedArrayType) -> Self {
+impl TryFrom<TypedArrayType> for JsDataType {
+    type Error = napi::Error;
+
+    fn try_from(dt: TypedArrayType) -> napi::Result<Self> {
         use napi::bindgen_prelude::TypedArrayType::*;
         match dt {
-            Int8 => JsDataType::Int8,
-            Uint8 => JsDataType::UInt8,
-            Uint8Clamped => JsDataType::UInt8,
-            Int16 => JsDataType::Int16,
-            Uint16 => JsDataType::UInt16,
-            Int32 => JsDataType::Int32,
-            Uint32 => JsDataType::UInt32,
-            Float32 => JsDataType::Float32,
-            Float64 => JsDataType::Float64,
-            BigInt64 => JsDataType::Int64,
-            BigUint64 => JsDataType::UInt64,
-            _ => panic!("unknown datatype"),
+            Int8 => Ok(JsDataType::Int8),
+            Uint8 => Ok(JsDataType::UInt8),
+            Uint8Clamped => Ok(JsDataType::UInt8),
+            Int16 => Ok(JsDataType::Int16),
+            Uint16 => Ok(JsDataType::UInt16),
+            Int32 => Ok(JsDataType::Int32),
+            Uint32 => Ok(JsDataType::UInt32),
+            Float32 => Ok(JsDataType::Float32),
+            Float64 => Ok(JsDataType::Float64),
+            BigInt64 => Ok(JsDataType::Int64),
+            BigUint64 => Ok(JsDataType::UInt64),
+            _ => Err(unsupported_conversion_error(
+                "TypedArrayType",
+                "JsDataType",
+                &format!("{dt:?}"),
+            )),
         }
     }
 }
@@ -144,19 +177,11 @@ impl<'a> FromNapiValue for JsAnyValue {
                     let dt = d as i64;
                     JsAnyValue::Datetime(dt, TimeUnit::Milliseconds, None)
                 } else {
-                    return Err(Error::new(
-                        Status::InvalidArg,
-                        "Unknown JS variables cannot be represented as a JsAnyValue".to_owned(),
-                    ));
+                    return Err(invalid_js_anyvalue_error());
                 }
             }
             ValueType::Null | ValueType::Undefined => JsAnyValue::Null,
-            _ => {
-                return Err(Error::new(
-                    Status::InvalidArg,
-                    "Unknown JS variables cannot be represented as a JsAnyValue".to_owned(),
-                ))
-            }
+            _ => return Err(invalid_js_anyvalue_error()),
         };
         Ok(val)
     }
@@ -175,7 +200,7 @@ impl<'a> FromNapiValue for Wrap<AnyValue<'a>> {
             ValueType::BigInt => AnyValue::UInt64(Wrap::<u64>::from_napi_value(env, napi_val)?.0),
             ValueType::Object => {
                 if let Ok(vals) = Vec::<Wrap<AnyValue>>::from_napi_value(env, napi_val) {
-                    let vals = std::mem::transmute::<_, Vec<AnyValue>>(vals);
+                    let vals = vals.into_iter().map(|wrap| wrap.0).collect::<Vec<AnyValue>>();
                     let s = Series::new(PlSmallStr::EMPTY, vals);
                     AnyValue::List(s)
                 } else if let Ok(s) = <&JsSeries>::from_napi_value(env, napi_val) {
@@ -185,19 +210,11 @@ impl<'a> FromNapiValue for Wrap<AnyValue<'a>> {
                     let dt = d as i64;
                     AnyValue::Datetime(dt, TimeUnit::Milliseconds, None)
                 } else {
-                    return Err(Error::new(
-                        Status::InvalidArg,
-                        "Unknown JS variables cannot be represented as a JsAnyValue".to_owned(),
-                    ));
+                    return Err(invalid_js_anyvalue_error());
                 }
             }
             ValueType::Null | ValueType::Undefined => AnyValue::Null,
-            _ => {
-                return Err(Error::new(
-                    Status::InvalidArg,
-                    "Unknown JS variables cannot be represented as a JsAnyValue".to_owned(),
-                ))
-            }
+            _ => return Err(invalid_js_anyvalue_error()),
         };
 
         Ok(val.into())
@@ -259,87 +276,106 @@ impl ToNapiValue for JsAnyValue {
             JsAnyValue::Duration(v, _) => i64::to_napi_value(env, v),
             JsAnyValue::Time(v) => i64::to_napi_value(env, v),
             JsAnyValue::List(ser) => JsSeries::to_napi_value(env, ser.into()),
-            JsAnyValue::Struct(vals) => {
-                let vals = std::mem::transmute::<_, Vec<JsAnyValue>>(vals);
-                Vec::<JsAnyValue>::to_napi_value(env, vals)
-            }
+            JsAnyValue::Struct(vals) => Vec::<JsAnyValue>::to_napi_value(env, vals),
         }
     }
 }
 
-impl<'a> From<JsAnyValue> for AnyValue<'a> {
-    fn from(av: JsAnyValue) -> Self {
+impl TryFrom<JsAnyValue> for AnyValue<'static> {
+    type Error = napi::Error;
+
+    fn try_from(av: JsAnyValue) -> napi::Result<Self> {
         match av {
-            JsAnyValue::Null => AnyValue::Null,
-            JsAnyValue::Boolean(v) => AnyValue::Boolean(v),
-            JsAnyValue::Utf8(v) => AnyValue::StringOwned(v.into()),
-            JsAnyValue::UInt8(v) => AnyValue::UInt8(v),
-            JsAnyValue::UInt16(v) => AnyValue::UInt16(v),
-            JsAnyValue::UInt32(v) => AnyValue::UInt32(v),
-            JsAnyValue::UInt64(v) => AnyValue::UInt64(v),
-            JsAnyValue::Int8(v) => AnyValue::Int8(v),
-            JsAnyValue::Int16(v) => AnyValue::Int16(v),
-            JsAnyValue::Int32(v) => AnyValue::Int32(v),
-            JsAnyValue::Int64(v) => AnyValue::Int64(v),
-            JsAnyValue::Float32(v) => AnyValue::Float32(v),
-            JsAnyValue::Float64(v) => AnyValue::Float64(v),
-            JsAnyValue::Date(v) => AnyValue::Date(v),
-            JsAnyValue::Datetime(v, w, _) => AnyValue::Datetime(v, w, None),
-            JsAnyValue::Duration(v, w) => AnyValue::Duration(v, w),
-            JsAnyValue::Time(v) => AnyValue::Time(v),
-            JsAnyValue::List(v) => AnyValue::List(v),
-            _ => todo!(), // JsAnyValue::Struct(v) => AnyValue::Struct(v),
+            JsAnyValue::Null => Ok(AnyValue::Null),
+            JsAnyValue::Boolean(v) => Ok(AnyValue::Boolean(v)),
+            JsAnyValue::Utf8(v) => Ok(AnyValue::StringOwned(v.into())),
+            JsAnyValue::String(v) => Ok(AnyValue::StringOwned(v.into())),
+            JsAnyValue::UInt8(v) => Ok(AnyValue::UInt8(v)),
+            JsAnyValue::UInt16(v) => Ok(AnyValue::UInt16(v)),
+            JsAnyValue::UInt32(v) => Ok(AnyValue::UInt32(v)),
+            JsAnyValue::UInt64(v) => Ok(AnyValue::UInt64(v)),
+            JsAnyValue::Int8(v) => Ok(AnyValue::Int8(v)),
+            JsAnyValue::Int16(v) => Ok(AnyValue::Int16(v)),
+            JsAnyValue::Int32(v) => Ok(AnyValue::Int32(v)),
+            JsAnyValue::Int64(v) => Ok(AnyValue::Int64(v)),
+            JsAnyValue::Float32(v) => Ok(AnyValue::Float32(v)),
+            JsAnyValue::Float64(v) => Ok(AnyValue::Float64(v)),
+            JsAnyValue::Date(v) => Ok(AnyValue::Date(v)),
+            JsAnyValue::Datetime(v, w, _) => Ok(AnyValue::Datetime(v, w, None)),
+            JsAnyValue::Duration(v, w) => Ok(AnyValue::Duration(v, w)),
+            JsAnyValue::Time(v) => Ok(AnyValue::Time(v)),
+            JsAnyValue::List(v) => Ok(AnyValue::List(v)),
+            other => Err(unsupported_conversion_error(
+                "JsAnyValue",
+                "AnyValue",
+                &format!("{other:?}"),
+            )),
         }
     }
 }
 
-impl From<AnyValue<'_>> for JsAnyValue {
-    fn from(av: AnyValue) -> Self {
+impl TryFrom<AnyValue<'_>> for JsAnyValue {
+    type Error = napi::Error;
+
+    fn try_from(av: AnyValue) -> napi::Result<Self> {
         match av {
-            AnyValue::Null => JsAnyValue::Null,
-            AnyValue::Boolean(v) => JsAnyValue::Boolean(v),
-            AnyValue::String(v) => JsAnyValue::Utf8(v.to_owned()),
-            AnyValue::UInt8(v) => JsAnyValue::UInt8(v),
-            AnyValue::UInt16(v) => JsAnyValue::UInt16(v),
-            AnyValue::UInt32(v) => JsAnyValue::UInt32(v),
-            AnyValue::UInt64(v) => JsAnyValue::UInt64(v),
-            AnyValue::Int8(v) => JsAnyValue::Int8(v),
-            AnyValue::Int16(v) => JsAnyValue::Int16(v),
-            AnyValue::Int32(v) => JsAnyValue::Int32(v),
-            AnyValue::Int64(v) => JsAnyValue::Int64(v),
-            AnyValue::Float32(v) => JsAnyValue::Float32(v),
-            AnyValue::Float64(v) => JsAnyValue::Float64(v),
-            AnyValue::Date(v) => JsAnyValue::Date(v),
-            AnyValue::Datetime(v, w, _) => JsAnyValue::Datetime(v, w, None),
-            AnyValue::Duration(v, w) => JsAnyValue::Duration(v, w),
-            AnyValue::Time(v) => JsAnyValue::Time(v),
-            AnyValue::List(v) => JsAnyValue::List(v),
-            _ => todo!(), // JsAnyValue::Struct(v) => AnyValue::Struct(v),
+            AnyValue::Null => Ok(JsAnyValue::Null),
+            AnyValue::Boolean(v) => Ok(JsAnyValue::Boolean(v)),
+            AnyValue::String(v) => Ok(JsAnyValue::Utf8(v.to_owned())),
+            AnyValue::StringOwned(v) => Ok(JsAnyValue::Utf8(v.to_string())),
+            AnyValue::UInt8(v) => Ok(JsAnyValue::UInt8(v)),
+            AnyValue::UInt16(v) => Ok(JsAnyValue::UInt16(v)),
+            AnyValue::UInt32(v) => Ok(JsAnyValue::UInt32(v)),
+            AnyValue::UInt64(v) => Ok(JsAnyValue::UInt64(v)),
+            AnyValue::Int8(v) => Ok(JsAnyValue::Int8(v)),
+            AnyValue::Int16(v) => Ok(JsAnyValue::Int16(v)),
+            AnyValue::Int32(v) => Ok(JsAnyValue::Int32(v)),
+            AnyValue::Int64(v) => Ok(JsAnyValue::Int64(v)),
+            AnyValue::Float32(v) => Ok(JsAnyValue::Float32(v)),
+            AnyValue::Float64(v) => Ok(JsAnyValue::Float64(v)),
+            AnyValue::Date(v) => Ok(JsAnyValue::Date(v)),
+            AnyValue::Datetime(v, w, _) => Ok(JsAnyValue::Datetime(v, w, None)),
+            AnyValue::DatetimeOwned(v, w, _) => Ok(JsAnyValue::Datetime(v, w, None)),
+            AnyValue::Duration(v, w) => Ok(JsAnyValue::Duration(v, w)),
+            AnyValue::Time(v) => Ok(JsAnyValue::Time(v)),
+            AnyValue::List(v) => Ok(JsAnyValue::List(v)),
+            other => Err(unsupported_conversion_error(
+                "AnyValue",
+                "JsAnyValue",
+                &format!("{other:?}"),
+            )),
         }
     }
 }
 
-impl From<&JsAnyValue> for DataType {
-    fn from(av: &JsAnyValue) -> Self {
+impl TryFrom<&JsAnyValue> for DataType {
+    type Error = napi::Error;
+
+    fn try_from(av: &JsAnyValue) -> napi::Result<Self> {
         match av {
-            JsAnyValue::Null => DataType::Null,
-            JsAnyValue::Boolean(_) => DataType::Boolean,
-            JsAnyValue::Utf8(_) => DataType::String,
-            JsAnyValue::UInt8(_) => DataType::UInt8,
-            JsAnyValue::UInt16(_) => DataType::UInt16,
-            JsAnyValue::UInt32(_) => DataType::UInt32,
-            JsAnyValue::UInt64(_) => DataType::UInt64,
-            JsAnyValue::Int8(_) => DataType::Int8,
-            JsAnyValue::Int16(_) => DataType::Int16,
-            JsAnyValue::Int32(_) => DataType::Int32,
-            JsAnyValue::Int64(_) => DataType::Int64,
-            JsAnyValue::Float32(_) => DataType::Float32,
-            JsAnyValue::Float64(_) => DataType::Float64,
-            JsAnyValue::Date(_) => DataType::Date,
-            JsAnyValue::Datetime(_, _, _) => DataType::Datetime(TimeUnit::Milliseconds, None),
-            JsAnyValue::Time(_) => DataType::Time,
-            JsAnyValue::Duration(_, _) => DataType::Duration(TimeUnit::Milliseconds),
-            _ => todo!(), // JsAnyValue::Struct(v) => AnyValue::Struct(v),
+            JsAnyValue::Null => Ok(DataType::Null),
+            JsAnyValue::Boolean(_) => Ok(DataType::Boolean),
+            JsAnyValue::Utf8(_) => Ok(DataType::String),
+            JsAnyValue::String(_) => Ok(DataType::String),
+            JsAnyValue::UInt8(_) => Ok(DataType::UInt8),
+            JsAnyValue::UInt16(_) => Ok(DataType::UInt16),
+            JsAnyValue::UInt32(_) => Ok(DataType::UInt32),
+            JsAnyValue::UInt64(_) => Ok(DataType::UInt64),
+            JsAnyValue::Int8(_) => Ok(DataType::Int8),
+            JsAnyValue::Int16(_) => Ok(DataType::Int16),
+            JsAnyValue::Int32(_) => Ok(DataType::Int32),
+            JsAnyValue::Int64(_) => Ok(DataType::Int64),
+            JsAnyValue::Float32(_) => Ok(DataType::Float32),
+            JsAnyValue::Float64(_) => Ok(DataType::Float64),
+            JsAnyValue::Date(_) => Ok(DataType::Date),
+            JsAnyValue::Datetime(_, _, _) => Ok(DataType::Datetime(TimeUnit::Milliseconds, None)),
+            JsAnyValue::Time(_) => Ok(DataType::Time),
+            JsAnyValue::Duration(_, _) => Ok(DataType::Duration(TimeUnit::Milliseconds)),
+            other => Err(unsupported_conversion_error(
+                "JsAnyValue",
+                "DataType",
+                &format!("{other:?}"),
+            )),
         }
     }
 }

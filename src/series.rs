@@ -29,6 +29,18 @@ fn bin_config() -> bincode::config::Configuration {
         .with_variable_int_encoding()
 }
 
+#[inline]
+fn map_seed(seed: Option<Wrap<u64>>) -> Option<u64> {
+    seed.map(|v| v.0)
+}
+
+#[inline]
+fn parse_fill_char(fill_char: String) -> napi::Result<char> {
+    fill_char.chars().next().ok_or_else(|| {
+        napi::Error::from_reason("fill_char must contain at least one character".to_owned())
+    })
+}
+
 #[napi]
 impl JsSeries {
     #[napi(catch_unwind)]
@@ -55,12 +67,9 @@ impl JsSeries {
     #[napi(factory, catch_unwind)]
     pub fn deserialize(buf: Buffer, format: String) -> napi::Result<JsSeries> {
         let series: Series = match format.as_ref() {
-            "bincode" => {
-                bincode::serde::decode_from_slice(&buf, bin_config())
-                    .map_err(|err| napi::Error::from_reason(err.to_string()))
-                    .unwrap()
-                    .0
-            }
+            "bincode" => bincode::serde::decode_from_slice(&buf, bin_config())
+                .map_err(|err| napi::Error::from_reason(err.to_string()))?
+                .0,
             "json" => serde_json::from_slice(&buf)
                 .map_err(|err| napi::Error::from_reason(err.to_string()))?,
             _ => {
@@ -300,7 +309,10 @@ impl JsSeries {
 
     #[napi(getter, catch_unwind)]
     pub fn inner_dtype(&self) -> Option<JsDataType> {
-        self.series.dtype().inner_dtype().map(|dt| dt.into())
+        self.series
+            .dtype()
+            .inner_dtype()
+            .and_then(|dt| JsDataType::try_from(dt).ok())
     }
     #[napi(getter, catch_unwind)]
     pub fn name(&self) -> String {
@@ -308,18 +320,18 @@ impl JsSeries {
     }
     #[napi(catch_unwind)]
     pub fn to_string(&self) -> String {
-        format!("{}", self.series)
+        std::string::ToString::to_string(&self.series)
     }
     #[napi(catch_unwind)]
     pub fn get_fmt(&self, index: Wrap<usize>, str_lengths: Wrap<usize>) -> String {
         let val = format!("{}", self.series.get(index.0).unwrap());
         if let DataType::String | DataType::Categorical(..) = self.series.dtype() {
-            let v_trunc = &val[..val
+            let trunc_end = val
                 .char_indices()
-                .take(str_lengths.0)
-                .last()
-                .map(|(i, c)| i + c.len_utf8())
-                .unwrap_or(0)];
+                .nth(str_lengths.0)
+                .map(|(i, _)| i)
+                .unwrap_or(val.len());
+            let v_trunc = &val[..trunc_end];
             if val == v_trunc {
                 val
             } else {
@@ -394,7 +406,7 @@ impl JsSeries {
     #[napi(catch_unwind)]
     pub fn product(&self) -> Result<JsAnyValue> {
         let scalar = self.series.product().map_err(JsPolarsErr::from)?;
-        Ok(scalar.value().clone().into())
+        scalar.value().clone().try_into()
     }
     #[napi(catch_unwind)]
     pub fn chunk_lengths(&self) -> Vec<u32> {
@@ -409,10 +421,7 @@ impl JsSeries {
     #[napi(catch_unwind)]
     pub fn mean(&self) -> Option<f64> {
         match self.series.dtype() {
-            DataType::Boolean => {
-                let s = self.series.cast(&DataType::UInt8).unwrap();
-                s.mean()
-            }
+            DataType::Boolean => self.series.cast(&DataType::UInt8).ok().and_then(|s| s.mean()),
             _ => self.series.mean(),
         }
     }
@@ -423,7 +432,7 @@ impl JsSeries {
             DataType::Boolean => self
                 .series
                 .max::<u32>()
-                .map(|v| v.unwrap() == 1)
+                .map(|v| v == Some(1))
                 .map(Either3::B),
             _ => self.series.max::<i64>().map(Either3::C),
         }
@@ -436,7 +445,7 @@ impl JsSeries {
             DataType::Boolean => self
                 .series
                 .min::<u32>()
-                .map(|v| v.unwrap() == 1)
+                .map(|v| v == Some(1))
                 .map(Either3::B),
             _ => self.series.min::<i64>().map(Either3::C),
         }
@@ -523,7 +532,7 @@ impl JsSeries {
     }
 
     #[napi(catch_unwind)]
-    pub unsafe fn sort(&mut self, descending: bool, nulls_last: bool) -> napi::Result<JsSeries> {
+    pub fn sort(&mut self, descending: bool, nulls_last: bool) -> napi::Result<JsSeries> {
         let sorted: Series = self
             .series
             .sort(
@@ -667,9 +676,7 @@ impl JsSeries {
         shuffle: bool,
         seed: Option<Wrap<u64>>,
     ) -> napi::Result<Self> {
-        // Safety:
-        // Wrap is transparent.
-        let seed: Option<u64> = unsafe { std::mem::transmute(seed) };
+        let seed = map_seed(seed);
         let s = self
             .series
             .sample_n(n as usize, with_replacement, shuffle, seed)
@@ -685,9 +692,7 @@ impl JsSeries {
         shuffle: bool,
         seed: Option<Wrap<u64>>,
     ) -> napi::Result<Self> {
-        // Safety:
-        // Wrap is transparent.
-        let seed: Option<u64> = unsafe { std::mem::transmute(seed) };
+        let seed = map_seed(seed);
         let s = self
             .series
             .sample_frac(frac, with_replacement, shuffle, seed)
@@ -837,21 +842,26 @@ impl JsSeries {
     #[napi(catch_unwind)]
     pub fn median(&self) -> Option<f64> {
         match self.series.dtype() {
-            DataType::Boolean => {
-                let s = self.series.cast(&DataType::UInt8).unwrap();
-                s.median()
-            }
+            DataType::Boolean => self
+                .series
+                .cast(&DataType::UInt8)
+                .ok()
+                .and_then(|s| s.median()),
             _ => self.series.median(),
         }
     }
     #[napi(catch_unwind)]
-    pub fn quantile(&self, quantile: f64, interpolation: Wrap<QuantileMethod>) -> JsAnyValue {
+    pub fn quantile(
+        &self,
+        quantile: f64,
+        interpolation: Wrap<QuantileMethod>,
+    ) -> Result<JsAnyValue> {
         let binding = self
             .series
             .quantile_reduce(quantile, interpolation.0)
-            .expect("invalid quantile");
+            .map_err(JsPolarsErr::from)?;
         let v = binding.as_any_value();
-        v.into()
+        v.clone().try_into()
     }
     /// Rechunk and return a pointer to the start of the Series.
     /// Only implemented for numeric types
@@ -876,9 +886,10 @@ impl JsSeries {
 
     #[napi(catch_unwind)]
     pub fn is_in(&self, other: &JsSeries, nulls_equal: bool) -> napi::Result<JsSeries> {
+        let imploded = other.series.implode().map_err(JsPolarsErr::from)?;
         let series = is_in(
             &self.series,
-            &other.series.implode().unwrap().into_series(),
+            &imploded.into_series(),
             nulls_equal,
         )
         .map(|ca| ca.into_series())
@@ -1035,22 +1046,20 @@ impl JsSeries {
     }
     #[napi(catch_unwind)]
     pub fn str_pad_start(&self, length: Vec<i64>, fill_char: String) -> napi::Result<JsSeries> {
+        let fill_char = parse_fill_char(fill_char)?;
         let vec_ulen = length.into_iter().map(|x| x as u64).collect();
         let chunked_len = UInt64Chunked::from_vec("str_pad_start_length".into(), vec_ulen);
         let ca = self.series.str().map_err(JsPolarsErr::from)?;
-        let s = ca
-            .pad_start(&chunked_len, fill_char.chars().nth(0).unwrap())
-            .into_series();
+        let s = ca.pad_start(&chunked_len, fill_char).into_series();
         Ok(s.into())
     }
     #[napi(catch_unwind)]
     pub fn str_pad_end(&self, length: Vec<i64>, fill_char: String) -> napi::Result<JsSeries> {
+        let fill_char = parse_fill_char(fill_char)?;
         let vec_ulen = length.into_iter().map(|x| x as u64).collect();
         let chunked_len = UInt64Chunked::from_vec("str_pad_start_length".into(), vec_ulen);
         let ca = self.series.str().map_err(JsPolarsErr::from)?;
-        let s = ca
-            .pad_end(&chunked_len, fill_char.chars().nth(0).unwrap())
-            .into_series();
+        let s = ca.pad_end(&chunked_len, fill_char).into_series();
         Ok(s.into())
     }
     #[napi(catch_unwind)]
@@ -1219,9 +1228,7 @@ impl JsSeries {
         seed: Option<Wrap<u64>>,
     ) -> napi::Result<JsSeries> {
         let descending = descending.unwrap_or(false);
-        // Safety:
-        // Wrap is transparent.
-        let seed: Option<u64> = unsafe { std::mem::transmute(seed) };
+        let seed = map_seed(seed);
         let options = RankOptions {
             method: method.0,
             descending: descending,
