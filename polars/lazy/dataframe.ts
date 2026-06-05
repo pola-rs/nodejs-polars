@@ -116,32 +116,6 @@ export interface LazyDataFrame<S extends Schema = any>
   explode(columns: ExprOrString[]): LazyDataFrame;
   explode(column: ExprOrString, ...columns: ExprOrString[]): LazyDataFrame;
   /**
-   * Fetch is like a collect operation, but it overwrites the number of rows read by every scan
-   * Note that the fetch does not guarantee the final number of rows in the DataFrame.
-   * Filter, join operations and a lower number of rows available in the scanned file influence the final number of rows.
-   * @deprecated *since 0.23.0* use `LazyFrame.collect` instead, in conjunction with a call to `head`
-   * @param numRows - collect 'n' number of rows from data source
-   * @param opts.typeCoercion -Do type coercion optimization.
-   * @param opts.predicatePushdown - Do predicate pushdown optimization.
-   * @param opts.projectionPushdown - Do projection pushdown optimization.
-   * @param opts.simplifyExpression - Run simplify expressions optimization.
-   * @param opts.commSubplanElim - Will try to cache branching subplans that occur on self-joins or unions.
-   * @param opts.commSubexprElim - Common subexpressions will be cached and reused.
-   * @param opts.streaming - Process the query in batches to handle larger-than-memory data.
-            If set to `False` (default), the entire query is processed in a single
-            batch.
-
-            .. warning::
-                Streaming mode is considered **unstable**. It may be changed
-                at any point without it being considered a breaking change.
-   *
-   */
-  fetch(numRows: number, opts: LazyOptions): Promise<DataFrame<S>>;
-  fetch(numRows?: number): Promise<DataFrame<S>>;
-  /** Behaves the same as fetch, but will perform the actions synchronously */
-  fetchSync(numRows?: number): DataFrame<S>;
-  fetchSync(numRows: number, opts: LazyOptions): DataFrame<S>;
-  /**
    * Fill missing values
    * @param fillValue value to fill the missing values with
    */
@@ -634,12 +608,6 @@ export interface LazyDataFrame<S extends Schema = any>
   ): LazyDataFrame<{ [K in keyof S as K extends Existing ? New : K]: S[K] }>;
   withColumnRenamed(existing: string, replacement: string): LazyDataFrame;
   /**
-   * Add a column at index 0 that counts the rows.
-   * @see {@link DataFrame.withRowCount}
-   * @deprecated *since 0.23.0 use withRowIndex instead
-   */
-  withRowCount(): LazyDataFrame;
-  /**
    * Add a row index as the first column in the DataFrame.
    * @param name Name of the index column.
    * @param offset Start the index at this offset. Cannot be negative.
@@ -974,56 +942,8 @@ export const _LazyDataFrame = (_ldf: any): LazyDataFrame => {
       const column = selectionToExprList(columns, false);
       return wrap("explode", column);
     },
-    fetchSync(numRows, opts?) {
-      if (opts?.noOptimization) {
-        opts.predicatePushdown = false;
-        opts.projectionPushdown = false;
-        opts.slicePushdown = false;
-        opts.commSubplanElim = false;
-        opts.commSubexprElim = false;
-      }
-      if (opts?.streaming) opts.commSubplanElim = false;
-      if (opts) {
-        _ldf = _ldf.optimizationToggle(
-          opts.typeCoercion,
-          opts.predicatePushdown,
-          opts.projectionPushdown,
-          opts.simplifyExpr,
-          opts.slicePushdown,
-          opts.commSubplanElim,
-          opts.commSubexprElim,
-          opts.streaming,
-        );
-      }
-
-      return _DataFrame(_ldf.fetchSync(numRows));
-    },
-    fetch(numRows, opts?) {
-      if (opts?.noOptimization) {
-        opts.predicatePushdown = false;
-        opts.projectionPushdown = false;
-        opts.slicePushdown = false;
-        opts.commSubplanElim = false;
-        opts.commSubexprElim = false;
-      }
-      if (opts?.streaming) opts.commSubplanElim = false;
-      if (opts) {
-        _ldf = _ldf.optimizationToggle(
-          opts.typeCoercion,
-          opts.predicatePushdown,
-          opts.projectionPushdown,
-          opts.simplifyExpr,
-          opts.slicePushdown,
-          opts.commSubplanElim,
-          opts.commSubexprElim,
-          opts.streaming,
-        );
-      }
-
-      return _ldf.fetch(numRows).then(_DataFrame);
-    },
     first() {
-      return this.fetchSync(1);
+      return this.head(1).collectSync();
     },
     fillNull(exprOrValue) {
       const fillValue = exprToLitOrExpr(exprOrValue)._expr;
@@ -1346,9 +1266,6 @@ export const _LazyDataFrame = (_ldf: any): LazyDataFrame => {
     },
     withColumnRenamed(existing: string, replacement: string) {
       return _LazyDataFrame(_ldf.rename([existing], [replacement]));
-    },
-    withRowCount(name = "row_nr") {
-      return _LazyDataFrame(_ldf.withRowCount(name));
     },
     withRowIndex(name = "index", offset = 0) {
       return _LazyDataFrame(_ldf.withRowIndex(name, offset));

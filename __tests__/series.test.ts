@@ -849,14 +849,6 @@ describe("series functions", () => {
     }
   });
 
-  test("entrypoint alias getters expose the same wrappers", () => {
-    const listSeries = pl.Series("items", [[1, 2], [3], []]);
-    const dateSeries = pl.Series("dt", [new Date("2020-01-01T00:00:00.000Z")]);
-
-    assertSeriesEqual(listSeries.list.lengths(), listSeries.lst.lengths());
-    assertSeriesEqual(dateSeries.date.year(), dateSeries.dt.year());
-  });
-
   test("filter and isIn accept array inputs", () => {
     const actual = pl.Series([1, 2, 3]).filter([true, false, true] as any);
     const expected = pl.Series([1, 3]);
@@ -867,8 +859,8 @@ describe("series functions", () => {
   });
 
   test("hasValidity aliases hasNulls", () => {
-    assert.strictEqual(pl.Series([1, null, 3]).hasValidity(), true);
-    assert.strictEqual(pl.Series([1, 2, 3]).hasValidity(), false);
+    assert.strictEqual(pl.Series([1, null, 3]).hasNulls(), true);
+    assert.strictEqual(pl.Series([1, 2, 3]).hasNulls(), false);
   });
 
   test("sample covers default and object n overloads", () => {

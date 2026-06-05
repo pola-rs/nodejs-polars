@@ -55,12 +55,8 @@ export interface Series<T extends DataType = any, Name extends string = string>
   name: Name;
   dtype: T;
   str: SeriesStringFunctions;
-  /** @deprecated *since 0.23.0 use .list instead to match Polars core */
-  lst: SeriesListFunctions;
   list: SeriesListFunctions;
   struct: SeriesStructFunctions;
-  /** @deprecated *since 0.23.0 use .dt instead to match Polars core */
-  date: SeriesDateFunctions;
   dt: SeriesDateFunctions;
   [inspect](): string;
   [Symbol.iterator](): IterableIterator<DTypeToJs<T>>;
@@ -361,12 +357,6 @@ export interface Series<T extends DataType = any, Name extends string = string>
     ```
    */
   hasNulls(): boolean;
-  /**
-   * Returns True if the Series has a validity bitmask.
-   * If there is none, it means that there are no null values.
-   * @deprecated Use the :meth: `hasNulls` method instead.
-   */
-  hasValidity(): boolean;
   /**
    * Hash the Series
    * The hash value is of type `UInt64`
@@ -1369,9 +1359,6 @@ export function _Series(_s: any): Series {
     },
     get str() {
       return SeriesStringFunctions(_s);
-    },
-    get lst() {
-      return SeriesListFunctions(_s);
     },
     get list() {
       return SeriesListFunctions(_s);

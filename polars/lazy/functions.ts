@@ -498,12 +498,6 @@ export function format(
 
   return concatString(d, "");
 }
-
-/** Syntactic sugar for `pl.col(column).aggGroups()` */
-export function groups(column: string): Expr {
-  return col(column).aggGroups();
-}
-
 /** Get the first n rows of an Expression. */
 export function head(column: ExprOrString, n?: number): Expr;
 export function head(column: Series, n?: number): Series;
@@ -652,7 +646,7 @@ export function tail(column: Series | ExprOrString, n?: number): Series | Expr {
 
 /** Syntactic sugar for `pl.col(column).list()` */
 export function list(column: ExprOrString): Expr {
-  return exprToLitOrExpr(column, false).list();
+  return exprToLitOrExpr(column, false).implode();
 }
 
 /**

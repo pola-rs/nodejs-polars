@@ -31,8 +31,7 @@ describe("expr", () => {
     const actual = df.select(col("a").as("abs").abs()).getColumn("abs");
     assertSeriesEqual(actual, expected);
   });
-  test("aggGroups", () => {
-    // aggGroups is deprecated, use: df.withRowIndex().groupBy(...).agg(pl.col('index'))` instead.
+  test("aggregate groups", () => {
     const df = pl.DataFrame({
       a: [1, 2, 3],
       b: ["a", "b", "c"],
@@ -48,23 +47,6 @@ describe("expr", () => {
       .groupBy("a")
       .agg(col("index"))
       .sort({ by: "a" });
-    assertFrameEqual(actual, expected);
-  });
-  test("aggGroups:direct expr method", () => {
-    const df = pl.DataFrame({
-      group: ["one", "one", "two"],
-      value: [94, 95, 96],
-    });
-    const actual = df
-      .groupBy("group")
-      .agg(col("value").aggGroups().alias("groups"))
-      .sort({ by: "group" });
-    const expected = pl
-      .DataFrame({
-        group: ["one", "two"],
-        groups: [[0, 1], [2]],
-      })
-      .withColumn(pl.col("groups").cast(pl.List(pl.UInt32)));
     assertFrameEqual(actual, expected);
   });
   test("alias", () => {
@@ -657,7 +639,7 @@ describe("expr", () => {
     });
     const actual = df
       .groupBy("a")
-      .agg(col("b").list().keepName())
+      .agg(col("b").implode().keepName())
       .sort({ by: "a" });
     assertFrameEqual(actual, expected);
   });
@@ -699,13 +681,9 @@ describe("expr", () => {
     assert.deepStrictEqual(actual4.shape, { height: 2, width: 2 });
   });
   test("list", () => {
-    const df = pl.DataFrame({
-      a: ["a", "b", "c"],
-    });
-    const expected = pl.DataFrame({
-      list: ["a", "b", "c"],
-    });
-    const actual = df.select(col("a").list().alias("list"));
+    const df = pl.DataFrame({ a: ["a", "b", "c"], b: [1, 2, 3] });
+    const expected = pl.DataFrame({ list: [["a", "b", "c"]] });
+    const actual = df.select(col("a").implode().alias("list"));
     assertFrameEqual(actual, expected);
   });
   test("log1p", () => {
@@ -2070,14 +2048,14 @@ describe("expr.str", () => {
 describe("expr.lst", () => {
   test("argMax", () => {
     const s0 = pl.Series("a", [[1, 2, 3]]);
-    let _actual = s0.lst.argMax();
+    let _actual = s0.list.argMax();
     let _expected = pl.Series("a", [2]);
-    _actual = s0.lst.argMin();
+    _actual = s0.list.argMin();
     _expected = pl.Series("a", [0]);
   });
   test("contains", () => {
     const s0 = pl.Series("a", [[1, 2]]);
-    const _actual = s0.lst.contains(1);
+    const _actual = s0.list.contains(1);
     const _expected = pl.Series("a", [true]);
   });
   test("concat", () => {
@@ -2099,18 +2077,18 @@ describe("expr.lst", () => {
     );
     assert.ok(
       df
-        .select(pl.col("a").lst.concat("b").alias("a"))
+        .select(pl.col("a").list.concat("b").alias("a"))
         .getColumn("a")
         .seriesEqual(expected),
     );
     assert.ok(
       df
-        .select(pl.col("a").lst.concat(["b"]).alias("a"))
+        .select(pl.col("a").list.concat(["b"]).alias("a"))
         .getColumn("a")
         .seriesEqual(expected),
     );
   });
-  test("lst.concat series", () => {
+  test("list.concat series", () => {
     const s0 = pl.Series("a", [[1, 2], [3]]);
     const s1 = pl.Series("a", [
       [10, 20],
@@ -2120,21 +2098,21 @@ describe("expr.lst", () => {
       [1, 2, 10, 20],
       [3, 30, 40],
     ]);
-    const actual = s0.lst.concat(s1);
+    const actual = s0.list.concat(s1);
     assertSeriesStrictEqual(actual, expected);
   });
   test("diff", () => {
     const s0 = pl.Series("a", [[1, 2, 3]]);
-    const _actual = s0.lst.diff();
+    const _actual = s0.list.diff();
     const _expected = pl.Series("a", [null, 1, 1]);
   });
   test("get", () => {
     const df = pl.DataFrame({ a: [[1, 10, 11], [2, 10, 12], [1]] });
     const expected = pl.DataFrame({ get: [11, 12, null] });
-    const actual = df.select(col("a").lst.get(2).as("get"));
+    const actual = df.select(col("a").list.get(2).as("get"));
     const actualFromSeries = df
       .getColumn("a")
-      .lst.get(2)
+      .list.get(2)
       .rename("get")
       .toFrame();
 
@@ -2144,10 +2122,10 @@ describe("expr.lst", () => {
   test("get with expr", () => {
     const df = pl.DataFrame({ a: [[1, 10, 11], [2, 10, 12], [1]] });
     const expected = pl.DataFrame({ get: [11, 12, null] });
-    const actual = df.select(col("a").lst.get(lit(2)).as("get"));
+    const actual = df.select(col("a").list.get(lit(2)).as("get"));
     const actualFromSeries = df
       .getColumn("a")
-      .lst.get(2)
+      .list.get(2)
       .rename("get")
       .toFrame();
 
@@ -2156,7 +2134,7 @@ describe("expr.lst", () => {
   });
   test("eval", () => {
     const s0 = pl.Series("a", [[3, 5, 6]]);
-    const _actual = s0.lst.eval(pl.element().rank());
+    const _actual = s0.list.eval(pl.element().rank());
     const _expected = pl.Series("a", [1, 2, 3]);
   });
   test("first", () => {
@@ -2167,10 +2145,10 @@ describe("expr.lst", () => {
       ],
     });
     const expected = pl.DataFrame({ first: [1, 2] });
-    const actual = df.select(col("a").lst.first().as("first"));
+    const actual = df.select(col("a").list.first().as("first"));
     const actualFromSeries = df
       .getColumn("a")
-      .lst.first()
+      .list.first()
       .rename("first")
       .toFrame();
 
@@ -2179,30 +2157,30 @@ describe("expr.lst", () => {
   });
   test("head", () => {
     const s0 = pl.Series("a", [[3, 5, 6, 7, 8]]);
-    let _actual = s0.lst.head(1);
+    let _actual = s0.list.head(1);
     let _expected = pl.Series("a", [[3]]);
-    _actual = s0.lst.head();
+    _actual = s0.list.head();
     _expected = pl.Series("a", [3, 5, 6, 7, 8]);
   });
   test("tail", () => {
     const s0 = pl.Series("a", [[3, 5, 6, 7, 8]]);
-    let _actual = s0.lst.tail(1);
+    let _actual = s0.list.tail(1);
     let _expected = pl.Series("a", [[8]]);
-    _actual = s0.lst.tail();
+    _actual = s0.list.tail();
     _expected = pl.Series("a", [3, 5, 6, 7, 8]);
   });
   test("shift", () => {
     const s0 = pl.Series("a", [[3, 5, 6]]);
-    const _actual = s0.lst.shift(-1);
+    const _actual = s0.list.shift(-1);
     const _expected = pl.Series("a", [5, 6, null]);
   });
   test("join", () => {
     const df = pl.DataFrame({ a: [["ab", "cd"], ["e", "fg"], ["h"]] });
     const expected = pl.DataFrame({ joinedString: ["ab,cd", "e,fg", "h"] });
-    const actual = df.select(col("a").lst.join().as("joinedString"));
+    const actual = df.select(col("a").list.join().as("joinedString"));
     const actualFromSeries = df
       .getColumn("a")
-      .lst.join()
+      .list.join()
       .rename("joinedString")
       .toFrame();
 
@@ -2212,10 +2190,10 @@ describe("expr.lst", () => {
   test("join:separator", () => {
     const df = pl.DataFrame({ a: [["ab", "cd"], ["e", "fg"], ["h"]] });
     const expected = pl.DataFrame({ joinedString: ["ab|cd", "e|fg", "h"] });
-    const actual = df.select(col("a").lst.join("|").as("joinedString"));
+    const actual = df.select(col("a").list.join("|").as("joinedString"));
     const actualFromSeries = df
       .getColumn("a")
-      .lst.join("|")
+      .list.join("|")
       .rename("joinedString")
       .toFrame();
 
@@ -2231,10 +2209,10 @@ describe("expr.lst", () => {
       ],
     });
     const expected = pl.DataFrame({ last: [10, 12] });
-    const actual = df.select(col("a").lst.last().as("last"));
+    const actual = df.select(col("a").list.last().as("last"));
     const actualFromSeries = df
       .getColumn("a")
-      .lst.last()
+      .list.last()
       .rename("last")
       .toFrame();
 
@@ -2244,10 +2222,10 @@ describe("expr.lst", () => {
   test("lengths", () => {
     const df = pl.DataFrame({ a: [[1], [2, 12], []] });
     const expected = pl.DataFrame({ lengths: [1, 2, 0] });
-    const actual = df.select(col("a").lst.lengths().as("lengths"));
+    const actual = df.select(col("a").list.lengths().as("lengths"));
     const actualFromSeries = df
       .getColumn("a")
-      .lst.lengths()
+      .list.lengths()
       .rename("lengths")
       .toFrame();
 
@@ -2263,10 +2241,10 @@ describe("expr.lst", () => {
       ],
     });
     const expected = pl.DataFrame({ max: [1, 12, 5] });
-    const actual = df.select(col("a").lst.max().as("max"));
+    const actual = df.select(col("a").list.max().as("max"));
     const actualFromSeries = df
       .getColumn("a")
-      .lst.max()
+      .list.max()
       .rename("max")
       .toFrame();
 
@@ -2282,10 +2260,10 @@ describe("expr.lst", () => {
       ],
     });
     const expected = pl.DataFrame({ mean: [0, 4, 2] });
-    const actual = df.select(col("a").lst.mean().as("mean"));
+    const actual = df.select(col("a").list.mean().as("mean"));
     const actualFromSeries = df
       .getColumn("a")
-      .lst.mean()
+      .list.mean()
       .rename("mean")
       .toFrame();
 
@@ -2301,10 +2279,10 @@ describe("expr.lst", () => {
       ],
     });
     const expected = pl.DataFrame({ min: [-2, 1, 0] });
-    const actual = df.select(col("a").lst.min().as("min"));
+    const actual = df.select(col("a").list.min().as("min"));
     const actualFromSeries = df
       .getColumn("a")
-      .lst.min()
+      .list.min()
       .rename("min")
       .toFrame();
 
@@ -2326,10 +2304,10 @@ describe("expr.lst", () => {
         [1, 5, 1, 1, 0],
       ],
     });
-    const actual = df.select(col("a").lst.reverse().as("reverse"));
+    const actual = df.select(col("a").list.reverse().as("reverse"));
     const actualFromSeries = df
       .getColumn("a")
-      .lst.reverse()
+      .list.reverse()
       .rename("reverse")
       .toFrame();
 
@@ -2357,13 +2335,13 @@ describe("expr.lst", () => {
       ],
     });
     const actual = df.select(
-      col("a").lst.sort().as("sort"),
-      col("a").lst.sort({ descending: true }).as("sort:reverse"),
+      col("a").list.sort().as("sort"),
+      col("a").list.sort({ descending: true }).as("sort:reverse"),
     );
-    const sortSeries = df.getColumn("a").lst.sort().rename("sort");
+    const sortSeries = df.getColumn("a").list.sort().rename("sort");
     const sortReverseSeries = df
       .getColumn("a")
-      .lst.sort({ descending: true })
+      .list.sort({ descending: true })
       .rename("sort:reverse");
 
     const actualFromSeries = pl.DataFrame([sortSeries, sortReverseSeries]);
@@ -2380,10 +2358,10 @@ describe("expr.lst", () => {
       ],
     });
     const expected = pl.DataFrame({ sum: [3, 3, 8] });
-    const actual = df.select(col("a").lst.sum().as("sum"));
+    const actual = df.select(col("a").list.sum().as("sum"));
     const actualFromSeries = df
       .getColumn("a")
-      .lst.sum()
+      .list.sum()
       .rename("sum")
       .toFrame();
 
@@ -2400,11 +2378,11 @@ describe("expr.lst", () => {
       ],
     });
     const expected = pl.DataFrame({ unique: [[1, 2], [0, 1, 2], [5]] });
-    const actual = df.select(col("a").lst.unique().lst.sort().as("unique"));
+    const actual = df.select(col("a").list.unique().list.sort().as("unique"));
     const actualFromSeries = df
       .getColumn("a")
-      .lst.unique()
-      .lst.sort()
+      .list.unique()
+      .list.sort()
       .rename("unique")
       .toFrame();
 
@@ -2524,9 +2502,8 @@ describe("expr metadata", () => {
       ]),
     ]);
 
-    const actual = df.select(pl.col("datetime").date.minute().alias("minute"));
-    const expected = df.select(pl.col("datetime").dt.minute().alias("minute"));
-
+    const actual = df.select(pl.col("datetime").dt.minute().alias("minute"));
+    const expected = pl.Series("minute", [32, 2], pl.Int8).toFrame();
     assertFrameStrictEqual(actual, expected);
   });
 

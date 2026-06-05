@@ -10,8 +10,11 @@ describe("groupby", () => {
     });
   });
 
-  test("aggList", () => {
-    const actual = df.groupBy("name").aggList().sort("name");
+  test("agg to list", () => {
+    const actual = df
+      .groupBy("name")
+      .agg(pl.col("foo"), pl.col("bar"))
+      .sort("name");
     const expected = pl.DataFrame({
       name: ["a", "b", "c"],
       foo: [[1, 3], [3, 7], [5]],
@@ -268,7 +271,7 @@ describe("groupby ops", () => {
         closed: "right",
         startBy: "datapoint",
       })
-      .agg(pl.col("a").list().alias("lst"));
+      .agg(pl.col("a").implode().alias("lst"));
     const actual = out.getColumn("lst").toArray();
     const expected = [[2, 3], [3]];
     assert.deepStrictEqual(actual, expected);
