@@ -3,6 +3,7 @@ use crate::lazy::dsl::{JsExpr, ToExprs};
 use crate::prelude::*;
 use polars::prelude::sync_on_close::SyncOnCloseType;
 use polars::prelude::{lit, ClosedWindow, JoinType};
+use polars_core::query_result::QueryResult;
 use polars_io::{HiveOptions, RowIndex};
 use polars_utils::slice_enum::Slice;
 use std::collections::HashMap;
@@ -54,7 +55,9 @@ fn bin_config() -> bincode::config::Configuration {
 }
 
 fn unexpected_serialization_format_error() -> napi::Error {
-    napi::Error::from_reason("unexpected format. \n supported options are 'json', 'bincode'".to_owned())
+    napi::Error::from_reason(
+        "unexpected format. \n supported options are 'json', 'bincode'".to_owned(),
+    )
 }
 
 fn single_byte_option(value: Option<String>, field: &str) -> napi::Result<Option<u8>> {
@@ -69,9 +72,9 @@ fn single_byte_required(value: &str, field: &str) -> napi::Result<u8> {
     }
 
     let mut chars = value.chars();
-    let ch = chars.next().ok_or_else(|| {
-        napi::Error::from_reason(format!("{field} must be a non-empty string"))
-    })?;
+    let ch = chars
+        .next()
+        .ok_or_else(|| napi::Error::from_reason(format!("{field} must be a non-empty string")))?;
 
     if chars.next().is_some() {
         return Err(napi::Error::from_reason(format!(
@@ -110,9 +113,11 @@ impl JsLazyFrame {
     #[napi(factory, catch_unwind)]
     pub fn deserialize(buf: Buffer, format: String) -> napi::Result<JsLazyFrame> {
         let lp: DslPlan = match format.as_ref() {
-            "bincode" => bincode::serde::decode_from_slice(&buf, bin_config())
-                .map_err(|err| napi::Error::from_reason(err.to_string()))?
-                .0,
+            "bincode" => {
+                bincode::serde::decode_from_slice(&buf, bin_config())
+                    .map_err(|err| napi::Error::from_reason(err.to_string()))?
+                    .0
+            }
             "json" => serde_json::from_slice(&buf)
                 .map_err(|err| napi::Error::from_reason(err.to_string()))?,
             _ => return Err(unexpected_serialization_format_error()),
@@ -168,7 +173,7 @@ impl JsLazyFrame {
             .with_predicate_pushdown(predicate_pushdown)
             .with_simplify_expr(simplify_expr)
             .with_slice_pushdown(slice_pushdown)
-            .with_new_streaming(streaming)
+            .with_streaming(streaming)
             .with_projection_pushdown(projection_pushdown)
             .with_comm_subplan_elim(comm_subplan_elim)
             .with_comm_subexpr_elim(comm_subexpr_elim);
@@ -222,7 +227,13 @@ impl JsLazyFrame {
             .ldf
             .clone()
             .collect_with_engine(engine.0)
+            .map(|r| match r {
+                QueryResult::Single(df) => df,
+                // TODO: Should return query results
+                QueryResult::Multiple(_) => DataFrame::empty(),
+            })
             .map_err(JsPolarsErr::from)?;
+
         Ok(df.into())
     }
 
@@ -644,6 +655,7 @@ impl JsLazyFrame {
             maintain_order: true,
             sync_on_close: SyncOnCloseType::default(),
             cloud_options: cloud_options.map(Arc::new),
+            sinked_paths_callback: None,
         };
 
         let target = SinkDestination::File {
@@ -691,6 +703,7 @@ impl JsLazyFrame {
             maintain_order: true,
             sync_on_close: SyncOnCloseType::default(),
             cloud_options: cloud_options.map(Arc::new),
+            sinked_paths_callback: None,
         };
 
         let ldf = self.ldf.clone().with_comm_subplan_elim(false);
@@ -716,6 +729,7 @@ impl JsLazyFrame {
             maintain_order: options.maintain_order.unwrap_or(true),
             sync_on_close: options.sync_on_close.0,
             cloud_options: cloud_options.map(Arc::new),
+            sinked_paths_callback: None,
         };
 
         let nd_options = NDJsonWriterOptions {
@@ -761,6 +775,7 @@ impl JsLazyFrame {
             maintain_order: options.maintain_order.unwrap_or(true),
             sync_on_close: options.sync_on_close.0,
             cloud_options: cloud_options.map(Arc::new),
+            sinked_paths_callback: None,
         };
 
         let rldf = self

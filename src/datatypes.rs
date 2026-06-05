@@ -200,7 +200,10 @@ impl<'a> FromNapiValue for Wrap<AnyValue<'a>> {
             ValueType::BigInt => AnyValue::UInt64(Wrap::<u64>::from_napi_value(env, napi_val)?.0),
             ValueType::Object => {
                 if let Ok(vals) = Vec::<Wrap<AnyValue>>::from_napi_value(env, napi_val) {
-                    let vals = vals.into_iter().map(|wrap| wrap.0).collect::<Vec<AnyValue>>();
+                    let vals = vals
+                        .into_iter()
+                        .map(|wrap| wrap.0)
+                        .collect::<Vec<AnyValue>>();
                     let s = Series::new(PlSmallStr::EMPTY, vals);
                     AnyValue::List(s)
                 } else if let Ok(s) = <&JsSeries>::from_napi_value(env, napi_val) {

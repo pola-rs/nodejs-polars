@@ -103,7 +103,7 @@ export const ExprListFunctions = (_expr: any): ExprList => {
       return wrap("listMin");
     },
     reverse() {
-      return wrap("listReverse");
+      return this.eval(pli.element().reverse());
     },
     shift(n) {
       return wrap("listShift", exprToLitOrExpr(n)._expr);
@@ -124,7 +124,7 @@ export const ExprListFunctions = (_expr: any): ExprList => {
       return wrap("listSum");
     },
     unique() {
-      return wrap("listUnique");
+      return this.eval(pli.element().unique());
     },
   };
 };

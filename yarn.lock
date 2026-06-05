@@ -5,18 +5,18 @@ __metadata:
   version: 8
   cacheKey: 10
 
-"@biomejs/biome@npm:^2.4.15":
-  version: 2.4.15
-  resolution: "@biomejs/biome@npm:2.4.15"
+"@biomejs/biome@npm:^2.4.16":
+  version: 2.4.16
+  resolution: "@biomejs/biome@npm:2.4.16"
   dependencies:
-    "@biomejs/cli-darwin-arm64": "npm:2.4.15"
-    "@biomejs/cli-darwin-x64": "npm:2.4.15"
-    "@biomejs/cli-linux-arm64": "npm:2.4.15"
-    "@biomejs/cli-linux-arm64-musl": "npm:2.4.15"
-    "@biomejs/cli-linux-x64": "npm:2.4.15"
-    "@biomejs/cli-linux-x64-musl": "npm:2.4.15"
-    "@biomejs/cli-win32-arm64": "npm:2.4.15"
-    "@biomejs/cli-win32-x64": "npm:2.4.15"
+    "@biomejs/cli-darwin-arm64": "npm:2.4.16"
+    "@biomejs/cli-darwin-x64": "npm:2.4.16"
+    "@biomejs/cli-linux-arm64": "npm:2.4.16"
+    "@biomejs/cli-linux-arm64-musl": "npm:2.4.16"
+    "@biomejs/cli-linux-x64": "npm:2.4.16"
+    "@biomejs/cli-linux-x64-musl": "npm:2.4.16"
+    "@biomejs/cli-win32-arm64": "npm:2.4.16"
+    "@biomejs/cli-win32-x64": "npm:2.4.16"
   dependenciesMeta:
     "@biomejs/cli-darwin-arm64":
       optional: true
@@ -36,62 +36,62 @@ __metadata:
       optional: true
   bin:
     biome: bin/biome
-  checksum: 10/1b48c62fb4d26de515599cfd3ab51fae16aa0b93e686e496ffc837d3a59887898b4a21d6653ae1a90751f52ae120078f0f998e370e35fa4af9faa3febd3d6e14
+  checksum: 10/364343b58ac4d739e70fc20c90b9d386736eeda4b06a52f4dde90b21342a38ce41b475fe0be05b720b95f6b7c261a2e7fc0bc93d70573a55a3ac96097091eca9
   languageName: node
   linkType: hard
 
-"@biomejs/cli-darwin-arm64@npm:2.4.15":
-  version: 2.4.15
-  resolution: "@biomejs/cli-darwin-arm64@npm:2.4.15"
+"@biomejs/cli-darwin-arm64@npm:2.4.16":
+  version: 2.4.16
+  resolution: "@biomejs/cli-darwin-arm64@npm:2.4.16"
   conditions: os=darwin & cpu=arm64
   languageName: node
   linkType: hard
 
-"@biomejs/cli-darwin-x64@npm:2.4.15":
-  version: 2.4.15
-  resolution: "@biomejs/cli-darwin-x64@npm:2.4.15"
+"@biomejs/cli-darwin-x64@npm:2.4.16":
+  version: 2.4.16
+  resolution: "@biomejs/cli-darwin-x64@npm:2.4.16"
   conditions: os=darwin & cpu=x64
   languageName: node
   linkType: hard
 
-"@biomejs/cli-linux-arm64-musl@npm:2.4.15":
-  version: 2.4.15
-  resolution: "@biomejs/cli-linux-arm64-musl@npm:2.4.15"
+"@biomejs/cli-linux-arm64-musl@npm:2.4.16":
+  version: 2.4.16
+  resolution: "@biomejs/cli-linux-arm64-musl@npm:2.4.16"
   conditions: os=linux & cpu=arm64 & libc=musl
   languageName: node
   linkType: hard
 
-"@biomejs/cli-linux-arm64@npm:2.4.15":
-  version: 2.4.15
-  resolution: "@biomejs/cli-linux-arm64@npm:2.4.15"
+"@biomejs/cli-linux-arm64@npm:2.4.16":
+  version: 2.4.16
+  resolution: "@biomejs/cli-linux-arm64@npm:2.4.16"
   conditions: os=linux & cpu=arm64 & libc=glibc
   languageName: node
   linkType: hard
 
-"@biomejs/cli-linux-x64-musl@npm:2.4.15":
-  version: 2.4.15
-  resolution: "@biomejs/cli-linux-x64-musl@npm:2.4.15"
+"@biomejs/cli-linux-x64-musl@npm:2.4.16":
+  version: 2.4.16
+  resolution: "@biomejs/cli-linux-x64-musl@npm:2.4.16"
   conditions: os=linux & cpu=x64 & libc=musl
   languageName: node
   linkType: hard
 
-"@biomejs/cli-linux-x64@npm:2.4.15":
-  version: 2.4.15
-  resolution: "@biomejs/cli-linux-x64@npm:2.4.15"
+"@biomejs/cli-linux-x64@npm:2.4.16":
+  version: 2.4.16
+  resolution: "@biomejs/cli-linux-x64@npm:2.4.16"
   conditions: os=linux & cpu=x64 & libc=glibc
   languageName: node
   linkType: hard
 
-"@biomejs/cli-win32-arm64@npm:2.4.15":
-  version: 2.4.15
-  resolution: "@biomejs/cli-win32-arm64@npm:2.4.15"
+"@biomejs/cli-win32-arm64@npm:2.4.16":
+  version: 2.4.16
+  resolution: "@biomejs/cli-win32-arm64@npm:2.4.16"
   conditions: os=win32 & cpu=arm64
   languageName: node
   linkType: hard
 
-"@biomejs/cli-win32-x64@npm:2.4.15":
-  version: 2.4.15
-  resolution: "@biomejs/cli-win32-x64@npm:2.4.15"
+"@biomejs/cli-win32-x64@npm:2.4.16":
+  version: 2.4.16
+  resolution: "@biomejs/cli-win32-x64@npm:2.4.16"
   conditions: os=win32 & cpu=x64
   languageName: node
   linkType: hard
@@ -548,9 +548,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@napi-rs/cli@npm:^3.6.2":
-  version: 3.6.2
-  resolution: "@napi-rs/cli@npm:3.6.2"
+"@napi-rs/cli@npm:^3.7.0":
+  version: 3.7.0
+  resolution: "@napi-rs/cli@npm:3.7.0"
   dependencies:
     "@inquirer/prompts": "npm:^8.0.0"
     "@napi-rs/cross-toolchain": "npm:^1.0.3"
@@ -558,7 +558,7 @@ __metadata:
     "@octokit/rest": "npm:^22.0.1"
     clipanion: "npm:^4.0.0-rc.4"
     colorette: "npm:^2.0.20"
-    emnapi: "npm:^1.9.1"
+    emnapi: "npm:^1.10.0"
     es-toolkit: "npm:^1.41.0"
     js-yaml: "npm:^4.1.0"
     obug: "npm:^2.0.0"
@@ -572,7 +572,7 @@ __metadata:
   bin:
     napi: dist/cli.js
     napi-raw: cli.mjs
-  checksum: 10/253a918b1bbc6ddadede4245d0eeb333b1162d0596947bcfa17b9830d89a56065f8d5a4ccab46b7ba1850aad14e18469f6efbb1bde508923b06159849747940a
+  checksum: 10/c3c76184dd1718b769e3bfc9c7b8328b2625a33c055671e6bc54e2744f86a277a4cb29cf533951210d32b3e47c504516dabacc9f1fcfe9bdbc13fa1d02641450
   languageName: node
   linkType: hard
 
@@ -1348,7 +1348,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/node@npm:^25.8.0":
+"@types/node@npm:^25.9.1":
   version: 25.9.1
   resolution: "@types/node@npm:25.9.1"
   dependencies:
@@ -1493,15 +1493,15 @@ __metadata:
   languageName: node
   linkType: hard
 
-"emnapi@npm:^1.9.1":
-  version: 1.9.1
-  resolution: "emnapi@npm:1.9.1"
+"emnapi@npm:^1.10.0":
+  version: 1.10.0
+  resolution: "emnapi@npm:1.10.0"
   peerDependencies:
     node-addon-api: ">= 6.1.0"
   peerDependenciesMeta:
     node-addon-api:
       optional: true
-  checksum: 10/65a5521bae9b2a981a5a41ddff219abbf391fd46da1cae5662a84e1c3a092ee94fdb07395f221f40eed4ff4f3b55f8408587a763377e658416364da91cf43249
+  checksum: 10/b0cfdbb32def953e315e92c2aae428d80f64d7d0df2685192e885a8f1e044a5b62b80abfcd86c8309921b40925ee2d96d28674c3d8e1f8bca45d9efa6fc99af7
   languageName: node
   linkType: hard
 
@@ -1988,12 +1988,12 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "nodejs-polars@workspace:."
   dependencies:
-    "@biomejs/biome": "npm:^2.4.15"
-    "@napi-rs/cli": "npm:^3.6.2"
+    "@biomejs/biome": "npm:^2.4.16"
+    "@napi-rs/cli": "npm:^3.7.0"
     "@types/chance": "npm:^1.1.8"
-    "@types/node": "npm:^25.8.0"
+    "@types/node": "npm:^25.9.1"
     chance: "npm:^1.1.13"
-    tsx: "npm:^4.22.0"
+    tsx: "npm:^4.22.3"
     typedoc: "npm:^0.28.19"
     typedoc-plugin-missing-exports: "npm:^4.1.3"
     typescript: "npm:6.0.3"
@@ -2153,9 +2153,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"tsx@npm:^4.22.0":
-  version: 4.22.3
-  resolution: "tsx@npm:4.22.3"
+"tsx@npm:^4.22.3":
+  version: 4.22.4
+  resolution: "tsx@npm:4.22.4"
   dependencies:
     esbuild: "npm:~0.28.0"
     fsevents: "npm:~2.3.3"
@@ -2164,7 +2164,7 @@ __metadata:
       optional: true
   bin:
     tsx: dist/cli.mjs
-  checksum: 10/bb1cf6b478c7bf79a99b52b715327c0d70a16461146062af1bde3d499a53220d66669e10a98abc25beed5d67a19c26466394500dc0048a67eaae05fad111cee7
+  checksum: 10/9d6e7e9d1158eb84327d822720a2053bcfd972f8988e4789041bac5a767fc394ef302b1ff7e1d3dfbee391a0b03bd3dbb02cd302387729baf1dc7b9dce93b3ba
   languageName: node
   linkType: hard
 
