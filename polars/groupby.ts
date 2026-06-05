@@ -242,7 +242,7 @@ export function _GroupBy(df: any, by: string[], maintainOrder = false) {
     agg,
     pivot,
     len() {
-      return _DataFrame(df.groupby([by].flat(), by, "count"));
+      return _DataFrame(df.groupby([by].flat(), by, "len"));
     },
     first: () => agg(exclude(by as any).first()),
     groups() {

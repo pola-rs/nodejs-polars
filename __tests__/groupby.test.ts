@@ -54,12 +54,44 @@ describe("groupby", () => {
     let actual = df.groupBy("name").len().sort("name");
     const expected = pl.DataFrame({
       name: ["a", "b", "c"],
-      name_count: [2, 2, 1],
+      len: [2, 2, 1],
     });
     assertFrameEqual(actual, expected);
     // Test for single column DF
     actual = df.select("name").groupBy("name").len().sort("name");
     assertFrameEqual(actual, expected);
+  });
+  test("len counts rows including nulls and works with multiple keys", () => {
+    const lenWithNulls = pl
+      .DataFrame({
+        k: ["a", "a", null, null],
+        v: [1, null, 2, 3],
+      })
+      .groupBy("k")
+      .len();
+
+    const byKey = Object.fromEntries(
+      lenWithNulls
+        .toRecords()
+        .map((r: any) => [String(r.k), r.len])
+        .sort((a, b) => String(a[0]).localeCompare(String(b[0]))),
+    );
+    assert.deepStrictEqual(byKey, { a: 2, null: 2 });
+
+    const multi = pl
+      .DataFrame({
+        k1: ["a", "a", "a", "b"],
+        k2: [1, 1, 2, 2],
+        v: [10, 20, 30, 40],
+      })
+      .groupBy("k1", "k2")
+      .len();
+
+    const records = multi
+      .toRecords()
+      .map((r: any) => `${r.k1}|${r.k2}:${r.len}`)
+      .sort();
+    assert.deepStrictEqual(records, ["a|1:2", "a|2:1", "b|2:1"]);
   });
   test("first", () => {
     const actual = df.groupBy("name").first().sort("name");
@@ -81,7 +113,6 @@ describe("groupby", () => {
   });
   test("last", () => {
     const actual = df.groupBy("name").last().sort("name");
-
     const expected = pl.DataFrame({
       name: ["a", "b", "c"],
       foo: [3, 7, 5],
