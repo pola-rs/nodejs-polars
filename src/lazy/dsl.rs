@@ -589,12 +589,13 @@ impl JsExpr {
         self.clone().inner.is_duplicated().into()
     }
     #[napi(catch_unwind)]
-    pub fn over(&self, partition_by: Vec<&JsExpr>) -> JsExpr {
-        self.clone()
+    pub fn over(&self, partition_by: Vec<&JsExpr>) -> JsResult<JsExpr> {
+        let expr = self
+            .clone()
             .inner
             .over(partition_by.to_exprs())
-            .unwrap()
-            .into()
+            .map_err(JsPolarsErr::from)?;
+        Ok(expr.into())
     }
     #[napi(catch_unwind)]
     pub fn _and(&self, expr: &JsExpr) -> JsExpr {
