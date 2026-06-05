@@ -2073,7 +2073,8 @@ export const _Expr = (_expr: any): Expr => {
     },
     sortBy(arg, descending = false) {
       if (arg?.by !== undefined) {
-        return this.sortBy(arg.by, arg.descending ?? false);
+        descending = arg?.descending ?? false;
+        arg = arg.by;
       }
 
       descending = Array.isArray(descending)
@@ -2117,9 +2118,6 @@ export const _Expr = (_expr: any): Expr => {
     valueCounts(sort = false, parallel = false, name?, normalize = false) {
       name = name ?? (normalize ? "proportion" : "count");
       return _Expr(_expr.valueCounts(sort, parallel, name, normalize));
-    },
-    where(expr) {
-      return this.filter(expr);
     },
     var() {
       return _Expr(_expr.var());

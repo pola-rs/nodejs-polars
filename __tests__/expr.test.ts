@@ -1171,12 +1171,6 @@ describe("expr", () => {
     const actual = df.select(col("a").var().as("var"));
     assertFrameEqual(actual, expected);
   });
-  test("where", () => {
-    const df = pl.DataFrame({ a: [-1, 2, -3, 4] });
-    const expected = pl.DataFrame({ a: [2, 4] });
-    const actual = df.select(col("a").where(col("a").gt(0)));
-    assertFrameEqual(actual, expected);
-  });
 });
 describe("expr.str", () => {
   test("concat", () => {
