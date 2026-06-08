@@ -174,6 +174,11 @@ describe("groupby", () => {
     });
     assertFrameEqual(actual, expected);
   });
+  test("cumSum", () => {
+    const df = pl.DataFrame({ g: [1, 1, 1], x: [1, 2, null] });
+    const actual = df.groupBy("g").agg(pl.col("x").cumSum().count());
+    assert.deepStrictEqual(actual.rows(), [[1, 2]]);
+  });
   test("sum", () => {
     const actual = df.groupBy("name").sum().sort("name");
     const expected = pl.DataFrame({
@@ -199,6 +204,10 @@ describe("groupby", () => {
       groups: [[0, 2], [1, 4], [3]],
     });
     assertFrameEqual(actual, expected);
+  });
+  test("pivot validates string overload arguments", () => {
+    const fn = () => (df.groupBy("name") as any).pivot("foo");
+    assert.throws(fn, /must specify both pivotCol and valuesCol/);
   });
   test("inspect", () => {
     const _actual = df
