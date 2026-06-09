@@ -23,7 +23,7 @@ macro_rules! typed_option_or_null {
             if obj.is_typedarray()? {
                 let buff: $arry_type = unsafe { obj.cast()? };
                 let ca = typed_to_chunked!(buff, $type, $pl_type);
-                builder.append_iter(ca.into_iter())
+                builder.append_iter(ca.iter())
             } else {
                 let values: Either<Array, Null> = $arr.get(idx)?.unwrap();
                 match values {
@@ -62,7 +62,7 @@ macro_rules! build_list_with_downcast {
             if obj.is_typedarray()? {
                 let buff: $arry_type = unsafe { obj.cast()? };
                 let ca = typed_to_chunked!(buff, $type, $pl_type);
-                builder.append_iter(ca.into_iter())
+                builder.append_iter(ca.iter())
             } else {
                 let values: Either<Array, Null> = $arr.get(idx)?.unwrap();
                 match values {
@@ -177,11 +177,8 @@ pub fn js_arr_to_list(name: &str, arr: &Array, dtype: &DataType) -> napi::Result
         ),
         DataType::String => arr.to_series(name),
         DataType::Boolean => {
-            let mut builder = ListBooleanChunkedBuilder::new(
-                name_pl.clone(),
-                len as usize,
-                (len as usize) * 5,
-            );
+            let mut builder =
+                ListBooleanChunkedBuilder::new(name_pl.clone(), len as usize, (len as usize) * 5);
             for idx in 0..len {
                 let values: Either<Vec<Option<bool>>, Null> = arr.get(idx)?.unwrap();
 

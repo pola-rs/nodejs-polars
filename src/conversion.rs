@@ -48,11 +48,7 @@ impl ToSeries for Array<'_> {
         let len = self.len();
         let mut v: Vec<AnyValue> = Vec::with_capacity(len as usize);
         for i in 0..len {
-            let av: Wrap<AnyValue> = self
-                .get(i)
-                .ok()
-                .flatten()
-                .unwrap_or(Wrap(AnyValue::Null));
+            let av: Wrap<AnyValue> = self.get(i).ok().flatten().unwrap_or(Wrap(AnyValue::Null));
             v.push(av.0);
         }
         Series::new(name.into(), v)
@@ -100,10 +96,12 @@ impl ToNapiValue for Wrap<&Series> {
                     let mut row = Object::new(&env)?;
                     for col in df.columns() {
                         let key = col.name();
-                        let cell_value = col.get(idx)
-                            .or_else(|_| Err(napi::Error::from_reason(
-                                format!("Failed to get value at index {} in column {}", idx, key)
-                            )))?;
+                        let cell_value = col.get(idx).or_else(|_| {
+                            Err(napi::Error::from_reason(format!(
+                                "Failed to get value at index {} in column {}",
+                                idx, key
+                            )))
+                        })?;
                         row.set(key, Wrap(cell_value))?;
                     }
                     rows.set(idx as u32, row)?;
@@ -140,7 +138,9 @@ impl<'a> ToNapiValue for Wrap<AnyValue<'a>> {
         };
 
         match val.0 {
-            AnyValue::Null => napi::bindgen_prelude::Null::to_napi_value(env, napi::bindgen_prelude::Null),
+            AnyValue::Null => {
+                napi::bindgen_prelude::Null::to_napi_value(env, napi::bindgen_prelude::Null)
+            }
             AnyValue::Boolean(b) => bool::to_napi_value(env, b),
             AnyValue::Int8(n) => i32::to_napi_value(env, n as i32),
             AnyValue::Int16(n) => i32::to_napi_value(env, n as i32),
@@ -174,7 +174,9 @@ impl<'a> ToNapiValue for Wrap<AnyValue<'a>> {
                 String::to_napi_value(env, s.to_string())
             }
             AnyValue::Duration(v, _) => i64::to_napi_value(env, v),
-            AnyValue::Time(v) => String::to_napi_value(env, time64ns_to_time(v).format("%T%.f").to_string()),
+            AnyValue::Time(v) => {
+                String::to_napi_value(env, time64ns_to_time(v).format("%T%.f").to_string())
+            }
             AnyValue::List(ser) => Wrap::<&Series>::to_napi_value(env, Wrap(&ser)),
             ref av @ AnyValue::Struct(_, _, flds) => struct_dict(env, av._iter_struct_av(), flds),
             AnyValue::Array(ser, _) => Wrap::<&Series>::to_napi_value(env, Wrap(&ser)),
@@ -298,9 +300,9 @@ impl FromNapiValue for Wrap<ChunkedArray<UInt64Type>> {
 impl FromNapiValue for Wrap<Expr> {
     unsafe fn from_napi_value(env: sys::napi_env, napi_val: sys::napi_value) -> JsResult<Self> {
         let obj = Object::from_napi_value(env, napi_val)?;
-        let expr: &JsExpr = obj.get("_expr")?.ok_or_else(|| {
-            napi::Error::from_reason("field '_expr' should exist".to_owned())
-        })?;
+        let expr: &JsExpr = obj
+            .get("_expr")?
+            .ok_or_else(|| napi::Error::from_reason("field '_expr' should exist".to_owned()))?;
         Ok(Wrap(expr.inner.clone()))
     }
 }
@@ -308,9 +310,9 @@ impl FromNapiValue for Wrap<Expr> {
 impl FromNapiValue for Wrap<JsExpr> {
     unsafe fn from_napi_value(env: sys::napi_env, napi_val: sys::napi_value) -> JsResult<Self> {
         let obj = Object::from_napi_value(env, napi_val)?;
-        let expr: &JsExpr = obj.get("_expr")?.ok_or_else(|| {
-            napi::Error::from_reason("field '_expr' should exist".to_owned())
-        })?;
+        let expr: &JsExpr = obj
+            .get("_expr")?
+            .ok_or_else(|| napi::Error::from_reason("field '_expr' should exist".to_owned()))?;
         Ok(Wrap(expr.clone()))
     }
 }
@@ -679,6 +681,7 @@ impl From<JsSinkOptions> for FileSinkOptions {
                 maintain_order: o.maintain_order,
                 mkdir: o.mkdir,
                 cloud_options: None,
+                sinked_paths_callback: None,
             },
             target: SinkTarget::Path(PlRefPath::new("")),
             file_format: FileWriteFormat::Parquet(Default::default()),
@@ -864,9 +867,7 @@ impl FromNapiValue for Wrap<DataType> {
                     "Datetime" => {
                         let tu: Wrap<TimeUnit> =
                             required_object_prop(&obj, "timeUnit", "Datetime")?;
-                        let tz = obj
-                            .get::<Option<String>>("timeZone")?
-                            .unwrap_or_default();
+                        let tz = obj.get::<Option<String>>("timeZone")?.unwrap_or_default();
                         let time_zone = TimeZone::opt_try_new(tz).map_err(JsPolarsErr::from)?;
                         DataType::Datetime(tu.0, time_zone)
                     }
@@ -997,7 +998,9 @@ impl FromNapiValue for Wrap<ParallelStrategy> {
             "row_groups" => ParallelStrategy::RowGroups,
             "none" => ParallelStrategy::None,
             _ => {
-                return Err(invalid_arg("expected one of {'auto', 'columns', 'row_groups', 'none'}"))
+                return Err(invalid_arg(
+                    "expected one of {'auto', 'columns', 'row_groups', 'none'}",
+                ))
             }
         };
         Ok(Wrap(unit))
@@ -1010,9 +1013,7 @@ impl FromNapiValue for Wrap<InterpolationMethod> {
         let unit = match s.as_ref() {
             "linear" => InterpolationMethod::Linear,
             "nearest" => InterpolationMethod::Nearest,
-            _ => {
-                return Err(invalid_arg("expected one of {'linear', 'nearest'}"))
-            }
+            _ => return Err(invalid_arg("expected one of {'linear', 'nearest'}")),
         };
         Ok(Wrap(unit))
     }
@@ -1151,11 +1152,9 @@ impl FromNapiValue for Wrap<Engine> {
             "cpu" | "in-memory" => Engine::InMemory,
             "streaming" => Engine::Streaming,
             v => {
-                return Err(invalid_arg(
-                    format!(
+                return Err(invalid_arg(format!(
                     "`engine` must be one of {{'auto', 'in-memory', 'streaming', 'cpu'}}, got {v}",
-                ),
-                ))
+                )))
             }
         };
         Ok(Wrap(engine))

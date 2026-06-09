@@ -1,7 +1,7 @@
 use crate::conversion::Wrap;
 use crate::prelude::*;
 use crate::series::JsSeries;
-use crate::utils::reinterpret;
+use polars::chunked_array::ops::reinterpret as pl_reinterpret;
 use polars::lazy::dsl;
 use polars::lazy::dsl::Expr;
 use polars_compute::rolling::RollingQuantileParams;
@@ -78,9 +78,8 @@ impl JsExpr {
     #[napi(catch_unwind)]
     pub fn serialize(&self, format: String) -> napi::Result<Buffer> {
         let buf = match format.as_ref() {
-            "bincode" => {
-                bincode::serde::encode_to_vec(&self.inner, bin_config()).map_err(display_to_napi_error)?
-            }
+            "bincode" => bincode::serde::encode_to_vec(&self.inner, bin_config())
+                .map_err(display_to_napi_error)?,
             "json" => serde_json::to_vec(&self.inner).map_err(display_to_napi_error)?,
             _ => {
                 return Err(napi::Error::from_reason(
@@ -97,8 +96,7 @@ impl JsExpr {
         let expr: Expr = match format.as_ref() {
             "bincode" => {
                 bincode::serde::decode_from_slice(bytes, bin_config())
-                    .map_err(display_to_napi_error)
-                    ?
+                    .map_err(display_to_napi_error)?
                     .0
             }
             "json" => serde_json::from_slice(bytes).map_err(display_to_napi_error)?,
@@ -355,7 +353,7 @@ impl JsExpr {
     pub fn gather(&self, idx: &JsExpr) -> JsExpr {
         self.clone()
             .inner
-            .gather(idx.inner.clone().cast(DataType::UInt32))
+            .gather(idx.inner.clone().cast(DataType::UInt32), false)
             .into()
     }
     #[napi(catch_unwind)]
@@ -467,7 +465,7 @@ impl JsExpr {
     }
     #[napi(catch_unwind)]
     pub fn implode(&self) -> JsExpr {
-        self.clone().inner.implode().into()
+        self.clone().inner.implode(true).into()
     }
     #[napi(catch_unwind)]
     pub fn gather_every(&self, n: i64, offset: i64) -> JsExpr {
@@ -592,7 +590,11 @@ impl JsExpr {
     }
     #[napi(catch_unwind)]
     pub fn over(&self, partition_by: Vec<&JsExpr>) -> JsExpr {
-        self.clone().inner.over(partition_by.to_exprs()).into()
+        self.clone()
+            .inner
+            .over(partition_by.to_exprs())
+            .unwrap()
+            .into()
     }
     #[napi(catch_unwind)]
     pub fn _and(&self, expr: &JsExpr) -> JsExpr {
@@ -763,10 +765,7 @@ impl JsExpr {
 
     #[napi(catch_unwind)]
     pub fn str_pad_start(&self, length: &JsExpr, fill_char: String) -> JsResult<JsExpr> {
-        let fill_char = fill_char
-            .chars()
-            .next()
-            .ok_or_else(empty_fill_char_error)?;
+        let fill_char = fill_char.chars().next().ok_or_else(empty_fill_char_error)?;
         Ok(self
             .inner
             .clone()
@@ -777,10 +776,7 @@ impl JsExpr {
 
     #[napi(catch_unwind)]
     pub fn str_pad_end(&self, length: &JsExpr, fill_char: String) -> JsResult<JsExpr> {
-        let fill_char = fill_char
-            .chars()
-            .next()
-            .ok_or_else(empty_fill_char_error)?;
+        let fill_char = fill_char.chars().next().ok_or_else(empty_fill_char_error)?;
         Ok(self
             .inner
             .clone()
@@ -1189,7 +1185,14 @@ impl JsExpr {
 
     #[napi(catch_unwind)]
     pub fn reinterpret(&self, signed: bool) -> JsExpr {
-        let function = move |s: Column| reinterpret(&s, signed);
+        let dtype = if signed {
+            DataType::Int64
+        } else {
+            DataType::UInt64
+        };
+
+        let function =
+            move |s: Column| Ok(pl_reinterpret(s.as_materialized_series(), &dtype)?.into_column());
         self.clone()
             .inner
             .map(function, |_, f| Ok(f.clone()))
@@ -1345,16 +1348,6 @@ impl JsExpr {
                 ..Default::default()
             })
             .into()
-    }
-
-    #[napi(catch_unwind)]
-    pub fn list_reverse(&self) -> JsExpr {
-        self.inner.clone().list().reverse().into()
-    }
-
-    #[napi(catch_unwind)]
-    pub fn list_unique(&self) -> JsExpr {
-        self.inner.clone().list().unique().into()
     }
     #[napi(catch_unwind)]
     pub fn list_lengths(&self) -> JsExpr {

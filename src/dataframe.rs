@@ -3,6 +3,7 @@ use crate::prelude::*;
 use crate::series::JsSeries;
 use napi::bindgen_prelude::Object;
 use polars::frame::row::{infer_schema, Row};
+use polars::frame::PivotColumnNaming;
 use polars_io::csv::write::CsvWriterOptions;
 use polars_io::mmap::MmapBytesReader;
 use polars_io::RowIndex;
@@ -37,9 +38,7 @@ pub(crate) fn to_series_collection(ps: Array) -> napi::Result<Vec<Column>> {
     for idx in 0..ps.len() {
         let item = ps
             .get::<&JsSeries>(idx)?
-            .ok_or_else(|| {
-                napi::Error::from_reason(format!("Expected Series at index {idx}"))
-            })?;
+            .ok_or_else(|| napi::Error::from_reason(format!("Expected Series at index {idx}")))?;
         columns.push(item.series.clone().into());
     }
 
@@ -988,6 +987,7 @@ impl JsDataFrame {
                 aggregate_expr.0,
                 maintain_order,
                 PlSmallStr::from_str(&separator),
+                PivotColumnNaming::Auto,
             )
             .collect()
             .map(|df| df.into())
@@ -1547,7 +1547,6 @@ fn finish_groupby(gb: GroupBy, agg: &str) -> napi::Result<JsDataFrame> {
         "count" => gb.count(),
         "n_unique" => gb.n_unique(),
         "median" => gb.median(),
-        "agg_list" => gb.agg_list(),
         "groups" => gb.groups(),
         a => Err(PolarsError::ComputeError(
             format!("agg fn {} does not exists", a).into(),

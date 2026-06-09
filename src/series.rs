@@ -67,9 +67,11 @@ impl JsSeries {
     #[napi(factory, catch_unwind)]
     pub fn deserialize(buf: Buffer, format: String) -> napi::Result<JsSeries> {
         let series: Series = match format.as_ref() {
-            "bincode" => bincode::serde::decode_from_slice(&buf, bin_config())
-                .map_err(|err| napi::Error::from_reason(err.to_string()))?
-                .0,
+            "bincode" => {
+                bincode::serde::decode_from_slice(&buf, bin_config())
+                    .map_err(|err| napi::Error::from_reason(err.to_string()))?
+                    .0
+            }
             "json" => serde_json::from_slice(&buf)
                 .map_err(|err| napi::Error::from_reason(err.to_string()))?,
             _ => {
@@ -421,7 +423,11 @@ impl JsSeries {
     #[napi(catch_unwind)]
     pub fn mean(&self) -> Option<f64> {
         match self.series.dtype() {
-            DataType::Boolean => self.series.cast(&DataType::UInt8).ok().and_then(|s| s.mean()),
+            DataType::Boolean => self
+                .series
+                .cast(&DataType::UInt8)
+                .ok()
+                .and_then(|s| s.mean()),
             _ => self.series.mean(),
         }
     }
@@ -887,13 +893,9 @@ impl JsSeries {
     #[napi(catch_unwind)]
     pub fn is_in(&self, other: &JsSeries, nulls_equal: bool) -> napi::Result<JsSeries> {
         let imploded = other.series.implode().map_err(JsPolarsErr::from)?;
-        let series = is_in(
-            &self.series,
-            &imploded.into_series(),
-            nulls_equal,
-        )
-        .map(|ca| ca.into_series())
-        .map_err(JsPolarsErr::from)?;
+        let series = is_in(&self.series, &imploded.into_series(), nulls_equal)
+            .map(|ca| ca.into_series())
+            .map_err(JsPolarsErr::from)?;
 
         Ok(JsSeries::new(series))
     }
@@ -1210,7 +1212,13 @@ impl JsSeries {
     }
     #[napi(catch_unwind)]
     pub fn reinterpret(&self, signed: bool) -> napi::Result<JsSeries> {
-        let s = reinterpret(&self.series, signed).map_err(JsPolarsErr::from)?;
+        let dtype = if signed {
+            DataType::Int64
+        } else {
+            DataType::UInt64
+        };
+
+        let s = reinterpret(&self.series, &dtype).map_err(JsPolarsErr::from)?;
         Ok(s.into())
     }
 
