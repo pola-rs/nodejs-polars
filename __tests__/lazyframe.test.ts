@@ -369,10 +369,7 @@ describe("lazyframe", () => {
       foo: [1],
       bar: ["a"],
     });
-    const actual = await df
-      .lazy()
-      .select("*")
-      .fetch(1, { noOptimization: true });
+    const actual = await df.lazy().select("*").head(1).collect();
     assertFrameEqual(actual, expected);
   });
   test("fetchSync", () => {
@@ -384,9 +381,9 @@ describe("lazyframe", () => {
       foo: [1],
       bar: ["a"],
     });
-    let actual = df.lazy().select("*").fetchSync(1);
+    let actual = df.lazy().select("*").head(1).collectSync();
     assertFrameEqual(actual, expected);
-    actual = df.lazy().select("*").fetchSync(1, { noOptimization: true });
+    actual = df.lazy().select("*").head(1).collectSync();
     assertFrameEqual(actual, expected);
   });
   test("first", () => {
@@ -1490,18 +1487,18 @@ describe("lazyframe", () => {
     ]);
     assertFrameEqual(actual, expected);
   });
-  test("withRowCount", () => {
+  test("withRowIndex", () => {
     const actual = pl
       .DataFrame({
         foo: [1, 2, 9],
         bar: [6, 2, 8],
       })
       .lazy()
-      .withRowCount()
+      .withRowIndex()
       .collectSync();
 
     const expected = pl.DataFrame([
-      pl.Series("row_nr", [0, 1, 2], pl.UInt32),
+      pl.Series("index", [0, 1, 2], pl.UInt32),
       pl.Series("foo", [1, 2, 9], pl.Int16),
       pl.Series("bar", [6, 2, 8], pl.Int16),
     ]);

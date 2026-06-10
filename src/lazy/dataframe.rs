@@ -243,12 +243,6 @@ impl JsLazyFrame {
         AsyncTask::new(AsyncCollect(ldf))
     }
 
-    #[napi(ts_return_type = "Promise<JsDataFrame>", catch_unwind)]
-    pub fn fetch(&self, n_rows: u32) -> AsyncTask<AsyncFetch> {
-        let ldf = self.ldf.clone();
-        AsyncTask::new(AsyncFetch((ldf, n_rows)))
-    }
-
     #[napi(catch_unwind)]
     pub fn fetch_sync(&self, n_rows: u32) -> napi::Result<JsDataFrame> {
         let ldf = self.ldf.clone();
@@ -598,14 +592,6 @@ impl JsLazyFrame {
         let ldf = self.ldf.clone();
         ldf.unpivot(args).into()
     }
-
-    // deprecated
-    #[napi(catch_unwind)]
-    pub fn with_row_count(&self, name: String, offset: Option<u32>) -> JsLazyFrame {
-        let ldf = self.ldf.clone();
-        ldf.with_row_index(&name, offset).into()
-    }
-
     #[napi(catch_unwind)]
     pub fn with_row_index(&self, name: String, offset: Option<u32>) -> JsLazyFrame {
         let ldf = self.ldf.clone();

@@ -77,7 +77,6 @@ export namespace pl {
   export import element = lazy.element;
   export import first = lazy.first;
   export import format = lazy.format;
-  export import groups = lazy.groups;
   export import head = lazy.head;
   export import last = lazy.last;
   export import len = lazy.len;
@@ -222,7 +221,6 @@ export import exclude = lazy.exclude;
 export import element = lazy.element;
 export import first = lazy.first;
 export import format = lazy.format;
-export import groups = lazy.groups;
 export import head = lazy.head;
 export import last = lazy.last;
 export import mean = lazy.mean;

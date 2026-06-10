@@ -454,7 +454,7 @@ describe("lazy functions", () => {
     const actual = df
       .withRowIndex()
       .groupBy("g")
-      .agg(pl.groups("index").alias("idx"))
+      .agg(pl.col("index").alias("idx"))
       .sort("g");
     const expected = pl
       .DataFrame({
@@ -575,7 +575,7 @@ describe("lazy functions", () => {
         [10, 12],
       ],
     });
-    const actual = df.select(pl.col("a").lst.eval(pl.element().mul(2)));
+    const actual = df.select(pl.col("a").list.eval(pl.element().mul(2)));
     assertFrameEqual(actual, expected);
   });
   test("horizontal aggregations", () => {

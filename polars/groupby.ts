@@ -14,11 +14,6 @@ const inspectOpts = { colors: true, depth: null };
 export interface GroupBy {
   [inspect](): string;
   /**
-   * Aggregate the groups into Series.
-   * @deprecated
-   */
-  aggList(): DataFrame;
-  /**
    * Compute aggregations for each group of a group by operation.
    * ___
    * @param columns - Aggregations to compute for each group of the group by operation, specified as positional arguments.
@@ -246,9 +241,8 @@ export function _GroupBy(df: any, by: string[], maintainOrder = false) {
     [inspect]: customInspect,
     agg,
     pivot,
-    aggList: () => agg(exclude(by as any)),
     len() {
-      return _DataFrame(df.groupby([by].flat(), by, "count"));
+      return _DataFrame(df.groupby([by].flat(), by, "len"));
     },
     first: () => agg(exclude(by as any).first()),
     groups() {

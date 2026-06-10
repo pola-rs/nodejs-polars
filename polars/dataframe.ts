@@ -2085,12 +2085,6 @@ export interface DataFrame<S extends Schema = any>
   }): DataFrame<{ [K in keyof S as K extends Existing ? New : K]: S[K] }>;
   withColumnRenamed(opts: { existing: string; replacement: string }): DataFrame;
   /**
-   * Add a column at index 0 that counts the rows.
-   * @param name - name of the column to add
-   * @deprecated - *since 0.23.0 use withRowIndex instead
-   */
-  withRowCount(name?: string): DataFrame;
-  /**
    * Add a row index as the first column in the DataFrame.
    * @param name Name of the index column.
    * @param offset Start the index at this offset. Cannot be negative.
@@ -3002,9 +2996,6 @@ export const _DataFrame = <S extends Schema>(_df: any): DataFrame<S> => {
         return this.rename({ [opt]: replacement });
       }
       return this.rename({ [opt.existing]: opt.replacement });
-    },
-    withRowCount(name = "row_nr") {
-      return wrap("withRowCount", name);
     },
     where(predicate) {
       return this.filter(predicate);

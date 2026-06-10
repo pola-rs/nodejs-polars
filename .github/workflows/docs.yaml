@@ -27,7 +27,7 @@ jobs:
       - name: Set up Node
         uses: actions/setup-node@v6
         with: 
-          node-version: 25
+          node-version: 26
           package-manager-cache: false
       - name: Build node reference
         run: | 

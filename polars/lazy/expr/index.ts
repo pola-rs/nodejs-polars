@@ -1,5 +1,5 @@
 import * as dt from "./datetime";
-import * as lst from "./list";
+import * as list from "./list";
 import * as str from "./string";
 import * as struct from "./struct";
 
@@ -48,11 +48,6 @@ export interface Expr
     EwmOps<Expr>,
     Serialize {
   _expr: any;
-  /**
-   * Datetime namespace
-   * @deprecated *since 0.23.0 use .dt instead to match Polars core
-   */
-  get date(): dt.ExprDateTime;
   get dt(): dt.ExprDateTime;
   /**
    * String namespace
@@ -60,8 +55,10 @@ export interface Expr
   get str(): str.ExprString;
   /**
    * List namespace
+   * @deprecated *since 0.25.0 use list instead to match Polars core
    */
-  get lst(): lst.ExprList;
+  get lst(): list.ExprList;
+  get list(): list.ExprList;
   /**
    * Struct namespace
    */
@@ -73,38 +70,6 @@ export interface Expr
   toJSON(): string;
   /** Take absolute values */
   abs(): Expr;
-  /**
-   * Get the group indexes of the group by operation.
-   * Should be used in aggregation context only.
-   * @deprecated use: df.withRowIndex().groupBy(...).agg(pl.col('index'))` instead.
-   * @example
-   * ```
-    >>> const df = pl.DataFrame(
-    ...     {
-    ...         "group": [
-    ...             "one",
-    ...             "one",
-    ...             "one",
-    ...             "two",
-    ...             "two",
-    ...             "two",
-    ...         ],
-    ...         "value": [94, 95, 96, 97, 97, 99],
-    ...     }
-    ... )
-    >>> df.group_by("group", maintainOrder=True).agg(pl.col("value").aggGroups())
-    shape: (2, 2)
-    ┌───────┬───────────┐
-    │ group ┆ value     │
-    │ ---   ┆ ---       │
-    │ str   ┆ list[u32] │
-    ╞═══════╪═══════════╡
-    │ one   ┆ [0, 1, 2] │
-    │ two   ┆ [3, 4, 5] │
-    └───────┴───────────┘
-   *```
-   */
-  aggGroups(): Expr;
   /**
    * Rename the output of an expression.
    * @param name new name
@@ -616,6 +581,39 @@ export interface Expr
   /** Take the first n values.  */
   head(length?: number): Expr;
   head({ length }: { length: number }): Expr;
+  /**
+   *  Aggregate values into a list. The returned list itself is a scalar value of `list` dtype.
+   *
+   * @example
+   * ```
+   * > const df = pl.DataFrame({
+   * ...   "a": [1, 2, 3],
+   * ...   "b": ["a", "b", None],
+   * ... });
+   * > df
+   * shape: (3, 2)
+   * ╭─────┬──────╮
+   * │ a   ┆ b    │
+   * │ --- ┆ ---  │
+   * │ i64 ┆ str  │
+   * ╞═════╪══════╡
+   * │ 1   ┆ "a"  │
+   * ├╌╌╌╌╌┼╌╌╌╌╌╌┤
+   * │ 2   ┆ "b"  │
+   * ├╌╌╌╌╌┼╌-╌╌╌╌┤
+   * │ 3   ┆ null │
+   * ╰─────┴──────╯
+   * > df.select(pl.col("a").implode())
+   * shape: (1, 1)
+   * ┌─────────────────┐
+   * │ a               │
+   * │ ---             │
+   * │ list[f64]       │
+   * ╞═════════════════╡
+   * │ [1.0, 2.0, 3.0] │
+   * └─────────────────┘
+   * ```
+   */
   implode(): Expr;
   inner(): any;
   /** Interpolate intermediate values. The interpolation method is linear. */
@@ -682,7 +680,7 @@ export interface Expr
    *
    * > df
    * ...   .groupBy("a")
-   * ...   .agg(pl.col("b").list())
+   * ...   .agg(pl.col("b").implode())
    * ...   .sort({by:"a"});
    *
    * shape: (3, 2)
@@ -702,7 +700,7 @@ export interface Expr
    *
    * > df
    * ...   .groupby("a")
-   * ...   .agg(col("b").list().keepName())
+   * ...   .agg(col("b").implode().keepName())
    * ...   .sort({by:"a"})
    *
    * shape: (3, 2)
@@ -725,10 +723,6 @@ export interface Expr
   kurtosis({ fisher, bias }: { fisher?: boolean; bias?: boolean }): Expr;
   /** Get the last value.  */
   last(): Expr;
-  /** Aggregate to list.
-   * @deprecated *since 0.23.0 use implode instead to match Polars core
-   */
-  list(): Expr;
   /***
    * Compute the natural logarithm of each element plus one.
    * This computes `log(1 + x)` but is more numerically stable for `x` close to zero.
@@ -1422,17 +1416,19 @@ export const _Expr = (_expr: any): Expr => {
       if (args[0] === "") {
         return _expr.toJs();
       }
-
       return _expr.serialize("json").toString();
     },
     get str() {
       return str.ExprStringFunctions(_expr);
     },
+    /** List functions are now available under the `list` namespace. The `lst` namespace is deprecated and will be removed in a future version. See the `list` namespace for more details.
+     * @deprecated *since 0.25.0 use list instead to match Polars core
+     */
     get lst() {
-      return lst.ExprListFunctions(_expr);
+      return list.ExprListFunctions(_expr);
     },
-    get date() {
-      return dt.ExprDateTimeFunctions(_expr);
+    get list() {
+      return list.ExprListFunctions(_expr);
     },
     get dt() {
       return dt.ExprDateTimeFunctions(_expr);
@@ -1442,9 +1438,6 @@ export const _Expr = (_expr: any): Expr => {
     },
     abs() {
       return _Expr(_expr.abs());
-    },
-    aggGroups() {
-      return _Expr(_expr.aggGroups());
     },
     alias(name) {
       return _Expr(_expr.alias(name));
@@ -1739,7 +1732,7 @@ export const _Expr = (_expr: any): Expr => {
       if (Array.isArray(indices)) {
         indices = pli.litSeries(Series("", indices, pli.Int64).inner());
       } else {
-        indices = indices.inner();
+        indices = exprToLitOrExpr(indices).inner();
       }
       return wrap("gather", indices);
     },
@@ -1818,9 +1811,6 @@ export const _Expr = (_expr: any): Expr => {
     },
     last() {
       return _Expr(_expr.last());
-    },
-    list() {
-      return _Expr(_expr.list());
     },
     log1p() {
       return _Expr(_expr.log1P());
@@ -2080,7 +2070,8 @@ export const _Expr = (_expr: any): Expr => {
     },
     sortBy(arg, descending = false) {
       if (arg?.by !== undefined) {
-        return this.sortBy(arg.by, arg.descending ?? false);
+        descending = arg?.descending ?? false;
+        arg = arg.by;
       }
 
       descending = Array.isArray(descending)
@@ -2125,9 +2116,6 @@ export const _Expr = (_expr: any): Expr => {
       name = name ?? (normalize ? "proportion" : "count");
       return _Expr(_expr.valueCounts(sort, parallel, name, normalize));
     },
-    where(expr) {
-      return this.filter(expr);
-    },
     var() {
       return _Expr(_expr.var());
     },
@@ -2158,7 +2146,7 @@ export const _Expr = (_expr: any): Expr => {
     lessThan: wrapExprArg("lt"),
     neq: wrapExprArg("neq"),
     notEquals: wrapExprArg("neq"),
-  } as Expr;
+  } as unknown as Expr;
 };
 
 export interface ExprConstructor extends Deserialize<Expr> {

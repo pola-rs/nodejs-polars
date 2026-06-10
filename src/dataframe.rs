@@ -9,7 +9,7 @@ use polars_io::mmap::MmapBytesReader;
 use polars_io::RowIndex;
 use polars_utils::aliases::PlFixedStateQuality;
 use std::borrow::Borrow;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::fs::File;
 use std::hash::BuildHasher;
 use std::io::{BufReader, BufWriter, Cursor};
@@ -937,12 +937,80 @@ impl JsDataFrame {
         select: Option<Vec<String>>,
         agg: String,
     ) -> napi::Result<JsDataFrame> {
-        let gb = self.df.group_by(by).map_err(JsPolarsErr::from)?;
-        let selection = match select.as_ref() {
-            Some(s) => gb.select(s),
-            None => gb,
+        match agg.as_str() {
+            "groups" => {
+                let gb = self.df.group_by(by).map_err(JsPolarsErr::from)?;
+                let gb = match select.as_ref() {
+                    Some(s) => gb.select(s),
+                    None => gb,
+                };
+                let df = gb.groups().map_err(JsPolarsErr::from)?;
+                return Ok(JsDataFrame::new(df));
+            }
+            "len" => {
+                let by_exprs: Vec<Expr> = by.iter().map(|name| col(name.as_str())).collect();
+                let df = self
+                    .df
+                    .clone()
+                    .lazy()
+                    .group_by(by_exprs)
+                    .agg([polars::prelude::len().alias("len")])
+                    .collect()
+                    .map_err(JsPolarsErr::from)?;
+                return Ok(JsDataFrame::new(df));
+            }
+            _ => {}
+        }
+
+        let by_exprs: Vec<Expr> = by.iter().map(|name| col(name.as_str())).collect();
+        let by_set: HashSet<&str> = by.iter().map(String::as_str).collect();
+
+        let selected_columns = match select {
+            Some(columns) => columns,
+            None => self
+                .df
+                .get_column_names_owned()
+                .into_iter()
+                .map(|name| name.to_string())
+                .filter(|name| !by_set.contains(name.as_str()))
+                .collect(),
         };
-        finish_groupby(selection, &agg)
+
+        let agg_name = agg.as_str();
+        let agg_exprs: Vec<Expr> = selected_columns
+            .iter()
+            .map(|name| {
+                let expr = col(name.as_str());
+                match agg_name {
+                    "min" => Ok(expr.min()),
+                    "max" => Ok(expr.max()),
+                    "mean" => Ok(expr.mean()),
+                    "first" => Ok(expr.first()),
+                    "last" => Ok(expr.last()),
+                    "sum" => Ok(expr.sum()),
+                    "n_unique" => Ok(expr.n_unique()),
+                    "median" => Ok(expr.median()),
+                    _ => Err(PolarsError::ComputeError(
+                        format!(
+                            "unsupported groupby aggregation '{agg_name}'. supported aggregations: min, max, mean, first, last, sum, n_unique, median, len, groups"
+                        )
+                        .into(),
+                    )),
+                }
+            })
+            .collect::<PolarsResult<Vec<_>>>()
+            .map_err(JsPolarsErr::from)?;
+
+        let df = self
+            .df
+            .clone()
+            .lazy()
+            .group_by(by_exprs)
+            .agg(agg_exprs)
+            .collect()
+            .map_err(JsPolarsErr::from)?;
+
+        Ok(JsDataFrame::new(df))
     }
 
     #[napi(catch_unwind)]
@@ -1286,15 +1354,6 @@ impl JsDataFrame {
         }
         Ok(rows)
     }
-    // deprecated
-    #[napi(catch_unwind)]
-    pub fn with_row_count(&self, name: String, offset: Option<u32>) -> napi::Result<JsDataFrame> {
-        let df = self
-            .df
-            .with_row_index(PlSmallStr::from_string(name), offset)
-            .map_err(JsPolarsErr::from)?;
-        Ok(df.into())
-    }
     #[napi(catch_unwind)]
     pub fn with_row_index(
         &self,
@@ -1533,28 +1592,6 @@ impl JsDataFrame {
         };
         Ok(())
     }
-}
-
-#[allow(deprecated)]
-fn finish_groupby(gb: GroupBy, agg: &str) -> napi::Result<JsDataFrame> {
-    let df = match agg {
-        "min" => gb.min(),
-        "max" => gb.max(),
-        "mean" => gb.mean(),
-        "first" => gb.first(),
-        "last" => gb.last(),
-        "sum" => gb.sum(),
-        "count" => gb.count(),
-        "n_unique" => gb.n_unique(),
-        "median" => gb.median(),
-        "groups" => gb.groups(),
-        a => Err(PolarsError::ComputeError(
-            format!("agg fn {} does not exists", a).into(),
-        )),
-    };
-
-    let df = df.map_err(JsPolarsErr::from)?;
-    Ok(JsDataFrame::new(df))
 }
 
 fn coerce_data_type<A: Borrow<DataType>>(datatypes: &[A]) -> DataType {

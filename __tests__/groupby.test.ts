@@ -10,8 +10,11 @@ describe("groupby", () => {
     });
   });
 
-  test("aggList", () => {
-    const actual = df.groupBy("name").aggList().sort("name");
+  test("agg to list", () => {
+    const actual = df
+      .groupBy("name")
+      .agg(pl.col("foo"), pl.col("bar"))
+      .sort("name");
     const expected = pl.DataFrame({
       name: ["a", "b", "c"],
       foo: [[1, 3], [3, 7], [5]],
@@ -51,12 +54,44 @@ describe("groupby", () => {
     let actual = df.groupBy("name").len().sort("name");
     const expected = pl.DataFrame({
       name: ["a", "b", "c"],
-      name_count: [2, 2, 1],
+      len: [2, 2, 1],
     });
     assertFrameEqual(actual, expected);
     // Test for single column DF
     actual = df.select("name").groupBy("name").len().sort("name");
     assertFrameEqual(actual, expected);
+  });
+  test("len counts rows including nulls and works with multiple keys", () => {
+    const lenWithNulls = pl
+      .DataFrame({
+        k: ["a", "a", null, null],
+        v: [1, null, 2, 3],
+      })
+      .groupBy("k")
+      .len();
+
+    const byKey = Object.fromEntries(
+      lenWithNulls
+        .toRecords()
+        .map((r: any) => [String(r.k), r.len])
+        .sort((a, b) => String(a[0]).localeCompare(String(b[0]))),
+    );
+    assert.deepStrictEqual(byKey, { a: 2, null: 2 });
+
+    const multi = pl
+      .DataFrame({
+        k1: ["a", "a", "a", "b"],
+        k2: [1, 1, 2, 2],
+        v: [10, 20, 30, 40],
+      })
+      .groupBy("k1", "k2")
+      .len();
+
+    const records = multi
+      .toRecords()
+      .map((r: any) => `${r.k1}|${r.k2}:${r.len}`)
+      .sort();
+    assert.deepStrictEqual(records, ["a|1:2", "a|2:1", "b|2:1"]);
   });
   test("first", () => {
     const actual = df.groupBy("name").first().sort("name");
@@ -78,7 +113,6 @@ describe("groupby", () => {
   });
   test("last", () => {
     const actual = df.groupBy("name").last().sort("name");
-
     const expected = pl.DataFrame({
       name: ["a", "b", "c"],
       foo: [3, 7, 5],
@@ -140,6 +174,11 @@ describe("groupby", () => {
     });
     assertFrameEqual(actual, expected);
   });
+  test("cumSum", () => {
+    const df = pl.DataFrame({ g: [1, 1, 1], x: [1, 2, null] });
+    const actual = df.groupBy("g").agg(pl.col("x").cumSum().count());
+    assert.deepStrictEqual(actual.rows(), [[1, 2]]);
+  });
   test("sum", () => {
     const actual = df.groupBy("name").sum().sort("name");
     const expected = pl.DataFrame({
@@ -165,6 +204,10 @@ describe("groupby", () => {
       groups: [[0, 2], [1, 4], [3]],
     });
     assertFrameEqual(actual, expected);
+  });
+  test("pivot validates string overload arguments", () => {
+    const fn = () => (df.groupBy("name") as any).pivot("foo");
+    assert.throws(fn, /must specify both pivotCol and valuesCol/);
   });
   test("inspect", () => {
     const _actual = df
@@ -268,7 +311,7 @@ describe("groupby ops", () => {
         closed: "right",
         startBy: "datapoint",
       })
-      .agg(pl.col("a").list().alias("lst"));
+      .agg(pl.col("a").implode().alias("lst"));
     const actual = out.getColumn("lst").toArray();
     const expected = [[2, 3], [3]];
     assert.deepStrictEqual(actual, expected);
