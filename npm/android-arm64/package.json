@@ -23,7 +23,7 @@
   ],
   "license": "SEE LICENSE IN LICENSE",
   "engines": {
-    "node": ">= 16"
+    "node": ">= 22"
   },
   "publishConfig": {
     "registry": "https://registry.npmjs.org/",
