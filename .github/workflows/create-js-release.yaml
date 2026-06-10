@@ -45,7 +45,7 @@ jobs:
           - host: ubuntu-latest
             target: aarch64-unknown-linux-musl
             build: yarn build --target aarch64-unknown-linux-musl -x
-    name: ${{ matrix.settings.target }} - node@25
+    name: ${{ matrix.settings.target }} - node@26
     runs-on: ${{ matrix.settings.host }}
     steps:
       - uses: actions/checkout@v6
@@ -84,7 +84,7 @@ jobs:
         uses: actions/cache@v5
         with:
           path: .yarn/cache
-          key: npm-cache-build-${{ matrix.settings.target }}-node@25
+          key: npm-cache-build-${{ matrix.settings.target }}-node@26
       - name: Setup toolchain
         run: ${{ matrix.settings.setup }}
         if: ${{ matrix.settings.setup }}
