@@ -496,10 +496,12 @@ describe("expr", () => {
   });
   test("gather", () => {
     const df = pl.DataFrame({ a: [1, 2, 2, 3, 3, 8, null, 1] });
-    const expected = pl.DataFrame({
-      "gather:array": [1, 2, 3, 8],
-    });
-    const actual = df.select(col("a").gather([0, 2, 3, 5]).as("gather:array"));
+    const expected = pl.DataFrame({ "gather:array": [1, 2, 3, 8] });
+    const arr = [0, 2, 3, 5];
+    let actual = df.select(col("a").gather(arr).as("gather:array"));
+    assertFrameEqual(actual, expected);
+    const s = pl.Series("a", arr);
+    actual = df.select(col("a").gather(s).as("gather:array"));
     assertFrameEqual(actual, expected);
   });
   test("gatherEvery", () => {

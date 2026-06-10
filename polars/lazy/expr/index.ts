@@ -1430,9 +1430,6 @@ export const _Expr = (_expr: any): Expr => {
     get list() {
       return list.ExprListFunctions(_expr);
     },
-    get date() {
-      return dt.ExprDateTimeFunctions(_expr);
-    },
     get dt() {
       return dt.ExprDateTimeFunctions(_expr);
     },
@@ -1735,7 +1732,7 @@ export const _Expr = (_expr: any): Expr => {
       if (Array.isArray(indices)) {
         indices = pli.litSeries(Series("", indices, pli.Int64).inner());
       } else {
-        indices = indices.inner();
+        indices = exprToLitOrExpr(indices).inner();
       }
       return wrap("gather", indices);
     },

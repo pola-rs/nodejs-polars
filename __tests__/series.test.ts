@@ -857,12 +857,6 @@ describe("series functions", () => {
     const membership = pl.Series([1, 2, 3]).isIn([2, 4]);
     assertSeriesEqual(membership, pl.Series([false, true, false]));
   });
-
-  test("hasValidity aliases hasNulls", () => {
-    assert.strictEqual(pl.Series([1, null, 3]).hasNulls(), true);
-    assert.strictEqual(pl.Series([1, 2, 3]).hasNulls(), false);
-  });
-
   test("sample covers default and object n overloads", () => {
     const s = pl.Series([1, 2, 3, 4, 5]);
 

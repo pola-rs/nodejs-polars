@@ -1363,9 +1363,6 @@ export function _Series(_s: any): Series {
     get list() {
       return SeriesListFunctions(_s);
     },
-    get date() {
-      return SeriesDateFunctions(_s);
-    },
     get dt() {
       return SeriesDateFunctions(_s);
     },
@@ -1592,9 +1589,6 @@ export function _Series(_s: any): Series {
       );
     },
     hasNulls() {
-      return _s.hasNulls();
-    },
-    hasValidity() {
       return _s.hasNulls();
     },
     head(length = 5) {

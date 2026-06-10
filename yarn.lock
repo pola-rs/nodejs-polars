@@ -1993,7 +1993,7 @@ __metadata:
     "@types/chance": "npm:^1.1.8"
     "@types/node": "npm:^25.9.1"
     chance: "npm:^1.1.13"
-    tsx: "npm:^4.22.3"
+    tsx: "npm:^4.22.4"
     typedoc: "npm:^0.28.19"
     typedoc-plugin-missing-exports: "npm:^4.1.3"
     typescript: "npm:6.0.3"
@@ -2153,7 +2153,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"tsx@npm:^4.22.3":
+"tsx@npm:^4.22.4":
   version: 4.22.4
   resolution: "tsx@npm:4.22.4"
   dependencies:
