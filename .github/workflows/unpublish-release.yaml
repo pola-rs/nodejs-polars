@@ -14,9 +14,7 @@ permissions:
 
 jobs:
   publish:
-    name: Publish
-    needs:
-      - test-macos
+    name: Unpublish
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
