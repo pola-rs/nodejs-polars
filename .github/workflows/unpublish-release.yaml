@@ -24,4 +24,4 @@ jobs:
 
       - name: Unpublish to npm
         # run: npm unpublish nodejs-polars@0.25.0 --force
-        run: npm deprecate nodejs-polars@0.25.0 "This version has been unpublished due to critical issues. Please use a later version." --registry https://registry.npmjs.org 
+        run: npm deprecate nodejs-polars@0.25.0 "This version has been unpublished due to critical issues. Please use a later version." 
