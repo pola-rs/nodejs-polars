@@ -498,14 +498,16 @@ export interface LazyDataFrame<S extends Schema = any>
   sort(
     by: ColumnsOrExpr,
     descending?: ValueOrArray<boolean>,
-    nullsLast?: boolean,
+    nullsLast?: ValueOrArray<boolean>,
     maintainOrder?: boolean,
+    multithreaded?: boolean,
   ): LazyDataFrame<S>;
   sort(opts: {
     by: ColumnsOrExpr;
     descending?: ValueOrArray<boolean>;
-    nullsLast?: boolean;
+    nullsLast?: ValueOrArray<boolean>;
     maintainOrder?: boolean;
+    multithreaded?: boolean;
   }): LazyDataFrame<S>;
   /**
    * @see {@link DataFrame.std}
@@ -1219,20 +1221,45 @@ export const _LazyDataFrame = (_ldf: any): LazyDataFrame => {
       }
       return _LazyDataFrame(_ldf.slice(opt, len));
     },
-    sort(arg, descending = false, nullsLast = false, maintainOrder = false) {
+    sort(
+      arg,
+      descending = [false],
+      nullsLast = [false],
+      maintainOrder = false,
+      multithreaded = true,
+    ) {
       if (arg?.by !== undefined) {
         return this.sort(
-          arg.by,
-          arg.descending,
-          arg.nullsLast,
+          [arg.by],
+          Array.isArray(arg.descending)
+            ? (arg.descending ?? [false])
+            : [arg.descending ?? false],
+          Array.isArray(arg.nullsLast)
+            ? (arg.nullsLast ?? [false])
+            : [arg.nullsLast ?? false],
           arg.maintainOrder,
+          arg.multithreaded,
         );
       }
       if (typeof arg === "string") {
-        return wrap("sort", arg, descending, nullsLast, maintainOrder);
+        return wrap(
+          "sort",
+          [arg],
+          descending,
+          nullsLast,
+          maintainOrder,
+          multithreaded,
+        );
       }
       const by = selectionToExprList(arg, false);
-      return wrap("sortByExprs", by, descending, nullsLast, maintainOrder);
+      return wrap(
+        "sortByExprs",
+        by,
+        descending,
+        nullsLast,
+        maintainOrder,
+        multithreaded,
+      );
     },
     std() {
       return _LazyDataFrame(_ldf.std());
