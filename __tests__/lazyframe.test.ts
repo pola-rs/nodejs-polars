@@ -1216,6 +1216,29 @@ describe("lazyframe", () => {
     });
     assertFrameEqual(actual, expected);
   });
+  test("sort:multi-args:descending", () => {
+    const actual = pl
+      .DataFrame({
+        foo: [1, 2, 3, -1],
+        bar: [7, 8, null, 2],
+        baz: ["a", "b", null, "A"],
+      })
+      .lazy()
+      .sort({
+        by: ["baz", "bar"],
+        descending: [true, true],
+        nullsLast: [true, true],
+        maintainOrder: false,
+        multithreaded: false,
+      })
+      .collectSync();
+    const expected = pl.DataFrame({
+      foo: [2, 1, -1, 3],
+      bar: [8, 7, 2, null],
+      baz: ["b", "a", "A", null],
+    });
+    assertFrameEqual(actual, expected);
+  });
   test("sort:nulls_last:false", () => {
     const actual = pl
       .DataFrame({

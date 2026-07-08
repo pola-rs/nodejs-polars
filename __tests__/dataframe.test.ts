@@ -1103,6 +1103,27 @@ describe("dataframe", () => {
     });
     assertFrameEqual(actual, expected);
   });
+  test("sort:multi-args:descending", () => {
+    const actual = pl
+      .DataFrame({
+        foo: [1, 2, 3, -1],
+        bar: [null, 7, 8, 2],
+        baz: ["a", "b", null, "A"],
+      })
+      .sort({
+        by: ["baz", "bar"],
+        descending: [true, true],
+        nullsLast: [true, true],
+        maintainOrder: true,
+        multithreaded: true,
+      });
+    const expected = pl.DataFrame({
+      foo: [2, 1, -1, 3],
+      bar: [7, null, 2, 8],
+      baz: ["b", "a", "A", null],
+    });
+    assertFrameEqual(actual, expected);
+  });
   test("sort:nullsLast:false", () => {
     const actual = pl
       .DataFrame({
