@@ -27,6 +27,7 @@ import {
   type ExprOrString,
   type Simplify,
   selectionToExprList,
+  toBoolArray,
   type ValueOrArray,
 } from "../utils";
 import { Expr, exprToLitOrExpr } from "./expr";
@@ -1223,30 +1224,28 @@ export const _LazyDataFrame = (_ldf: any): LazyDataFrame => {
     },
     sort(
       arg,
-      descending = [false],
-      nullsLast = [false],
+      descending = false,
+      nullsLast = false,
       maintainOrder = false,
       multithreaded = true,
     ) {
       if (arg?.by !== undefined) {
         return this.sort(
-          [arg.by],
-          Array.isArray(arg.descending)
-            ? (arg.descending ?? [false])
-            : [arg.descending ?? false],
-          Array.isArray(arg.nullsLast)
-            ? (arg.nullsLast ?? [false])
-            : [arg.nullsLast ?? false],
+          arg.by,
+          arg.descending,
+          arg.nullsLast,
           arg.maintainOrder,
           arg.multithreaded,
         );
       }
+      const descArr = toBoolArray(descending, false);
+      const nullsLastArr = toBoolArray(nullsLast, false);
       if (typeof arg === "string") {
         return wrap(
           "sort",
           [arg],
-          descending,
-          nullsLast,
+          descArr,
+          nullsLastArr,
           maintainOrder,
           multithreaded,
         );
@@ -1255,8 +1254,8 @@ export const _LazyDataFrame = (_ldf: any): LazyDataFrame => {
       return wrap(
         "sortByExprs",
         by,
-        descending,
-        nullsLast,
+        descArr,
+        nullsLastArr,
         maintainOrder,
         multithreaded,
       );

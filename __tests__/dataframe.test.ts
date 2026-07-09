@@ -1061,28 +1061,44 @@ describe("dataframe", () => {
     assertFrameEqual(actual, expected);
   });
   test("sort:positional", () => {
-    const actual = pl
-      .DataFrame({
-        foo: [1, 2, 3, 1],
-        bar: [6, 7, 8, 1],
-      })
-      .sort("bar");
-    const expected = pl.DataFrame({
-      foo: [1, 1, 2, 3],
-      bar: [1, 6, 7, 8],
+    let expected = pl.DataFrame({
+      foo: [2, 1, 9],
+      bar: [2, 6, 8],
     });
-    assertFrameEqual(actual, expected);
+    assertFrameEqual(df.sort("bar"), expected);
+    expected = pl.DataFrame({
+      foo: [9, 1, 2],
+      bar: [8, 6, 2],
+    });
+    assertFrameEqual(df.sort("bar", true, false, false, true), expected);
   });
   test("sort:named", () => {
-    const actual = pl
-      .DataFrame({
-        foo: [1, 2, 3, 1],
-        bar: [6, 7, 8, 1],
-      })
-      .sort({ by: "bar", descending: true });
-    const expected = pl.DataFrame({
-      foo: [3, 2, 1, 1],
-      bar: [8, 7, 6, 1],
+    const df = pl.DataFrame({
+      foo: [1, 2, 3, 1, null],
+      bar: [null, 6, 7, 8, 1],
+    });
+    let actual = df.sort({
+      by: "bar",
+      descending: true,
+      nullsLast: true,
+      maintainOrder: true,
+      multithreaded: true,
+    });
+    let expected = pl.DataFrame({
+      foo: [1, 3, 2, null, 1],
+      bar: [8, 7, 6, 1, null],
+    });
+    assertFrameEqual(actual, expected);
+    actual = df.sort({
+      by: "bar",
+      descending: false,
+      nullsLast: false,
+      maintainOrder: false,
+      multithreaded: false,
+    });
+    expected = pl.DataFrame({
+      foo: [1, null, 2, 3, 1],
+      bar: [null, 1, 6, 7, 8],
     });
     assertFrameEqual(actual, expected);
   });
@@ -1122,6 +1138,36 @@ describe("dataframe", () => {
       bar: [7, null, 2, 8],
       baz: ["b", "a", "A", null],
     });
+    assertFrameEqual(actual, expected);
+  });
+  test("sort:positional:multi-column", () => {
+    const actual = pl
+      .DataFrame({
+        foo: [1, 2, 3, -1],
+        bar: [null, 7, 8, 2],
+        baz: ["a", "b", null, "A"],
+      })
+      .sort(["baz", "bar"], [true, true], [true, true], true, true);
+
+    const expected = pl.DataFrame({
+      foo: [2, 1, -1, 3],
+      bar: [7, null, 2, 8],
+      baz: ["b", "a", "A", null],
+    });
+
+    assertFrameEqual(actual, expected);
+  });
+  test("sort:named:undefined-nullsLast-defaults-to-false", () => {
+    const actual = pl
+      .DataFrame({
+        foo: [1, null, 2, 3],
+      })
+      .sort({ by: "foo", nullsLast: undefined });
+
+    const expected = pl.DataFrame({
+      foo: [null, 1, 2, 3],
+    });
+
     assertFrameEqual(actual, expected);
   });
   test("sort:nullsLast:false", () => {

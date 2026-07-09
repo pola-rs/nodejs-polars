@@ -41,6 +41,7 @@ import {
   type ExprOrString,
   isSeriesArray,
   type Simplify,
+  toBoolArray,
   type ValueOrArray,
 } from "./utils";
 
@@ -2238,7 +2239,7 @@ type TabularDataResource = {
   };
 };
 
-function mapPolarsTypeToJSONSchema(colType: DataType): string {
+const mapPolarsTypeToJSONSchema = (colType: DataType): string => {
   const typeMapping: { [key: string]: string } = {
     Null: "null",
     Bool: "boolean",
@@ -2262,7 +2263,7 @@ function mapPolarsTypeToJSONSchema(colType: DataType): string {
 
   const dataType = colType.variant;
   return typeMapping[dataType] || "string";
-}
+};
 
 /** @ignore */
 export const _DataFrame = <S extends Schema>(_df: any): DataFrame<S> => {
@@ -2731,35 +2732,44 @@ export const _DataFrame = <S extends Schema>(_df: any): DataFrame<S> => {
     },
     sort(
       arg,
-      descending = [false],
-      nullsLast = [false],
+      descending = false,
+      nullsLast = false,
       maintainOrder = false,
       multithreaded = true,
     ) {
       if (arg?.by !== undefined) {
         return this.sort(
-          [arg.by],
-          Array.isArray(arg.descending)
-            ? (arg.descending ?? [false])
-            : [arg.descending ?? false],
-          Array.isArray(arg.nullsLast)
-            ? (arg.nullsLast ?? [false])
-            : [arg.nullsLast ?? false],
+          arg.by,
+          arg.descending ?? false,
+          arg.nullsLast ?? false,
           arg.maintainOrder,
           arg.multithreaded,
         );
       }
-      if (Array.isArray(arg) || Expr.isExpr(arg)) {
+
+      if (arg === undefined || arg === null) {
+        throw new TypeError(
+          "sort: expected a column name, expression, or selector",
+        );
+      }
+
+      const descArr = toBoolArray(descending, false);
+      const nullsLastArr = toBoolArray(nullsLast, false);
+      const by = [arg].flat(3);
+      const hasExpr = by.some((v) => Expr.isExpr(v));
+
+      if (hasExpr) {
         return _DataFrame(_df)
           .lazy()
-          .sort(arg, descending, nullsLast, maintainOrder, multithreaded)
+          .sort(arg, descArr, nullsLastArr, maintainOrder, multithreaded)
           .collectSync();
       }
+
       return wrap(
         "sort",
-        [arg],
-        descending,
-        nullsLast,
+        by,
+        descArr,
+        nullsLastArr,
         maintainOrder,
         multithreaded,
       );
