@@ -29,7 +29,8 @@
     "./examples/*",
     "./benches/*",
     "./bin/*",
-    "./docs/*"
+    "./docs/*",
+    "__tests__/*",
   ],
   "typedocOptions": {
     "entryPointStrategy": "expand",
@@ -41,6 +42,9 @@
       "polars/index.ts"
     ],
     "out": "docs",
-    "sort": ["alphabetical"]
+    "sort": ["alphabetical"],
+    "plugin": [
+      "typedoc-plugin-missing-exports"
+    ]
   }
 }
