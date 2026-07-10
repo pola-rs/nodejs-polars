@@ -32,7 +32,7 @@ jobs:
       - name: Build node reference
         run: | 
           npm install
-          npx typedoc --plugin typedoc-plugin-missing-exports
+          npx typedoc
       - name: deploy docs
         run: |
           mkdir -p target/doc
