@@ -1168,19 +1168,27 @@ describe("lazyframe", () => {
     assertFrameEqual(actual, expected);
   });
   test("sort:positional", () => {
-    const actual = pl
+    const ldf = pl
       .DataFrame({
-        foo: [1, 2, 3, 1],
-        bar: [6, 7, 8, 1],
+        foo: [null, 2, 3, 1],
+        bar: [null, 6, 7, 8],
       })
-      .lazy()
-      .sort("bar")
-      .collectSync();
-    const expected = pl.DataFrame({
-      foo: [1, 1, 2, 3],
-      bar: [1, 6, 7, 8],
+      .lazy();
+
+    let expected = pl.DataFrame({
+      foo: [null, 2, 3, 1],
+      bar: [null, 6, 7, 8],
     });
-    assertFrameEqual(actual, expected);
+    assertFrameEqual(ldf.sort("bar").collectSync(), expected);
+
+    expected = pl.DataFrame({
+      foo: [1, 3, 2, null],
+      bar: [8, 7, 6, null],
+    });
+    assertFrameEqual(
+      ldf.sort("bar", true, true, true, true).collectSync(),
+      expected,
+    );
   });
   test("sort:named", () => {
     const actual = pl
@@ -1213,6 +1221,29 @@ describe("lazyframe", () => {
       foo: [-1, 1, 2, 3],
       bar: [2, 6, 7, 8],
       baz: ["A", "a", "b", "d"],
+    });
+    assertFrameEqual(actual, expected);
+  });
+  test("sort:multi-args:descending", () => {
+    const actual = pl
+      .DataFrame({
+        foo: [1, 2, 3, -1],
+        bar: [7, 8, null, 2],
+        baz: ["a", "b", null, "A"],
+      })
+      .lazy()
+      .sort({
+        by: ["baz", "bar"],
+        descending: [true, true],
+        nullsLast: [true, true],
+        maintainOrder: false,
+        multithreaded: false,
+      })
+      .collectSync();
+    const expected = pl.DataFrame({
+      foo: [2, 1, -1, 3],
+      bar: [8, 7, 2, null],
+      baz: ["b", "a", "A", null],
     });
     assertFrameEqual(actual, expected);
   });

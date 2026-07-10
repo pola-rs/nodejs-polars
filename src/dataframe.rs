@@ -828,19 +828,23 @@ impl JsDataFrame {
     #[napi(catch_unwind)]
     pub fn sort(
         &self,
-        by_column: String,
-        descending: bool,
-        nulls_last: bool,
+        by_column: Vec<String>,
+        descending: Vec<bool>,
+        nulls_last: Vec<bool>,
         maintain_order: bool,
+        multithreaded: bool,
     ) -> napi::Result<JsDataFrame> {
         let df = self
             .df
             .sort(
-                [&by_column],
-                SortMultipleOptions::default()
-                    .with_order_descending(descending)
-                    .with_nulls_last(nulls_last)
-                    .with_maintain_order(maintain_order),
+                by_column,
+                SortMultipleOptions {
+                    descending,
+                    nulls_last,
+                    maintain_order,
+                    multithreaded,
+                    limit: None,
+                },
             )
             .map_err(JsPolarsErr::from)?;
         Ok(JsDataFrame::new(df))

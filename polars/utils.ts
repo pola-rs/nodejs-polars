@@ -88,6 +88,11 @@ export const regexToString = (r: string | RegExp): string => {
   return r;
 };
 
+export const toBoolArray = (value: unknown, fallback = false): boolean[] => {
+  const flat = [value].flat(3);
+  return flat.map((v) => (v == null ? fallback : (v as boolean)));
+};
+
 // find common value in array of arrays of strings: string[][]
 export const commonValue = (...arr: string[][]): string[] =>
   arr[0].filter((x) => arr.every((y) => y.includes(x)));

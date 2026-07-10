@@ -41,6 +41,8 @@ import {
   type ExprOrString,
   isSeriesArray,
   type Simplify,
+  toBoolArray,
+  type ValueOrArray,
 } from "./utils";
 
 const inspect = Symbol.for("nodejs.util.inspect.custom");
@@ -1664,22 +1666,27 @@ export interface DataFrame<S extends Schema = any>
    * @param descending - Sort in descending order. When sorting by multiple columns, can be specified per column by passing a sequence of booleans.
    * @param nullsLast - Place null values last; can specify a single boolean applying to all columns or a sequence of booleans for per-column control.
    * @param maintainOrder - Whether the order should be maintained if elements are equal.
+   * @param multithreaded - Whether to use multiple threads. Default is true.
    */
   sort(
     by: ColumnsOrExpr,
-    descending?: boolean,
-    nullsLast?: boolean,
+    descending?: ValueOrArray<boolean>,
+    nullsLast?: ValueOrArray<boolean>,
     maintainOrder?: boolean,
+    multithreaded?: boolean,
   ): DataFrame<S>;
   sort({
     by,
     descending,
     maintainOrder,
+    nullsLast,
+    multithreaded,
   }: {
     by: ColumnsOrExpr;
-    descending?: boolean;
-    nullsLast?: boolean;
+    descending?: ValueOrArray<boolean>;
+    nullsLast?: ValueOrArray<boolean>;
     maintainOrder?: boolean;
+    multithreaded?: boolean;
   }): DataFrame<S>;
   /**
    * Aggregate the columns of this DataFrame to their standard deviation value.
@@ -2232,7 +2239,7 @@ type TabularDataResource = {
   };
 };
 
-function mapPolarsTypeToJSONSchema(colType: DataType): string {
+const mapPolarsTypeToJSONSchema = (colType: DataType): string => {
   const typeMapping: { [key: string]: string } = {
     Null: "null",
     Bool: "boolean",
@@ -2256,7 +2263,7 @@ function mapPolarsTypeToJSONSchema(colType: DataType): string {
 
   const dataType = colType.variant;
   return typeMapping[dataType] || "string";
-}
+};
 
 /** @ignore */
 export const _DataFrame = <S extends Schema>(_df: any): DataFrame<S> => {
@@ -2723,22 +2730,49 @@ export const _DataFrame = <S extends Schema>(_df: any): DataFrame<S> => {
       }
       return wrap("slice", opts.offset, opts.length);
     },
-    sort(arg, descending = false, nullsLast = false, maintainOrder = false) {
+    sort(
+      arg,
+      descending = false,
+      nullsLast = false,
+      maintainOrder = false,
+      multithreaded = true,
+    ) {
       if (arg?.by !== undefined) {
         return this.sort(
           arg.by,
           arg.descending ?? false,
-          arg.nullsLast,
+          arg.nullsLast ?? false,
           arg.maintainOrder,
+          arg.multithreaded,
         );
       }
-      if (Array.isArray(arg) || Expr.isExpr(arg)) {
+
+      if (arg === undefined || arg === null) {
+        throw new TypeError(
+          "sort: expected a column name, expression, or selector",
+        );
+      }
+
+      const descArr = toBoolArray(descending, false);
+      const nullsLastArr = toBoolArray(nullsLast, false);
+      const by = [arg].flat(3);
+      const hasExpr = by.some((v) => Expr.isExpr(v));
+
+      if (hasExpr) {
         return _DataFrame(_df)
           .lazy()
-          .sort(arg, descending, nullsLast, maintainOrder)
+          .sort(arg, descArr, nullsLastArr, maintainOrder, multithreaded)
           .collectSync();
       }
-      return wrap("sort", arg, descending, nullsLast, maintainOrder);
+
+      return wrap(
+        "sort",
+        by,
+        descArr,
+        nullsLastArr,
+        maintainOrder,
+        multithreaded,
+      );
     },
     std() {
       return this.lazy().std().collectSync();

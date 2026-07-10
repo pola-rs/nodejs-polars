@@ -183,36 +183,44 @@ impl JsLazyFrame {
     #[napi(catch_unwind)]
     pub fn sort(
         &self,
-        by_column: String,
-        descending: bool,
-        nulls_last: bool,
+        by_column: Vec<String>,
+        descending: Vec<bool>,
+        nulls_last: Vec<bool>,
         maintain_order: bool,
+        multithreaded: bool,
     ) -> JsLazyFrame {
         let ldf = self.ldf.clone();
         ldf.sort(
-            [&by_column],
-            SortMultipleOptions::default()
-                .with_order_descending(descending)
-                .with_nulls_last(nulls_last)
-                .with_maintain_order(maintain_order),
+            by_column,
+            SortMultipleOptions {
+                descending,
+                nulls_last,
+                maintain_order,
+                multithreaded,
+                limit: None,
+            },
         )
         .into()
     }
     #[napi(catch_unwind)]
     pub fn sort_by_exprs(
         &self,
-        by_column: Vec<&JsExpr>,
-        descending: bool,
-        nulls_last: bool,
+        by: Vec<&JsExpr>,
+        descending: Vec<bool>,
+        nulls_last: Vec<bool>,
         maintain_order: bool,
-    ) -> JsLazyFrame {
+        multithreaded: bool,
+    ) -> Self {
         let ldf = self.ldf.clone();
         ldf.sort_by_exprs(
-            by_column.to_exprs(),
-            SortMultipleOptions::default()
-                .with_order_descending(descending)
-                .with_nulls_last(nulls_last)
-                .with_maintain_order(maintain_order),
+            by.to_exprs(),
+            SortMultipleOptions {
+                descending,
+                nulls_last,
+                maintain_order,
+                multithreaded,
+                limit: None,
+            },
         )
         .into()
     }
