@@ -608,9 +608,17 @@ export interface DataFrame<S extends Schema = any>
    *   - "max"
    *   - "zero"
    *   - "one"
+   * @param limit - Number of consecutive null values to fill when using the
+   *   "forward" or "backward" strategy.
    * @returns DataFrame with None replaced with the filling strategy.
    */
-  fillNull(strategy: FillNullStrategy): DataFrame<S>;
+  fillNull(strategy: FillNullStrategy, limit?: number): DataFrame<S>;
+  /**
+   * Fill null/missing values with a scalar value or expression.
+   * @param value - Value used to fill null values.
+   * @returns DataFrame with null values replaced by `value`.
+   */
+  fillNull(value: number | string | boolean | Expr): DataFrame<S>;
   /**
    * Filter the rows in the DataFrame based on a predicate expression.
    * ___
@@ -1170,6 +1178,15 @@ export interface DataFrame<S extends Schema = any>
    *    Check the sortedness of the asof keys. If the keys are not sorted Polars
    *    will error, or in case of 'by' argument raise a warning. This might become
    *    a hard error in the future.
+   * @param options.coalesce
+   *    Coalescing behavior (merging of `on` / `left_on` / `right_on` columns):
+   *    - true: -> Always coalesce join columns.
+   *    - false: -> Never coalesce join columns.
+   *    - undefined *(default)*: -> Coalesce unless columns have different names.
+   * @param options.allowExactMatches
+   *    Whether exact matches are valid join predicates.
+   *    - true *(default)*: -> allow matching with the same 'on' value (i.e. less-than-or-equal-to / greater-than-or-equal-to)
+   *    - false: -> don't match the same 'on' value (i.e., strictly less-than / strictly greater-than).
    *
    * @example
    * ```
@@ -1226,6 +1243,8 @@ export interface DataFrame<S extends Schema = any>
       allowParallel?: boolean;
       forceParallel?: boolean;
       checkSortedness?: boolean;
+      coalesce?: boolean;
+      allowExactMatches?: boolean;
     },
   ): DataFrame;
   lazy(): LazyDataFrame<S>;
@@ -1534,6 +1553,9 @@ export interface DataFrame<S extends Schema = any>
   // pipe(func: (...args: any[]) => T, ...args: any[]): T
   /**
    * Aggregate the columns of this DataFrame to their quantile value.
+   * @param quantile - Quantile between 0.0 and 1.0.
+   * @param interpolation - Interpolation method: one of
+   *   {'nearest', 'higher', 'lower', 'midpoint', 'linear'}. Defaults to "nearest".
    * @example
    * ```
    * > const df = pl.DataFrame({
@@ -1552,7 +1574,10 @@ export interface DataFrame<S extends Schema = any>
    * ╰─────┴─────┴──────╯
    * ```
    */
-  quantile(quantile: number): DataFrame<S>;
+  quantile(
+    quantile: number,
+    interpolation?: "nearest" | "higher" | "lower" | "midpoint" | "linear",
+  ): DataFrame<S>;
   /**
    * __Rechunk the data in this DataFrame to a contiguous allocation.__
    *
@@ -1615,8 +1640,9 @@ export interface DataFrame<S extends Schema = any>
    */
   rename<const U extends Partial<Record<keyof S, string>>>(
     mapping: U,
+    strict?: boolean,
   ): DataFrame<{ [K in keyof S as U[K] extends string ? U[K] : K]: S[K] }>;
-  rename(mapping: Record<string, string>): DataFrame;
+  rename(mapping: Record<string, string>, strict?: boolean): DataFrame;
   /**
    * Replace a column at an index location.
    *
@@ -1881,6 +1907,8 @@ export interface DataFrame<S extends Schema = any>
   /**
    * Aggregate the columns of this DataFrame to their standard deviation value.
    * ___
+   * @param ddof - "Delta Degrees of Freedom": the divisor used in the calculation is `N - ddof`,
+   *   where `N` represents the number of elements. By default `ddof` is 1.
    * @example
    * ```
    * > const df = pl.DataFrame({
@@ -1899,7 +1927,7 @@ export interface DataFrame<S extends Schema = any>
    * ╰─────┴─────┴──────╯
    * ```
    */
-  std(): DataFrame<S>;
+  std(ddof?: number): DataFrame<S>;
   /**
    * Aggregate the columns of this DataFrame to their mean value.
    * ___
@@ -2248,6 +2276,8 @@ export interface DataFrame<S extends Schema = any>
   unnest(columns: string | string[], separator?: string): DataFrame;
   /**
    * Aggregate the columns of this DataFrame to their variance value.
+   * @param ddof - "Delta Degrees of Freedom": the divisor used in the calculation is `N - ddof`,
+   *   where `N` represents the number of elements. By default `ddof` is 1.
    * @example
    * ```
    * > const df = pl.DataFrame({
@@ -2266,7 +2296,7 @@ export interface DataFrame<S extends Schema = any>
    * ╰─────┴─────┴──────╯
    * ```
    */
-  var(): DataFrame<S>;
+  var(ddof?: number): DataFrame<S>;
   /**
    Grow this DataFrame vertically by stacking a DataFrame to it.
    @param df - DataFrame to stack.
@@ -2609,13 +2639,9 @@ export const _DataFrame = <S extends Schema>(_df: any): DataFrame<S> => {
     },
     drop(...names) {
       if (!Array.isArray(names[0]) && names.length === 1) {
-        return wrap("drop", names[0]);
+        return wrap("drop", names[0], true);
       }
-      const df: any = this.clone();
-      for (const name of names.flat(2)) {
-        df.inner().dropInPlace(name);
-      }
-      return df;
+      return wrap("dropMany", names.flat(2), true);
     },
     dropNulls(...subset) {
       if (subset.length) {
@@ -2633,8 +2659,32 @@ export const _DataFrame = <S extends Schema>(_df: any): DataFrame<S> => {
     filter(predicate) {
       return this.lazy().filter(predicate).collectSync();
     },
-    fillNull(strategy) {
-      return wrap("fillNull", strategy);
+    fillNull(strategy, limit?) {
+      const strategies = [
+        "backward",
+        "forward",
+        "mean",
+        "min",
+        "max",
+        "zero",
+        "one",
+      ];
+      // Strategy-based fill.
+      if (typeof strategy === "string" && strategies.includes(strategy)) {
+        // A limit only applies to the forward/backward strategies, which must
+        // be routed through the expression API to carry the limit through.
+        if (
+          limit != null &&
+          (strategy === "forward" || strategy === "backward")
+        ) {
+          return this.select(
+            col("*").fillNull(strategy as any, limit as any) as any,
+          );
+        }
+        return wrap("fillNull", strategy);
+      }
+      // Value/expression-based fill.
+      return this.select(col("*").fillNull(strategy as any) as any);
     },
     findIdxByName(name) {
       return unwrap("findIdxByName", name);
@@ -2780,9 +2830,23 @@ export const _DataFrame = <S extends Schema>(_df: any): DataFrame<S> => {
       const suffix: string = options.suffix;
       const coalesce: boolean = options.coalesce;
       const validate: string = options.validate;
+      const nullsEqual: boolean = options.nullsEqual;
+      const maintainOrder: string = options.maintainOrder;
+      const buildSide: string = options.buildSide;
       if (how === "cross") {
         return _DataFrame(
-          _df.join(other._df, [], [], how, suffix, coalesce, validate),
+          _df.join(
+            other._df,
+            [],
+            [],
+            how,
+            suffix,
+            coalesce,
+            validate,
+            nullsEqual,
+            maintainOrder,
+            buildSide,
+          ),
         );
       }
       let leftOn = columnOrColumns(options.leftOn);
@@ -2806,6 +2870,9 @@ export const _DataFrame = <S extends Schema>(_df: any): DataFrame<S> => {
         suffix,
         coalesce,
         validate,
+        nullsEqual,
+        maintainOrder,
+        buildSide,
       );
     },
     joinAsof(other, options) {
@@ -2935,8 +3002,8 @@ export const _DataFrame = <S extends Schema>(_df: any): DataFrame<S> => {
         _df.pivot(values, on, index, fn, maintainOrder, sortColumns, separator),
       );
     },
-    quantile(quantile) {
-      return this.lazy().quantile(quantile).collectSync();
+    quantile(quantile, interpolation = "nearest") {
+      return this.lazy().quantile(quantile, interpolation).collectSync();
     },
     rechunk() {
       return wrap("rechunk");
@@ -2944,10 +3011,10 @@ export const _DataFrame = <S extends Schema>(_df: any): DataFrame<S> => {
     reverse() {
       return this.lazy().reverse().collectSync();
     },
-    rename(mapping): any {
+    rename(mapping, strict = true): any {
       const df = this.clone();
       for (const [column, new_col] of Object.entries(mapping)) {
-        (df as any).inner().rename(column, new_col);
+        (df as any).inner().rename(column, new_col, strict);
       }
       return df;
     },
@@ -2963,25 +3030,31 @@ export const _DataFrame = <S extends Schema>(_df: any): DataFrame<S> => {
 
       return _df.toRows();
     },
-    sample(opts?, frac?, withReplacement = false, seed?) {
+    sample(opts?, frac?, withReplacement = false, seed?, shuffle = false) {
       if (arguments.length === 0) {
         return wrap(
           "sampleN",
           Series("", [1]).inner(),
           withReplacement,
-          false,
+          shuffle,
           seed,
         );
       }
       if (opts?.n !== undefined || opts?.frac !== undefined) {
-        return this.sample(opts.n, opts.frac, opts.withReplacement, seed);
+        return this.sample(
+          opts.n,
+          opts.frac,
+          opts.withReplacement,
+          seed,
+          opts.shuffle ?? shuffle,
+        );
       }
       if (typeof opts === "number") {
         return wrap(
           "sampleN",
           Series("", [opts]).inner(),
           withReplacement,
-          false,
+          shuffle,
           seed,
         );
       }
@@ -2990,7 +3063,7 @@ export const _DataFrame = <S extends Schema>(_df: any): DataFrame<S> => {
           "sampleFrac",
           Series("", [frac]).inner(),
           withReplacement,
-          false,
+          shuffle,
           seed,
         );
       }
@@ -3073,8 +3146,8 @@ export const _DataFrame = <S extends Schema>(_df: any): DataFrame<S> => {
         multithreaded,
       );
     },
-    std() {
-      return this.lazy().std().collectSync();
+    std(ddof = 1) {
+      return this.lazy().std(ddof).collectSync();
     },
     sum(axis = 0, nullStrategy = "ignore") {
       if (axis === 1) {
@@ -3322,8 +3395,8 @@ export const _DataFrame = <S extends Schema>(_df: any): DataFrame<S> => {
       columns = Array.isArray(columns) ? columns : [columns];
       return _DataFrame(_df.unnest(columns, separator));
     },
-    var() {
-      return this.lazy().var().collectSync();
+    var(ddof = 1) {
+      return this.lazy().var(ddof).collectSync();
     },
     map: (fn) => map(_DataFrame(_df), fn as any) as any,
     row(idx) {

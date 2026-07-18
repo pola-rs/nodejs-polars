@@ -469,6 +469,8 @@ describe("series functions", () => {
     ${numSeries()}  | ${"sample"}          | ${[{ frac: 0.1, withReplacement: true, seed: 1n }]}
     ${numSeries()}  | ${"sample"}          | ${[{ frac: 0.1, withReplacement: true, seed: 1 }]}
     ${numSeries()}  | ${"sample"}          | ${[{ n: 1, withReplacement: true, seed: 1 }]}
+    ${numSeries()}  | ${"sample"}          | ${[{ n: 1, withReplacement: false, seed: 1, shuffle: true }]}
+    ${numSeries()}  | ${"sample"}          | ${[{ frac: 0.5, shuffle: true }]}
     ${numSeries()}  | ${"seriesEqual"}     | ${[other()]}
     ${numSeries()}  | ${"seriesEqual"}     | ${[other(), true]}
     ${numSeries()}  | ${"seriesEqual"}     | ${[other(), false]}

@@ -341,6 +341,7 @@ impl JsLazyFrame {
     }
     #[allow(clippy::too_many_arguments)]
     #[napi(catch_unwind)]
+    #[allow(clippy::too_many_arguments)]
     pub fn join_asof(
         &self,
         other: &JsLazyFrame,
@@ -355,12 +356,19 @@ impl JsLazyFrame {
         tolerance: Option<Wrap<AnyValue<'_>>>,
         tolerance_str: Option<String>,
         check_sortedness: bool,
+        coalesce: Option<bool>,
+        allow_exact_matches: Option<bool>,
     ) -> JsLazyFrame {
         let strategy = match strategy.as_ref() {
             "forward" => AsofStrategy::Forward,
             "backward" => AsofStrategy::Backward,
             "nearest" => AsofStrategy::Nearest,
             _ => panic!("expected one of {{'forward', 'backward', 'nearest'}}"),
+        };
+        let coalesce = match coalesce {
+            None => JoinCoalesce::JoinSpecific,
+            Some(true) => JoinCoalesce::CoalesceColumns,
+            Some(false) => JoinCoalesce::KeepColumns,
         };
         let ldf = self.ldf.clone();
         let other = other.ldf.clone();
@@ -372,6 +380,7 @@ impl JsLazyFrame {
             .right_on([right_on])
             .allow_parallel(allow_parallel)
             .force_parallel(force_parallel)
+            .coalesce(coalesce)
             .how(JoinType::AsOf(Box::new(AsOfOptions {
                 strategy,
                 left_by: left_by.map(strings_to_pl_smallstr),
@@ -382,7 +391,7 @@ impl JsLazyFrame {
                     Scalar::new(dtype, av)
                 }),
                 tolerance_str: tolerance_str.map(|s| s.into()),
-                allow_eq: true,
+                allow_eq: allow_exact_matches.unwrap_or(true),
                 check_sortedness,
             })))
             .suffix(suffix)
@@ -402,6 +411,9 @@ impl JsLazyFrame {
         suffix: String,
         coalesce: Option<bool>,
         validate: Option<String>,
+        nulls_equal: Option<bool>,
+        maintain_order: Option<String>,
+        build_side: Option<String>,
     ) -> JsLazyFrame {
         let ldf = self.ldf.clone();
         let other = other.ldf.clone();
@@ -423,6 +435,24 @@ impl JsLazyFrame {
             _ => panic!("Unknown join validation method"),
         };
 
+        let maintain_order: MaintainOrderJoin = match maintain_order.as_deref() {
+            None | Some("none") => MaintainOrderJoin::None,
+            Some("left") => MaintainOrderJoin::Left,
+            Some("right") => MaintainOrderJoin::Right,
+            Some("left_right") => MaintainOrderJoin::LeftRight,
+            Some("right_left") => MaintainOrderJoin::RightLeft,
+            _ => panic!("Unknown maintain_order"),
+        };
+
+        let build_side: Option<JoinBuildSide> = match build_side.as_deref() {
+            None | Some("auto") => None,
+            Some("left") => Some(JoinBuildSide::PreferLeft),
+            Some("right") => Some(JoinBuildSide::PreferRight),
+            Some("force_left") => Some(JoinBuildSide::ForceLeft),
+            Some("force_right") => Some(JoinBuildSide::ForceRight),
+            _ => panic!("Unknown build_side"),
+        };
+
         ldf.join_builder()
             .with(other)
             .left_on(left_on)
@@ -433,6 +463,9 @@ impl JsLazyFrame {
             .suffix(suffix)
             .coalesce(coalesce)
             .validate(validation)
+            .join_nulls(nulls_equal.unwrap_or(false))
+            .maintain_order(maintain_order)
+            .build_side(build_side)
             .finish()
             .into()
     }

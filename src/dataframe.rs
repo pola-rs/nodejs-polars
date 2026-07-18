@@ -586,6 +586,7 @@ impl JsDataFrame {
         Ok(JsDataFrame::new(df))
     }
     #[napi(catch_unwind)]
+    #[allow(clippy::too_many_arguments)]
     pub fn join(
         &self,
         other: &JsDataFrame,
@@ -595,6 +596,9 @@ impl JsDataFrame {
         suffix: Option<String>,
         coalesce: Option<bool>,
         validate: Option<String>,
+        nulls_equal: Option<bool>,
+        maintain_order: Option<String>,
+        build_side: Option<String>,
     ) -> napi::Result<JsDataFrame> {
         let how = match how.as_ref() {
             "left" => JoinType::Left,
@@ -640,6 +644,32 @@ impl JsDataFrame {
             _ => JoinCoalesce::CoalesceColumns, // Default is true
         };
 
+        let maintain_order: MaintainOrderJoin = match maintain_order.as_deref() {
+            None | Some("none") => MaintainOrderJoin::None,
+            Some("left") => MaintainOrderJoin::Left,
+            Some("right") => MaintainOrderJoin::Right,
+            Some("left_right") => MaintainOrderJoin::LeftRight,
+            Some("right_left") => MaintainOrderJoin::RightLeft,
+            Some(unknown) => {
+                return Err(napi::Error::from_reason(format!(
+                    "Unknown maintain_order: {unknown}"
+                )))
+            }
+        };
+
+        let build_side: Option<JoinBuildSide> = match build_side.as_deref() {
+            None | Some("auto") => None,
+            Some("left") => Some(JoinBuildSide::PreferLeft),
+            Some("right") => Some(JoinBuildSide::PreferRight),
+            Some("force_left") => Some(JoinBuildSide::ForceLeft),
+            Some("force_right") => Some(JoinBuildSide::ForceRight),
+            Some(unknown) => {
+                return Err(napi::Error::from_reason(format!(
+                    "Unknown build_side: {unknown}"
+                )))
+            }
+        };
+
         let df = self
             .df
             .join(
@@ -651,6 +681,9 @@ impl JsDataFrame {
                     suffix: suffix.map_or(None, |s| Some(PlSmallStr::from_string(s))),
                     coalesce,
                     validation,
+                    nulls_equal: nulls_equal.unwrap_or(false),
+                    maintain_order,
+                    build_side,
                     ..Default::default()
                 },
                 None,
@@ -772,9 +805,24 @@ impl JsDataFrame {
     }
 
     #[napi(catch_unwind)]
-    pub fn drop(&self, name: String) -> napi::Result<JsDataFrame> {
-        let df = self.df.drop(&name).map_err(JsPolarsErr::from)?;
-        Ok(JsDataFrame::new(df))
+    pub fn drop(&self, name: String, strict: Option<bool>) -> napi::Result<JsDataFrame> {
+        // strict (default true) errors on a missing column; non-strict ignores it.
+        if strict.unwrap_or(true) {
+            let df = self.df.drop(&name).map_err(JsPolarsErr::from)?;
+            Ok(JsDataFrame::new(df))
+        } else {
+            Ok(JsDataFrame::new(self.df.drop_many([name])))
+        }
+    }
+    #[napi(catch_unwind)]
+    pub fn drop_many(&self, names: Vec<String>, strict: Option<bool>) -> napi::Result<JsDataFrame> {
+        // When strict (default), verify every column exists before dropping.
+        if strict.unwrap_or(true) {
+            for name in &names {
+                self.df.column(name).map_err(JsPolarsErr::from)?;
+            }
+        }
+        Ok(JsDataFrame::new(self.df.drop_many(names)))
     }
     #[napi(catch_unwind)]
     pub fn select_at_idx(&self, idx: i64) -> Option<JsSeries> {
@@ -875,7 +923,16 @@ impl JsDataFrame {
     }
 
     #[napi(catch_unwind)]
-    pub fn rename(&mut self, column: String, new_col: String) -> napi::Result<()> {
+    pub fn rename(
+        &mut self,
+        column: String,
+        new_col: String,
+        strict: Option<bool>,
+    ) -> napi::Result<()> {
+        // Non-strict rename silently ignores a mapping whose source column is absent.
+        if !strict.unwrap_or(true) && self.df.column(&column).is_err() {
+            return Ok(());
+        }
         self.df
             .rename(&column, PlSmallStr::from_string(new_col))
             .map_err(JsPolarsErr::from)?;

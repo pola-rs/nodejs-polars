@@ -469,6 +469,7 @@ export interface Sample<T> {
    * @param frac - Fraction between 0.0 and 1.0 .
    * @param withReplacement - Sample with replacement.
    * @param seed - Seed initialization. If not provided, a random seed will be used
+   * @param shuffle - Shuffle the order of sampled data points.
    * @example
    * ```
    * > df = pl.DataFrame({
@@ -496,16 +497,19 @@ export interface Sample<T> {
     frac?: number,
     withReplacement?: boolean,
     seed?: number | bigint,
+    shuffle?: boolean,
   ): T;
   sample(opts?: {
     n: number;
     withReplacement?: boolean;
     seed?: number | bigint;
+    shuffle?: boolean;
   }): T;
   sample(opts?: {
     frac: number;
     withReplacement?: boolean;
     seed?: number | bigint;
+    shuffle?: boolean;
   }): T;
 }
 

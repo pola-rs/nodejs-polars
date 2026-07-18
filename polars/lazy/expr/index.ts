@@ -541,8 +541,14 @@ export interface Expr
   extendConstant(opt: { value: any; n: number }): Expr;
   /** Fill nan value with a fill value */
   fillNan(other: any): Expr;
-  /** Fill null value with a fill value or strategy */
-  fillNull(other: any | FillNullStrategy): Expr;
+  /**
+   * Fill null value with a fill value or strategy
+   * @param other - Fill value, expression, or one of the fill strategies
+   *   ("backward", "forward", "mean", "min", "max", "zero", "one").
+   * @param limit - Number of consecutive null values to fill when using the
+   *   "forward" or "backward" strategy.
+   */
+  fillNull(other: any | FillNullStrategy, limit?: number): Expr;
   /**
    * Filter a single column.
    *
@@ -1699,13 +1705,13 @@ export const _Expr = (_expr: any): Expr => {
       const expr = (exprToLitOrExpr(other, true) as any).inner();
       return _Expr(_expr.fillNan(expr));
     },
-    fillNull(fillValue) {
+    fillNull(fillValue, limit?) {
       if (
         ["backward", "forward", "mean", "min", "max", "zero", "one"].includes(
           fillValue,
         )
       ) {
-        return _Expr(_expr.fillNullWithStrategy(fillValue));
+        return _Expr(_expr.fillNullWithStrategy(fillValue, limit ?? null));
       }
       const expr = exprToLitOrExpr(fillValue).inner();
       return _Expr(_expr.fillNull(expr));

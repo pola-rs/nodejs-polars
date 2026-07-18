@@ -419,6 +419,8 @@ export interface LazyDataFrame<S extends Schema = any>
       allowParallel?: boolean;
       forceParallel?: boolean;
       checkSortedness?: boolean;
+      coalesce?: boolean;
+      allowExactMatches?: boolean;
     },
   ): LazyDataFrame;
   /**
@@ -459,7 +461,10 @@ export interface LazyDataFrame<S extends Schema = any>
   /**
    * @see {@link DataFrame.quantile}
    */
-  quantile(quantile: number): LazyDataFrame<S>;
+  quantile(
+    quantile: number,
+    interpolation?: "nearest" | "higher" | "lower" | "midpoint" | "linear",
+  ): LazyDataFrame<S>;
   /**
    * @see {@link DataFrame.rename}
    */
@@ -512,8 +517,10 @@ export interface LazyDataFrame<S extends Schema = any>
   }): LazyDataFrame<S>;
   /**
    * @see {@link DataFrame.std}
+   * @param ddof - "Delta Degrees of Freedom": the divisor used in the calculation is `N - ddof`,
+   *   where `N` represents the number of elements. By default `ddof` is 1.
    */
-  std(): LazyDataFrame<S>;
+  std(ddof?: number): LazyDataFrame<S>;
   /**
    * Aggregate the columns in the DataFrame to their sum value.
    */
@@ -592,8 +599,10 @@ export interface LazyDataFrame<S extends Schema = any>
   }): LazyDataFrame<S>;
   /**
    * Aggregate the columns in the DataFrame to their variance value.
+   * @param ddof - "Delta Degrees of Freedom": the divisor used in the calculation is `N - ddof`,
+   *   where `N` represents the number of elements. By default `ddof` is 1.
    */
-  var(): LazyDataFrame<S>;
+  var(ddof?: number): LazyDataFrame<S>;
   /**
    * Add or overwrite column in a DataFrame.
    * @param expr - Expression that evaluates to column.
@@ -1024,8 +1033,17 @@ export const _LazyDataFrame = (_ldf: any): LazyDataFrame => {
         forceParallel: false,
         ...options,
       };
-      const { how, suffix, allowParallel, forceParallel, coalesce, validate } =
-        options;
+      const {
+        how,
+        suffix,
+        allowParallel,
+        forceParallel,
+        coalesce,
+        validate,
+        nullsEqual,
+        maintainOrder,
+        buildSide,
+      } = options;
       if (how === "cross") {
         return _LazyDataFrame(
           _ldf.join(
@@ -1038,8 +1056,9 @@ export const _LazyDataFrame = (_ldf: any): LazyDataFrame => {
             suffix,
             coalesce,
             validate,
-            [],
-            [],
+            nullsEqual,
+            maintainOrder,
+            buildSide,
           ),
         );
       }
@@ -1071,8 +1090,9 @@ export const _LazyDataFrame = (_ldf: any): LazyDataFrame => {
         suffix,
         coalesce,
         validate,
-        [],
-        [],
+        nullsEqual,
+        maintainOrder,
+        buildSide,
       );
 
       return _LazyDataFrame(ldf);
@@ -1092,6 +1112,8 @@ export const _LazyDataFrame = (_ldf: any): LazyDataFrame => {
         allowParallel,
         forceParallel,
         checkSortedness,
+        coalesce,
+        allowExactMatches,
       } = options;
       let leftOn: string | undefined;
       let rightOn: string | undefined;
@@ -1154,6 +1176,8 @@ export const _LazyDataFrame = (_ldf: any): LazyDataFrame => {
         toleranceNum,
         toleranceStr,
         checkSortedness ?? true,
+        coalesce,
+        allowExactMatches,
       );
 
       return _LazyDataFrame(ldf);
@@ -1260,14 +1284,14 @@ export const _LazyDataFrame = (_ldf: any): LazyDataFrame => {
         multithreaded,
       );
     },
-    std() {
-      return _LazyDataFrame(_ldf.std());
+    std(ddof = 1) {
+      return _LazyDataFrame(_ldf.std(ddof));
     },
     sum() {
       return _LazyDataFrame(_ldf.sum());
     },
-    var() {
-      return _LazyDataFrame(_ldf.var());
+    var(ddof = 1) {
+      return _LazyDataFrame(_ldf.var(ddof));
     },
     tail(length = 5) {
       return _LazyDataFrame(_ldf.tail(length));

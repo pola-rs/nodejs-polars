@@ -240,20 +240,55 @@ export type JoinType = "left" | "inner" | "full" | "semi" | "anti" | "cross";
 /**
  * options for same named column join @see {@link DataFrame.join}
  */
-export type SameNameColumnJoinOptions<
-  L extends string = string,
-  R extends string = string,
-> = {
-  /** Name(s) of the join columns in both DataFrames. */
-  on: ValueOrArray<L & R>;
-  /** Join strategy */
-  how?: Exclude<JoinType, "cross">;
+/**
+ * Which side of the join to build. @see {@link DataFrame.join}
+ */
+export type JoinBuildSide =
+  | "auto"
+  | "left"
+  | "right"
+  | "force_left"
+  | "force_right";
+/**
+ * Which frame's row order to preserve in the output. @see {@link DataFrame.join}
+ */
+export type MaintainOrderJoin =
+  | "none"
+  | "left"
+  | "right"
+  | "left_right"
+  | "right_left";
+/**
+ * Common join options shared by all join variants.
+ */
+type CommonJoinOptions = {
   /** Suffix to append to columns with a duplicate name. */
   suffix?: string;
   /** Coalescing behavior (merging of join columns). */
   coalesce?: boolean;
   // Checks if join is of specified type.
   validate?: string;
+  /** Join on null values. When false, null values will never produce matches. Default: false */
+  nullsEqual?: boolean;
+  /**
+   * Which frame's row order to preserve, if any.
+   * One of {'none', 'left', 'right', 'left_right', 'right_left'}. Default: 'none'
+   */
+  maintainOrder?: MaintainOrderJoin;
+  /**
+   * Which side to prefer/force as the build side of the join.
+   * One of {'auto', 'left', 'right', 'force_left', 'force_right'}. Default: 'auto'
+   */
+  buildSide?: JoinBuildSide;
+};
+export type SameNameColumnJoinOptions<
+  L extends string = string,
+  R extends string = string,
+> = CommonJoinOptions & {
+  /** Name(s) of the join columns in both DataFrames. */
+  on: ValueOrArray<L & R>;
+  /** Join strategy */
+  how?: Exclude<JoinType, "cross">;
 };
 /**
  * options for differently named column join @see {@link DataFrame.join}
@@ -261,32 +296,20 @@ export type SameNameColumnJoinOptions<
 export type DifferentNameColumnJoinOptions<
   L extends string = string,
   R extends string = string,
-> = {
+> = CommonJoinOptions & {
   /** Name(s) of the left join column(s). */
   leftOn: ValueOrArray<L>;
   /** Name(s) of the right join column(s). */
   rightOn: ValueOrArray<R>;
   /** Join strategy */
   how?: Exclude<JoinType, "cross">;
-  /** Suffix to append to columns with a duplicate name. */
-  suffix?: string;
-  /** Coalescing behavior (merging of join columns). */
-  coalesce?: boolean;
-  // Checks if join is of specified type.
-  validate?: string;
 };
 /**
  * options for cross join @see {@link DataFrame.join}
  */
-export type CrossJoinOptions = {
+export type CrossJoinOptions = CommonJoinOptions & {
   /** Join strategy */
   how: "cross";
-  /** Suffix to append to columns with a duplicate name. */
-  suffix?: string;
-  /** Coalescing behavior (merging of join columns). */
-  coalesce?: boolean;
-  // Checks if join is of specified type.
-  validate?: string;
 };
 /**
  * options for join operations @see {@link DataFrame.join}
