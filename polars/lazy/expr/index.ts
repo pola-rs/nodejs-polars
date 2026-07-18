@@ -347,6 +347,17 @@ export interface Expr
   backwardFill(): Expr;
   /** Cast between data types. */
   cast(dtype: DataType, strict?: boolean): Expr;
+  /** Rounds up to the nearest integer value. Only works on floating point Series. */
+  ceil(): Expr;
+  /**
+   * Clip (limit) the values in an array to a `min` and `max` boundary.
+   *
+   * Only works for numerical types.
+   * @param min Minimum value.
+   * @param max Maximum value.
+   */
+  clip(min: number, max: number): Expr;
+  clip(options: { min: number; max: number }): Expr;
   /**
    * Compute the element-wise value for the cosine.
    * @returns Expression of data type :class:`Float64`.
@@ -461,6 +472,28 @@ export interface Expr
   dot(other: any): Expr;
   /** Drop NaN values from this expression. */
   dropNans(): Expr;
+  /**
+   * Computes the entropy.
+   *
+   * Uses the formula `-sum(pk * log(pk))` where `pk` are discrete probabilities.
+   * @param base Given base, defaults to `e`
+   * @param normalize Normalize `pk` if it doesn't sum to 1.
+   * @example
+   * ```
+   * >>> const df = pl.DataFrame({"a": [0.0, 1.0, 2.0]})
+   * >>> df.select(pl.col("a").entropy({ base: 2 }))
+   * shape: (1, 1)
+   * ┌──────────┐
+   * │ a        │
+   * │ ---      │
+   * │ f64      │
+   * ╞══════════╡
+   * │ 1.459148 │
+   * └──────────┘
+   * ```
+   */
+  entropy(base?: number, normalize?: boolean): Expr;
+  entropy(options: { base?: number; normalize?: boolean }): Expr;
   /** Drop null values from this expression. */
   dropNulls(): Expr;
   /**
@@ -561,6 +594,8 @@ export interface Expr
   first(): Expr;
   /** @see {@link Expr.explode} */
   flatten(): Expr;
+  /** Rounds down to the nearest integer value. Only works on floating point Series. */
+  floor(): Expr;
   /** Fill missing values with the latest seen values */
   forwardFill(): Expr;
   /**
@@ -622,8 +657,11 @@ export interface Expr
    */
   implode(): Expr;
   inner(): any;
-  /** Interpolate intermediate values. The interpolation method is linear. */
-  interpolate(): Expr;
+  /**
+   * Interpolate intermediate values.
+   * @param method Interpolation method, either `"linear"` (default) or `"nearest"`.
+   */
+  interpolate(method?: InterpolationMethod): Expr;
   /** Get mask of duplicated values. */
   isDuplicated(): Expr;
   /** Create a boolean expression returning `true` where the expression values are finite. */
@@ -868,6 +906,34 @@ export interface Expr
    * ```
    */
   over(by: ExprOrString, ...partitionBy: ExprOrString[]): Expr;
+  /**
+   * Computes percentage change between values.
+   *
+   * Percentage change (as fraction) between current element and most-recent
+   * non-null element at least `n` period(s) before the current element.
+   *
+   * Computes the change from the previous row by default.
+   * @param n periods to shift for forming percent change.
+   * @example
+   * ```
+   * >>> const df = pl.DataFrame({"a": [10, 11, 12, null, 12]})
+   * >>> df.withColumns(pl.col("a").pctChange().alias("pct_change"))
+   * shape: (5, 2)
+   * ┌──────┬────────────┐
+   * │ a    ┆ pct_change │
+   * │ ---  ┆ ---        │
+   * │ i64  ┆ f64        │
+   * ╞══════╪════════════╡
+   * │ 10   ┆ null       │
+   * │ 11   ┆ 0.1        │
+   * │ 12   ┆ 0.090909   │
+   * │ null ┆ 0.0        │
+   * │ 12   ┆ 0.0        │
+   * └──────┴────────────┘
+   * ```
+   */
+  pctChange(n?: number | Expr): Expr;
+  pctChange(options: { n: number | Expr }): Expr;
   /** Raise expression to the power of exponent. */
   pow(exponent: number): Expr;
   pow({ exponent }: { exponent: number }): Expr;
@@ -944,8 +1010,13 @@ export interface Expr
   ```
   */
   product(): Expr;
-  /** Get quantile value. */
-  quantile(quantile: number | Expr): Expr;
+  /**
+   * Get quantile value.
+   * @param quantile Quantile between 0.0 and 1.0.
+   * @param interpolation Interpolation method: one of `"nearest"` (default),
+   *   `"higher"`, `"lower"`, `"midpoint"`, or `"linear"`.
+   */
+  quantile(quantile: number | Expr, interpolation?: InterpolationMethod): Expr;
   /** Convert an angle from degrees to radians, element-wise. */
   radians(): Expr;
   /**
@@ -1180,6 +1251,30 @@ export interface Expr
     old: unknown | Expr | string | number | (number | string)[];
     new_?: Expr | string | number | (number | string)[];
   }): Expr;
+  /**
+   * Reshape this Expr to a flat Series or a Series of Lists.
+   * @param dims Tuple of the dimension sizes. If a `-1` is used in any of the
+   *   dimensions, that dimension is inferred.
+   * @returns Expr. If a single dimension is given, results in an expression of
+   *   the original data type. If a multiple dimensions are given, results in an
+   *   expression of data type `List` with shape `dims`.
+   * @example
+   * ```
+   * >>> const df = pl.DataFrame({"foo": [1, 2, 3, 4, 5, 6, 7, 8, 9]})
+   * >>> df.select(pl.col("foo").reshape([3, 3]))
+   * shape: (3, 1)
+   * ┌───────────┐
+   * │ foo       │
+   * │ ---       │
+   * │ list[i64] │
+   * ╞═══════════╡
+   * │ [1, 2, 3] │
+   * │ [4, 5, 6] │
+   * │ [7, 8, 9] │
+   * └───────────┘
+   * ```
+   */
+  reshape(dims: number[]): Expr;
   /** Reverse the arrays in the list */
   reverse(): Expr;
   /**
@@ -1201,6 +1296,13 @@ export interface Expr
     periods: number;
     fillValue: number;
   }): Expr;
+  /**
+   * Shuffle the contents of this expression.
+   * @param seed Seed for the random number generator. If not set, a random
+   *   seed is generated each time the shuffle is called.
+   */
+  shuffle(seed?: number): Expr;
+  shuffle(options: { seed?: number }): Expr;
   /**
    * Compute the element-wise value for the sine.
    * @returns Expression of data type :class:`Float64`.
@@ -1262,14 +1364,21 @@ export interface Expr
    * * false -> order from small to large.
    * * true -> order from large to small.
    * @param nullsLast If true nulls are considered to be larger than any valid value
+   * @param maintainOrder Whether the order should be maintained if elements are equal.
    */
-  sort(descending?: boolean, nullsLast?: boolean): Expr;
+  sort(
+    descending?: boolean,
+    nullsLast?: boolean,
+    maintainOrder?: boolean,
+  ): Expr;
   sort({
     descending,
     nullsLast,
+    maintainOrder,
   }: {
     descending?: boolean;
     nullsLast?: boolean;
+    maintainOrder?: boolean;
   }): Expr;
   /**
    * Sort this column by the ordering of another column, or multiple other columns.
@@ -1492,8 +1601,8 @@ export const _Expr = (_expr: any): Expr => {
       return _Expr(_expr.argMin());
     },
     argSort(descending: any = false, nullsLast: boolean = false) {
-      descending = descending?.descending ?? descending;
       nullsLast = descending?.nullsLast ?? nullsLast;
+      descending = descending?.descending ?? descending;
       return _Expr(_expr.argSort(descending, nullsLast));
     },
     argUnique() {
@@ -1539,7 +1648,7 @@ export const _Expr = (_expr: any): Expr => {
     cumCount(reverse: any = false) {
       reverse = reverse?.reverse ?? reverse;
 
-      return _Expr(_expr.cumCount(reverse?.reverse ?? reverse));
+      return _Expr(_expr.cumCount(reverse));
     },
     cumMax(reverse: any = false) {
       reverse = reverse?.reverse ?? reverse;
@@ -1580,6 +1689,13 @@ export const _Expr = (_expr: any): Expr => {
     },
     dropNulls() {
       return _Expr(_expr.dropNulls());
+    },
+    entropy(base: any = Math.E, normalize = true) {
+      if (typeof base === "object" && base !== null) {
+        normalize = base.normalize ?? normalize;
+        base = base.base ?? Math.E;
+      }
+      return _Expr(_expr.entropy(base, normalize));
     },
     ewmMean(
       opts: {
@@ -1867,6 +1983,10 @@ export const _Expr = (_expr: any): Expr => {
 
       return wrap("over", partitionBy);
     },
+    pctChange(n: any = 1) {
+      n = n?.n ?? n;
+      return _Expr(_expr.pctChange(exprToLitOrExpr(n, false)));
+    },
     pow(exponent) {
       return _Expr(_expr.pow(exponent?.exponent ?? exponent));
     },
@@ -1902,6 +2022,9 @@ export const _Expr = (_expr: any): Expr => {
       const e = exprToLitOrExpr(expr, false)._expr;
 
       return _Expr(_expr.repeatBy(e));
+    },
+    reshape(dims) {
+      return _Expr(_expr.reshape(dims));
     },
     replace(old, newValue) {
       let oldIn: any = old;
@@ -2044,6 +2167,13 @@ export const _Expr = (_expr: any): Expr => {
         return wrap("shiftAndFill", optOrPeriods, fillValue);
       }
       return wrap("shiftAndFill", optOrPeriods.periods, optOrPeriods.fillValue);
+    },
+    shuffle(seed?) {
+      seed = seed?.seed ?? seed;
+      if (seed === undefined || seed === null) {
+        seed = Math.floor(Math.random() * Number.MAX_SAFE_INTEGER);
+      }
+      return _Expr(_expr.shuffle(BigInt(seed)));
     },
     skew(bias) {
       return wrap("skew", bias?.bias ?? bias ?? true);
