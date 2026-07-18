@@ -2023,7 +2023,7 @@ export interface DataFrame<S extends Schema = any>
    * ```
    * @category IO
    */
-  toObject(): { [K in keyof S]: DTypeToJs<S[K] | null>[] };
+  toObject(): { [K in keyof S]: (DTypeToJs<S[K]> | null)[] };
   toSeries(index?: number): SchemaToSeriesRecord<S>[keyof S];
   toString(): string;
   /**
@@ -2773,7 +2773,7 @@ export const _DataFrame = <S extends Schema>(_df: any): DataFrame<S> => {
           _df.hashRows(BigInt(obj), BigInt(k1), BigInt(k2), BigInt(k3)),
         );
       }
-      const o = { k0: obj, k1: k1, k2: k2, k3: k3, ...obj };
+      const o = { k0: 0n, k1: k1, k2: k2, k3: k3, ...obj };
 
       return _Series(
         _df.hashRows(BigInt(o.k0), BigInt(o.k1), BigInt(o.k2), BigInt(o.k3)),
@@ -3045,7 +3045,7 @@ export const _DataFrame = <S extends Schema>(_df: any): DataFrame<S> => {
           opts.n,
           opts.frac,
           opts.withReplacement,
-          seed,
+          opts.seed ?? seed,
           opts.shuffle ?? shuffle,
         );
       }
