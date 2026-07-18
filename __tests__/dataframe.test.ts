@@ -1786,6 +1786,160 @@ Series: 'attributes' [struct[5]]
       assertFrameEqual(actual, expected, true);
     }
   });
+  test("reverse", () => {
+    const df = pl.DataFrame({ key: ["a", "b", "c"], val: [1, 2, 3] });
+    const actual = df.reverse();
+    const expected = pl.DataFrame({ key: ["c", "b", "a"], val: [3, 2, 1] });
+    assertFrameEqual(actual, expected);
+  });
+  test("count", () => {
+    const df = pl.DataFrame({
+      a: [1, 2, 3, 4],
+      b: [1, 2, 1, null],
+      c: [null, null, null, null],
+    });
+    const actual = df.count();
+    assert.deepStrictEqual(actual.toObject(), { a: [4], b: [3], c: [0] });
+  });
+  test("product", () => {
+    const df = pl.DataFrame({
+      a: [1, 2, 3],
+      b: [0.5, 4, 10],
+      c: [true, true, false],
+    });
+    const actual = df.product();
+    assert.deepStrictEqual(actual.toObject(), { a: [6], b: [20], c: [0] });
+  });
+  test("gatherEvery", () => {
+    const df = pl.DataFrame({ a: [1, 2, 3, 4], b: [5, 6, 7, 8] });
+    assertFrameEqual(df.gatherEvery(2), pl.DataFrame({ a: [1, 3], b: [5, 7] }));
+  });
+  test("gatherEvery:offset", () => {
+    const df = pl.DataFrame({ a: [1, 2, 3, 4], b: [5, 6, 7, 8] });
+    assertFrameEqual(
+      df.gatherEvery(2, 1),
+      pl.DataFrame({ a: [2, 4], b: [6, 8] }),
+    );
+  });
+  test("nUnique", () => {
+    const df = pl.DataFrame({
+      a: [1, 1, 2, 3, 4, 5],
+      b: [0.5, 0.5, 1.0, 2.0, 3.0, 3.0],
+      c: [true, true, true, false, true, true],
+    });
+    assert.equal(df.nUnique(), 5);
+  });
+  test("nUnique:subset", () => {
+    const df = pl.DataFrame({
+      a: [1, 1, 2, 3, 4, 5],
+      b: [0.5, 0.5, 1.0, 2.0, 3.0, 3.0],
+      c: [true, true, true, false, true, true],
+    });
+    assert.equal(df.nUnique(["b", "c"]), 4);
+  });
+  test("nUnique:single", () => {
+    const df = pl.DataFrame({ a: [1, 1, 2, 3, 4, 5] });
+    assert.equal(df.nUnique("a"), 5);
+    assert.equal(df.nUnique(pl.col("a")), 5);
+  });
+  test("getColumnIndex", () => {
+    const df = pl.DataFrame({
+      foo: [1, 2, 3],
+      bar: [6, 7, 8],
+      ham: ["a", "b", "c"],
+    });
+    assert.equal(df.getColumnIndex("ham"), 2);
+    assert.equal(df.getColumnIndex("foo"), 0);
+  });
+  test("clear", () => {
+    const df = pl.DataFrame({
+      a: [null, 2, 3, 4],
+      b: [0.5, null, 2.5, 13],
+      c: [true, true, false, null],
+    });
+    const cleared = df.clear();
+    assert.deepStrictEqual(cleared.shape, { height: 0, width: 3 });
+    assert.deepStrictEqual(cleared.columns, df.columns);
+    assert.deepStrictEqual(cleared.dtypes, df.dtypes);
+  });
+  test("clear:n", () => {
+    const df = pl.DataFrame({
+      a: [null, 2, 3, 4],
+      b: [0.5, null, 2.5, 13],
+      c: [true, true, false, null],
+    });
+    const cleared = df.clear(2);
+    assert.deepStrictEqual(cleared.shape, { height: 2, width: 3 });
+    assert.deepStrictEqual(cleared.toObject(), {
+      a: [null, null],
+      b: [null, null],
+      c: [null, null],
+    });
+  });
+  test("clear:invalid", () => {
+    const df = pl.DataFrame({ a: [1, 2, 3] });
+    assert.throws(() => df.clear(-1));
+  });
+  test("item", () => {
+    const df = pl.DataFrame({ a: [1, 2, 3], b: [4, 5, 6] });
+    assert.equal(df.item(1, 1), 5);
+    assert.equal(df.item(2, "b"), 6);
+    assert.equal(df.item(-1, "a"), 3);
+  });
+  test("item:single", () => {
+    const df = pl.DataFrame({ a: [1, 2, 3], b: [4, 5, 6] });
+    const scalar = df.select(pl.col("a").mul(pl.col("b")).sum()).item();
+    assert.equal(scalar, 32);
+  });
+  test("item:errors", () => {
+    const df = pl.DataFrame({ a: [1, 2, 3], b: [4, 5, 6] });
+    assert.throws(() => df.item());
+    assert.throws(() => df.item(1));
+  });
+  test("toDummies", () => {
+    const df = pl.DataFrame({
+      foo: pl.Series("foo", [1, 2], pl.Int64),
+      bar: pl.Series("bar", [3, 4], pl.Int64),
+      ham: ["a", "b"],
+    });
+    const actual = df.toDummies();
+    const expected = pl.DataFrame({
+      foo_1: pl.Series("foo_1", [1, 0], pl.UInt8),
+      foo_2: pl.Series("foo_2", [0, 1], pl.UInt8),
+      bar_3: pl.Series("bar_3", [1, 0], pl.UInt8),
+      bar_4: pl.Series("bar_4", [0, 1], pl.UInt8),
+      ham_a: pl.Series("ham_a", [1, 0], pl.UInt8),
+      ham_b: pl.Series("ham_b", [0, 1], pl.UInt8),
+    });
+    assertFrameEqual(actual, expected);
+  });
+  test("toDummies:subset", () => {
+    const df = pl.DataFrame({
+      foo: pl.Series("foo", [1, 2], pl.Int64),
+      bar: pl.Series("bar", [3, 4], pl.Int64),
+      ham: ["a", "b"],
+    });
+    const actual = df.toDummies("ham");
+    assert.deepStrictEqual(actual.columns, ["foo", "bar", "ham_a", "ham_b"]);
+    // non-selected columns keep their original position and values
+    assert.deepStrictEqual(actual.getColumn("foo").toArray(), [1, 2]);
+  });
+  test("toDummies:dropFirst", () => {
+    const df = pl.DataFrame({
+      foo: pl.Series("foo", [1, 2], pl.Int64),
+      ham: ["a", "b"],
+    });
+    const actual = df.toDummies(undefined, { dropFirst: true });
+    assert.deepStrictEqual(actual.columns, ["foo_2", "ham_b"]);
+  });
+  test("toDummies:separator", () => {
+    const df = pl.DataFrame({
+      foo: pl.Series("foo", [1, 2], pl.Int64),
+      ham: ["a", "b"],
+    });
+    const actual = df.toDummies("foo", { separator: ":" });
+    assert.deepStrictEqual(actual.columns, ["foo:1", "foo:2", "ham"]);
+  });
 });
 describe("join", () => {
   test("on", () => {
