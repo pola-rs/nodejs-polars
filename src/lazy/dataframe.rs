@@ -661,10 +661,13 @@ impl JsLazyFrame {
     }
 
     #[napi(catch_unwind)]
-    pub fn unnest(&self, colss: Vec<String>) -> JsLazyFrame {
+    pub fn unnest(&self, colss: Vec<String>, separator: Option<String>) -> JsLazyFrame {
         self.ldf
             .clone()
-            .unnest(strings_to_selector(colss), Some(PlSmallStr::EMPTY))
+            .unnest(
+                strings_to_selector(colss),
+                separator.map(PlSmallStr::from_string),
+            )
             .into()
     }
 

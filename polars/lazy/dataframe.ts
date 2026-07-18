@@ -117,6 +117,30 @@ export interface LazyDataFrame<S extends Schema = any>
   explode(columns: ExprOrString[]): LazyDataFrame;
   explode(column: ExprOrString, ...columns: ExprOrString[]): LazyDataFrame;
   /**
+   * Fill floating point NaN values.
+   * @param fillValue value to fill the NaN values with
+   * @example
+   * ```
+   * > const lf = pl.DataFrame({
+   * >   "a": [1.5, 2, Number.NaN, 4],
+   * >   "b": [0.5, 4, Number.NaN, 13],
+   * > }).lazy()
+   * > lf.fillNan(99).collect()
+   * shape: (4, 2)
+   * ┌──────┬──────┐
+   * │ a    ┆ b    │
+   * │ ---  ┆ ---  │
+   * │ f64  ┆ f64  │
+   * ╞══════╪══════╡
+   * │ 1.5  ┆ 0.5  │
+   * │ 2.0  ┆ 4.0  │
+   * │ 99.0 ┆ 99.0 │
+   * │ 4.0  ┆ 13.0 │
+   * └──────┴──────┘
+   * ```
+   */
+  fillNan(fillValue: number | Expr): LazyDataFrame<S>;
+  /**
    * Fill missing values
    * @param fillValue value to fill the missing values with
    */
@@ -598,6 +622,34 @@ export interface LazyDataFrame<S extends Schema = any>
     maintainOrder?: boolean;
   }): LazyDataFrame<S>;
   /**
+   * Decompose struct columns into separate columns for each of their fields.
+   * The new columns will be inserted into the DataFrame at the location of the struct column.
+   * @param columns Name of the struct column(s) that should be unnested.
+   * @param separator Rename output column names as combination of the struct column name, name separator and field name.
+   * @example
+   * ```
+   * > const lf = pl.DataFrame({
+   * >   "before": ["foo", "bar"],
+   * >   "t_a": [1, 2],
+   * >   "t_b": ["a", "b"],
+   * > }).lazy().select(
+   * >   pl.col("before"),
+   * >   pl.struct(["t_a", "t_b"]).alias("t_struct"),
+   * > )
+   * > lf.unnest("t_struct").collect()
+   * shape: (2, 3)
+   * ┌────────┬─────┬─────┐
+   * │ before ┆ t_a ┆ t_b │
+   * │ ---    ┆ --- ┆ --- │
+   * │ str    ┆ i64 ┆ str │
+   * ╞════════╪═════╪═════╡
+   * │ foo    ┆ 1   ┆ a   │
+   * │ bar    ┆ 2   ┆ b   │
+   * └────────┴─────┴─────┘
+   * ```
+   */
+  unnest(columns: string | string[], separator?: string): LazyDataFrame;
+  /**
    * Aggregate the columns in the DataFrame to their variance value.
    * @param ddof - "Delta Degrees of Freedom": the divisor used in the calculation is `N - ddof`,
    *   where `N` represents the number of elements. By default `ddof` is 1.
@@ -957,6 +1009,11 @@ export const _LazyDataFrame = (_ldf: any): LazyDataFrame => {
     first() {
       return this.head(1).collectSync();
     },
+    fillNan(exprOrValue) {
+      const fillValue = exprToLitOrExpr(exprOrValue)._expr;
+
+      return _LazyDataFrame(_ldf.fillNan(fillValue));
+    },
     fillNull(exprOrValue) {
       const fillValue = exprToLitOrExpr(exprOrValue)._expr;
 
@@ -1289,6 +1346,10 @@ export const _LazyDataFrame = (_ldf: any): LazyDataFrame => {
     },
     sum() {
       return _LazyDataFrame(_ldf.sum());
+    },
+    unnest(columns, separator) {
+      columns = Array.isArray(columns) ? columns : [columns];
+      return _LazyDataFrame(_ldf.unnest(columns, separator));
     },
     var(ddof = 1) {
       return _LazyDataFrame(_ldf.var(ddof));
