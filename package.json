@@ -71,5 +71,8 @@
   ],
   "trustedDependencies": [
     "@biomejs/biome"
-  ]
+  ],
+  "dependencies": {
+    "apache-arrow": "^21.1.0"
+  }
 }
