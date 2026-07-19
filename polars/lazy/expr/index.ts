@@ -2129,13 +2129,14 @@ export const _Expr = (_expr: any): Expr => {
         ),
       );
     },
-    sample(opts?, frac?, withReplacement = false, seed?) {
+    sample(opts?, frac?, withReplacement = false, seed?, shuffle = false) {
       if (opts?.n !== undefined || opts?.frac !== undefined) {
         return (this as any).sample(
           opts.n,
           opts.frac,
           opts.withReplacement,
           opts.seed,
+          opts.shuffle ?? shuffle,
         );
       }
       if (typeof opts === "number") {
@@ -2143,7 +2144,7 @@ export const _Expr = (_expr: any): Expr => {
           "sampleN",
           exprToLitOrExpr(opts),
           withReplacement,
-          false,
+          shuffle,
           seed,
         );
       }
@@ -2152,7 +2153,7 @@ export const _Expr = (_expr: any): Expr => {
           "sampleFrac",
           exprToLitOrExpr(frac),
           withReplacement,
-          false,
+          shuffle,
           seed,
         );
       }

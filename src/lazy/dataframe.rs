@@ -339,9 +339,7 @@ impl JsLazyFrame {
 
         Ok(JsLazyGroupBy { lgb: Some(lazy_gb) })
     }
-    #[allow(clippy::too_many_arguments)]
     #[napi(catch_unwind)]
-    #[allow(clippy::too_many_arguments)]
     pub fn join_asof(
         &self,
         other: &JsLazyFrame,
