@@ -1,4 +1,5 @@
 import { type Readable, Stream } from "node:stream";
+import type { Table } from "apache-arrow";
 import { _DataFrame, type DataFrame } from "./dataframe";
 import type { DataType } from "./datatypes";
 import { concat } from "./functions";
@@ -779,4 +780,34 @@ export function readJSONStream(stream, options = readJsonDefaultOptions) {
         }
       });
   });
+}
+
+/**
+ * Create a DataFrame from an [Apache Arrow](https://arrow.apache.org/) Table.
+ *
+ * Requires the `apache-arrow` package to be installed.
+ * @param table - Apache Arrow Table to convert to a Polars DataFrame
+ * @example
+ * ```
+ * > import { tableFromArrays } from 'apache-arrow';
+ * > const arrowTable = tableFromArrays({ a: [1, 2, 3], b: ['x', 'y', 'z'] });
+ * > const df = pl.fromArrow(arrowTable);
+ * shape: (3, 2)
+ * ┌─────┬─────┐
+ * │ a   ┆ b   │
+ * │ --- ┆ --- │
+ * │ f64 ┆ str │
+ * ╞═════╪═════╡
+ * │ 1.0 ┆ x   │
+ * │ 2.0 ┆ y   │
+ * │ 3.0 ┆ z   │
+ * └─────┴─────┘
+ * ```
+ */
+export function fromArrow(table: Table): DataFrame {
+  const { tableToIPC } = require("apache-arrow");
+  const ipcBuffer = tableToIPC(table, "stream");
+  return readIPCStream(
+    Buffer.from(ipcBuffer.buffer, ipcBuffer.byteOffset, ipcBuffer.byteLength),
+  );
 }

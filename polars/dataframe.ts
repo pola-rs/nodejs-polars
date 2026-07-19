@@ -1,4 +1,5 @@
 import { Stream, Writable } from "node:stream";
+import type { Table } from "apache-arrow";
 import { DataType, type DTypeToJs, type JsToDtype } from "./datatypes";
 import { concat } from "./functions";
 import {
@@ -188,6 +189,20 @@ interface WriteMethods {
    */
   writeAvro(destination: string | Writable, options?: WriteAvroOptions): void;
   writeAvro(options?: WriteAvroOptions): Buffer;
+  /**
+   * Convert DataFrame to an [Apache Arrow](https://arrow.apache.org/) Table.
+   *
+   * Requires the `apache-arrow` package to be installed.
+   * @example
+   * ```
+   * > const df = pl.DataFrame({ a: [1, 2, 3], b: ["x", "y", "z"] });
+   * > const arrowTable = df.toArrow();
+   * > arrowTable.schema.fields.map(f => f.name);
+   * ["a", "b"]
+   * ```
+   * @category IO
+   */
+  toArrow(): Table;
 }
 
 export type Schema = Record<string, DataType>;
@@ -2845,6 +2860,17 @@ export const _DataFrame = <S extends Schema>(_df: any): DataFrame<S> => {
 
         return acc;
       }, {});
+    },
+    toArrow() {
+      const { tableFromIPC } = require("apache-arrow");
+      const ipcBuffer = this.writeIPCStream();
+      return tableFromIPC(
+        new Uint8Array(
+          ipcBuffer.buffer,
+          ipcBuffer.byteOffset,
+          ipcBuffer.byteLength,
+        ),
+      );
     },
     withRowIndex(name = "index", offset = 0) {
       return wrap("withRowIndex", name, offset);

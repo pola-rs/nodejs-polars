@@ -13,6 +13,7 @@ import {
 import { InvalidOperationError } from "../error";
 import { arrayToJsSeries } from "../internals/construction";
 import pli from "../internals/polars_internal";
+import { readIPCStream } from "../io";
 import { col } from "../lazy/functions";
 import type {
   Arithmetic,
@@ -1214,6 +1215,21 @@ export interface Series<T extends DataType = any, Name extends string = string>
    * This will throw an error if you have nulls, or are using non numeric data types
    */
   toTypedArray(): any;
+  /**
+   * Convert this Series to an [Apache Arrow](https://arrow.apache.org/) Vector.
+   *
+   * Requires the `apache-arrow` package to be installed.
+   * @example
+   * ```
+   * > const s = pl.Series("a", [1, 2, 3]);
+   * > const vec = s.toArrow();
+   * > vec.type.toString();
+   * "Float64"
+   * > [...vec];
+   * [1, 2, 3]
+   * ```
+   */
+  toArrow(): import("apache-arrow").Vector;
 
   /**
    * Get dummy/indicator variables.
@@ -1956,6 +1972,19 @@ export function _Series(_s: any): Series {
       }
       throw new Error("data contains nulls, unable to convert to TypedArray");
     },
+    toArrow() {
+      const { tableFromIPC } = require("apache-arrow");
+      const df = _DataFrame(new pli.JsDataFrame([_s]));
+      const ipcBuffer = df.writeIPCStream();
+      const table = tableFromIPC(
+        new Uint8Array(
+          ipcBuffer.buffer,
+          ipcBuffer.byteOffset,
+          ipcBuffer.byteLength,
+        ),
+      );
+      return table.getChild(_s.name);
+    },
     toDummies(separator = "_", dropFirst = false, dropNulls = false) {
       return _DataFrame(_s.toDummies(separator, dropFirst, dropNulls));
     },
@@ -2082,6 +2111,28 @@ export interface SeriesConstructor extends Deserialize<Series> {
    */
   of<T3 extends JsType>(items: T3[]): Series<JsToDtype<T3>>;
   of<T3>(items: T3[]): Series;
+  /**
+   * Create a Series from an [Apache Arrow](https://arrow.apache.org/) Vector.
+   *
+   * Requires the `apache-arrow` package to be installed.
+   * @param vector - Apache Arrow Vector to convert to a Series
+   * @param name - Optional name for the resulting Series. Defaults to `"value"`.
+   * @example
+   * ```
+   * > import { vectorFromArray } from 'apache-arrow';
+   * > const vec = vectorFromArray([1, 2, 3]);
+   * > const s = pl.Series.fromArrow("myCol", vec);
+   * shape: (3,)
+   * Series: 'myCol' [f64]
+   * [
+   *   1.0
+   *   2.0
+   *   3.0
+   * ]
+   * ```
+   */
+  fromArrow(name: string, vector: import("apache-arrow").Vector): Series;
+  fromArrow(vector: import("apache-arrow").Vector): Series;
   isSeries(arg: any): arg is Series;
 }
 
@@ -2112,9 +2163,29 @@ const of = (values: any[]): Series => {
   return Series.from(values);
 };
 
+const fromArrow = (nameOrVector: any, vector?: any): Series => {
+  const { makeTable, tableToIPC } = require("apache-arrow");
+  let name: string;
+  let vec: any;
+  if (typeof nameOrVector === "string") {
+    name = nameOrVector;
+    vec = vector;
+  } else {
+    name = "value";
+    vec = nameOrVector;
+  }
+  const table = makeTable({ [name]: vec });
+  const ipcBuffer = tableToIPC(table, "stream");
+  const df = readIPCStream(
+    Buffer.from(ipcBuffer.buffer, ipcBuffer.byteOffset, ipcBuffer.byteLength),
+  );
+  return df.toSeries(0).rename(name) as any;
+};
+
 export const Series: SeriesConstructor = Object.assign(SeriesConstructor, {
   isSeries,
   from,
   of,
+  fromArrow,
   deserialize: (buf, fmt) => _Series(pli.JsSeries.deserialize(buf, fmt)),
 });
