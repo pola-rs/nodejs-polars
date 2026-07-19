@@ -2163,18 +2163,21 @@ const of = (values: any[]): Series => {
   return Series.from(values);
 };
 
-const fromArrow = (nameOrVector: any, vector?: any): Series => {
+const fromArrow = (
+  nameOrVectorArg: string | import("apache-arrow").Vector,
+  vector?: import("apache-arrow").Vector,
+): Series => {
   const { makeTable, tableToIPC } = require("apache-arrow");
   let name: string;
-  let vec: any;
-  if (typeof nameOrVector === "string") {
-    name = nameOrVector;
-    vec = vector;
+  let arrowVector: import("apache-arrow").Vector;
+  if (typeof nameOrVectorArg === "string") {
+    name = nameOrVectorArg;
+    arrowVector = vector as import("apache-arrow").Vector;
   } else {
     name = "value";
-    vec = nameOrVector;
+    arrowVector = nameOrVectorArg;
   }
-  const table = makeTable({ [name]: vec });
+  const table = makeTable({ [name]: arrowVector });
   const ipcBuffer = tableToIPC(table, "stream");
   const df = readIPCStream(
     Buffer.from(ipcBuffer.buffer, ipcBuffer.byteOffset, ipcBuffer.byteLength),
