@@ -4,21 +4,17 @@ Polars: Blazingly fast DataFrames in Rust, Python, Node.js, R and SQL
 
 [![rust docs](https://github.com/pola-rs/nodejs-polars/actions/workflows/docs.yaml/badge.svg)](https://github.com/pola-rs/nodejs-polars/actions/workflows/docs.yaml/)
 [![Build and test](https://github.com/pola-rs/nodejs-polars/actions/workflows/test-js.yaml/badge.svg)](https://github.com/pola-rs/nodejs-polars/actions/workflows/test-js.yaml)
-[![](https://img.shields.io/crates/v/polars.svg)](https://crates.io/crates/polars)
+[![Crates.io Latest Release](https://img.shields.io/crates/v/polars.svg)](https://crates.io/crates/polars)
 [![PyPI Latest Release](https://img.shields.io/pypi/v/polars.svg)](https://pypi.org/project/polars/)
 [![NPM Latest Release](https://img.shields.io/npm/v/nodejs-polars.svg)](https://www.npmjs.com/package/nodejs-polars)
 
-Documentation: [Node.js](https://pola-rs.github.io/nodejs-polars/index.html)
--[ Rust](https://docs.rs/polars/latest/polars/)
--[ Python](https://pola-rs.github.io/polars/py-polars/html/reference/index.html)
--[ R](https://rpolars.github.io/index.html)
-|StackOverflow: [ Node.js](https://stackoverflow.com/questions/tagged/nodejs-polars)
--[ Rust](https://stackoverflow.com/questions/tagged/rust-polars)
--[ Python](https://stackoverflow.com/questions/tagged/python-polars)
-| [User Guide](https://pola-rs.github.io/polars/)
-| [Discord](https://discord.gg/4UfP5cfBE7)
+**Documentation:** [Node.js](https://pola-rs.github.io/nodejs-polars/index.html) · [Rust](https://docs.rs/polars/latest/polars/) · [Python](https://pola-rs.github.io/polars/py-polars/html/reference/index.html) · [R](https://rpolars.github.io/index.html)
 
-#### Note: This library is intended to work only with server side JS/TS (Node, Bun, Deno). For browser please see [js-polars](https://github.com/pola-rs/js-polars)
+**StackOverflow:** [Node.js](https://stackoverflow.com/questions/tagged/nodejs-polars) · [Rust](https://stackoverflow.com/questions/tagged/rust-polars) · [Python](https://stackoverflow.com/questions/tagged/python-polars)
+
+**Community:** [User Guide](https://pola-rs.github.io/polars/) · [Discord](https://discord.gg/4UfP5cfBE7)
+
+> **Note:** This library is intended to work only with server-side JS/TS (Node, Bun, Deno). For the browser, please see [js-polars](https://github.com/pola-rs/js-polars).
 
 ## Usage
 
@@ -119,16 +115,17 @@ Series: 'cars' [str]
 Install the latest polars version with:
 
 ```sh
-$ yarn add nodejs-polars # yarn
-$ npm i -s nodejs-polars # npm
-$ bun i -D nodejs-polars # Bun
+yarn add nodejs-polars   # yarn
+npm i -s nodejs-polars   # npm
+bun i -D nodejs-polars   # Bun
 ```
 
 Releases happen quite often (weekly / every few days) at the moment, so updating polars regularly to get the latest bugfixes / features might not be a bad idea.
 
 ### Minimum Requirements
+
 - Node version `>=18`
-- Rust version `>=1.86` - *Only needed for development*
+- Rust version `>=1.86` — *only needed for development*
 
 
 ## Deno
@@ -165,29 +162,28 @@ let df = pl.readCSV(data, { sep: "\t" });
 df
 ```
 
-<img width="510" alt="image" src="https://github.com/pola-rs/nodejs-polars/assets/836375/90cf7bf4-7478-4919-b297-f8eb6a16196f">
+<img width="510" alt="DataFrame rendered in a Deno notebook" src="https://github.com/pola-rs/nodejs-polars/assets/836375/90cf7bf4-7478-4919-b297-f8eb6a16196f">
 
-
-___
+---
 
 ## Documentation
 
 Want to know about all the features Polars supports? Read the [docs](https://docs.pola.rs)!
 
-#### Python
+### Node
 
-- Installation guide: `$ pip3 install polars`
+- Installation: `yarn add nodejs-polars` or `bun install nodejs-polars`
+- [Node documentation](https://pola-rs.github.io/nodejs-polars/)
+
+### Python
+
+- Installation: `pip3 install polars`
 - [Python documentation](https://pola-rs.github.io/polars/py-polars/html/reference/index.html)
 - [User guide](https://docs.pola.rs)
 
-#### Rust
+### Rust
 
 - [Rust documentation](https://docs.rs/polars/latest/polars/)
-
-#### Node
-
-  * Installation guide: `$ yarn add nodejs-polars` or `$ bun install nodejs-polars`
-  * [Node documentation](https://pola-rs.github.io/nodejs-polars/)
 
 ## Contribution
 
@@ -201,12 +197,17 @@ If you want a bleeding edge release or maximal performance you should compile **
 2. Run `npm|yarn install`
 3. Choose any of:
    - Fastest binary, very long compile times:
+
      ```bash
-     $ cd nodejs-polars && yarn build && yarn build:ts # this will generate a /bin directory with the compiles TS code, as well as the rust binary
+     # generates a /bin directory with the compiled TS code and the Rust binary
+     cd nodejs-polars && yarn build && yarn build:ts
      ```
+
    - Debugging, fastest compile times but slow & large binary:
+
      ```bash
-     $ cd nodejs-polars && yarn build:debug && yarn build:ts # this will generate a /bin directory with the compiles TS code, as well as the rust binary
+     # generates a /bin directory with the compiled TS code and the Rust binary
+     cd nodejs-polars && yarn build:debug && yarn build:ts
      ```
 
 ## Webpack configuration

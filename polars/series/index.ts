@@ -1877,18 +1877,24 @@ export function _Series(_s: any): Series {
 
       return dtypeWrap("SetWithMask", mask.inner(), value);
     },
-    sample(opts?, frac?, withReplacement = false, seed?) {
+    sample(opts?, frac?, withReplacement = false, seed?, shuffle = false) {
       if (arguments.length === 0) {
-        return wrap("sampleN", 1, withReplacement, false, seed);
+        return wrap("sampleN", 1, withReplacement, shuffle, seed);
       }
       if (opts?.n !== undefined || opts?.frac !== undefined) {
-        return this.sample(opts.n, opts.frac, opts.withReplacement, seed);
+        return this.sample(
+          opts.n,
+          opts.frac,
+          opts.withReplacement,
+          seed,
+          opts.shuffle ?? shuffle,
+        );
       }
       if (typeof opts === "number") {
-        return wrap("sampleN", opts, withReplacement, false, seed);
+        return wrap("sampleN", opts, withReplacement, shuffle, seed);
       }
       if (typeof frac === "number") {
-        return wrap("sampleFrac", frac, withReplacement, false, seed);
+        return wrap("sampleFrac", frac, withReplacement, shuffle, seed);
       }
       throw new TypeError("must specify either 'frac' or 'n'");
     },

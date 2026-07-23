@@ -432,6 +432,36 @@ describe("lazyframe", () => {
     });
     assertFrameEqualIgnoringOrder(actual, expected);
   });
+  test("fillNan:number", () => {
+    const actual = pl
+      .DataFrame({
+        a: [1.5, 2.0, Number.NaN, 4.0],
+        b: [0.5, 4.0, Number.NaN, 13.0],
+      })
+      .lazy()
+      .fillNan(99)
+      .collectSync();
+    const expected = pl.DataFrame({
+      a: [1.5, 2.0, 99.0, 4.0],
+      b: [0.5, 4.0, 99.0, 13.0],
+    });
+    assertFrameEqual(actual, expected);
+  });
+  test("fillNan:expr", () => {
+    const actual = pl
+      .DataFrame({
+        a: [1.5, 2.0, Number.NaN, 4.0],
+        b: [0.5, 4.0, Number.NaN, 13.0],
+      })
+      .lazy()
+      .fillNan(pl.lit(0))
+      .collectSync();
+    const expected = pl.DataFrame({
+      a: [1.5, 2.0, 0.0, 4.0],
+      b: [0.5, 4.0, 0.0, 13.0],
+    });
+    assertFrameEqual(actual, expected);
+  });
   test("filter", () => {
     const actual = pl
       .DataFrame({
@@ -1302,6 +1332,51 @@ describe("lazyframe", () => {
     const expected = pl.DataFrame({
       foo: [0.9574271077563381],
       bar: [0.9574271077563381],
+    });
+    assertFrameEqual(actual, expected);
+  });
+  test("unnest", () => {
+    const expected = pl.DataFrame({
+      int: [1, 2],
+      str: ["a", "b"],
+      bool: [true, null],
+      list: [[1, 2], [3]],
+    });
+    const actual = expected
+      .toStruct("my_struct")
+      .toFrame()
+      .lazy()
+      .unnest("my_struct")
+      .collectSync();
+    assertFrameEqual(actual, expected);
+  });
+  test("unnest:array", () => {
+    const expected = pl.DataFrame({
+      int: [1, 2],
+      str: ["a", "b"],
+    });
+    const actual = expected
+      .toStruct("my_struct")
+      .toFrame()
+      .lazy()
+      .unnest(["my_struct"])
+      .collectSync();
+    assertFrameEqual(actual, expected);
+  });
+  test("unnest:separator", () => {
+    const df = pl.DataFrame({
+      int: [1, 2],
+      str: ["a", "b"],
+    });
+    const actual = df
+      .toStruct("my_struct")
+      .toFrame()
+      .lazy()
+      .unnest("my_struct", "::")
+      .collectSync();
+    const expected = pl.DataFrame({
+      "my_struct::int": [1, 2],
+      "my_struct::str": ["a", "b"],
     });
     assertFrameEqual(actual, expected);
   });

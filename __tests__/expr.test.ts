@@ -129,6 +129,20 @@ describe("expr", () => {
     const actual = df.select(col("a").argSort(args).alias("argSort"));
     assertFrameEqual(actual, expected);
   });
+  test("argSort nullsLast honored via object form", () => {
+    const df = pl.DataFrame({ a: [1, null, 3, null, 2] });
+    // the object overload must respect nullsLast, matching the positional form
+    const positional = df
+      .select(col("a").argSort(false, true))
+      .getColumn("a")
+      .toArray();
+    const object = df
+      .select(col("a").argSort({ descending: false, nullsLast: true }))
+      .getColumn("a")
+      .toArray();
+    assert.deepStrictEqual(object, positional);
+    assert.deepStrictEqual(object, [0, 4, 2, 1, 3]);
+  });
   test("argUnique", () => {
     const df = pl.DataFrame({ a: [1, 1, 4, 1.5] });
     const expected = pl.DataFrame({ argUnique: [0, 2, 3] });
@@ -2797,6 +2811,101 @@ describe("Round<T>", () => {
     const exprFn = () => df.select(col("a").clip(1, 2));
     assert.throws(seriesFn);
     assert.throws(exprFn);
+  });
+  test("clip named", () => {
+    const df = pl.DataFrame({ a: [1, 2, 3, 4, 5] });
+    const actual = df
+      .select(pl.col("a").clip({ min: 2, max: 4 }))
+      .getColumn("a")
+      .toArray();
+    assert.deepStrictEqual(actual, [2, 2, 3, 4, 4]);
+  });
+  test("ceil", () => {
+    const df = pl.Series("foo", [1.1, 2.2]).as("ceil").toFrame();
+    const expected = pl.DataFrame({ ceil: [2, 3] });
+    const actual = df.select(col("ceil").ceil().as("ceil"));
+    assertFrameEqual(actual, expected);
+  });
+  test("entropy", () => {
+    const df = pl.DataFrame({ a: [0.1, 0.2, 0.7] });
+    const base2 = df.select(col("a").entropy(2)).getColumn("a").get(0);
+    const base2Obj = df
+      .select(col("a").entropy({ base: 2 }))
+      .getColumn("a")
+      .get(0);
+    assert(Math.abs(base2 - 1.15678) < 1e-4);
+    assert.strictEqual(base2, base2Obj);
+    // normalize: false yields a different value than the normalized default
+    // when the probabilities do not already sum to 1
+    const df2 = pl.DataFrame({ a: [1.0, 2.0, 3.0] });
+    const normalized = df2.select(col("a").entropy(2)).getColumn("a").get(0);
+    const notNormalized = df2
+      .select(col("a").entropy({ base: 2, normalize: false }))
+      .getColumn("a")
+      .get(0);
+    assert.notStrictEqual(normalized, notNormalized);
+  });
+  test("pctChange", () => {
+    const df = pl.DataFrame({ a: [10, 11, 12, null, 12] });
+    const expected = [null, 0.1, 0.0909090909090909, 0.0, 0.0];
+    const actual = df.select(col("a").pctChange()).getColumn("a").toArray();
+    expected.forEach((v, i) => {
+      if (v === null) {
+        assert.strictEqual(actual[i], null);
+      } else {
+        assert(Math.abs(actual[i] - v) < 1e-6);
+      }
+    });
+  });
+  test("pctChange:n", () => {
+    const df = pl.DataFrame({ a: [1, 2, 4, 8, 16] });
+    const actual = df.select(col("a").pctChange(2)).getColumn("a").toArray();
+    assert.deepStrictEqual(actual, [null, null, 3, 3, 3]);
+  });
+  test("pctChange named", () => {
+    const df = pl.DataFrame({ a: [1, 2, 4, 8, 16] });
+    const actual = df
+      .select(col("a").pctChange({ n: 2 }))
+      .getColumn("a")
+      .toArray();
+    assert.deepStrictEqual(actual, [null, null, 3, 3, 3]);
+  });
+  test("reshape", () => {
+    const df = pl.DataFrame({ a: [1, 2, 3, 4, 5, 6, 7, 8, 9] });
+    const actual = df
+      .select(col("a").reshape([3, 3]))
+      .getColumn("a")
+      .toArray();
+    assert.deepStrictEqual(actual, [
+      [1, 2, 3],
+      [4, 5, 6],
+      [7, 8, 9],
+    ]);
+  });
+  test("reshape:flat", () => {
+    const df = pl.DataFrame({ a: [1, 2, 3, 4] });
+    const actual = df
+      .select(col("a").reshape([-1]))
+      .getColumn("a")
+      .toArray();
+    assert.deepStrictEqual(actual, [1, 2, 3, 4]);
+  });
+  test("shuffle", () => {
+    const df = pl.DataFrame({ a: [1, 2, 3, 4, 5] });
+    const actual = df.select(col("a").shuffle(1)).getColumn("a").toArray();
+    const actualObj = df
+      .select(col("a").shuffle({ seed: 1 }))
+      .getColumn("a")
+      .toArray();
+    // a fixed seed is deterministic
+    assert.deepStrictEqual(actual, actualObj);
+    // shuffle preserves the multiset of values
+    assert.deepStrictEqual([...actual].sort(), [1, 2, 3, 4, 5]);
+  });
+  test("shuffle:no seed", () => {
+    const df = pl.DataFrame({ a: [1, 2, 3, 4, 5] });
+    const actual = df.select(col("a").shuffle()).getColumn("a").toArray();
+    assert.deepStrictEqual([...actual].sort(), [1, 2, 3, 4, 5]);
   });
 });
 

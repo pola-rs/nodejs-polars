@@ -12,7 +12,7 @@ import { arrayToJsDataFrame } from "./internals/construction";
 import pli from "./internals/polars_internal";
 import { _LazyDataFrame, type LazyDataFrame } from "./lazy/dataframe";
 import { Expr } from "./lazy/expr";
-import { col, element } from "./lazy/functions";
+import { struct as _struct, col, element, lit } from "./lazy/functions";
 import { _Series, Series } from "./series";
 
 import type {
@@ -330,9 +330,66 @@ export interface DataFrame<S extends Schema = any>
   [inspect](): string;
   [Symbol.iterator](): Generator<any, void, any>;
   /**
+   * Create an empty (`n=0`) or `n`-row null-filled (`n>0`) copy of the DataFrame.
+   *
+   * Returns a `n`-row null-filled DataFrame with an identical schema.
+   * `n` can be greater than the current number of rows in the DataFrame.
+   * ___
+   * @param n - Number of (null-filled) rows to return in the cleared frame.
+   * @example
+   * ```
+   * > const df = pl.DataFrame({
+   * ...   "a": [null, 2, 3, 4],
+   * ...   "b": [0.5, null, 2.5, 13],
+   * ...   "c": [true, true, false, null],
+   * ... });
+   * > df.clear();
+   * shape: (0, 3)
+   * ┌─────┬─────┬──────┐
+   * │ a   ┆ b   ┆ c    │
+   * │ --- ┆ --- ┆ ---  │
+   * │ f64 ┆ f64 ┆ bool │
+   * ╞═════╪═════╪══════╡
+   * └─────┴─────┴──────┘
+   * > df.clear(2);
+   * shape: (2, 3)
+   * ┌──────┬──────┬──────┐
+   * │ a    ┆ b    ┆ c    │
+   * │ ---  ┆ ---  ┆ ---  │
+   * │ f64  ┆ f64  ┆ bool │
+   * ╞══════╪══════╪══════╡
+   * │ null ┆ null ┆ null │
+   * │ null ┆ null ┆ null │
+   * └──────┴──────┴──────┘
+   * ```
+   */
+  clear(n?: number): DataFrame<S>;
+  /**
    * Very cheap deep clone.
    */
   clone(): DataFrame<S>;
+  /**
+   * Return the number of non-null elements for each column.
+   * ___
+   * @example
+   * ```
+   * > const df = pl.DataFrame({
+   * ...   "a": [1, 2, 3, 4],
+   * ...   "b": [1, 2, 1, null],
+   * ...   "c": [null, null, null, null],
+   * ... });
+   * > df.count();
+   * shape: (1, 3)
+   * ┌─────┬─────┬─────┐
+   * │ a   ┆ b   ┆ c   │
+   * │ --- ┆ --- ┆ --- │
+   * │ u32 ┆ u32 ┆ u32 │
+   * ╞═════╪═════╪═════╡
+   * │ 4   ┆ 3   ┆ 0   │
+   * └─────┴─────┴─────┘
+   * ```
+   */
+  count(): DataFrame<S>;
   /**
    * __Summary statistics for a DataFrame.__
    *
@@ -551,9 +608,17 @@ export interface DataFrame<S extends Schema = any>
    *   - "max"
    *   - "zero"
    *   - "one"
+   * @param limit - Number of consecutive null values to fill when using the
+   *   "forward" or "backward" strategy.
    * @returns DataFrame with None replaced with the filling strategy.
    */
-  fillNull(strategy: FillNullStrategy): DataFrame<S>;
+  fillNull(strategy: FillNullStrategy, limit?: number): DataFrame<S>;
+  /**
+   * Fill null/missing values with a scalar value or expression.
+   * @param value - Value used to fill null values.
+   * @returns DataFrame with null values replaced by `value`.
+   */
+  fillNull(value: number | string | boolean | Expr): DataFrame<S>;
   /**
    * Filter the rows in the DataFrame based on a predicate expression.
    * ___
@@ -609,6 +674,55 @@ export interface DataFrame<S extends Schema = any>
    * ```
    */
   findIdxByName(name: keyof S): number;
+  /**
+   * Find the index of a column by name.
+   *
+   * Alias for {@link findIdxByName}, matching the current Python Polars name.
+   * ___
+   * @param name - Name of the column to find.
+   * @example
+   * ```
+   * > const df = pl.DataFrame({
+   * ...   "foo": [1, 2, 3],
+   * ...   "bar": [6, 7, 8],
+   * ...   "ham": ['a', 'b', 'c']
+   * ... });
+   * > df.getColumnIndex("ham"))
+   * 2
+   * ```
+   */
+  getColumnIndex(name: keyof S): number;
+  /**
+   * Take every nth row in the DataFrame and return as a new DataFrame.
+   * ___
+   * @param n - Gather every *n*-th row.
+   * @param offset - Starting index.
+   * @example
+   * ```
+   * > const df = pl.DataFrame({ "a": [1, 2, 3, 4], "b": [5, 6, 7, 8] });
+   * > df.gatherEvery(2);
+   * shape: (2, 2)
+   * ┌─────┬─────┐
+   * │ a   ┆ b   │
+   * │ --- ┆ --- │
+   * │ i64 ┆ i64 │
+   * ╞═════╪═════╡
+   * │ 1   ┆ 5   │
+   * │ 3   ┆ 7   │
+   * └─────┴─────┘
+   * > df.gatherEvery(2, 1);
+   * shape: (2, 2)
+   * ┌─────┬─────┐
+   * │ a   ┆ b   │
+   * │ --- ┆ --- │
+   * │ i64 ┆ i64 │
+   * ╞═════╪═════╡
+   * │ 2   ┆ 6   │
+   * │ 4   ┆ 8   │
+   * └─────┴─────┘
+   * ```
+   */
+  gatherEvery(n: number, offset?: number): DataFrame<S>;
   /**
    * __Apply a horizontal reduction on a DataFrame.__
    *
@@ -852,6 +966,26 @@ export interface DataFrame<S extends Schema = any>
    */
   isEmpty(): boolean;
   /**
+   * Return the DataFrame as a scalar, or return the element at the given row/column.
+   * ___
+   * @param row - Optional row index.
+   * @param column - Optional column index or name.
+   *
+   * If `row`/`column` are not provided, this is equivalent to `df[0,0]`, with a check
+   * that the shape is `(1, 1)`.
+   * @example
+   * ```
+   * > const df = pl.DataFrame({ "a": [1, 2, 3], "b": [4, 5, 6] });
+   * > df.select(pl.col("a").mul(pl.col("b")).sum()).item();
+   * 32
+   * > df.item(1, 1);
+   * 5
+   * > df.item(2, "b");
+   * 6
+   * ```
+   */
+  item(row?: number, column?: number | string): any;
+  /**
    * Get a mask of all unique rows in this DataFrame.
    */
   isUnique(): Series;
@@ -1044,6 +1178,15 @@ export interface DataFrame<S extends Schema = any>
    *    Check the sortedness of the asof keys. If the keys are not sorted Polars
    *    will error, or in case of 'by' argument raise a warning. This might become
    *    a hard error in the future.
+   * @param options.coalesce
+   *    Coalescing behavior (merging of `on` / `left_on` / `right_on` columns):
+   *    - true: -> Always coalesce join columns.
+   *    - false: -> Never coalesce join columns.
+   *    - undefined *(default)*: -> Coalesce unless columns have different names.
+   * @param options.allowExactMatches
+   *    Whether exact matches are valid join predicates.
+   *    - true *(default)*: -> allow matching with the same 'on' value (i.e. less-than-or-equal-to / greater-than-or-equal-to)
+   *    - false: -> don't match the same 'on' value (i.e., strictly less-than / strictly greater-than).
    *
    * @example
    * ```
@@ -1100,6 +1243,8 @@ export interface DataFrame<S extends Schema = any>
       allowParallel?: boolean;
       forceParallel?: boolean;
       checkSortedness?: boolean;
+      coalesce?: boolean;
+      allowExactMatches?: boolean;
     },
   ): DataFrame;
   lazy(): LazyDataFrame<S>;
@@ -1240,6 +1385,47 @@ export interface DataFrame<S extends Schema = any>
    */
   nChunks(): number;
   /**
+   * Return the number of unique rows, or the number of unique row-subsets.
+   * ___
+   * @param subset - One or more columns that define what to count; omit to return
+   *  the count of unique rows.
+   * @example
+   * ```
+   * > const df = pl.DataFrame({
+   * ...   "a": [1, 1, 2, 3, 4, 5],
+   * ...   "b": [0.5, 0.5, 1.0, 2.0, 3.0, 3.0],
+   * ...   "c": [true, true, true, false, true, true],
+   * ... });
+   * > df.nUnique();
+   * 5
+   * > df.nUnique(["b", "c"]);
+   * 4
+   * ```
+   */
+  nUnique(subset?: ColumnsOrExpr): number;
+  /**
+   * Aggregate the columns of this DataFrame to their product values.
+   * ___
+   * @example
+   * ```
+   * > const df = pl.DataFrame({
+   * ...   "a": [1, 2, 3],
+   * ...   "b": [0.5, 4, 10],
+   * ...   "c": [true, true, false],
+   * ... });
+   * > df.product();
+   * shape: (1, 3)
+   * ┌─────┬──────┬─────┐
+   * │ a   ┆ b    ┆ c   │
+   * │ --- ┆ ---  ┆ --- │
+   * │ i64 ┆ f64  ┆ i64 │
+   * ╞═════╪══════╪═════╡
+   * │ 6   ┆ 20.0 ┆ 0   │
+   * └─────┴──────┴─────┘
+   * ```
+   */
+  product(): DataFrame<S>;
+  /**
    * Create a new DataFrame that shows the null counts per column.
    * ___
    * @example
@@ -1367,6 +1553,9 @@ export interface DataFrame<S extends Schema = any>
   // pipe(func: (...args: any[]) => T, ...args: any[]): T
   /**
    * Aggregate the columns of this DataFrame to their quantile value.
+   * @param quantile - Quantile between 0.0 and 1.0.
+   * @param interpolation - Interpolation method: one of
+   *   {'nearest', 'higher', 'lower', 'midpoint', 'linear'}. Defaults to "nearest".
    * @example
    * ```
    * > const df = pl.DataFrame({
@@ -1385,13 +1574,39 @@ export interface DataFrame<S extends Schema = any>
    * ╰─────┴─────┴──────╯
    * ```
    */
-  quantile(quantile: number): DataFrame<S>;
+  quantile(
+    quantile: number,
+    interpolation?: "nearest" | "higher" | "lower" | "midpoint" | "linear",
+  ): DataFrame<S>;
   /**
    * __Rechunk the data in this DataFrame to a contiguous allocation.__
    *
    * This will make sure all subsequent operations have optimal and predictable performance.
    */
   rechunk(): DataFrame<S>;
+  /**
+   * Reverse the DataFrame (row order).
+   * ___
+   * @example
+   * ```
+   * > const df = pl.DataFrame({
+   * ...   "key": ["a", "b", "c"],
+   * ...   "val": [1, 2, 3],
+   * ... });
+   * > df.reverse();
+   * shape: (3, 2)
+   * ┌─────┬─────┐
+   * │ key ┆ val │
+   * │ --- ┆ --- │
+   * │ str ┆ i64 │
+   * ╞═════╪═════╡
+   * │ c   ┆ 3   │
+   * │ b   ┆ 2   │
+   * │ a   ┆ 1   │
+   * └─────┴─────┘
+   * ```
+   */
+  reverse(): DataFrame<S>;
   /**
    * __Rename column names.__
    * ___
@@ -1425,8 +1640,9 @@ export interface DataFrame<S extends Schema = any>
    */
   rename<const U extends Partial<Record<keyof S, string>>>(
     mapping: U,
+    strict?: boolean,
   ): DataFrame<{ [K in keyof S as U[K] extends string ? U[K] : K]: S[K] }>;
-  rename(mapping: Record<string, string>): DataFrame;
+  rename(mapping: Record<string, string>, strict?: boolean): DataFrame;
   /**
    * Replace a column at an index location.
    *
@@ -1691,6 +1907,8 @@ export interface DataFrame<S extends Schema = any>
   /**
    * Aggregate the columns of this DataFrame to their standard deviation value.
    * ___
+   * @param ddof - "Delta Degrees of Freedom": the divisor used in the calculation is `N - ddof`,
+   *   where `N` represents the number of elements. By default `ddof` is 1.
    * @example
    * ```
    * > const df = pl.DataFrame({
@@ -1709,7 +1927,7 @@ export interface DataFrame<S extends Schema = any>
    * ╰─────┴─────┴──────╯
    * ```
    */
-  std(): DataFrame<S>;
+  std(ddof?: number): DataFrame<S>;
   /**
    * Aggregate the columns of this DataFrame to their mean value.
    * ___
@@ -1805,7 +2023,7 @@ export interface DataFrame<S extends Schema = any>
    * ```
    * @category IO
    */
-  toObject(): { [K in keyof S]: DTypeToJs<S[K] | null>[] };
+  toObject(): { [K in keyof S]: (DTypeToJs<S[K]> | null)[] };
   toSeries(index?: number): SchemaToSeriesRecord<S>[keyof S];
   toString(): string;
   /**
@@ -1830,6 +2048,39 @@ export interface DataFrame<S extends Schema = any>
    *  ```
    */
   toStruct(name: string): Series;
+  /**
+   * Get one hot encoded dummy variables.
+   * ___
+   * @param columns - Extract dummies for the given columns. If undefined, all columns are used.
+   * @param options.separator - Separator/delimiter used when generating column names.
+   * @param options.dropFirst - Remove the first category from the variables being encoded.
+   * @example
+   * ```
+   * > const df = pl.DataFrame({
+   * ...   "foo": [1, 2],
+   * ...   "bar": [3, 4],
+   * ...   "ham": ["a", "b"],
+   * ... });
+   * > df.toDummies();
+   * shape: (2, 6)
+   * ┌───────┬───────┬───────┬───────┬───────┬───────┐
+   * │ foo_1 ┆ foo_2 ┆ bar_3 ┆ bar_4 ┆ ham_a ┆ ham_b │
+   * │ ---   ┆ ---   ┆ ---   ┆ ---   ┆ ---   ┆ ---   │
+   * │ u8    ┆ u8    ┆ u8    ┆ u8    ┆ u8    ┆ u8    │
+   * ╞═══════╪═══════╪═══════╪═══════╪═══════╪═══════╡
+   * │ 1     ┆ 0     ┆ 1     ┆ 0     ┆ 1     ┆ 0     │
+   * │ 0     ┆ 1     ┆ 0     ┆ 1     ┆ 0     ┆ 1     │
+   * └───────┴───────┴───────┴───────┴───────┴───────┘
+   * ```
+   */
+  toDummies(
+    columns?: string | string[],
+    options?: {
+      separator?: string;
+      dropFirst?: boolean;
+      dropNulls?: boolean;
+    },
+  ): DataFrame;
   /**
    * Transpose a DataFrame over the diagonal.
    *
@@ -2025,6 +2276,8 @@ export interface DataFrame<S extends Schema = any>
   unnest(columns: string | string[], separator?: string): DataFrame;
   /**
    * Aggregate the columns of this DataFrame to their variance value.
+   * @param ddof - "Delta Degrees of Freedom": the divisor used in the calculation is `N - ddof`,
+   *   where `N` represents the number of elements. By default `ddof` is 1.
    * @example
    * ```
    * > const df = pl.DataFrame({
@@ -2043,7 +2296,7 @@ export interface DataFrame<S extends Schema = any>
    * ╰─────┴─────┴──────╯
    * ```
    */
-  var(): DataFrame<S>;
+  var(ddof?: number): DataFrame<S>;
   /**
    Grow this DataFrame vertically by stacking a DataFrame to it.
    @param df - DataFrame to stack.
@@ -2337,8 +2590,24 @@ export const _DataFrame = <S extends Schema>(_df: any): DataFrame<S> => {
         return acc;
       }, {});
     },
+    clear(n = 0) {
+      if (!Number.isInteger(n) || n < 0) {
+        throw new RangeError(`'n' should be an integer >= 0, got ${n}`);
+      }
+      if (n === 0) {
+        return this.slice(0, 0);
+      }
+      return DataFrame(
+        this.getColumns().map((s) =>
+          Series(s.name, [], s.dtype).extendConstant(null, n),
+        ),
+      ) as any;
+    },
     clone() {
       return wrap("clone");
+    },
+    count() {
+      return this.lazy().select(col("*").count()).collectSync();
     },
     describe() {
       const describeCast = (df: DataFrame<S>) => {
@@ -2370,13 +2639,9 @@ export const _DataFrame = <S extends Schema>(_df: any): DataFrame<S> => {
     },
     drop(...names) {
       if (!Array.isArray(names[0]) && names.length === 1) {
-        return wrap("drop", names[0]);
+        return wrap("drop", names[0], true);
       }
-      const df: any = this.clone();
-      for (const name of names.flat(2)) {
-        df.inner().dropInPlace(name);
-      }
-      return df;
+      return wrap("dropMany", names.flat(2), true);
     },
     dropNulls(...subset) {
       if (subset.length) {
@@ -2394,8 +2659,32 @@ export const _DataFrame = <S extends Schema>(_df: any): DataFrame<S> => {
     filter(predicate) {
       return this.lazy().filter(predicate).collectSync();
     },
-    fillNull(strategy) {
-      return wrap("fillNull", strategy);
+    fillNull(strategy, limit?) {
+      const strategies = [
+        "backward",
+        "forward",
+        "mean",
+        "min",
+        "max",
+        "zero",
+        "one",
+      ];
+      // Strategy-based fill.
+      if (typeof strategy === "string" && strategies.includes(strategy)) {
+        // A limit only applies to the forward/backward strategies, which must
+        // be routed through the expression API to carry the limit through.
+        if (
+          limit != null &&
+          (strategy === "forward" || strategy === "backward")
+        ) {
+          return this.select(
+            col("*").fillNull(strategy as any, limit as any) as any,
+          );
+        }
+        return wrap("fillNull", strategy);
+      }
+      // Value/expression-based fill.
+      return this.select(col("*").fillNull(strategy as any) as any);
     },
     findIdxByName(name) {
       return unwrap("findIdxByName", name);
@@ -2415,6 +2704,12 @@ export const _DataFrame = <S extends Schema>(_df: any): DataFrame<S> => {
     },
     getColumns() {
       return _df.getColumns().map(_Series) as any;
+    },
+    getColumnIndex(name) {
+      return unwrap("findIdxByName", name);
+    },
+    gatherEvery(n, offset = 0) {
+      return this.select(col("*").gatherEvery(n, offset));
     },
     groupBy(...by) {
       return _GroupBy(_df as any, columnOrColumnsStrict(by));
@@ -2478,7 +2773,7 @@ export const _DataFrame = <S extends Schema>(_df: any): DataFrame<S> => {
           _df.hashRows(BigInt(obj), BigInt(k1), BigInt(k2), BigInt(k3)),
         );
       }
-      const o = { k0: obj, k1: k1, k2: k2, k3: k3, ...obj };
+      const o = { k0: 0n, k1: k1, k2: k2, k3: k3, ...obj };
 
       return _Series(
         _df.hashRows(BigInt(o.k0), BigInt(o.k1), BigInt(o.k2), BigInt(o.k3)),
@@ -2507,6 +2802,27 @@ export const _DataFrame = <S extends Schema>(_df: any): DataFrame<S> => {
     isDuplicated: () => _Series(_df.isDuplicated()) as any,
     isEmpty: () => _df.height === 0,
     isUnique: () => _Series(_df.isUnique()) as any,
+    item(row?, column?) {
+      if (row == null && column == null) {
+        if (this.height !== 1 || this.width !== 1) {
+          throw new Error(
+            `can only call \`item()\` without \`row\` or \`column\` values if the DataFrame has a single element; shape=(${this.height}, ${this.width})`,
+          );
+        }
+        return this.toSeries(0).get(0);
+      }
+      if (row == null || column == null) {
+        throw new Error(
+          "cannot call `item()` with only one of `row` or `column`",
+        );
+      }
+      const s =
+        typeof column === "number"
+          ? this.toSeries(column)
+          : this.getColumn(column);
+      const idx = row < 0 ? s.len() + row : row;
+      return s.get(idx);
+    },
     join(other, options): any {
       options = { how: "inner", ...options };
       const on = columnOrColumns(options.on);
@@ -2514,9 +2830,23 @@ export const _DataFrame = <S extends Schema>(_df: any): DataFrame<S> => {
       const suffix: string = options.suffix;
       const coalesce: boolean = options.coalesce;
       const validate: string = options.validate;
+      const nullsEqual: boolean = options.nullsEqual;
+      const maintainOrder: string = options.maintainOrder;
+      const buildSide: string = options.buildSide;
       if (how === "cross") {
         return _DataFrame(
-          _df.join(other._df, [], [], how, suffix, coalesce, validate),
+          _df.join(
+            other._df,
+            [],
+            [],
+            how,
+            suffix,
+            coalesce,
+            validate,
+            nullsEqual,
+            maintainOrder,
+            buildSide,
+          ),
         );
       }
       let leftOn = columnOrColumns(options.leftOn);
@@ -2540,6 +2870,9 @@ export const _DataFrame = <S extends Schema>(_df: any): DataFrame<S> => {
         suffix,
         coalesce,
         validate,
+        nullsEqual,
+        maintainOrder,
+        buildSide,
       );
     },
     joinAsof(other, options) {
@@ -2586,6 +2919,36 @@ export const _DataFrame = <S extends Schema>(_df: any): DataFrame<S> => {
     },
     nChunks() {
       return _df.nChunks();
+    },
+    nUnique(subset?) {
+      const toExpr = (s: ExprOrString): Expr =>
+        typeof s === "string" ? col(s) : (s as Expr);
+      let expr: Expr;
+      if (typeof subset === "string") {
+        expr = col(subset);
+      } else if (Expr.isExpr(subset)) {
+        expr = subset;
+      } else if (Array.isArray(subset) && subset.length === 1) {
+        expr = toExpr((subset as ExprOrString[])[0]);
+      } else if (Array.isArray(subset)) {
+        expr = _struct((subset as ExprOrString[]).map(toExpr)) as Expr;
+      } else {
+        expr = _struct(this.columns.map((c) => col(c))) as Expr;
+      }
+      return this.lazy()
+        .select(expr.nUnique())
+        .collectSync()
+        .toSeries(0)
+        .get(0);
+    },
+    product() {
+      const exprs = this.getColumns().map((s) => {
+        if (s.isNumeric() || s.isBoolean()) {
+          return col(s.name).product();
+        }
+        return lit(null).alias(s.name);
+      });
+      return this.select(...exprs);
     },
     nullCount() {
       return wrap("nullCount");
@@ -2639,16 +3002,19 @@ export const _DataFrame = <S extends Schema>(_df: any): DataFrame<S> => {
         _df.pivot(values, on, index, fn, maintainOrder, sortColumns, separator),
       );
     },
-    quantile(quantile) {
-      return this.lazy().quantile(quantile).collectSync();
+    quantile(quantile, interpolation = "nearest") {
+      return this.lazy().quantile(quantile, interpolation).collectSync();
     },
     rechunk() {
       return wrap("rechunk");
     },
-    rename(mapping): any {
+    reverse() {
+      return this.lazy().reverse().collectSync();
+    },
+    rename(mapping, strict = true): any {
       const df = this.clone();
       for (const [column, new_col] of Object.entries(mapping)) {
-        (df as any).inner().rename(column, new_col);
+        (df as any).inner().rename(column, new_col, strict);
       }
       return df;
     },
@@ -2664,25 +3030,31 @@ export const _DataFrame = <S extends Schema>(_df: any): DataFrame<S> => {
 
       return _df.toRows();
     },
-    sample(opts?, frac?, withReplacement = false, seed?) {
+    sample(opts?, frac?, withReplacement = false, seed?, shuffle = false) {
       if (arguments.length === 0) {
         return wrap(
           "sampleN",
           Series("", [1]).inner(),
           withReplacement,
-          false,
+          shuffle,
           seed,
         );
       }
       if (opts?.n !== undefined || opts?.frac !== undefined) {
-        return this.sample(opts.n, opts.frac, opts.withReplacement, seed);
+        return this.sample(
+          opts.n,
+          opts.frac,
+          opts.withReplacement,
+          opts.seed ?? seed,
+          opts.shuffle ?? shuffle,
+        );
       }
       if (typeof opts === "number") {
         return wrap(
           "sampleN",
           Series("", [opts]).inner(),
           withReplacement,
-          false,
+          shuffle,
           seed,
         );
       }
@@ -2691,7 +3063,7 @@ export const _DataFrame = <S extends Schema>(_df: any): DataFrame<S> => {
           "sampleFrac",
           Series("", [frac]).inner(),
           withReplacement,
-          false,
+          shuffle,
           seed,
         );
       }
@@ -2774,8 +3146,8 @@ export const _DataFrame = <S extends Schema>(_df: any): DataFrame<S> => {
         multithreaded,
       );
     },
-    std() {
-      return this.lazy().std().collectSync();
+    std(ddof = 1) {
+      return this.lazy().std(ddof).collectSync();
     },
     sum(axis = 0, nullStrategy = "ignore") {
       if (axis === 1) {
@@ -2941,6 +3313,29 @@ export const _DataFrame = <S extends Schema>(_df: any): DataFrame<S> => {
     toStruct(name) {
       return _Series(_df.toStruct(name));
     },
+    toDummies(columns?, options?) {
+      const separator = options?.separator ?? "_";
+      const dropFirst = options?.dropFirst ?? false;
+      const dropNulls = options?.dropNulls ?? false;
+      if (columns == null) {
+        return _DataFrame(_df.toDummies(separator, dropFirst, dropNulls));
+      }
+      const subset = (Array.isArray(columns) ? columns : [columns]) as string[];
+      // Encode only the selected columns, preserving original column order.
+      const parts: Series[] = [];
+      for (const name of this.columns) {
+        if (subset.includes(name)) {
+          const single: any = DataFrame([this.getColumn(name)]);
+          const dummies = _DataFrame(
+            single._df.toDummies(separator, dropFirst, dropNulls),
+          );
+          parts.push(...dummies.getColumns());
+        } else {
+          parts.push(this.getColumn(name));
+        }
+      }
+      return DataFrame(parts) as any;
+    },
     toString() {
       return _df.toString();
     },
@@ -3000,8 +3395,8 @@ export const _DataFrame = <S extends Schema>(_df: any): DataFrame<S> => {
       columns = Array.isArray(columns) ? columns : [columns];
       return _DataFrame(_df.unnest(columns, separator));
     },
-    var() {
-      return this.lazy().var().collectSync();
+    var(ddof = 1) {
+      return this.lazy().var(ddof).collectSync();
     },
     map: (fn) => map(_DataFrame(_df), fn as any) as any,
     row(idx) {

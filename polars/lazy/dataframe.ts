@@ -117,6 +117,30 @@ export interface LazyDataFrame<S extends Schema = any>
   explode(columns: ExprOrString[]): LazyDataFrame;
   explode(column: ExprOrString, ...columns: ExprOrString[]): LazyDataFrame;
   /**
+   * Fill floating point NaN values.
+   * @param fillValue value to fill the NaN values with
+   * @example
+   * ```
+   * > const lf = pl.DataFrame({
+   * >   "a": [1.5, 2, Number.NaN, 4],
+   * >   "b": [0.5, 4, Number.NaN, 13],
+   * > }).lazy()
+   * > lf.fillNan(99).collect()
+   * shape: (4, 2)
+   * ┌──────┬──────┐
+   * │ a    ┆ b    │
+   * │ ---  ┆ ---  │
+   * │ f64  ┆ f64  │
+   * ╞══════╪══════╡
+   * │ 1.5  ┆ 0.5  │
+   * │ 2.0  ┆ 4.0  │
+   * │ 99.0 ┆ 99.0 │
+   * │ 4.0  ┆ 13.0 │
+   * └──────┴──────┘
+   * ```
+   */
+  fillNan(fillValue: number | Expr): LazyDataFrame<S>;
+  /**
    * Fill missing values
    * @param fillValue value to fill the missing values with
    */
@@ -419,6 +443,8 @@ export interface LazyDataFrame<S extends Schema = any>
       allowParallel?: boolean;
       forceParallel?: boolean;
       checkSortedness?: boolean;
+      coalesce?: boolean;
+      allowExactMatches?: boolean;
     },
   ): LazyDataFrame;
   /**
@@ -459,7 +485,10 @@ export interface LazyDataFrame<S extends Schema = any>
   /**
    * @see {@link DataFrame.quantile}
    */
-  quantile(quantile: number): LazyDataFrame<S>;
+  quantile(
+    quantile: number,
+    interpolation?: "nearest" | "higher" | "lower" | "midpoint" | "linear",
+  ): LazyDataFrame<S>;
   /**
    * @see {@link DataFrame.rename}
    */
@@ -512,8 +541,10 @@ export interface LazyDataFrame<S extends Schema = any>
   }): LazyDataFrame<S>;
   /**
    * @see {@link DataFrame.std}
+   * @param ddof - "Delta Degrees of Freedom": the divisor used in the calculation is `N - ddof`,
+   *   where `N` represents the number of elements. By default `ddof` is 1.
    */
-  std(): LazyDataFrame<S>;
+  std(ddof?: number): LazyDataFrame<S>;
   /**
    * Aggregate the columns in the DataFrame to their sum value.
    */
@@ -591,9 +622,39 @@ export interface LazyDataFrame<S extends Schema = any>
     maintainOrder?: boolean;
   }): LazyDataFrame<S>;
   /**
-   * Aggregate the columns in the DataFrame to their variance value.
+   * Decompose struct columns into separate columns for each of their fields.
+   * The new columns will be inserted into the DataFrame at the location of the struct column.
+   * @param columns Name of the struct column(s) that should be unnested.
+   * @param separator Rename output column names as combination of the struct column name, name separator and field name.
+   * @example
+   * ```
+   * > const lf = pl.DataFrame({
+   * >   "before": ["foo", "bar"],
+   * >   "t_a": [1, 2],
+   * >   "t_b": ["a", "b"],
+   * > }).lazy().select(
+   * >   pl.col("before"),
+   * >   pl.struct(["t_a", "t_b"]).alias("t_struct"),
+   * > )
+   * > lf.unnest("t_struct").collect()
+   * shape: (2, 3)
+   * ┌────────┬─────┬─────┐
+   * │ before ┆ t_a ┆ t_b │
+   * │ ---    ┆ --- ┆ --- │
+   * │ str    ┆ i64 ┆ str │
+   * ╞════════╪═════╪═════╡
+   * │ foo    ┆ 1   ┆ a   │
+   * │ bar    ┆ 2   ┆ b   │
+   * └────────┴─────┴─────┘
+   * ```
    */
-  var(): LazyDataFrame<S>;
+  unnest(columns: string | string[], separator?: string): LazyDataFrame;
+  /**
+   * Aggregate the columns in the DataFrame to their variance value.
+   * @param ddof - "Delta Degrees of Freedom": the divisor used in the calculation is `N - ddof`,
+   *   where `N` represents the number of elements. By default `ddof` is 1.
+   */
+  var(ddof?: number): LazyDataFrame<S>;
   /**
    * Add or overwrite column in a DataFrame.
    * @param expr - Expression that evaluates to column.
@@ -948,6 +1009,11 @@ export const _LazyDataFrame = (_ldf: any): LazyDataFrame => {
     first() {
       return this.head(1).collectSync();
     },
+    fillNan(exprOrValue) {
+      const fillValue = exprToLitOrExpr(exprOrValue)._expr;
+
+      return _LazyDataFrame(_ldf.fillNan(fillValue));
+    },
     fillNull(exprOrValue) {
       const fillValue = exprToLitOrExpr(exprOrValue)._expr;
 
@@ -1024,8 +1090,17 @@ export const _LazyDataFrame = (_ldf: any): LazyDataFrame => {
         forceParallel: false,
         ...options,
       };
-      const { how, suffix, allowParallel, forceParallel, coalesce, validate } =
-        options;
+      const {
+        how,
+        suffix,
+        allowParallel,
+        forceParallel,
+        coalesce,
+        validate,
+        nullsEqual,
+        maintainOrder,
+        buildSide,
+      } = options;
       if (how === "cross") {
         return _LazyDataFrame(
           _ldf.join(
@@ -1038,8 +1113,9 @@ export const _LazyDataFrame = (_ldf: any): LazyDataFrame => {
             suffix,
             coalesce,
             validate,
-            [],
-            [],
+            nullsEqual,
+            maintainOrder,
+            buildSide,
           ),
         );
       }
@@ -1071,8 +1147,9 @@ export const _LazyDataFrame = (_ldf: any): LazyDataFrame => {
         suffix,
         coalesce,
         validate,
-        [],
-        [],
+        nullsEqual,
+        maintainOrder,
+        buildSide,
       );
 
       return _LazyDataFrame(ldf);
@@ -1092,6 +1169,8 @@ export const _LazyDataFrame = (_ldf: any): LazyDataFrame => {
         allowParallel,
         forceParallel,
         checkSortedness,
+        coalesce,
+        allowExactMatches,
       } = options;
       let leftOn: string | undefined;
       let rightOn: string | undefined;
@@ -1154,6 +1233,8 @@ export const _LazyDataFrame = (_ldf: any): LazyDataFrame => {
         toleranceNum,
         toleranceStr,
         checkSortedness ?? true,
+        coalesce,
+        allowExactMatches,
       );
 
       return _LazyDataFrame(ldf);
@@ -1260,14 +1341,18 @@ export const _LazyDataFrame = (_ldf: any): LazyDataFrame => {
         multithreaded,
       );
     },
-    std() {
-      return _LazyDataFrame(_ldf.std());
+    std(ddof = 1) {
+      return _LazyDataFrame(_ldf.std(ddof));
     },
     sum() {
       return _LazyDataFrame(_ldf.sum());
     },
-    var() {
-      return _LazyDataFrame(_ldf.var());
+    unnest(columns, separator) {
+      columns = Array.isArray(columns) ? columns : [columns];
+      return _LazyDataFrame(_ldf.unnest(columns, separator));
+    },
+    var(ddof = 1) {
+      return _LazyDataFrame(_ldf.var(ddof));
     },
     tail(length = 5) {
       return _LazyDataFrame(_ldf.tail(length));
