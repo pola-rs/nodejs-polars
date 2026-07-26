@@ -812,6 +812,15 @@ export interface LazyDataFrame<S extends Schema = any>
    * 
    * Parameters
     @param path - File path to which the file should be written.
+    @param options.compression : {'uncompressed', 'gzip', 'zstd'} Default -> 'uncompressed'
+        What compression format to use.
+    @param options.compressionLevel - The compression level to use, typically 0-9, or
+        undefined to let the engine choose.
+    @param options.checkExtension - Whether to check if the filename matches the compression
+        settings. Default -> true
+        Will raise an error if compression is set to 'uncompressed' and the filename ends in
+        one of (".gz", ".zst", ".zstd") or if compression != 'uncompressed' and the file uses
+        a mismatched extension.
     @param options.maintainOrder - Maintain the order in which data is processed. Default -> true
         Setting this to `False` will  be slightly faster.
     @param options.mkdir - Recursively create all the directories in the path. Default -> false
@@ -832,6 +841,8 @@ export interface LazyDataFrame<S extends Schema = any>
         * `azure <https://docs.rs/object_store/latest/object_store/azure/enum.AzureConfigKey.html>`_
 
         If `cloudOptions` is not provided, Polars will try to infer the information from environment variables.
+    @param options.retries - Number of retries if accessing a cloud instance fails.
+        Deprecated: pass `{ max_retries: n }` via `cloudOptions` instead.
     @return DataFrame
     Examples
     --------
@@ -1403,6 +1414,8 @@ export const _LazyDataFrame = (_ldf: any): LazyDataFrame => {
       return _LazyDataFrame(_ldf.sinkParquet(path, options));
     },
     sinkNdJson(path: string, options: SinkJsonOptions = {}) {
+      options.compression = options.compression ?? "uncompressed";
+      options.checkExtension = options.checkExtension ?? true;
       options.syncOnClose = options.syncOnClose ?? "all";
       options.maintainOrder = options.maintainOrder ?? true;
       options.mkdir = options.mkdir ?? true;

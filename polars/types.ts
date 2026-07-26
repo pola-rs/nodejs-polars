@@ -133,6 +133,9 @@ export interface ParquetStatisticsOptions {
  * @category Options
  */
 export interface SinkJsonOptions {
+  compression?: "uncompressed" | "gzip" | "zstd";
+  compressionLevel?: number; // The compression level to use, typically 0-9.
+  checkExtension?: boolean; // Whether to check if the filename matches the compression settings.
   cloudOptions?: Record<string, string>;
   retries?: number;
   syncOnClose?: string; // Call sync when closing the file.

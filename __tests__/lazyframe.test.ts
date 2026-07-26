@@ -2079,6 +2079,57 @@ describe("lazyframe", () => {
 
     fs.rmSync("./test.ndjson");
   });
+  test("sinkNdJson:compression:gzip", async () => {
+    const p = "./test-sink.ndjson.gz";
+    const ldf = pl
+      .DataFrame([
+        pl.Series("foo", [1, 2, 3], pl.Int64),
+        pl.Series("bar", ["a", "b", "c"]),
+      ])
+      .lazy();
+    await ldf
+      .sinkNdJson(p, { compression: "gzip", compressionLevel: 6 })
+      .collect();
+    const roundTripped = zlib.gunzipSync(fs.readFileSync(p)).toString();
+    assert.deepStrictEqual(
+      roundTripped,
+      '{"foo":1,"bar":"a"}\n{"foo":2,"bar":"b"}\n{"foo":3,"bar":"c"}\n',
+    );
+    fs.rmSync(p);
+  });
+  test("sinkNdJson:compression:zstd", async () => {
+    const p = "./test-sink.ndjson.zst";
+    const ldf = pl.DataFrame([pl.Series("foo", [1, 2, 3], pl.Int64)]).lazy();
+    await ldf.sinkNdJson(p, { compression: "zstd" }).collect();
+    assert.ok(fs.statSync(p).size > 0);
+    fs.rmSync(p);
+  });
+  test("sinkNdJson:checkExtension", async () => {
+    const p = "./test-check-ext.ndjson";
+    const ldf = pl.DataFrame([pl.Series("foo", [1, 2, 3], pl.Int64)]).lazy();
+    // A .ndjson path with gzip compression is rejected by default...
+    await assert.rejects(() =>
+      ldf.sinkNdJson(p, { compression: "gzip" }).collect(),
+    );
+    // ...but allowed when the extension check is disabled.
+    await ldf
+      .sinkNdJson(p, { compression: "gzip", checkExtension: false })
+      .collect();
+    assert.deepStrictEqual(
+      zlib.gunzipSync(fs.readFileSync(p)).toString(),
+      '{"foo":1}\n{"foo":2}\n{"foo":3}\n',
+    );
+    fs.rmSync(p);
+  });
+  test("sinkNdJson:invalid options", () => {
+    const ldf = pl.DataFrame([pl.Series("foo", [1, 2, 3], pl.Int64)]).lazy();
+    assert.throws(() =>
+      ldf.sinkNdJson("./test-invalid.ndjson", { compression: "bogus" as any }),
+    );
+    assert.throws(() =>
+      ldf.sinkNdJson("./test-invalid.ndjson", { syncOnClose: "bogus" as any }),
+    );
+  });
   test("sinkIpc:path", async () => {
     const ldf = pl
       .DataFrame([

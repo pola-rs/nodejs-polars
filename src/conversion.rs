@@ -774,6 +774,9 @@ impl ToNapiValue for Wrap<StatisticsOptions> {
 
 #[napi(object)]
 pub struct SinkJsonOptions<'a> {
+    pub compression: Option<String>,
+    pub compression_level: Option<i32>,
+    pub check_extension: Option<bool>,
     pub maintain_order: Option<bool>,
     pub cloud_options: Option<HashMap<String, Wrap<AnyValue<'a>>>>,
     pub sync_on_close: Wrap<SyncOnCloseType>,

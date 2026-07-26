@@ -4,7 +4,7 @@ use crate::prelude::*;
 use polars::prelude::sync_on_close::SyncOnCloseType;
 use polars::prelude::{lit, ClosedWindow, JoinType};
 use polars_core::query_result::QueryResult;
-use polars_io::{HiveOptions, RowIndex};
+use polars_io::{ExternalCompression, HiveOptions, RowIndex};
 use polars_utils::slice_enum::Slice;
 use std::collections::HashMap;
 use std::num::NonZeroUsize;
@@ -762,8 +762,19 @@ impl JsLazyFrame {
             sinked_paths_callback: None,
         };
 
+        let compression_level = options.compression_level.map(|x| x as u32);
+        let compression = ExternalCompression::try_from(
+            options
+                .compression
+                .unwrap_or_else(|| "uncompressed".to_owned())
+                .as_str(),
+            compression_level,
+        )
+        .map_err(JsPolarsErr::from)?;
+
         let nd_options = NDJsonWriterOptions {
-            ..Default::default()
+            compression,
+            check_extension: options.check_extension.unwrap_or(true),
         };
 
         let rldf = self
