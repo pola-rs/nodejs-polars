@@ -816,7 +816,7 @@ impl JsLazyFrame {
 }
 
 #[napi(object)]
-pub struct ScanCsvOptions {
+pub struct ScanCsvOptions<'a> {
     pub infer_schema_length: Option<u32>,
     pub cache: Option<bool>,
     pub overwrite_dtype: Option<HashMap<String, Wrap<DataType>>>,
@@ -825,6 +825,7 @@ pub struct ScanCsvOptions {
     pub ignore_errors: bool,
     pub n_rows: Option<u32>,
     pub skip_rows: Option<u32>,
+    pub skip_lines: Option<u32>,
     pub sep: Option<String>,
     pub rechunk: Option<bool>,
     pub columns: Option<Vec<String>>,
@@ -836,16 +837,43 @@ pub struct ScanCsvOptions {
     pub parse_dates: Option<bool>,
     pub skip_rows_after_header: u32,
     pub row_count: Option<JsRowCount>,
+    pub row_index_name: Option<String>,
+    pub row_index_offset: Option<u32>,
     pub null_values: Option<Wrap<NullValues>>,
     pub missing_utf8_is_empty_string: Option<bool>,
     pub raise_if_empty: Option<bool>,
     pub truncate_ragged_lines: Option<bool>,
+    pub decimal_comma: Option<bool>,
+    pub glob: Option<bool>,
     pub schema: Option<Wrap<Schema>>,
+    pub n_threads: Option<u32>,
+    pub cloud_options: Option<HashMap<String, Wrap<AnyValue<'a>>>>,
+    pub include_file_paths: Option<String>,
+    pub missing_columns: Option<String>,
 }
 #[napi(catch_unwind)]
 pub fn scan_csv(path: String, options: ScanCsvOptions) -> napi::Result<JsLazyFrame> {
     let n_rows = options.n_rows.map(|i| i as usize);
-    let row_count = options.row_count.map(RowIndex::from);
+    let row_count = match options.row_count.map(RowIndex::from) {
+        Some(row_count) => Some(row_count),
+        None => options.row_index_name.map(|name| RowIndex {
+            name: name.into(),
+            offset: options.row_index_offset.unwrap_or(0),
+        }),
+    };
+    let missing_columns = match options.missing_columns.as_deref() {
+        None => None,
+        Some("insert") => Some(MissingColumnsPolicy::Insert),
+        Some("raise") => Some(MissingColumnsPolicy::Raise),
+        Some(e) => {
+            return Err(JsPolarsErr::Other(format!(
+                "missing_columns must be one of 'insert' or 'raise', got '{}'.",
+                e
+            ))
+            .into())
+        }
+    };
+    let cloud_options = parse_cloud_options(&path, options.cloud_options);
     let missing_utf8_is_empty_string: bool = options.missing_utf8_is_empty_string.unwrap_or(false);
     let quote_char = single_byte_option(options.quote_char, "quote_char")?;
     let separator = single_byte_required(options.sep.as_deref().unwrap_or(","), "sep")?;
@@ -873,7 +901,9 @@ pub fn scan_csv(path: String, options: ScanCsvOptions) -> napi::Result<JsLazyFra
         .with_has_header(options.has_header.unwrap_or(true))
         .with_ignore_errors(options.ignore_errors)
         .with_skip_rows(options.skip_rows.unwrap_or(0) as usize)
+        .with_skip_lines(options.skip_lines.unwrap_or(0) as usize)
         .with_n_rows(n_rows)
+        .with_n_threads(options.n_threads.map(|i| i as usize))
         .with_cache(options.cache.unwrap_or(true))
         .with_dtype_overwrite(overwrite_dtype.map(Arc::new))
         .with_schema(options.schema.map(|schema| Arc::new(schema.0)))
@@ -894,6 +924,11 @@ pub fn scan_csv(path: String, options: ScanCsvOptions) -> napi::Result<JsLazyFra
         .with_missing_is_null(!missing_utf8_is_empty_string)
         .with_truncate_ragged_lines(options.truncate_ragged_lines.unwrap_or(false))
         .with_raise_if_empty(options.raise_if_empty.unwrap_or(true))
+        .with_decimal_comma(options.decimal_comma.unwrap_or(false))
+        .with_glob(options.glob.unwrap_or(true))
+        .with_cloud_options(cloud_options)
+        .with_include_file_paths(options.include_file_paths.map(PlSmallStr::from))
+        .with_missing_columns_policy(missing_columns)
         .finish()
         .map_err(JsPolarsErr::from)?;
     Ok(r.into())

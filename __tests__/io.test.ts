@@ -334,6 +334,71 @@ describe("scan", () => {
 └─────┴─────┘`;
     assert.deepStrictEqual(actual.toString(), expected);
   });
+  it("can lazy load (scan) from a csv file with skipLines", () => {
+    // eslint-disable-next-line no-undef
+    const p = path.resolve(__dirname, "./examples/skip-lines.csv");
+    fs.writeFileSync(p, "junk1\njunk2\nfoo,bar\n1,2\n3,4\n");
+    try {
+      const df = pl.scanCSV(p, { skipLines: 2 }).collectSync();
+      assert.deepStrictEqual(df.columns, ["foo", "bar"]);
+      assert.deepStrictEqual(df.shape, { height: 2, width: 2 });
+    } finally {
+      fs.rmSync(p);
+    }
+  });
+  it("can lazy load (scan) from a csv file with decimalComma", () => {
+    // eslint-disable-next-line no-undef
+    const p = path.resolve(__dirname, "./examples/decimal-comma.csv");
+    fs.writeFileSync(p, "x;y\n1,5;2\n");
+    try {
+      const df = pl.scanCSV(p, { sep: ";", decimalComma: true }).collectSync();
+      assert.deepStrictEqual(df.getColumn("x").toArray(), [1.5]);
+    } finally {
+      fs.rmSync(p);
+    }
+  });
+  it("can lazy load (scan) from a csv file with rowIndexName and includeFilePaths", () => {
+    const df = pl
+      .scanCSV(csvpath, {
+        rowIndexName: "idx",
+        rowIndexOffset: 10,
+        includeFilePaths: "src",
+      })
+      .collectSync();
+
+    assert.deepStrictEqual(df.shape, { height: 27, width: 6 });
+    assert.deepStrictEqual(
+      df.getColumn("idx").toArray().slice(0, 3),
+      [10, 11, 12],
+    );
+    assert.deepStrictEqual(df.getColumn("src").get(0), csvpath);
+  });
+  it("can lazy load (scan) from a csv file with missingColumns = insert", () => {
+    const df = pl
+      .scanCSV(csvpath, {
+        missingColumns: "insert",
+        schema: {
+          category: pl.String,
+          calories: pl.Int64,
+          fats_g: pl.Float64,
+          sugars_g: pl.Int64,
+          missing: pl.Int64,
+        },
+      })
+      .collectSync();
+
+    assert.deepStrictEqual(df.shape, { height: 27, width: 5 });
+    assert.deepStrictEqual(df.getColumn("missing").nullCount(), 27);
+  });
+  it("throws on an invalid missingColumns value", () => {
+    assert.throws(() =>
+      pl.scanCSV(csvpath, { missingColumns: "nope" as any }).collectSync(),
+    );
+  });
+  it("can lazy load (scan) from a csv file with glob and nThreads", () => {
+    const df = pl.scanCSV(csvpath, { glob: false, nThreads: 1 }).collectSync();
+    assert.deepStrictEqual(df.shape, { height: 27, width: 4 });
+  });
 });
 
 describe("parquet", () => {

@@ -42,7 +42,7 @@ const readCsvDefaultOptions: Partial<ReadCsvOptions> = {
   inferSchemaLength: 100,
   batchSize: 8192,
   hasHeader: true,
-  ignoreErrors: true,
+  ignoreErrors: false,
   chunkSize: 10000,
   skipRows: 0,
   sep: ",",
@@ -211,29 +211,40 @@ export interface ScanCsvOptions {
   commentPrefix: string;
   quoteChar: string;
   skipRows: number;
+  skipLines: number;
   nullValues: string | Array<string> | Record<string, string>;
   ignoreErrors: boolean;
   cache: boolean;
   inferSchemaLength: number | null;
   rechunk: boolean;
   nRows: number;
+  nThreads: number;
   encoding: string;
   lowMemory: boolean;
   parseDates: boolean;
   skipRowsAfterHeader: number;
+  rowCount: RowCount;
+  rowIndexName: string;
+  rowIndexOffset: number;
   eolChar: string;
   missingUtf8IsEmptyString: boolean;
   raiseIfEmpty: boolean;
   truncateRaggedLines: boolean;
+  decimalComma: boolean;
+  glob: boolean;
   schema: Record<string, DataType>;
+  cloudOptions: Record<string, string>;
+  includeFilePaths: string;
+  missingColumns: "insert" | "raise";
 }
 
 const scanCsvDefaultOptions: Partial<ScanCsvOptions> = {
   inferSchemaLength: 100,
   cache: true,
   hasHeader: true,
-  ignoreErrors: true,
+  ignoreErrors: false,
   skipRows: 0,
+  skipLines: 0,
   sep: ",",
   quoteChar: '"',
   eolChar: "\n",
@@ -242,6 +253,8 @@ const scanCsvDefaultOptions: Partial<ScanCsvOptions> = {
   lowMemory: false,
   parseDates: false,
   skipRowsAfterHeader: 0,
+  decimalComma: false,
+  glob: true,
 };
 
 /**
@@ -258,6 +271,8 @@ const scanCsvDefaultOptions: Partial<ScanCsvOptions> = {
  * @param options.commentPrefix - character that indicates the start of a comment line, for instance '#'.
  * @param options.quoteChar -character that is used for csv quoting. Default: '"'. Set to null to turn special handling and escaping of quotes off.
  * @param options.skipRows -Start reading after `skipRows` position.
+ * @param options.skipLines -Start reading after `skipLines` lines. The header will be parsed at this offset.
+ *     Note that CSV records may span multiple lines, so this skips lines rather than records.
  * @param options.nullValues - Values to interpret as null values. You can provide a
  *     - `string` -> all values encountered equal to this string will be null
  *     - `Array<string>` -> A null value per column.
@@ -269,8 +284,21 @@ const scanCsvDefaultOptions: Partial<ScanCsvOptions> = {
  * @param options.nRows -After n rows are read from the CSV, it stops reading.
  *     During multi-threaded parsing, an upper bound of `n` rows
  *     cannot be guaranteed.
+ * @param options.nThreads -Number of threads to use in csv parsing. Defaults to the number of physical cpu's of your system.
  * @param options.rechunk -Make sure that all columns are contiguous in memory by aggregating the chunks into a single array.
  * @param options.lowMemory - Reduce memory usage in expense of performance.
+ * @param options.rowCount - Add a row index column with the given name and offset.
+ * @param options.rowIndexName - Insert a row index column with this name. Alternative to `rowCount`.
+ * @param options.rowIndexOffset - Start the row index at this offset. Only used when `rowIndexName` is set.
+ * @param options.decimalComma - Parse floats using a comma as the decimal separator instead of a period.
+ * @param options.glob - Expand path given via globbing rules.
+ * @param options.schema - Set the CSV file's schema. This only accepts datatypes that are implemented in the csv parser and expects a complete Schema.
+ * @param options.cloudOptions - Options that indicate how to connect to a cloud provider.
+ *     Also accepts the retry keys `max_retries`, `retry_timeout_ms`, `retry_init_backoff_ms`,
+ *     `retry_max_backoff_ms`, `retry_base_multiplier`, and `file_cache_ttl`.
+ * @param options.includeFilePaths - Include the path of the source file(s) as a column with this name.
+ * @param options.missingColumns - How to handle columns of the schema that are missing from a file:
+ *     `"insert"` fills them with nulls, `"raise"` (default) raises an error.
  * ___
  *
  */
