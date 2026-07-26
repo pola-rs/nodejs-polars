@@ -838,7 +838,6 @@ pub struct ScanCsvOptions<'a> {
     pub quote_char: Option<String>,
     pub parse_dates: Option<bool>,
     pub skip_rows_after_header: u32,
-    pub row_count: Option<JsRowCount>,
     pub row_index_name: Option<String>,
     pub row_index_offset: Option<u32>,
     pub null_values: Option<Wrap<NullValues>>,
@@ -856,13 +855,7 @@ pub struct ScanCsvOptions<'a> {
 #[napi(catch_unwind)]
 pub fn scan_csv(path: String, options: ScanCsvOptions) -> napi::Result<JsLazyFrame> {
     let n_rows = options.n_rows.map(|i| i as usize);
-    let row_count = match options.row_count.map(RowIndex::from) {
-        Some(row_count) => Some(row_count),
-        None => options.row_index_name.map(|name| RowIndex {
-            name: name.into(),
-            offset: options.row_index_offset.unwrap_or(0),
-        }),
-    };
+    let row_index = parse_row_index(options.row_index_name, options.row_index_offset);
     let missing_columns = match options.missing_columns.as_deref() {
         None => None,
         Some("insert") => Some(MissingColumnsPolicy::Insert),
@@ -920,7 +913,7 @@ pub fn scan_csv(path: String, options: ScanCsvOptions) -> napi::Result<JsLazyFra
         .with_rechunk(options.rechunk.unwrap_or(false))
         .with_skip_rows_after_header(options.skip_rows_after_header as usize)
         .with_encoding(encoding)
-        .with_row_index(row_count)
+        .with_row_index(row_index)
         .with_try_parse_dates(options.parse_dates.unwrap_or(false))
         .with_null_values(options.null_values.map(|s| s.0))
         .with_missing_is_null(!missing_utf8_is_empty_string)
@@ -1026,7 +1019,8 @@ pub struct ScanIPCOptions {
     pub n_rows: Option<i64>,
     pub cache: Option<bool>,
     pub rechunk: Option<bool>,
-    pub row_count: Option<JsRowCount>,
+    pub row_index_name: Option<String>,
+    pub row_index_offset: Option<u32>,
 }
 
 #[napi(catch_unwind)]
@@ -1034,7 +1028,7 @@ pub fn scan_ipc(path: String, options: ScanIPCOptions) -> napi::Result<JsLazyFra
     let n_rows = options.n_rows.map(|i| i as usize);
     let cache = options.cache.unwrap_or(true);
     let rechunk = options.rechunk.unwrap_or(false);
-    let row_index: Option<RowIndex> = options.row_count.map(|rc| rc.into());
+    let row_index = parse_row_index(options.row_index_name, options.row_index_offset);
     let options = IpcScanOptions {
         ..Default::default()
     };
@@ -1055,25 +1049,53 @@ pub fn scan_ipc(path: String, options: ScanIPCOptions) -> napi::Result<JsLazyFra
 }
 
 #[napi(object)]
-pub struct JsonScanOptions {
+pub struct JsonScanOptions<'a> {
+    /// Maximum number of rows to scan for schema inference. `None` scans the
+    /// whole file (slow); ignored when `schema` is given.
     pub infer_schema_length: Option<i64>,
-    pub batch_size: i64,
-    pub n_threads: Option<i64>,
-    pub num_rows: Option<i64>,
-    pub skip_rows: Option<i64>,
+    pub batch_size: Option<i64>,
+    pub n_rows: Option<i64>,
     pub low_memory: Option<bool>,
-    pub row_count: Option<JsRowCount>,
+    pub rechunk: Option<bool>,
+    pub ignore_errors: Option<bool>,
+    pub schema: Option<Wrap<Schema>>,
+    pub schema_overrides: Option<Wrap<Schema>>,
+    pub row_index_name: Option<String>,
+    pub row_index_offset: Option<u32>,
+    pub cloud_options: Option<HashMap<String, Wrap<AnyValue<'a>>>>,
+    pub include_file_paths: Option<String>,
 }
 
 #[napi(catch_unwind)]
 pub fn scan_json(path: String, options: JsonScanOptions) -> napi::Result<JsLazyFrame> {
-    let batch_size = options.batch_size as usize;
-    let batch_size = NonZeroUsize::new(batch_size);
+    let n_rows = options.n_rows.map(|i| i as usize);
+    let row_index = parse_row_index(options.row_index_name, options.row_index_offset);
+    let cloud_options = parse_cloud_options(&path, options.cloud_options);
+
+    // A `0`/negative value is meaningless here; treat only a positive count as a
+    // bound and anything else as "scan everything".
+    let infer_schema_length = options
+        .infer_schema_length
+        .and_then(|i| usize::try_from(i).ok())
+        .and_then(NonZeroUsize::new);
+
     LazyJsonLineReader::new(PlRefPath::new(&path))
-        .with_batch_size(batch_size)
+        .with_batch_size(
+            options
+                .batch_size
+                .and_then(|i| usize::try_from(i).ok())
+                .and_then(NonZeroUsize::new),
+        )
+        .with_infer_schema_length(infer_schema_length)
+        .with_schema(options.schema.map(|s| Arc::new(s.0)))
+        .with_schema_overwrite(options.schema_overrides.map(|s| Arc::new(s.0)))
+        .with_ignore_errors(options.ignore_errors.unwrap_or(false))
         .low_memory(options.low_memory.unwrap_or(false))
-        .with_row_index(options.row_count.map(|rc| rc.into()))
-        .with_n_rows(options.num_rows.map(|i| i as usize))
+        .with_rechunk(options.rechunk.unwrap_or(false))
+        .with_row_index(row_index)
+        .with_n_rows(n_rows)
+        .with_cloud_options(cloud_options)
+        .with_include_file_paths(options.include_file_paths.map(PlSmallStr::from))
         .finish()
         .map_err(|err| napi::Error::from_reason(err.to_string()))
         .map(|lf| lf.into())

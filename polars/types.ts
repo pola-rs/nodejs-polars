@@ -162,19 +162,6 @@ export interface WriteJsonOptions {
 }
 
 /**
- * Options for {@link scanJson}
- */
-export interface JsonScanOptions {
-  inferSchemaLength?: number;
-  nThreads?: number;
-  batchSize?: number;
-  lowMemory?: boolean;
-  numRows?: number;
-  skipRows?: number;
-  rowCount?: RowCount;
-}
-
-/**
  * Options for {@link DataFrame.writeParquet}
  * @category Options
  */
@@ -193,9 +180,10 @@ export interface WriteParquetOptions {
  */
 export interface ReadParquetOptions {
   columns?: string[] | number[];
-  numRows?: number;
-  parallel?: "auto" | "columns" | "row_groups" | "none";
-  rowCount?: RowCount;
+  nRows?: number;
+  parallel?: "auto" | "columns" | "row_groups" | "prefiltered" | "none";
+  rowIndexName?: string;
+  rowIndexOffset?: number;
 }
 /**
  * Options for {@link scanParquet}
@@ -273,16 +261,6 @@ export type DatetimeCastOption =
   | "downcast"
   | "convert-timezone"
   | "forbid";
-
-/**
- * Add row count as column
- */
-export interface RowCount {
-  /** name of column */
-  name: string;
-  /** offset */
-  offset: number;
-}
 
 /**
  * Options for {@link DataFrame.writeIPC}

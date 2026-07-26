@@ -162,8 +162,11 @@ describe("read:csv", () => {
     assert.strictEqual(df.getColumn("a")[0], null);
     assert.strictEqual(df.getColumn("b")[1], null);
   });
-  test("csv with rowcount", () => {
-    const df = pl.readCSV(csvpath, { rowCount: { name: "rc", offset: 11 } });
+  test("csv with row index", () => {
+    const df = pl.readCSV(csvpath, {
+      rowIndexName: "rc",
+      rowIndexOffset: 11,
+    });
     const expectedMaxRowCount = df.height + 10;
 
     const maxRowCount = df.getColumn("rc").max();
@@ -269,6 +272,104 @@ describe("scan", () => {
   it("can lazy load (scan) from a json file", () => {
     const df = pl.scanJson(singlejsonpath).collectSync();
     assert.deepStrictEqual(df.shape, { height: 1, width: 4 });
+  });
+
+  describe("scanJson options", () => {
+    let dir: string;
+    let ndjson: string;
+
+    beforeEach(() => {
+      dir = fs.mkdtempSync(path.join(os.tmpdir(), "nodejs-polars-ndjson-"));
+      ndjson = path.join(dir, "a.ndjson");
+      fs.writeFileSync(
+        ndjson,
+        '{"a":1,"b":"x"}\n{"a":2,"b":"y"}\n{"a":3,"b":"z"}\n',
+      );
+    });
+    afterEach(() => {
+      fs.rmSync(dir, { recursive: true, force: true });
+    });
+
+    test("nRows", () => {
+      assert.deepStrictEqual(
+        pl.scanJson(ndjson, { nRows: 2 }).collectSync().height,
+        2,
+      );
+    });
+
+    test("rowIndexName and rowIndexOffset", () => {
+      const df = pl
+        .scanJson(ndjson, { rowIndexName: "idx", rowIndexOffset: 5 })
+        .collectSync();
+      assert.deepStrictEqual(df.getColumn("idx").toArray(), [5, 6, 7]);
+      assert.deepStrictEqual(df.columns, ["idx", "a", "b"]);
+    });
+
+    test("includeFilePaths", () => {
+      const df = pl.scanJson(ndjson, { includeFilePaths: "src" }).collectSync();
+      assert.deepStrictEqual(df.columns, ["a", "b", "src"]);
+      assert.deepStrictEqual(df.getColumn("src").toArray()[0], ndjson);
+    });
+
+    test("schema and schemaOverrides", () => {
+      const schema = pl
+        .scanJson(ndjson, { schema: { a: pl.Float64, b: pl.String } })
+        .collectSync();
+      assert.deepStrictEqual(schema.getColumn("a").dtype, pl.Float64);
+
+      const overridden = pl
+        .scanJson(ndjson, { schemaOverrides: { a: pl.Float64 } })
+        .collectSync();
+      assert.deepStrictEqual(overridden.getColumn("a").dtype, pl.Float64);
+      assert.deepStrictEqual(overridden.getColumn("b").dtype, pl.String);
+    });
+
+    test("inferSchemaLength bounds schema inference", () => {
+      // `c` only appears on the third line.
+      const late = path.join(dir, "late.ndjson");
+      fs.writeFileSync(late, '{"a":1}\n{"a":2}\n{"a":3,"c":"late"}\n');
+
+      assert.deepStrictEqual(pl.scanJson(late).collectSync().columns, [
+        "a",
+        "c",
+      ]);
+      assert.deepStrictEqual(
+        pl.scanJson(late, { inferSchemaLength: 2 }).collectSync().columns,
+        ["a"],
+      );
+      // `null` means scan the whole file.
+      assert.deepStrictEqual(
+        pl.scanJson(late, { inferSchemaLength: null }).collectSync().columns,
+        ["a", "c"],
+      );
+    });
+
+    test("ignoreErrors", () => {
+      const bad = path.join(dir, "bad.ndjson");
+      fs.writeFileSync(bad, '{"a":1}\n{"a":"oops"}\n');
+
+      assert.throws(() =>
+        pl.scanJson(bad, { inferSchemaLength: 1 }).collectSync(),
+      );
+      const df = pl
+        .scanJson(bad, { inferSchemaLength: 1, ignoreErrors: true })
+        .collectSync();
+      assert.deepStrictEqual(df.getColumn("a").toArray(), [1, null]);
+    });
+
+    test("glob, rechunk, lowMemory and batchSize", () => {
+      fs.writeFileSync(path.join(dir, "b.ndjson"), '{"a":4,"b":"w"}\n');
+      assert.deepStrictEqual(
+        pl.scanJson(path.join(dir, "*.ndjson")).collectSync().height,
+        4,
+      );
+      assert.deepStrictEqual(
+        pl
+          .scanJson(ndjson, { rechunk: true, lowMemory: true, batchSize: 2 })
+          .collectSync().height,
+        3,
+      );
+    });
   });
   it("can lazy load (scan) from a csv file with options", () => {
     const df = pl
@@ -429,8 +530,17 @@ describe("parquet", () => {
   });
 
   test("read:options", () => {
-    const df = pl.readParquet(parquetpath, { numRows: 4 });
+    const df = pl.readParquet(parquetpath, { nRows: 4 });
     assert.deepStrictEqual(df.shape, { height: 4, width: 4 });
+  });
+
+  test("read:options:rowIndex", () => {
+    const df = pl.readParquet(parquetpath, {
+      nRows: 3,
+      rowIndexName: "idx",
+      rowIndexOffset: 10,
+    });
+    assert.deepStrictEqual(df.getColumn("idx").toArray(), [10, 11, 12]);
   });
 
   test("read:options:projection by numeric indices", () => {

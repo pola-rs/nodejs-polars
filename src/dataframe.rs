@@ -6,7 +6,6 @@ use polars::frame::row::{infer_schema, Row};
 use polars::frame::PivotColumnNaming;
 use polars_io::csv::write::CsvWriterOptions;
 use polars_io::mmap::MmapBytesReader;
-use polars_io::RowIndex;
 use polars_utils::aliases::PlFixedStateQuality;
 use std::borrow::Borrow;
 use std::collections::{HashMap, HashSet};
@@ -79,7 +78,8 @@ pub struct ReadCsvOptions {
     pub quote_char: Option<String>,
     pub skip_rows_after_header: u32,
     pub try_parse_dates: bool,
-    pub row_count: Option<JsRowCount>,
+    pub row_index_name: Option<String>,
+    pub row_index_offset: Option<u32>,
 
     /// Aggregates chunk afterwards to a single chunk.
     pub rechunk: bool,
@@ -99,7 +99,7 @@ fn mmap_reader_to_df<'a>(
     let separator = parse_single_byte(options.sep.as_deref().unwrap_or(","), "sep")?;
     let eol_char = parse_single_byte(&options.eol_char, "eol_char")?;
     let null_values = options.null_values.map(|w| w.0);
-    let row_count = options.row_count.map(RowIndex::from);
+    let row_index = parse_row_index(options.row_index_name, options.row_index_offset);
     let projection = options
         .projection
         .map(|p: Vec<u32>| p.into_iter().map(|p| p as usize).collect());
@@ -146,7 +146,7 @@ fn mmap_reader_to_df<'a>(
         .with_schema_overwrite(overwrite_dtype.map(Arc::new))
         .with_schema(options.schema.map(|schema| Arc::new(schema.0)))
         .with_low_memory(options.low_memory)
-        .with_row_index(row_count)
+        .with_row_index(row_index)
         .with_skip_rows_after_header(options.skip_rows_after_header as usize)
         .with_raise_if_empty(options.raise_if_empty)
         .with_parse_options(
@@ -237,7 +237,8 @@ pub struct ReadParquetOptions {
     pub columns: Option<Vec<String>>,
     pub projection: Option<Vec<i64>>,
     pub n_rows: Option<i64>,
-    pub row_count: Option<JsRowCount>,
+    pub row_index_name: Option<String>,
+    pub row_index_offset: Option<u32>,
 }
 
 #[napi(catch_unwind)]
@@ -251,7 +252,7 @@ pub fn read_parquet(
     let projection = options
         .projection
         .map(|projection| projection.into_iter().map(|p| p as usize).collect());
-    let row_count = options.row_count.map(|rc| rc.into());
+    let row_index = parse_row_index(options.row_index_name, options.row_index_offset);
     let n_rows = options.n_rows.map(|nr| nr as usize);
 
     let result = match path_or_buffer {
@@ -263,7 +264,7 @@ pub fn read_parquet(
                 .with_columns(columns)
                 .read_parallel(parallel.0)
                 .with_slice(n_rows.map(|x| (0, x)))
-                .with_row_index(row_count)
+                .with_row_index(row_index)
                 .finish()
         }
         Either::B(buf) => {
@@ -273,7 +274,7 @@ pub fn read_parquet(
                 .with_columns(columns)
                 .read_parallel(parallel.0)
                 .with_slice(n_rows.map(|x| (0, x)))
-                .with_row_index(row_count)
+                .with_row_index(row_index)
                 .finish()
         }
     };
@@ -286,7 +287,8 @@ pub struct ReadIpcOptions {
     pub columns: Option<Vec<String>>,
     pub projection: Option<Vec<i64>>,
     pub n_rows: Option<i64>,
-    pub row_count: Option<JsRowCount>,
+    pub row_index_name: Option<String>,
+    pub row_index_offset: Option<u32>,
 }
 
 #[napi(catch_unwind)]
@@ -298,7 +300,7 @@ pub fn read_ipc(
     let projection = options
         .projection
         .map(|projection| projection.into_iter().map(|p| p as usize).collect());
-    let row_count = options.row_count.map(|rc| rc.into());
+    let row_index = parse_row_index(options.row_index_name, options.row_index_offset);
     let n_rows = options.n_rows.map(|nr| nr as usize);
 
     let result = match path_or_buffer {
@@ -309,7 +311,7 @@ pub fn read_ipc(
                 .with_projection(projection)
                 .with_columns(columns)
                 .with_n_rows(n_rows)
-                .with_row_index(row_count)
+                .with_row_index(row_index)
                 .finish()
         }
         Either::B(buf) => {
@@ -318,7 +320,7 @@ pub fn read_ipc(
                 .with_projection(projection)
                 .with_columns(columns)
                 .with_n_rows(n_rows)
-                .with_row_index(row_count)
+                .with_row_index(row_index)
                 .finish()
         }
     };
@@ -335,7 +337,7 @@ pub fn read_ipc_stream(
     let projection = options
         .projection
         .map(|projection| projection.into_iter().map(|p| p as usize).collect());
-    let row_count = options.row_count.map(|rc| rc.into());
+    let row_index = parse_row_index(options.row_index_name, options.row_index_offset);
     let n_rows = options.n_rows.map(|nr| nr as usize);
 
     let result = match path_or_buffer {
@@ -346,7 +348,7 @@ pub fn read_ipc_stream(
                 .with_projection(projection)
                 .with_columns(columns)
                 .with_n_rows(n_rows)
-                .with_row_index(row_count)
+                .with_row_index(row_index)
                 .finish()
         }
         Either::B(buf) => {
@@ -355,7 +357,7 @@ pub fn read_ipc_stream(
                 .with_projection(projection)
                 .with_columns(columns)
                 .with_n_rows(n_rows)
-                .with_row_index(row_count)
+                .with_row_index(row_index)
                 .finish()
         }
     };

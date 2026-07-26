@@ -648,19 +648,14 @@ impl ToNapiValue for Wrap<SyncOnCloseType> {
     }
 }
 
-#[napi(object)]
-pub struct JsRowCount {
-    pub name: String,
-    pub offset: u32,
-}
-
-impl From<JsRowCount> for RowIndex {
-    fn from(o: JsRowCount) -> Self {
-        RowIndex {
-            name: o.name.into(),
-            offset: o.offset,
-        }
-    }
+/// Build a [`RowIndex`] from the `rowIndexName` / `rowIndexOffset` option pair,
+/// mirroring python's `row_index_name` / `row_index_offset`. Returns `None` when
+/// no name was given, since the offset alone has no meaning.
+pub fn parse_row_index(name: Option<String>, offset: Option<u32>) -> Option<RowIndex> {
+    name.map(|name| RowIndex {
+        name: name.into(),
+        offset: offset.unwrap_or(0),
+    })
 }
 
 #[napi(object)]

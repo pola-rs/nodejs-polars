@@ -4,7 +4,7 @@ import type { DataType } from "./datatypes";
 import { concat } from "./functions";
 import pli from "./internals/polars_internal";
 import { _LazyDataFrame, type LazyDataFrame } from "./lazy/dataframe";
-import type { ReadParquetOptions, RowCount, ScanParquetOptions } from "./types";
+import type { ReadParquetOptions, ScanParquetOptions } from "./types";
 import { isPath } from "./utils";
 
 export interface ReadCsvOptions {
@@ -32,7 +32,8 @@ export interface ReadCsvOptions {
   skipRows: number;
   tryParseDates: boolean;
   skipRowsAfterHeader: number;
-  rowCount: RowCount;
+  rowIndexName: string;
+  rowIndexOffset: number;
   raiseIfEmpty: boolean;
   truncateRaggedLines: boolean;
   missingIsNull: boolean;
@@ -223,7 +224,6 @@ export interface ScanCsvOptions {
   lowMemory: boolean;
   parseDates: boolean;
   skipRowsAfterHeader: number;
-  rowCount: RowCount;
   rowIndexName: string;
   rowIndexOffset: number;
   eolChar: string;
@@ -287,8 +287,7 @@ const scanCsvDefaultOptions: Partial<ScanCsvOptions> = {
  * @param options.nThreads -Number of threads to use in csv parsing. Defaults to the number of physical cpu's of your system.
  * @param options.rechunk -Make sure that all columns are contiguous in memory by aggregating the chunks into a single array.
  * @param options.lowMemory - Reduce memory usage in expense of performance.
- * @param options.rowCount - Add a row index column with the given name and offset.
- * @param options.rowIndexName - Insert a row index column with this name. Alternative to `rowCount`.
+ * @param options.rowIndexName - Insert a row index column with this name.
  * @param options.rowIndexOffset - Start the row index at this offset. Only used when `rowIndexName` is set.
  * @param options.decimalComma - Parse floats using a comma as the decimal separator instead of a period.
  * @param options.glob - Expand path given via globbing rules.
@@ -373,35 +372,89 @@ export function readJSON(
   }
   throw new Error("must supply either a path or body");
 }
-interface ScanJsonOptions {
+export interface ScanJsonOptions {
+  /** Maximum number of rows to scan for schema inference. Set to `null` for a full scan (slow). Default -> 100 */
   inferSchemaLength: number | null;
-  nThreads: number;
+  /** Number of rows to read in each batch. */
   batchSize: number;
+  /** Stop reading after `nRows` rows. */
+  nRows: number;
+  /** Reduce memory pressure at the expense of performance. */
   lowMemory: boolean;
-  numRows: number;
-  skipRows: number;
-  rowCount: RowCount;
+  /** Reallocate to contiguous memory when all chunks/files are parsed. */
+  rechunk: boolean;
+  /** Return `null` if parsing fails because of a schema mismatch. */
+  ignoreErrors: boolean;
+  /** Declare the schema of the frame. Types that are not given are inferred. */
+  schema: unknown;
+  /** Override the dtype of one or more columns; takes precedence over `schema`. */
+  schemaOverrides: unknown;
+  /** Insert a row index column with this name. */
+  rowIndexName: string;
+  /** Offset to start the row index column at (only used if `rowIndexName` is set). */
+  rowIndexOffset: number;
+  /**
+   * Options that indicate how to connect to a cloud provider.
+   *
+   * The cloud providers currently supported are AWS, GCP, and Azure.
+   * See supported keys here:
+   *
+   * * `aws <https://docs.rs/object_store/latest/object_store/aws/enum.AmazonS3ConfigKey.html>`_
+   * * `gcp <https://docs.rs/object_store/latest/object_store/gcp/enum.GoogleConfigKey.html>`_
+   * * `azure <https://docs.rs/object_store/latest/object_store/azure/enum.AzureConfigKey.html>`_
+   *
+   * If not provided, Polars will try to infer the information from environment variables.
+   */
+  cloudOptions: Record<string, string>;
+  /**
+   * Number of retries if accessing a cloud instance fails.
+   * @deprecated Pass `{ max_retries: n }` via {@link cloudOptions} instead.
+   */
+  retries: number;
+  /** Include the path of the source file(s) as a column with this name. */
+  includeFilePaths: string;
 }
 
 /**
- * __Read a JSON file or string into a DataFrame.__
+ * __Lazily read from a newline delimited JSON file or multiple files via glob patterns.__
+ *
+ * This allows the query optimizer to push down predicates and projections to the scan
+ * level, thereby potentially reducing memory overhead.
  *
  * _Note: Currently only newline delimited JSON is supported_
  * @param path - path to json file
  *   - path: Path to a file or a file like string. Any valid filepath can be used. Example: `./file.json`.
  * @param options
- * @param options.inferSchemaLength -Maximum number of lines to read to infer schema. If set to 0, all columns will be read as pl.Utf8.
- *    If set to `null`, a full table scan will be done (slow).
- * @param options.nThreads - Maximum number of threads to use when reading json.
- * @param options.lowMemory - Reduce memory usage in expense of performance.
- * @param options.batchSize - Number of lines to read into the buffer at once. Modify this to change performance.
- * @param options.numRows  Stop reading from parquet file after reading ``numRows``.
- * @param options.skipRows -Start reading after ``skipRows`` position.
- * @param options.rowCount Add row count as column
- * @returns ({@link DataFrame})
+ * @param options.inferSchemaLength - Maximum number of rows to scan for schema inference.
+ *    If set to `null`, the full data may be scanned *(this is slow)*. Default -> 100
+ * @param options.schema - Declare the schema of the frame. Types that are not given are inferred.
+ * @param options.schemaOverrides - Override the dtype of one or more columns; note that any
+ *    dtypes inferred from the `schema` param will be overridden.
+ * @param options.batchSize - Number of rows to read in each batch.
+ * @param options.nRows - Stop reading from the JSON file after reading `nRows`.
+ * @param options.lowMemory - Reduce memory pressure at the expense of performance.
+ * @param options.rechunk - Reallocate to contiguous memory when all chunks/files are parsed.
+ * @param options.ignoreErrors - Return `null` if parsing fails because of a schema mismatch.
+ * @param options.rowIndexName - If given, insert a row index column with this name.
+ * @param options.rowIndexOffset - Offset to start the row index column at (only used if the name is set).
+ * @param options.cloudOptions - Options that indicate how to connect to a cloud provider.
+ *
+ *    The cloud providers currently supported are AWS, GCP, and Azure.
+ *    See supported keys here:
+ *
+ *    * `aws <https://docs.rs/object_store/latest/object_store/aws/enum.AmazonS3ConfigKey.html>`_
+ *    * `gcp <https://docs.rs/object_store/latest/object_store/gcp/enum.GoogleConfigKey.html>`_
+ *    * `azure <https://docs.rs/object_store/latest/object_store/azure/enum.AzureConfigKey.html>`_
+ *
+ *    If `cloudOptions` is not provided, Polars will try to infer the information from
+ *    environment variables.
+ * @param options.retries - Number of retries if accessing a cloud instance fails.
+ *    Deprecated: pass `{ max_retries: n }` via `cloudOptions` instead.
+ * @param options.includeFilePaths - Include the path of the source file(s) as a column with this name.
+ * @returns ({@link LazyDataFrame})
  * @example
  * ```
- * > const df = pl.scanJson('path/to/file.json', {numRows: 2}).collectSync()
+ * > const df = pl.scanJson('path/to/file.json', {nRows: 2}).collectSync()
  * > console.log(df)
  *   shape: (2, 3)
  * ╭─────┬─────┬─────╮
@@ -419,12 +472,18 @@ export function scanJson(
   path: string,
   options?: Partial<ScanJsonOptions>,
 ): LazyDataFrame;
-export function scanJson(path: string, options?: Partial<ScanJsonOptions>) {
-  options = { ...readJsonDefaultOptions, ...options };
+export function scanJson(path: string, options: Partial<ScanJsonOptions> = {}) {
+  // `inferSchemaLength: null` means "scan the whole file"; the binding treats a
+  // missing value as unbounded, so only forward it when a bound was requested.
+  const inferSchemaLength =
+    "inferSchemaLength" in options ? options.inferSchemaLength : 100;
 
-  // Handle If set to `null` case
-  options.inferSchemaLength = options.inferSchemaLength ?? 0;
-  return _LazyDataFrame(pli.scanJson(path, options));
+  return _LazyDataFrame(
+    pli.scanJson(path, {
+      ...options,
+      inferSchemaLength: inferSchemaLength ?? undefined,
+    }),
+  );
 }
 
 /**
@@ -433,12 +492,13 @@ export function scanJson(path: string, options?: Partial<ScanJsonOptions>) {
    * Path to a file, list of files, or a file like object. If the path is a directory, that directory will be used
    * as partition aware scan.
    * @param options.columns Columns to select. Accepts a list of column indices (starting at zero) or a list of column names.
-   * @param options.numRows  Stop reading from parquet file after reading ``numRows``.
+   * @param options.nRows  Stop reading from parquet file after reading ``nRows``.
    * @param options.parallel
    *    Any of  'auto' | 'columns' |  'row_groups' | 'none'
         This determines the direction of parallelism. 'auto' will try to determine the optimal direction.
         Defaults to 'auto'
-   * @param options.rowCount Add row count as column
+   * @param options.rowIndexName Insert a row index column with this name.
+   * @param options.rowIndexOffset Start the row index at this offset. Only used when `rowIndexName` is set.
    */
 export function readParquet(
   pathOrBody: string | Buffer,
@@ -452,8 +512,9 @@ export function readParquet(
     pliOptions.columns = options?.columns;
   }
 
-  pliOptions.nRows = options?.numRows;
-  pliOptions.rowCount = options?.rowCount;
+  pliOptions.nRows = options?.nRows;
+  pliOptions.rowIndexName = options?.rowIndexName;
+  pliOptions.rowIndexOffset = options?.rowIndexOffset;
   const parallel = options?.parallel ?? "auto";
 
   if (Buffer.isBuffer(pathOrBody)) {
