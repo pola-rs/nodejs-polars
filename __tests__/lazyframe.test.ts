@@ -1,4 +1,5 @@
 import fs from "node:fs";
+import zlib from "node:zlib";
 import pl from "../polars";
 
 describe("lazyframe", () => {
@@ -1747,14 +1748,15 @@ describe("lazyframe", () => {
         pl.Series("bar", ["a", "b", "c"]),
       ])
       .lazy();
-    await ldf.sinkCSV("./test.csv").collect();
-    const newDF: pl.DataFrame = pl.readCSV("./test.csv");
+    const p = "./test-sink-path.csv";
+    await ldf.sinkCSV(p).collect();
+    const newDF: pl.DataFrame = pl.readCSV(p);
     const actualDf: pl.DataFrame = await ldf.collect({
       streaming: true,
       noOptimization: true,
     });
     assertFrameEqual(newDF.sort("foo"), actualDf);
-    fs.rmSync("./test.csv");
+    fs.rmSync(p);
   });
   test("sinkCSV:noHeader", async () => {
     const ldf = pl
@@ -1763,11 +1765,12 @@ describe("lazyframe", () => {
         pl.Series("column_2", ["a", "b", "c"]),
       ])
       .lazy();
-    await ldf.sinkCSV("./test.csv", { includeHeader: false }).collect();
-    const newDF: pl.DataFrame = pl.readCSV("./test.csv", { hasHeader: false });
+    const p = "./test-sink-no-header.csv";
+    await ldf.sinkCSV(p, { includeHeader: false }).collect();
+    const newDF: pl.DataFrame = pl.readCSV(p, { hasHeader: false });
     const actualDf: pl.DataFrame = await ldf.collect();
     assertFrameEqual(newDF.sort("column_1"), actualDf);
-    fs.rmSync("./test.csv");
+    fs.rmSync(p);
   });
   test("sinkCSV:separator", async () => {
     const ldf = pl
@@ -1776,11 +1779,12 @@ describe("lazyframe", () => {
         pl.Series("bar", ["a", "b", "c"]),
       ])
       .lazy();
-    await ldf.sinkCSV("./test.csv", { separator: "|" }).collect();
-    const newDF: pl.DataFrame = pl.readCSV("./test.csv", { sep: "|" });
+    const p = "./test-sink-separator.csv";
+    await ldf.sinkCSV(p, { separator: "|" }).collect();
+    const newDF: pl.DataFrame = pl.readCSV(p, { sep: "|" });
     const actualDf: pl.DataFrame = await ldf.collect();
     assertFrameEqual(newDF.sort("foo"), actualDf);
-    fs.rmSync("./test.csv");
+    fs.rmSync(p);
   });
   test("sinkCSV:nullValue", async () => {
     const ldf = pl
@@ -1789,13 +1793,150 @@ describe("lazyframe", () => {
         pl.Series("bar", ["a", "b", null]),
       ])
       .lazy();
-    await ldf.sinkCSV("./test.csv", { nullValue: "BOOM" }).collect();
-    const newDF: pl.DataFrame = pl.readCSV("./test.csv", { sep: "," });
+    const p = "./test-sink-null-value.csv";
+    await ldf.sinkCSV(p, { nullValue: "BOOM" }).collect();
+    const newDF: pl.DataFrame = pl.readCSV(p, { sep: "," });
     const actualDf: pl.DataFrame = await (await ldf.collect()).withColumn(
       pl.col("bar").fillNull("BOOM"),
     );
     assertFrameEqual(newDF.sort("foo"), actualDf);
-    fs.rmSync("./test.csv");
+    fs.rmSync(p);
+  });
+  test("sinks return a wrapped LazyDataFrame usable with collectSync", () => {
+    const ldf = pl
+      .DataFrame([
+        pl.Series("foo", [1, 2, 3], pl.Int64),
+        pl.Series("bar", ["a", "b", "c"]),
+      ])
+      .lazy();
+    const paths = {
+      csv: "./test-sync-sink.csv",
+      parquet: "./test-sync-sink.parquet",
+      ndjson: "./test-sync-sink.ndjson",
+      ipc: "./test-sync-sink.ipc",
+    };
+    for (const p of Object.values(paths)) {
+      fs.rmSync(p, { force: true });
+    }
+    // A sink is lazy, so collectSync() must execute it rather than throwing
+    // because the returned handle was an unwrapped native LazyFrame.
+    ldf.sinkCSV(paths.csv).collectSync();
+    ldf.sinkParquet(paths.parquet).collectSync();
+    ldf.sinkNdJson(paths.ndjson).collectSync();
+    ldf.sinkIpc(paths.ipc).collectSync();
+
+    for (const p of Object.values(paths)) {
+      assert.ok(fs.existsSync(p), `${p} was not written`);
+    }
+    // Sinks write to disk and yield no result frame, matching collect().
+    assert.deepStrictEqual(pl.readCSV(paths.csv).shape, {
+      height: 3,
+      width: 2,
+    });
+    assert.deepStrictEqual(pl.readParquet(paths.parquet).shape, {
+      height: 3,
+      width: 2,
+    });
+    for (const p of Object.values(paths)) {
+      fs.rmSync(p);
+    }
+  });
+  test("sinkCSV:quoteStyle", async () => {
+    const p = "./test-quote-style.csv";
+    const ldf = pl.DataFrame([pl.Series("foo", [1, 2], pl.Int64)]).lazy();
+    await ldf.sinkCSV(p, { quoteStyle: "always" }).collect();
+    assert.deepStrictEqual(fs.readFileSync(p, "utf8"), '"foo"\n"1"\n"2"\n');
+    fs.rmSync(p);
+  });
+  test("sinkCSV:decimalComma", async () => {
+    const p = "./test-decimal-comma.csv";
+    const ldf = pl.DataFrame([pl.Series("foo", [1.5, 2.25])]).lazy();
+    await ldf.sinkCSV(p, { decimalComma: true, separator: ";" }).collect();
+    assert.deepStrictEqual(fs.readFileSync(p, "utf8"), "foo\n1,5\n2,25\n");
+    fs.rmSync(p);
+  });
+  test("sinkCSV:floatScientific", async () => {
+    const p = "./test-float-sci.csv";
+    const ldf = pl.DataFrame([pl.Series("foo", [1.5, 2.25])]).lazy();
+    await ldf.sinkCSV(p, { floatScientific: true }).collect();
+    assert.deepStrictEqual(fs.readFileSync(p, "utf8"), "foo\n1.5e0\n2.25e0\n");
+    fs.rmSync(p);
+  });
+  test("sinkCSV:compression:gzip", async () => {
+    const p = "./test-sink.csv.gz";
+    const ldf = pl
+      .DataFrame([
+        pl.Series("foo", [1, 2, 3], pl.Int64),
+        pl.Series("bar", ["a", "b", "c"]),
+      ])
+      .lazy();
+    await ldf
+      .sinkCSV(p, { compression: "gzip", compressionLevel: 6 })
+      .collect();
+    const roundTripped = zlib.gunzipSync(fs.readFileSync(p)).toString();
+    assert.deepStrictEqual(roundTripped, "foo,bar\n1,a\n2,b\n3,c\n");
+    fs.rmSync(p);
+  });
+  test("sinkCSV:compression:zstd", async () => {
+    const p = "./test-sink.csv.zst";
+    const ldf = pl.DataFrame([pl.Series("foo", [1, 2, 3], pl.Int64)]).lazy();
+    await ldf.sinkCSV(p, { compression: "zstd" }).collect();
+    assert.ok(fs.statSync(p).size > 0);
+    fs.rmSync(p);
+  });
+  test("sinkCSV:checkExtension", async () => {
+    const p = "./test-check-ext.csv";
+    const ldf = pl.DataFrame([pl.Series("foo", [1, 2, 3], pl.Int64)]).lazy();
+    // A .csv path with gzip compression is rejected by default...
+    await assert.rejects(() =>
+      ldf.sinkCSV(p, { compression: "gzip" }).collect(),
+    );
+    // ...but allowed when the extension check is disabled.
+    await ldf
+      .sinkCSV(p, { compression: "gzip", checkExtension: false })
+      .collect();
+    assert.deepStrictEqual(
+      zlib.gunzipSync(fs.readFileSync(p)).toString(),
+      "foo\n1\n2\n3\n",
+    );
+    fs.rmSync(p);
+  });
+  test("sinkCSV:mkdir", async () => {
+    const dir = "./test-sink-mkdir";
+    const p = `${dir}/nested/out.csv`;
+    fs.rmSync(dir, { recursive: true, force: true });
+    const ldf = pl.DataFrame([pl.Series("foo", [1, 2, 3], pl.Int64)]).lazy();
+    // mkdir defaults to true, so the nested directories are created.
+    await ldf.sinkCSV(p, { mkdir: true }).collect();
+    assert.ok(fs.existsSync(p));
+    fs.rmSync(dir, { recursive: true, force: true });
+
+    await assert.rejects(() => ldf.sinkCSV(p, { mkdir: false }).collect());
+    fs.rmSync(dir, { recursive: true, force: true });
+  });
+  test("sinkCSV:syncOnClose", async () => {
+    const p = "./test-sync-on-close.csv";
+    const ldf = pl.DataFrame([pl.Series("foo", [1, 2, 3], pl.Int64)]).lazy();
+    await ldf
+      .sinkCSV(p, { syncOnClose: "data", maintainOrder: false })
+      .collect();
+    assert.deepStrictEqual(pl.readCSV(p).sort("foo").shape, {
+      height: 3,
+      width: 1,
+    });
+    fs.rmSync(p);
+
+    // Invalid option values are rejected when the options are converted.
+    assert.throws(() => ldf.sinkCSV(p, { syncOnClose: "bogus" as any }));
+  });
+  test("sinkCSV:invalid options", () => {
+    const ldf = pl.DataFrame([pl.Series("foo", [1, 2, 3], pl.Int64)]).lazy();
+    assert.throws(() =>
+      ldf.sinkCSV("./test-invalid.csv", { compression: "bogus" as any }),
+    );
+    assert.throws(() =>
+      ldf.sinkCSV("./test-invalid.csv", { quoteStyle: "bogus" as any }),
+    );
   });
   test("sinkParquet:path", async () => {
     const ldf = pl
@@ -1804,11 +1945,12 @@ describe("lazyframe", () => {
         pl.Series("bar", ["a", "b", "c"]),
       ])
       .lazy();
-    await ldf.sinkParquet("./test.parquet").collect();
-    const newDF: pl.DataFrame = pl.readParquet("./test.parquet");
+    const p = "./test-sink-path.parquet";
+    await ldf.sinkParquet(p).collect();
+    const newDF: pl.DataFrame = pl.readParquet(p);
     const actualDf: pl.DataFrame = await ldf.collect();
     assertFrameEqual(newDF.sort("foo"), actualDf);
-    fs.rmSync("./test.parquet");
+    fs.rmSync(p);
   });
   test("sinkParquet:compression:gzip", async () => {
     const ldf = pl
@@ -1817,11 +1959,12 @@ describe("lazyframe", () => {
         pl.Series("bar", ["a", "b", "c"]),
       ])
       .lazy();
-    await ldf.sinkParquet("./test.parquet", { compression: "gzip" }).collect();
-    const newDF: pl.DataFrame = pl.readParquet("./test.parquet");
+    const p = "./test-sink-gzip.parquet";
+    await ldf.sinkParquet(p, { compression: "gzip" }).collect();
+    const newDF: pl.DataFrame = pl.readParquet(p);
     const actualDf: pl.DataFrame = await ldf.collect();
     assertFrameEqual(newDF.sort("foo"), actualDf);
-    fs.rmSync("./test.parquet");
+    fs.rmSync(p);
   });
   test("sinkNdJson:path", async () => {
     const ldf = pl

@@ -73,9 +73,19 @@ export interface CsvWriterOptions {
   datetimeFormat?: string;
   dateFormat?: string;
   timeFormat?: string;
+  floatScientific?: boolean;
   floatPrecision?: number;
+  decimalComma?: boolean;
   nullValue?: string;
+  quoteStyle?: "always" | "necessary" | "non_numeric" | "never";
+  compression?: "uncompressed" | "gzip" | "zstd";
+  compressionLevel?: number;
+  checkExtension?: boolean;
   maintainOrder?: boolean;
+  cloudOptions?: Record<string, string>;
+  retries?: number;
+  syncOnClose?: "none" | "data" | "all";
+  mkdir?: boolean;
 }
 
 export interface SinkOptions {
@@ -264,9 +274,21 @@ export type MaintainOrderJoin =
 type CommonJoinOptions = {
   /** Suffix to append to columns with a duplicate name. */
   suffix?: string;
-  /** Coalescing behavior (merging of join columns). */
+  /**
+   * Coalescing behavior (merging of join columns). Default: undefined
+   * - **undefined** - *(Default)* Coalesce unless `how='full'` is specified.
+   * - **true** - Always coalesce join columns.
+   * - **false** - Never coalesce join columns.
+   */
   coalesce?: boolean;
-  // Checks if join is of specified type.
+  /**
+   * Checks if join is of specified type. Default: 'm:m'
+   * Valid options: {'m:m', 'm:1', '1:m', '1:1'}
+   * - **m:m** - *(Default)* Many-to-many. Does not result in checks.
+   * - **1:1** - One-to-one. Checks if join keys are unique in both left and right datasets.
+   * - **1:m** - One-to-many. Checks if join keys are unique in left dataset.
+   * - **m:1** - Many-to-one. Checks if join keys are unique in right dataset.
+   */
   validate?: string;
   /** Join on null values. When false, null values will never produce matches. Default: false */
   nullsEqual?: boolean;
@@ -287,7 +309,7 @@ export type SameNameColumnJoinOptions<
 > = CommonJoinOptions & {
   /** Name(s) of the join columns in both DataFrames. */
   on: ValueOrArray<L & R>;
-  /** Join strategy */
+  /** Join strategy {'inner', 'left', 'right', 'full', 'semi', 'anti'}. Default: 'inner' */
   how?: Exclude<JoinType, "cross">;
 };
 /**
@@ -301,7 +323,7 @@ export type DifferentNameColumnJoinOptions<
   leftOn: ValueOrArray<L>;
   /** Name(s) of the right join column(s). */
   rightOn: ValueOrArray<R>;
-  /** Join strategy */
+  /** Join strategy {'inner', 'left', 'right', 'full', 'semi', 'anti'}. Default: 'inner' */
   how?: Exclude<JoinType, "cross">;
 };
 /**

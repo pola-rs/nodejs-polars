@@ -42,6 +42,7 @@ features = [
   "cross_join",
   "cum_agg",
   "dataframe_arithmetic",
+  "decompress",
   "diagonal_concat",
   "diff",
   "dot_diagram",

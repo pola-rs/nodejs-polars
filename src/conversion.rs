@@ -6,6 +6,7 @@ use polars_core::config::verbose_print_sensitive;
 use polars_core::series::ops::NullBehavior;
 use polars_io::cloud::{CloudOptions, CloudRetryConfig};
 use polars_io::utils::sync_on_close::SyncOnCloseType;
+use polars_io::ExternalCompression;
 use polars_io::RowIndex;
 use polars_utils::compression::{BrotliLevel, GzipLevel, ZstdLevel};
 use polars_utils::total_ord::TotalOrdWrap;
@@ -724,6 +725,16 @@ pub struct SinkJsonOptions<'a> {
     pub mkdir: Option<bool>,
 }
 
+/// Sink-level options for `sinkCsv`. The CSV serialization options themselves are
+/// read from the same object via `Wrap<CsvWriterOptions>`.
+#[napi(object)]
+pub struct SinkCsvOptions<'a> {
+    pub maintain_order: Option<bool>,
+    pub cloud_options: Option<HashMap<String, Wrap<AnyValue<'a>>>>,
+    pub sync_on_close: Wrap<SyncOnCloseType>,
+    pub mkdir: Option<bool>,
+}
+
 #[napi(object)]
 pub struct SinkIpcOptions<'a> {
     pub compat_level: Option<String>,
@@ -1083,6 +1094,16 @@ impl FromNapiValue for Wrap<CsvWriterOptions> {
         let quote_style = obj
             .get::<Wrap<QuoteStyle>>("quoteStyle")?
             .map_or(QuoteStyle::default(), |wrap| wrap.0);
+        let decimal_comma = obj.get::<bool>("decimalComma")?.unwrap_or(false);
+        let check_extension = obj.get::<bool>("checkExtension")?.unwrap_or(true);
+        let compression_level = obj.get::<i32>("compressionLevel")?.map(|x| x as u32);
+        let compression = ExternalCompression::try_from(
+            obj.get::<String>("compression")?
+                .unwrap_or("uncompressed".to_owned())
+                .as_str(),
+            compression_level,
+        )
+        .map_err(JsPolarsErr::from)?;
 
         let serialize_options = SerializeOptions {
             date_format: date_format.map(PlSmallStr::from_string),
@@ -1095,15 +1116,16 @@ impl FromNapiValue for Wrap<CsvWriterOptions> {
             null: PlSmallStr::from_string(null_value),
             line_terminator: PlSmallStr::from_string(line_terminator),
             quote_style,
-            decimal_comma: false,
+            decimal_comma,
         };
 
         let options = CsvWriterOptions {
             include_bom,
             include_header,
             batch_size,
+            compression,
+            check_extension,
             serialize_options: serialize_options.into(),
-            ..Default::default()
         };
         Ok(Wrap(options))
     }

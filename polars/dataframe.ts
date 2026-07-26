@@ -992,20 +992,7 @@ export interface DataFrame<S extends Schema = any>
   /**
    *  __SQL like joins.__
    * @param other - DataFrame to join with.
-   * @param options
-   * @param options.on - Name(s) of the join columns in both DataFrames.
-   * @param options.how - Join strategy {'inner', 'left', 'right', 'full', 'semi', 'anti', 'cross'}
-   * @param options.suffix - Suffix to append to columns with a duplicate name.
-   * @param options.coalesce - Coalescing behavior (merging of join columns). default: undefined
-            * - **undefined** - *(Default)* Coalesce unless `how='full'` is specified.
-            * - **true**      - Always coalesce join columns.
-            * - **false**     - Never coalesce join columns.
-   * @param options.validate - Checks if join is of specified type. default: m:m 
-            valid options: {'m:m', 'm:1', '1:m', '1:1'}
-            * - **m:m** - *(Default)* Many-to-many (default). Does not result in checks.
-            * - **1:1** - One-to-one. Checks if join keys are unique in both left and right datasets.
-            * - **1:m** - One-to-many. Checks if join keys are unique in left dataset.
-            * - **m:1** - Many-to-one. Check if join keys are unique in right dataset.
+   * @param options - Join options, including the `on` columns and `how` strategy.
    * @see {@link SameNameColumnJoinOptions}
    * @example
    * ```
@@ -1045,12 +1032,7 @@ export interface DataFrame<S extends Schema = any>
   /**
    *  __SQL like joins with different names for left and right dataframes.__
    * @param other - DataFrame to join with.
-   * @param options
-   * @param options.leftOn - Name(s) of the left join column(s).
-   * @param options.rightOn - Name(s) of the right join column(s).
-   * @param options.how - Join strategy
-   * @param options.suffix - Suffix to append to columns with a duplicate name.
-   * @param options.coalesce - Coalescing behavior (merging of join columns).
+   * @param options - Join options, including the `leftOn`/`rightOn` columns and `how` strategy.
    * @see {@link DifferentNameColumnJoinOptions}
    * @example
    * ```
@@ -1090,10 +1072,7 @@ export interface DataFrame<S extends Schema = any>
   /**
    *  __SQL like cross joins.__
    * @param other - DataFrame to join with.
-   * @param options
-   * @param options.how - Join strategy
-   * @param options.suffix - Suffix to append to columns with a duplicate name.
-   * @param options.coalesce - Coalescing behavior (merging of join columns).
+   * @param options - Join options; `how` must be `'cross'`.
    * @see {@link CrossJoinOptions}
    * @example
    * ```

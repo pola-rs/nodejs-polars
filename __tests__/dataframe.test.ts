@@ -2495,10 +2495,11 @@ describe("io", () => {
       pl.Series("foo", [1, 2, 3], pl.UInt32),
       pl.Series("bar", ["a", "b", "c"]),
     ]);
-    df.writeCSV("./test.csv");
-    const newDF = pl.readCSV("./test.csv");
+    const p = "./test-write-csv-path.csv";
+    df.writeCSV(p);
+    const newDF = pl.readCSV(p);
     assertFrameEqual(newDF, df);
-    fs.rmSync("./test.csv");
+    fs.rmSync(p);
     done();
   });
   test("toRecords", () => {

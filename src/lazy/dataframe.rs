@@ -674,14 +674,14 @@ impl JsLazyFrame {
         &self,
         path: String,
         options: Wrap<CsvWriterOptions>,
-        cloud_options: Option<HashMap<String, Wrap<AnyValue>>>,
+        sink_options: SinkCsvOptions,
     ) -> napi::Result<JsLazyFrame> {
-        let cloud_options = parse_cloud_options(&path, cloud_options);
+        let cloud_options = parse_cloud_options(&path, sink_options.cloud_options);
 
         let unified_sink_args = UnifiedSinkArgs {
-            mkdir: true,
-            maintain_order: true,
-            sync_on_close: SyncOnCloseType::default(),
+            mkdir: sink_options.mkdir.unwrap_or(true),
+            maintain_order: sink_options.maintain_order.unwrap_or(true),
+            sync_on_close: sink_options.sync_on_close.0,
             cloud_options: cloud_options.map(Arc::new),
             sinked_paths_callback: None,
         };
