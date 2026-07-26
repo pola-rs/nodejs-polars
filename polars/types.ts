@@ -99,21 +99,34 @@ export interface SinkOptions {
  * @category Options
  */
 export interface SinkParquetOptions {
-  compression?: string;
+  compression?:
+    | "uncompressed"
+    | "snappy"
+    | "gzip"
+    | "lzo"
+    | "brotli"
+    | "lz4"
+    | "zstd";
   compressionLevel?: number;
-  statistics?: boolean;
+  statistics?: boolean | "full" | ParquetStatisticsOptions;
   rowGroupSize?: number;
   dataPagesizeLimit?: number;
   maintainOrder?: boolean;
-  typeCoercion?: boolean;
-  predicatePushdown?: boolean;
-  projectionPushdown?: boolean;
-  simplifyExpression?: boolean;
-  slicePushdown?: boolean;
-  noOptimization?: boolean;
   cloudOptions?: Record<string, string>;
   retries?: number;
-  sinkOptions?: SinkOptions;
+  syncOnClose?: "none" | "data" | "all"; // Call sync when closing the file.
+  mkdir?: boolean; // Recursively create all the directories in the path.
+}
+
+/**
+ * Per-statistic toggles for @see {@link SinkParquetOptions.statistics}
+ * @category Options
+ */
+export interface ParquetStatisticsOptions {
+  min?: boolean;
+  max?: boolean;
+  distinctCount?: boolean;
+  nullCount?: boolean;
 }
 /**
  * Options for @see {@link LazyDataFrame.sinkNdJson}
@@ -192,9 +205,11 @@ export interface ScanParquetOptions {
   rowIndexName?: string;
   rowIndexOffset?: number;
   cache?: boolean;
-  parallel?: "auto" | "columns" | "row_groups" | "none";
+  parallel?: "auto" | "columns" | "row_groups" | "prefiltered" | "none";
   glob?: boolean;
+  hiddenFilePrefix?: string | string[];
   hivePartitioning?: boolean;
+  schema?: unknown;
   hiveSchema?: unknown;
   tryParseHiveDates?: boolean;
   rechunk?: boolean;
@@ -203,8 +218,61 @@ export interface ScanParquetOptions {
   cloudOptions?: Record<string, string>;
   retries?: number;
   includeFilePaths?: string;
+  missingColumns?: "insert" | "raise";
+  /** @deprecated Use {@link missingColumns} instead. */
   allowMissingColumns?: boolean;
+  extraColumns?: "ignore" | "raise";
+  castOptions?: ScanCastOptions;
 }
+
+/**
+ * Cast options applied when scanning files.
+ * Options for @see {@link ScanParquetOptions.castOptions}
+ * @category Options
+ */
+export interface ScanCastOptions {
+  /**
+   * Configuration for casting from integer types:
+   * * `upcast`: Allow lossless casting to wider integer types.
+   * * `allow-float`: Allow casting integers to float types.
+   * * `forbid`: Raises an error if dtypes do not match (default).
+   */
+  integerCast?: IntegerCastOption | IntegerCastOption[];
+  /**
+   * Configuration for casting from float types:
+   * * `upcast`: Allow casting to higher precision float types.
+   * * `downcast`: Allow casting to lower precision float types.
+   * * `forbid`: Raises an error if dtypes do not match (default).
+   */
+  floatCast?: FloatCastOption | FloatCastOption[];
+  /**
+   * Configuration for casting from datetime types:
+   * * `nanosecond-downcast`: Allow nanosecond precision datetime to be downcasted
+   *   to any lower precision.
+   * * `microsecond-downcast`: Allow microsecond precision datetime to be
+   *   downcasted to millisecond precision.
+   * * `downcast`: Allow downcasting to any lower precision (convenience aggregate
+   *   of `nanosecond-downcast` and `microsecond-downcast`).
+   * * `convert-timezone`: Allow casting to a different timezone.
+   * * `forbid`: Raises an error if dtypes do not match (default).
+   */
+  datetimeCast?: DatetimeCastOption | DatetimeCastOption[];
+  /** Behavior when struct fields defined in the schema are missing from the data. Default -> 'raise' */
+  missingStructFields?: "insert" | "raise";
+  /** Behavior when extra struct fields outside the defined schema are encountered. Default -> 'raise' */
+  extraStructFields?: "ignore" | "raise";
+  /** Whether to allow casting categoricals to string. Default -> 'forbid' */
+  categoricalToString?: "allow" | "forbid";
+}
+
+export type IntegerCastOption = "upcast" | "allow-float" | "forbid";
+export type FloatCastOption = "upcast" | "downcast" | "forbid";
+export type DatetimeCastOption =
+  | "nanosecond-downcast"
+  | "microsecond-downcast"
+  | "downcast"
+  | "convert-timezone"
+  | "forbid";
 
 /**
  * Add row count as column

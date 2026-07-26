@@ -1,7 +1,9 @@
 import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import { Stream } from "node:stream";
 import pl from "../polars";
+import type { ScanCastOptions } from "../polars/types";
 
 // eslint-disable-next-line no-undef
 const csvpath = path.resolve(__dirname, "./examples/datasets/foods1.csv");
@@ -444,6 +446,204 @@ describe("parquet", () => {
   test("scan:options", () => {
     const df = pl.scanParquet(parquetpath, { nRows: 4 }).collectSync();
     assert.deepStrictEqual(df.shape, { height: 4, width: 4 });
+  });
+
+  test("scan:rowIndex", () => {
+    const df = pl
+      .scanParquet(parquetpath, {
+        nRows: 3,
+        rowIndexName: "idx",
+        rowIndexOffset: 10,
+      })
+      .collectSync();
+    assert.deepStrictEqual(df.getColumn("idx").toArray(), [10, 11, 12]);
+    assert.deepStrictEqual(df.shape, { height: 3, width: 5 });
+  });
+
+  test("scan:parallel:prefiltered", () => {
+    const df = pl
+      .scanParquet(parquetpath, { parallel: "prefiltered" })
+      .filter(pl.col("calories").gt(100))
+      .collectSync();
+    assert.ok(df.height > 0);
+    assert.ok(df.height < 27);
+  });
+
+  test("scan:parallel:invalid", () => {
+    assert.throws(() =>
+      pl.scanParquet(parquetpath, { parallel: "bogus" as any }).collectSync(),
+    );
+  });
+
+  test("scan:useStatistics and includeFilePaths", () => {
+    const df = pl
+      .scanParquet(parquetpath, {
+        useStatistics: false,
+        includeFilePaths: "src",
+      })
+      .collectSync();
+    assert.deepStrictEqual(df.shape, { height: 27, width: 5 });
+    assert.deepStrictEqual(df.getColumn("src").toArray()[0], parquetpath);
+  });
+
+  describe("scanParquet multi-file options", () => {
+    let dir: string;
+
+    beforeEach(() => {
+      dir = fs.mkdtempSync(path.join(os.tmpdir(), "nodejs-polars-scan-"));
+    });
+    afterEach(() => {
+      fs.rmSync(dir, { recursive: true, force: true });
+    });
+
+    test("glob and hiddenFilePrefix", () => {
+      pl.DataFrame({ a: [1, 2] }).writeParquet(path.join(dir, "p1.parquet"));
+      pl.DataFrame({ a: [3] }).writeParquet(path.join(dir, "p2.parquet"));
+      pl.DataFrame({ a: [9] }).writeParquet(path.join(dir, "_skip.parquet"));
+      const glob = path.join(dir, "*.parquet");
+
+      assert.deepStrictEqual(pl.scanParquet(glob).collectSync().height, 4);
+      assert.deepStrictEqual(
+        pl.scanParquet(glob, { hiddenFilePrefix: "_" }).collectSync().height,
+        3,
+      );
+      assert.deepStrictEqual(
+        pl.scanParquet(glob, { hiddenFilePrefix: ["_"] }).collectSync().height,
+        3,
+      );
+    });
+
+    test("missingColumns and extraColumns", () => {
+      pl.DataFrame({ a: [1], b: ["x"] }).writeParquet(
+        path.join(dir, "f1.parquet"),
+      );
+      pl.DataFrame({ a: [2], c: [true] }).writeParquet(
+        path.join(dir, "f2.parquet"),
+      );
+      const glob = path.join(dir, "*.parquet");
+
+      // Default raises on both the missing `b` and the extra `c`.
+      assert.throws(() => pl.scanParquet(glob).collectSync());
+
+      const df = pl
+        .scanParquet(glob, { missingColumns: "insert", extraColumns: "ignore" })
+        .collectSync();
+      assert.deepStrictEqual(df.getColumn("b").toArray(), ["x", null]);
+
+      // `allowMissingColumns` is the deprecated spelling of `missingColumns`.
+      const deprecated = pl
+        .scanParquet(glob, {
+          allowMissingColumns: true,
+          extraColumns: "ignore",
+        })
+        .collectSync();
+      assert.deepStrictEqual(deprecated.getColumn("b").toArray(), ["x", null]);
+
+      // An explicit `missingColumns` wins over the deprecated option.
+      assert.throws(() =>
+        pl
+          .scanParquet(glob, {
+            allowMissingColumns: true,
+            missingColumns: "raise",
+            extraColumns: "ignore",
+          })
+          .collectSync(),
+      );
+
+      assert.throws(() =>
+        pl
+          .scanParquet(glob, {
+            missingColumns: "insert",
+            extraColumns: "raise",
+          })
+          .collectSync(),
+      );
+      assert.throws(() =>
+        pl.scanParquet(glob, { missingColumns: "bogus" as any }).collectSync(),
+      );
+      assert.throws(() =>
+        pl.scanParquet(glob, { extraColumns: "bogus" as any }).collectSync(),
+      );
+    });
+
+    test("castOptions integerCast", () => {
+      // The target schema comes from the first file, so Int32 -> Int64 is an upcast.
+      pl.DataFrame([pl.Series("a", [1], pl.Int64)]).writeParquet(
+        path.join(dir, "a_64.parquet"),
+      );
+      pl.DataFrame([pl.Series("a", [2], pl.Int32)]).writeParquet(
+        path.join(dir, "b_32.parquet"),
+      );
+      const glob = path.join(dir, "*.parquet");
+
+      assert.throws(() => pl.scanParquet(glob).collectSync());
+
+      const variants: ScanCastOptions["integerCast"][] = ["upcast", ["upcast"]];
+      for (const integerCast of variants) {
+        const df = pl
+          .scanParquet(glob, { castOptions: { integerCast } })
+          .collectSync();
+        assert.deepStrictEqual(df.getColumn("a").toArray(), [1, 2]);
+      }
+
+      // `allow-float` alone does not permit an integer upcast.
+      assert.throws(() =>
+        pl
+          .scanParquet(glob, { castOptions: { integerCast: "allow-float" } })
+          .collectSync(),
+      );
+    });
+
+    test("castOptions validation", () => {
+      pl.DataFrame({ a: [1] }).writeParquet(path.join(dir, "f1.parquet"));
+      const p = path.join(dir, "f1.parquet");
+
+      // `forbid` cannot be combined with other values.
+      assert.throws(() =>
+        pl
+          .scanParquet(p, {
+            castOptions: { integerCast: ["forbid", "upcast"] },
+          })
+          .collectSync(),
+      );
+      assert.throws(() =>
+        pl
+          .scanParquet(p, { castOptions: { integerCast: "bogus" as any } })
+          .collectSync(),
+      );
+      assert.throws(() =>
+        pl
+          .scanParquet(p, { castOptions: { floatCast: "bogus" as any } })
+          .collectSync(),
+      );
+      assert.throws(() =>
+        pl
+          .scanParquet(p, { castOptions: { datetimeCast: "bogus" as any } })
+          .collectSync(),
+      );
+      assert.throws(() =>
+        pl
+          .scanParquet(p, {
+            castOptions: { categoricalToString: "bogus" as any },
+          })
+          .collectSync(),
+      );
+
+      // The full set of cast options is accepted.
+      const df = pl
+        .scanParquet(p, {
+          castOptions: {
+            integerCast: "upcast",
+            floatCast: ["upcast", "downcast"],
+            datetimeCast: ["downcast", "convert-timezone"],
+            missingStructFields: "insert",
+            extraStructFields: "ignore",
+            categoricalToString: "allow",
+          },
+        })
+        .collectSync();
+      assert.deepStrictEqual(df.getColumn("a").toArray(), [1]);
+    });
   });
 
   test("writeParquet with decimals", async () => {

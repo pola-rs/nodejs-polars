@@ -760,21 +760,30 @@ export interface LazyDataFrame<S extends Schema = any>
         - "gzip" : min-level: 0, max-level: 10.
         - "brotli" : min-level: 0, max-level: 11.
         - "zstd" : min-level: 1, max-level: 22.
-    @param options.statistics - Write statistics to the parquet headers. This requires extra compute. Default - false
+    @param options.statistics - Write statistics to the parquet headers. This requires extra compute. Default -> true
+
+        Possible values:
+
+        * `true`: enable the default set of statistics. Some statistics may be disabled.
+        * `false`: disable all statistics.
+        * `"full"`: calculate and write all available statistics.
+        * `{ min, max, distinctCount, nullCount }`: enable a specific set of statistics.
+          Keys that are omitted are disabled.
     @param options.rowGroupSize - Size of the row groups in number of rows.
-        If None (default), the chunks of the `DataFrame` are
+        If not set, the chunks of the `DataFrame` are
         used. Writing in smaller chunks may reduce memory pressure and improve
         writing speeds.
     @param options.dataPagesizeLimit - Size limit of individual data pages.
         If not set defaults to 1024 * 1024 bytes
     @param options.maintainOrder - Maintain the order in which data is processed. Default -> true
-        Setting this to `False` will  be slightly faster.
-    @param options.typeCoercion - Do type coercion optimization. Default -> true
-    @param options.predicatePushdown - Do predicate pushdown optimization. Default -> true
-    @param options.projectionPushdown - Do projection pushdown optimization. Default -> true
-    @param options.simplifyExpression - Run simplify expressions optimization. Default -> true
-    @param options.slicePushdown - Slice pushdown optimization. Default -> true
-    @param options.noOptimization - Turn off (certain) optimizations. Default -> false
+        Setting this to `false` will  be slightly faster.
+    @param options.mkdir - Recursively create all the directories in the path. Default -> true
+    @param options.syncOnClose - { 'none', 'data', 'all' } Default -> 'all'
+            Sync to disk when before closing a file.
+
+            * `none` does not sync.
+            * `data` syncs the file contents.
+            * `all` syncs the file contents and metadata.
     @param options.cloudOptions - Options that indicate how to connect to a cloud provider.
         If the cloud provider is not supported by Polars, the storage options are passed to `fsspec.open()`.
 
@@ -786,6 +795,8 @@ export interface LazyDataFrame<S extends Schema = any>
         * `azure <https://docs.rs/object_store/latest/object_store/azure/enum.AzureConfigKey.html>`_
 
         If `cloudOptions` is not provided, Polars will try to infer the information from environment variables.
+    @param options.retries - Number of retries if accessing a cloud instance fails.
+        Deprecated: pass `{ max_retries: n }` via `cloudOptions` instead.
     @return DataFrame
     Examples
     --------
@@ -1385,12 +1396,10 @@ export const _LazyDataFrame = (_ldf: any): LazyDataFrame => {
     },
     sinkParquet(path: string, options: SinkParquetOptions = {}) {
       options.compression = options.compression ?? "zstd";
-      options.statistics = options.statistics ?? false;
-      options.sinkOptions = options.sinkOptions ?? {
-        syncOnClose: "all",
-        maintainOrder: false,
-        mkdir: true,
-      };
+      options.statistics = options.statistics ?? true;
+      options.syncOnClose = options.syncOnClose ?? "all";
+      options.maintainOrder = options.maintainOrder ?? true;
+      options.mkdir = options.mkdir ?? true;
       return _LazyDataFrame(_ldf.sinkParquet(path, options));
     },
     sinkNdJson(path: string, options: SinkJsonOptions = {}) {

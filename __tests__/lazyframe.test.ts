@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import zlib from "node:zlib";
 import pl from "../polars";
+import type { SinkParquetOptions } from "../polars/types";
 
 describe("lazyframe", () => {
   test("columns", () => {
@@ -1965,6 +1966,95 @@ describe("lazyframe", () => {
     const actualDf: pl.DataFrame = await ldf.collect();
     assertFrameEqual(newDF.sort("foo"), actualDf);
     fs.rmSync(p);
+  });
+  test("sinkParquet:options", async () => {
+    const ldf = pl
+      .DataFrame([
+        pl.Series("foo", [1, 2, 3], pl.Int64),
+        pl.Series("bar", ["a", "b", "c"]),
+      ])
+      .lazy();
+    const p = "./test-sink-options.parquet";
+    await ldf
+      .sinkParquet(p, {
+        compression: "zstd",
+        compressionLevel: 3,
+        statistics: "full",
+        rowGroupSize: 100_000,
+        dataPagesizeLimit: 1024 * 1024,
+        maintainOrder: true,
+        syncOnClose: "data",
+        mkdir: true,
+      })
+      .collect();
+    const newDF: pl.DataFrame = pl.readParquet(p);
+    const actualDf: pl.DataFrame = await ldf.collect();
+    assertFrameEqual(newDF.sort("foo"), actualDf);
+    fs.rmSync(p);
+  });
+  test("sinkParquet:statistics", async () => {
+    const ldf = pl
+      .DataFrame([
+        pl.Series("foo", [1, 2, 3], pl.Int64),
+        pl.Series("bar", ["a", "b", "c"]),
+      ])
+      .lazy();
+    const actualDf: pl.DataFrame = await ldf.collect();
+    const variants: SinkParquetOptions["statistics"][] = [
+      true,
+      false,
+      "full",
+      { min: true, max: true, distinctCount: false, nullCount: true },
+      {},
+    ];
+    for (const [i, statistics] of variants.entries()) {
+      const p = `./test-sink-stats-${i}.parquet`;
+      await ldf.sinkParquet(p, { statistics }).collect();
+      assertFrameEqual(pl.readParquet(p).sort("foo"), actualDf);
+      fs.rmSync(p);
+    }
+  });
+  test("sinkParquet:mkdir", async () => {
+    const ldf = pl
+      .DataFrame([
+        pl.Series("foo", [1, 2, 3], pl.Int64),
+        pl.Series("bar", ["a", "b", "c"]),
+      ])
+      .lazy();
+    const dir = "./test-sink-mkdir-dir";
+    const p = `${dir}/nested/out.parquet`;
+    await ldf.sinkParquet(p, { mkdir: true }).collect();
+    const actualDf: pl.DataFrame = await ldf.collect();
+    assertFrameEqual(pl.readParquet(p).sort("foo"), actualDf);
+    fs.rmSync(dir, { recursive: true });
+  });
+  test("sinkParquet:invalid options", () => {
+    const ldf = pl
+      .DataFrame([
+        pl.Series("foo", [1, 2, 3], pl.Int64),
+        pl.Series("bar", ["a", "b", "c"]),
+      ])
+      .lazy();
+    assert.throws(() =>
+      ldf.sinkParquet("./test-invalid.parquet", {
+        compression: "bogus" as any,
+      }),
+    );
+    assert.throws(() =>
+      ldf.sinkParquet("./test-invalid.parquet", {
+        statistics: "bogus" as any,
+      }),
+    );
+    assert.throws(() =>
+      ldf.sinkParquet("./test-invalid.parquet", {
+        statistics: { bogus: true } as any,
+      }),
+    );
+    assert.throws(() =>
+      ldf.sinkParquet("./test-invalid.parquet", {
+        syncOnClose: "bogus" as any,
+      }),
+    );
   });
   test("sinkNdJson:path", async () => {
     const ldf = pl

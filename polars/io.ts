@@ -518,11 +518,20 @@ export function readAvro(pathOrBody, options = {}) {
    @param options.nRows - Stop reading from parquet file after reading `n_rows`.
    @param options.rowIndexName - If not None, this will insert a row index column with the given name into the DataFrame
    @param options.rowIndexOffset - Offset to start the row index column (only used if the name is set)
-   @param options.parallel : {'auto', 'columns', 'row_groups', 'none'}
-        This determines the direction of parallelism. 'auto' will try to determine the optimal direction.
-   @param options.useStatistics - Use statistics in the parquet to determine if pages can be skipped from reading.
+   @param options.parallel : {'auto', 'columns', 'row_groups', 'prefiltered', 'none'}
+        This determines the direction and strategy of parallelism. 'auto' will try to determine the optimal direction.
+
+        The `prefiltered` strategy first evaluates the pushed-down predicates in parallel and determines a mask
+        of which rows to read. Then, it parallelizes over both the columns and the row groups while filtering out
+        rows that do not need to be read. This can provide significant speedups for large files (i.e. many
+        row-groups) with a predicate that filters clustered rows or filters heavily. In other cases, `prefiltered`
+        may slow down the scan compared to other strategies. It falls back to `auto` if no predicate is given.
+   @param options.useStatistics - Use statistics in the parquet to determine if pages can be skipped from reading. Default -> true
    @param options.hivePartitioning - Infer statistics and schema from hive partitioned URL and use them to prune reads.
    @param options.glob - Expand path given via globbing rules.
+   @param options.hiddenFilePrefix - Skip reading files whose names begin with the specified prefix(es).
+   @param options.schema - Specify the datatypes of the columns. The datatypes must match the datatypes in the file(s).
+        If there are extra columns that are not in the file(s), consider also passing `missingColumns: 'insert'`.
    @param options.hiveSchema - The column names and data types of the columns by which the data is partitioned.
         If set to `None` (default), the schema of the Hive partitions is inferred.
    @param options.tryParseHiveDates - Whether to try parsing hive values as date/datetime types.
@@ -540,7 +549,22 @@ export function readAvro(pathOrBody, options = {}) {
         * `azure <https://docs.rs/object_store/latest/object_store/azure/enum.AzureConfigKey.html>`_
 
         If `cloudOptions` is not provided, Polars will try to infer the information from environment variables.
+    @param options.retries - Number of retries if accessing a cloud instance fails.
+        Deprecated: pass `{ max_retries: n }` via `cloudOptions` instead.
     @param options.includeFilePaths - Include the path of the source file(s) as a column with this name.
+    @param options.missingColumns - Behavior when columns defined in the schema are missing from the data. Default -> 'raise'
+
+        * `insert`: Inserts the missing columns using NULLs as the row values.
+        * `raise`: Raises an error.
+    @param options.allowMissingColumns - Deprecated. Use `missingColumns` instead and pass one of ('insert', 'raise').
+        If both are given, `missingColumns` takes precedence.
+    @param options.extraColumns - Behavior when extra columns outside of the defined schema are
+        encountered in the data. Default -> 'raise'
+
+        * `ignore`: Silently ignores.
+        * `raise`: Raises an error.
+    @param options.castOptions - Configuration for column type-casting during scans.
+        Useful for datasets containing files that have differing schemas.
 
     @example
     ```
