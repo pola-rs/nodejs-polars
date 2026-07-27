@@ -674,7 +674,7 @@ impl JsLazyFrame {
         &self,
         path: String,
         options: Wrap<CsvWriterOptions>,
-        sink_options: SinkCsvOptions,
+        sink_options: SinkCsvOptions<'_>,
     ) -> napi::Result<JsLazyFrame> {
         let cloud_options = parse_cloud_options(&path, sink_options.cloud_options);
 
@@ -701,7 +701,7 @@ impl JsLazyFrame {
     pub fn sink_parquet(
         &self,
         path: String,
-        options: SinkParquetOptions,
+        options: SinkParquetOptions<'_>,
     ) -> napi::Result<JsLazyFrame> {
         let compression_str = options.compression.unwrap_or("zstd".to_string());
         let compression = parse_parquet_compression(compression_str, options.compression_level)?;
@@ -871,7 +871,7 @@ pub struct ScanCsvOptions<'a> {
     pub missing_columns: Option<String>,
 }
 #[napi(catch_unwind)]
-pub fn scan_csv(path: String, options: ScanCsvOptions) -> napi::Result<JsLazyFrame> {
+pub fn scan_csv(path: String, options: ScanCsvOptions<'_>) -> napi::Result<JsLazyFrame> {
     let n_rows = options.n_rows.map(|i| i as usize);
     let row_index = parse_row_index(options.row_index_name, options.row_index_offset);
     let missing_columns = match options.missing_columns.as_deref() {
@@ -880,7 +880,7 @@ pub fn scan_csv(path: String, options: ScanCsvOptions) -> napi::Result<JsLazyFra
         Some("raise") => Some(MissingColumnsPolicy::Raise),
         Some(e) => {
             return Err(JsPolarsErr::Other(format!(
-                "missing_columns must be one of 'insert' or 'raise', got '{}'.",
+                "missingColumns must be one of 'insert' or 'raise', got '{}'.",
                 e
             ))
             .into())
@@ -948,7 +948,7 @@ pub fn scan_csv(path: String, options: ScanCsvOptions) -> napi::Result<JsLazyFra
 }
 
 #[napi(catch_unwind)]
-pub fn scan_parquet(path: String, options: ScanParquetOptions) -> napi::Result<JsLazyFrame> {
+pub fn scan_parquet(path: String, options: ScanParquetOptions<'_>) -> napi::Result<JsLazyFrame> {
     let n_rows = options.n_rows.map(|i| i as usize);
     let row_index: Option<RowIndex> = options.row_index_name.map(|name| RowIndex {
         name: name.into(),
