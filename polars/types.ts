@@ -82,8 +82,7 @@ export interface CsvWriterOptions {
   compressionLevel?: number;
   checkExtension?: boolean;
   maintainOrder?: boolean;
-  cloudOptions?: Record<string, string>;
-  retries?: number;
+  cloudOptions?: Record<string, string | number | boolean>;
   syncOnClose?: "none" | "data" | "all";
   mkdir?: boolean;
 }
@@ -112,8 +111,7 @@ export interface SinkParquetOptions {
   rowGroupSize?: number;
   dataPagesizeLimit?: number;
   maintainOrder?: boolean;
-  cloudOptions?: Record<string, string>;
-  retries?: number;
+  cloudOptions?: Record<string, string | number | boolean>;
   syncOnClose?: "none" | "data" | "all"; // Call sync when closing the file.
   mkdir?: boolean; // Recursively create all the directories in the path.
 }
@@ -136,8 +134,7 @@ export interface SinkJsonOptions {
   compression?: "uncompressed" | "gzip" | "zstd";
   compressionLevel?: number; // The compression level to use, typically 0-9.
   checkExtension?: boolean; // Whether to check if the filename matches the compression settings.
-  cloudOptions?: Record<string, string>;
-  retries?: number;
+  cloudOptions?: Record<string, string | number | boolean>;
   syncOnClose?: string; // Call sync when closing the file.
   maintainOrder?: boolean; // The output file needs to maintain order of the data that comes in.
   mkdir?: boolean; // Recursively create all the directories in the path.
@@ -149,8 +146,7 @@ export interface SinkJsonOptions {
 export interface SinkIpcOptions {
   compression?: string;
   compatLevel?: string;
-  cloudOptions?: Record<string, string>;
-  retries?: number;
+  cloudOptions?: Record<string, string | number | boolean>;
   syncOnClose?: string; // Call sync when closing the file.
   maintainOrder?: boolean; // The output file needs to maintain order of the data that comes in.
   mkdir?: boolean; // Recursively create all the directories in the path.
@@ -206,8 +202,7 @@ export interface ScanParquetOptions {
   rechunk?: boolean;
   lowMemory?: boolean;
   useStatistics?: boolean;
-  cloudOptions?: Record<string, string>;
-  retries?: number;
+  cloudOptions?: Record<string, string | number | boolean>;
   includeFilePaths?: string;
   missingColumns?: "insert" | "raise";
   /** @deprecated Use {@link missingColumns} instead. */

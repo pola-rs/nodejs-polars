@@ -405,12 +405,7 @@ export interface ScanJsonOptions {
    *
    * If not provided, Polars will try to infer the information from environment variables.
    */
-  cloudOptions: Record<string, string>;
-  /**
-   * Number of retries if accessing a cloud instance fails.
-   * @deprecated Pass `{ max_retries: n }` via {@link cloudOptions} instead.
-   */
-  retries: number;
+  cloudOptions: Record<string, string | number | boolean>;
   /** Include the path of the source file(s) as a column with this name. */
   includeFilePaths: string;
 }
@@ -448,8 +443,6 @@ export interface ScanJsonOptions {
  *
  *    If `cloudOptions` is not provided, Polars will try to infer the information from
  *    environment variables.
- * @param options.retries - Number of retries if accessing a cloud instance fails.
- *    Deprecated: pass `{ max_retries: n }` via `cloudOptions` instead.
  * @param options.includeFilePaths - Include the path of the source file(s) as a column with this name.
  * @returns ({@link LazyDataFrame})
  * @example
@@ -610,8 +603,6 @@ export function readAvro(pathOrBody, options = {}) {
         * `azure <https://docs.rs/object_store/latest/object_store/azure/enum.AzureConfigKey.html>`_
 
         If `cloudOptions` is not provided, Polars will try to infer the information from environment variables.
-    @param options.retries - Number of retries if accessing a cloud instance fails.
-        Deprecated: pass `{ max_retries: n }` via `cloudOptions` instead.
     @param options.includeFilePaths - Include the path of the source file(s) as a column with this name.
     @param options.missingColumns - Behavior when columns defined in the schema are missing from the data. Default -> 'raise'
 

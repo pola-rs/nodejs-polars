@@ -762,7 +762,13 @@ impl JsLazyFrame {
             sinked_paths_callback: None,
         };
 
-        let compression_level = options.compression_level.map(|x| x as u32);
+        let compression_level = options
+             .compression_level
+             .map(|x| {
+                 u32::try_from(x)
+                     .map_err(|_| napi::Error::from_reason("compressionLevel must be >= 0".to_owned()))
+             })
+             .transpose()?;
         let compression = ExternalCompression::try_from(
             options
                 .compression

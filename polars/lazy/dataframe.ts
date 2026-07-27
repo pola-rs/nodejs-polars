@@ -795,8 +795,6 @@ export interface LazyDataFrame<S extends Schema = any>
         * `azure <https://docs.rs/object_store/latest/object_store/azure/enum.AzureConfigKey.html>`_
 
         If `cloudOptions` is not provided, Polars will try to infer the information from environment variables.
-    @param options.retries - Number of retries if accessing a cloud instance fails.
-        Deprecated: pass `{ max_retries: n }` via `cloudOptions` instead.
     @return DataFrame
     Examples
     --------
@@ -841,8 +839,6 @@ export interface LazyDataFrame<S extends Schema = any>
         * `azure <https://docs.rs/object_store/latest/object_store/azure/enum.AzureConfigKey.html>`_
 
         If `cloudOptions` is not provided, Polars will try to infer the information from environment variables.
-    @param options.retries - Number of retries if accessing a cloud instance fails.
-        Deprecated: pass `{ max_retries: n }` via `cloudOptions` instead.
     @return DataFrame
     Examples
     --------
@@ -1398,7 +1394,6 @@ export const _LazyDataFrame = (_ldf: any): LazyDataFrame => {
       const csvOptions = { ...writeCsvDefaultOptions, ...options };
       const sinkOptions = {
         cloudOptions: csvOptions.cloudOptions,
-        retries: csvOptions.retries,
         syncOnClose: csvOptions.syncOnClose ?? "all",
         maintainOrder: csvOptions.maintainOrder ?? true,
         mkdir: csvOptions.mkdir ?? true,

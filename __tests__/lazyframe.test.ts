@@ -2069,7 +2069,6 @@ describe("lazyframe", () => {
 
     await ldf
       .sinkNdJson("./test.ndjson", {
-        retries: 1,
         syncOnClose: "all",
         maintainOrder: false,
       })
@@ -2143,7 +2142,6 @@ describe("lazyframe", () => {
 
     await ldf
       .sinkIpc("./test.ipc", {
-        retries: 1,
         syncOnClose: "all",
         maintainOrder: false,
         compression: "lz4",
