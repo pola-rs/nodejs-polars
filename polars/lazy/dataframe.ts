@@ -731,8 +731,8 @@ export interface LazyDataFrame<S extends Schema = any>
         Also accepts the retry keys `max_retries`, `retry_timeout_ms`, `retry_init_backoff_ms`,
         `retry_max_backoff_ms`, `retry_base_multiplier`, and `file_cache_ttl`.
     @param options.syncOnClose : {'none', 'data', 'all'} - Sync to disk when the file is closed.
-        Default - 'all'
-    @param options.mkdir - Recursively create all the directories in the path. Default - true
+        Default - 'none'
+    @param options.mkdir - Recursively create all the directories in the path. Default - false
     @return DataFrame
     Examples
     --------
@@ -777,9 +777,9 @@ export interface LazyDataFrame<S extends Schema = any>
         If not set defaults to 1024 * 1024 bytes
     @param options.maintainOrder - Maintain the order in which data is processed. Default -> true
         Setting this to `false` will  be slightly faster.
-    @param options.mkdir - Recursively create all the directories in the path. Default -> true
-    @param options.syncOnClose - { 'none', 'data', 'all' } Default -> 'all'
-            Sync to disk when before closing a file.
+    @param options.mkdir - Recursively create all the directories in the path. Default -> false
+    @param options.syncOnClose - { 'none', 'data', 'all' } Default -> 'none'
+            Sync to disk when closing a file.
 
             * `none` does not sync.
             * `data` syncs the file contents.
@@ -822,10 +822,10 @@ export interface LazyDataFrame<S extends Schema = any>
     @param options.maintainOrder - Maintain the order in which data is processed. Default -> true
         Setting this to `False` will  be slightly faster.
     @param options.mkdir - Recursively create all the directories in the path. Default -> false
-    @param options.syncOnClose - { None, 'data', 'all' } Default -> 'all'
+    @param options.syncOnClose - { 'none', 'data', 'all' } Default -> 'none'
             Sync to disk when before closing a file.
 
-            * `None` does not sync.
+            * `none` does not sync.
             * `data` syncs the file contents.
             * `all` syncs the file contents and metadata.
     @param options.cloudOptions - Options that indicate how to connect to a cloud provider.
@@ -861,10 +861,10 @@ export interface LazyDataFrame<S extends Schema = any>
     @param options.maintainOrder - Maintain the order in which data is processed. Default -> true
         Setting this to `False` will  be slightly faster.
     @param options.mkdir - Recursively create all the directories in the path. Default -> false
-    @param options.syncOnClose - { None, 'data', 'all' } Default -> 'all'
+    @param options.syncOnClose - { 'none', 'data', 'all' } Default -> 'none'
             Sync to disk when before closing a file.
 
-            * `None` does not sync.
+            * `none` does not sync.
             * `data` syncs the file contents.
             * `all` syncs the file contents and metadata.
     @param options.cloudOptions - Options that indicate how to connect to a cloud provider.
@@ -1394,34 +1394,34 @@ export const _LazyDataFrame = (_ldf: any): LazyDataFrame => {
       const csvOptions = { ...writeCsvDefaultOptions, ...options };
       const sinkOptions = {
         cloudOptions: csvOptions.cloudOptions,
-        syncOnClose: csvOptions.syncOnClose ?? "all",
+        syncOnClose: csvOptions.syncOnClose ?? "none",
         maintainOrder: csvOptions.maintainOrder ?? true,
-        mkdir: csvOptions.mkdir ?? true,
+        mkdir: csvOptions.mkdir ?? false,
       };
       return _LazyDataFrame(_ldf.sinkCsv(path, csvOptions, sinkOptions));
     },
     sinkParquet(path: string, options: SinkParquetOptions = {}) {
       options.compression = options.compression ?? "zstd";
       options.statistics = options.statistics ?? true;
-      options.syncOnClose = options.syncOnClose ?? "all";
+      options.syncOnClose = options.syncOnClose ?? "none";
       options.maintainOrder = options.maintainOrder ?? true;
-      options.mkdir = options.mkdir ?? true;
+      options.mkdir = options.mkdir ?? false;
       return _LazyDataFrame(_ldf.sinkParquet(path, options));
     },
     sinkNdJson(path: string, options: SinkJsonOptions = {}) {
       options.compression = options.compression ?? "uncompressed";
       options.checkExtension = options.checkExtension ?? true;
-      options.syncOnClose = options.syncOnClose ?? "all";
+      options.syncOnClose = options.syncOnClose ?? "none";
       options.maintainOrder = options.maintainOrder ?? true;
-      options.mkdir = options.mkdir ?? true;
+      options.mkdir = options.mkdir ?? false;
       return _LazyDataFrame(_ldf.sinkJson(path, options));
     },
     sinkIpc(path: string, options: SinkIpcOptions = {}) {
       options.compatLevel = options.compatLevel ?? "newest";
       options.compression = options.compression ?? "uncompressed";
-      options.syncOnClose = options.syncOnClose ?? "all";
+      options.syncOnClose = options.syncOnClose ?? "none";
       options.maintainOrder = options.maintainOrder ?? true;
-      options.mkdir = options.mkdir ?? true;
+      options.mkdir = options.mkdir ?? false;
       return _LazyDataFrame(_ldf.sinkIpc(path, options));
     },
   };

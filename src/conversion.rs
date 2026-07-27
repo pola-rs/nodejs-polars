@@ -1316,9 +1316,9 @@ impl FromNapiValue for Wrap<CsvWriterOptions> {
         let decimal_comma = obj.get::<bool>("decimalComma")?.unwrap_or(false);
         let check_extension = obj.get::<bool>("checkExtension")?.unwrap_or(true);
         let compression_level = obj
-             .get::<i32>("compressionLevel")?
-             .map(|x| u32::try_from(x).map_err(|_| invalid_arg("`compressionLevel` must be >= 0")))
-             .transpose()?;
+            .get::<i32>("compressionLevel")?
+            .map(|x| u32::try_from(x).map_err(|_| invalid_arg("`compressionLevel` must be >= 0")))
+            .transpose()?;
         let compression = ExternalCompression::try_from(
             obj.get::<String>("compression")?
                 .unwrap_or("uncompressed".to_owned())

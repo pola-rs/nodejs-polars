@@ -88,7 +88,7 @@ export interface CsvWriterOptions {
 }
 
 export interface SinkOptions {
-  syncOnClose: any; // Call sync when closing the file.
+  syncOnClose: "none" | "data" | "all"; // Call sync when closing the file.
   maintainOrder: boolean; // The output file needs to maintain order of the data that comes in.
   mkdir: boolean; // Recursively create all the directories in the path.
 }
@@ -135,7 +135,7 @@ export interface SinkJsonOptions {
   compressionLevel?: number; // The compression level to use, typically 0-9.
   checkExtension?: boolean; // Whether to check if the filename matches the compression settings.
   cloudOptions?: Record<string, string | number | boolean>;
-  syncOnClose?: string; // Call sync when closing the file.
+  syncOnClose?: "none" | "data" | "all"; // Call sync when closing the file.
   maintainOrder?: boolean; // The output file needs to maintain order of the data that comes in.
   mkdir?: boolean; // Recursively create all the directories in the path.
 }
@@ -144,10 +144,10 @@ export interface SinkJsonOptions {
  * @category Options
  */
 export interface SinkIpcOptions {
-  compression?: string;
-  compatLevel?: string;
+  compression?: "uncompressed" | "gzip" | "zstd";
+  compatLevel?: "newest" | "oldest";
   cloudOptions?: Record<string, string | number | boolean>;
-  syncOnClose?: string; // Call sync when closing the file.
+  syncOnClose?: "none" | "data" | "all"; // Call sync when closing the file.
   maintainOrder?: boolean; // The output file needs to maintain order of the data that comes in.
   mkdir?: boolean; // Recursively create all the directories in the path.
 }

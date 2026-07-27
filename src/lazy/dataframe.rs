@@ -679,7 +679,7 @@ impl JsLazyFrame {
         let cloud_options = parse_cloud_options(&path, sink_options.cloud_options);
 
         let unified_sink_args = UnifiedSinkArgs {
-            mkdir: sink_options.mkdir.unwrap_or(true),
+            mkdir: sink_options.mkdir.unwrap_or(false),
             maintain_order: sink_options.maintain_order.unwrap_or(true),
             sync_on_close: sink_options.sync_on_close.0,
             cloud_options: cloud_options.map(Arc::new),
@@ -726,12 +726,12 @@ impl JsLazyFrame {
         };
 
         let unified_sink_args = UnifiedSinkArgs {
-            mkdir: options.mkdir.unwrap_or(true),
+            mkdir: options.mkdir.unwrap_or(false),
             maintain_order: options.maintain_order.unwrap_or(true),
             sync_on_close: options
                 .sync_on_close
                 .map(|s| s.0)
-                .unwrap_or(SyncOnCloseType::All),
+                .unwrap_or(SyncOnCloseType::default()),
             cloud_options: cloud_options.map(Arc::new),
             sinked_paths_callback: None,
         };
@@ -755,7 +755,7 @@ impl JsLazyFrame {
         };
 
         let unified_sink_args = UnifiedSinkArgs {
-            mkdir: options.mkdir.unwrap_or(true),
+            mkdir: options.mkdir.unwrap_or(false),
             maintain_order: options.maintain_order.unwrap_or(true),
             sync_on_close: options.sync_on_close.0,
             cloud_options: cloud_options.map(Arc::new),
@@ -763,12 +763,13 @@ impl JsLazyFrame {
         };
 
         let compression_level = options
-             .compression_level
-             .map(|x| {
-                 u32::try_from(x)
-                     .map_err(|_| napi::Error::from_reason("compressionLevel must be >= 0".to_owned()))
-             })
-             .transpose()?;
+            .compression_level
+            .map(|x| {
+                u32::try_from(x).map_err(|_| {
+                    napi::Error::from_reason("compressionLevel must be >= 0".to_owned())
+                })
+            })
+            .transpose()?;
         let compression = ExternalCompression::try_from(
             options
                 .compression
@@ -818,7 +819,7 @@ impl JsLazyFrame {
             target: SinkTarget::Path(PlRefPath::new(&path)),
         };
         let unified_sink_args = UnifiedSinkArgs {
-            mkdir: options.mkdir.unwrap_or(true),
+            mkdir: options.mkdir.unwrap_or(false),
             maintain_order: options.maintain_order.unwrap_or(true),
             sync_on_close: options.sync_on_close.0,
             cloud_options: cloud_options.map(Arc::new),
@@ -1084,7 +1085,7 @@ pub struct JsonScanOptions<'a> {
 }
 
 #[napi(catch_unwind)]
-pub fn scan_json(path: String, options: JsonScanOptions) -> napi::Result<JsLazyFrame> {
+pub fn scan_json(path: String, options: JsonScanOptions<'_>) -> napi::Result<JsLazyFrame> {
     let n_rows = options.n_rows.map(|i| i as usize);
     let row_index = parse_row_index(options.row_index_name, options.row_index_offset);
     let cloud_options = parse_cloud_options(&path, options.cloud_options);
