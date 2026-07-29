@@ -46,6 +46,35 @@ describe("read:csv", () => {
     const df = pl.readCSV(csvpath, { hasHeader: false, skipRows: 1, nRows: 4 });
     assert.deepStrictEqual(df.shape, { height: 4, width: 4 });
   });
+  describe("read gzip", () => {
+    const csvgzpath = "./test-sink.csv.gz";
+    const ldf = pl
+      .DataFrame([
+        pl.Series("foo", [1, 2, 3], pl.Int64),
+        pl.Series("bar", ["a", "b", "c"]),
+      ])
+      .lazy();
+    beforeAll(async () => {
+      await ldf
+        .sinkCSV(csvgzpath, { compression: "gzip", compressionLevel: 6 })
+        .collect();
+    });
+    afterAll(() => {
+      fs.rmSync(csvgzpath, { force: true });
+    });
+    it("can read from a gzipped csv file", () => {
+      const actualDf = pl.readCSV(csvgzpath);
+      assertFrameEqual(ldf.sort("foo").collectSync(), actualDf);
+    });
+    it("can read from a gzipped csv file with options", () => {
+      const actualDf = pl.readCSV(csvgzpath, { nRows: 4, columns: ["foo"] });
+      assertFrameEqual(ldf.select("foo").collectSync(), actualDf);
+    });
+    it("can read from a gzipped csv buffer", () => {
+      const df = pl.readCSV(fs.readFileSync(csvgzpath));
+      assertFrameEqual(ldf.sort("foo").collectSync(), df);
+    });
+  });
   it("can read from a tsv file", () => {
     const df = pl.readCSV(tsvpath, { sep: "\t" });
     assert.deepStrictEqual(df.shape, { height: 2, width: 3 });
@@ -190,6 +219,25 @@ describe("read:csv", () => {
   test("csv with commentPrefix", () => {
     const df = pl.readCSV(csvpath, { commentPrefix: "vegetables" });
     assert.deepStrictEqual(df.shape, { height: 20, width: 4 });
+  });
+  test("csv with skipLines", () => {
+    const csv = `junk line 1
+junk line 2
+a,b,c
+1,2,x
+4,5,y`;
+    const df = pl.readCSV(csv, { skipLines: 2 });
+    assert.deepStrictEqual(df.columns, ["a", "b", "c"]);
+    assert.deepStrictEqual(df.shape, { height: 2, width: 3 });
+  });
+  test("csv with decimalComma", () => {
+    const csv = "a;b\n1,5;2,25\n3,5;4,75";
+    const df = pl.readCSV(csv, { sep: ";", decimalComma: true });
+    assert.ok(df.dtypes[0].equals(pl.Float64));
+    assert.deepStrictEqual(df.toRecords(), [
+      { a: 1.5, b: 2.25 },
+      { a: 3.5, b: 4.75 },
+    ]);
   });
 });
 describe("read:json", () => {

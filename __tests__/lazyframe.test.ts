@@ -1876,6 +1876,8 @@ describe("lazyframe", () => {
       .collect();
     const roundTripped = zlib.gunzipSync(fs.readFileSync(p)).toString();
     assert.deepStrictEqual(roundTripped, "foo,bar\n1,a\n2,b\n3,c\n");
+    const actualDf: pl.DataFrame = pl.scanCSV(p).collectSync();
+    assertFrameEqual(ldf.sort("foo").collectSync(), actualDf);
     fs.rmSync(p);
   });
   test("sinkCSV:compression:zstd", async () => {

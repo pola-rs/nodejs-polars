@@ -30,6 +30,8 @@ export interface ReadCsvOptions {
   nullValues: string | Array<string> | Record<string, string>;
   chunkSize: number;
   skipRows: number;
+  skipLines: number;
+  decimalComma: boolean;
   tryParseDates: boolean;
   skipRowsAfterHeader: number;
   rowIndexName: string;
@@ -46,6 +48,8 @@ const readCsvDefaultOptions: Partial<ReadCsvOptions> = {
   ignoreErrors: false,
   chunkSize: 10000,
   skipRows: 0,
+  skipLines: 0,
+  decimalComma: false,
   sep: ",",
   quoteChar: '"',
   rechunk: false,
@@ -147,7 +151,9 @@ export function readRecords(
  * ___
  * @param pathOrBody - path or buffer or string
  *   - path: Path to a file or a file like string. Any valid filepath can be used. Example: `file.csv`.
- *   - body: String or buffer to be read as a CSV
+ *     Gzip (`.csv.gz`) and zstd (`.csv.zst`) compressed files are decompressed transparently.
+ *   - body: String or buffer to be read as a CSV. A buffer holding gzip or zstd compressed
+ *     data is also decompressed transparently.
  * @param options
  * @param options.inferSchemaLength -Maximum number of lines to read to infer schema. If set to 0, all columns will be read as pl.Utf8.
  *     If set to `null`, a full table scan will be done (slow).
@@ -162,6 +168,11 @@ export function readRecords(
  *     During multi-threaded parsing, an upper bound of `n` rows
  *     cannot be guaranteed.
  * @param options.startRows -Start reading after `startRows` position.
+ * @param options.skipRows -Start reading after `skipRows` rows. The header is parsed at this offset.
+ *     CSV escaping and comments are respected while skipping. To skip by newline only, use `skipLines`.
+ * @param options.skipLines -Start reading after `skipLines` lines. The header is parsed at this offset.
+ *     CSV escaping is *not* respected while skipping. To skip valid CSV records, use `skipRows`.
+ * @param options.decimalComma -Parse floats using a comma as the decimal separator instead of a period.
  * @param options.projection -Indices of columns to select. Note that column indices start at zero.
  * @param options.sep -Character to use as delimiter in the file.
  * @param options.columns -Columns to select.
@@ -186,7 +197,9 @@ export function readCSV(
 ): DataFrame;
 export function readCSV(pathOrBody, options?) {
   options = { ...readCsvDefaultOptions, ...options };
-  const extensions = [".tsv", ".csv"];
+  // `.gz`/`.zst` are matched so that compressed files are routed to the file
+  // reader rather than being mistaken for an inline CSV body.
+  const extensions = [".tsv", ".csv", ".gz", ".zst"];
 
   // Handle If set to `null` case
   options.inferSchemaLength = options.inferSchemaLength ?? 0;

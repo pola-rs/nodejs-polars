@@ -62,6 +62,8 @@ pub struct ReadCsvOptions {
     // used by error ignore logic
     pub infer_schema_length: Option<u32>,
     pub skip_rows: u32,
+    /// Start reading after `skip_lines` lines. CSV escaping is not respected while skipping.
+    pub skip_lines: Option<u32>,
     /// Optional indexes of the columns to project
     pub projection: Option<Vec<u32>>,
     /// Optional column names to project/ select.
@@ -86,6 +88,8 @@ pub struct ReadCsvOptions {
     pub raise_if_empty: bool,
     pub truncate_ragged_lines: bool,
     pub missing_is_null: bool,
+    /// Parse floats using a comma as the decimal separator instead of a period.
+    pub decimal_comma: Option<bool>,
     pub low_memory: bool,
     pub has_header: bool,
     pub ignore_errors: bool,
@@ -134,6 +138,7 @@ fn mmap_reader_to_df<'a>(
         .with_has_header(options.has_header)
         .with_n_rows(options.n_rows.map(|i| i as usize))
         .with_skip_rows(options.skip_rows as usize)
+        .with_skip_lines(options.skip_lines.unwrap_or(0) as usize)
         .with_ignore_errors(options.ignore_errors)
         .with_rechunk(options.rechunk)
         .with_chunk_size(options.chunk_size as usize)
@@ -159,6 +164,7 @@ fn mmap_reader_to_df<'a>(
                 .with_try_parse_dates(options.try_parse_dates)
                 .with_quote_char(quote_char)
                 .with_eol_char(eol_char)
+                .with_decimal_comma(options.decimal_comma.unwrap_or(false))
                 .with_truncate_ragged_lines(options.truncate_ragged_lines),
         )
         .into_reader_with_file_handle(csv)
