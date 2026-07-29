@@ -47,7 +47,7 @@ describe("read:csv", () => {
     assert.deepStrictEqual(df.shape, { height: 4, width: 4 });
   });
   describe("read gzip", () => {
-    const csvgzpath = "./test-sink.csv.gz";
+    const csvgzpath = path.resolve(__dirname, "./io-test-sink.csv.gz");
     const ldf = pl
       .DataFrame([
         pl.Series("foo", [1, 2, 3], pl.Int64),
