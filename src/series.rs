@@ -685,7 +685,7 @@ impl JsSeries {
         let seed = map_seed(seed);
         let s = self
             .series
-            .sample_n(n as usize, with_replacement, shuffle, seed)
+            .sample_n(n as usize, with_replacement, Some(shuffle), seed)
             .map_err(JsPolarsErr::from)?;
         Ok(s.into())
     }
@@ -701,7 +701,7 @@ impl JsSeries {
         let seed = map_seed(seed);
         let s = self
             .series
-            .sample_frac(frac, with_replacement, shuffle, seed)
+            .sample_frac(frac, with_replacement, Some(shuffle), seed)
             .map_err(JsPolarsErr::from)?;
         Ok(s.into())
     }

@@ -36,7 +36,7 @@ pub(crate) fn to_series_collection(ps: Array) -> napi::Result<Vec<Column>> {
     let mut columns = Vec::new();
     for idx in 0..ps.len() {
         let item = ps
-            .get::<&JsSeries>(idx)?
+            .get::<ClassInstance<JsSeries>>(idx)?
             .ok_or_else(|| napi::Error::from_reason(format!("Expected Series at index {idx}")))?;
         columns.push(item.series.clone().into());
     }
@@ -1291,7 +1291,7 @@ impl JsDataFrame {
     ) -> napi::Result<JsDataFrame> {
         let df = self
             .df
-            .sample_n(&n.series, with_replacement, shuffle, seed.map(|s| s as u64))
+            .sample_n(&n.series, with_replacement, Some(shuffle), seed.map(|s| s as u64))
             .map_err(JsPolarsErr::from)?;
         Ok(df.into())
     }
@@ -1309,7 +1309,7 @@ impl JsDataFrame {
             .sample_frac(
                 &frac.series,
                 with_replacement,
-                shuffle,
+                Some(shuffle),
                 seed.map(|s| s as u64),
             )
             .map_err(JsPolarsErr::from)?;

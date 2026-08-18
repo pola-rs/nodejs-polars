@@ -14,18 +14,18 @@ crate-type = ["cdylib", "lib"]
 
 [dependencies]
 bincode = { version = "2.0", features = ["serde"] }
-napi = { version = "3.9.0", default-features = false, features = [ "napi8", "serde-json" ] }
+napi = { version = "3.12.1", default-features = false, features = [ "napi8", "serde-json" ] }
 napi-derive = { version = "3.5.6", default-features = false }
-polars-core = { version = "0.54.4", default-features = false }
-polars-io = { version = "0.54.4", default-features = false }
-polars-lazy = { version = "0.54.4", default-features = false }
-polars-ops = { version = "0.54.4", default-features = false }
-polars-arrow = { version = "0.54.4", default-features = false }
-polars-utils = { version = "0.54.4", default-features = false }
-polars-compute = { version = "0.54.4", default-features = false }
+polars-core = { version = "0.55.2", default-features = false }
+polars-io = { version = "0.55.2", default-features = false }
+polars-lazy = { version = "0.55.2", default-features = false }
+polars-ops = { version = "0.55.2", default-features = false }
+polars-arrow = { version = "0.55.2", default-features = false }
+polars-utils = { version = "0.55.2", default-features = false }
+polars-compute = { version = "0.55.2", default-features = false }
 thiserror = "2"
 serde_json = "1"
-either = "1.16.0"
+either = "1.17.0"
 
 [dependencies.polars]
 features = [
@@ -98,10 +98,10 @@ features = [
   "zip_with"
 ]
 
-version = "0.54.4"
+version = "0.55.2"
 
 [build-dependencies]
-napi-build = "2.3.1"
+napi-build = "2.4.1"
 
 [profile.release]
 codegen-units = 1

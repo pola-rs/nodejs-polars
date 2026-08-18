@@ -2986,7 +2986,7 @@ describe("EWM", () => {
   test("ewmStd", () => {
     const s = pl.Series("s", [2, 5, 3]);
     const df = pl.DataFrame([s]);
-    const expected = pl.DataFrame({ s, ewmStd: [0, 2.12132, 1.38873] });
+    const expected = pl.DataFrame({ s, ewmStd: [null, 2.12132, 1.38873] });
 
     let seriesActual = df.getColumn("s").ewmStd().round(5).rename("ewmStd");
     let actual = df.withColumn(col("s").ewmStd().round(5).as("ewmStd"));
@@ -3025,7 +3025,7 @@ describe("EWM", () => {
   test("ewmVar", () => {
     const s = pl.Series("s", [2, 5, 3]);
     const df = pl.DataFrame([s]);
-    const expected = pl.DataFrame({ s, ewmVar: [0, 4.5, 1.92857] });
+    const expected = pl.DataFrame({ s, ewmVar: [null, 4.5, 1.92857] });
 
     let seriesActual = df.getColumn("s").ewmVar().round(5).rename("ewmVar");
     let actual = df.withColumn(col("s").ewmVar().round(5).as("ewmVar"));

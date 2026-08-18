@@ -1490,7 +1490,7 @@ impl JsExpr {
         let seed = seed.map(|s| s as u64);
         self.inner
             .clone()
-            .sample_frac(frac.0, with_replacement, shuffle, seed)
+            .sample_frac(frac.0, with_replacement, Some(shuffle), seed)
             .into()
     }
     #[napi(catch_unwind)]
@@ -1504,7 +1504,7 @@ impl JsExpr {
         let seed = seed.map(|s| s as u64);
         self.inner
             .clone()
-            .sample_n(n.0, with_replacement, shuffle, seed)
+            .sample_n(n.0, with_replacement, Some(shuffle), seed)
             .into()
     }
     #[napi(catch_unwind)]
