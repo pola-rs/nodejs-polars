@@ -792,7 +792,7 @@ impl JsDataFrame {
         Ok(())
     }
     #[napi(catch_unwind)]
-    pub fn vstack(&mut self, df: &JsDataFrame) -> napi::Result<JsDataFrame> {
+    pub fn vstack(&self, df: &JsDataFrame) -> napi::Result<JsDataFrame> {
         let df = self.df.vstack(&df.df).map_err(JsPolarsErr::from)?;
         Ok(df.into())
     }

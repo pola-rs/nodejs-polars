@@ -1,5 +1,5 @@
 {
-  "$schema": "https://biomejs.dev/schemas/2.5.8/schema.json",
+  "$schema": "https://biomejs.dev/schemas/2.5.9/schema.json",
   "linter": {
     "enabled": true,
     "rules": {
@@ -18,12 +18,12 @@
         "noArguments": "off"
       }
     },
-    "includes": ["**", "!**/polars/native-polars.js", "!docs/**/*", "!bin/**/*"]
+    "includes": ["**", "!**/polars/native-polars.js", "!**/polars/run.js", "!docs/**/*", "!bin/**/*"]
   },
   "formatter": {
     "indentWidth": 2,
     "indentStyle": "space",
-    "includes": ["**", "!**/polars/native-polars.js", "!docs/**/*", "!bin/**/*"]
+    "includes": ["**", "!**/polars/native-polars.js", "!**/polars/run.js", "!docs/**/*", "!bin/**/*"]
   },
   "javascript": {
     "formatter": {

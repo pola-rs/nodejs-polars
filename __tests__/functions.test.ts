@@ -1,6 +1,17 @@
 import pl from "../polars";
 
 describe("concat", () => {
+  it("can concat its own dataframes", () => {
+    const a = ["x", "y"];
+    const b = [1, 2];
+    const df = pl.DataFrame({ a, b });
+    const actual = pl.concat(Array(3).fill(df));
+    const expected = pl.DataFrame({
+      a: Array(3).fill(a).flat(),
+      b: Array(3).fill(b).flat(),
+    });
+    assertFrameEqual(actual, expected);
+  });
   it("can concat multiple dataframes using align", () => {
     const b = pl.DataFrame({ a: ["a", "b", "c"], c: [5.5, 6.0, 7.5] });
     // Single concat should return self
