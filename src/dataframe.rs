@@ -34,17 +34,30 @@ fn try_adjust_df_memory(delta: i64) {
 }
 
 #[napi(custom_finalize)]
-#[repr(transparent)]
-#[derive(Clone)]
 pub struct JsDataFrame {
     pub(crate) df: DataFrame,
+    size_hint: i64,
 }
 
 impl JsDataFrame {
     pub(crate) fn new(df: DataFrame) -> JsDataFrame {
         let size = df.estimated_size() as i64;
         try_adjust_df_memory(size);
-        JsDataFrame { df }
+        JsDataFrame { df, size_hint: size }
+    }
+
+    fn update_size_hint(&mut self) {
+        let new_size = self.df.estimated_size() as i64;
+        let delta = new_size - self.size_hint;
+        if delta != 0 {
+            try_adjust_df_memory(delta);
+            self.size_hint = new_size;
+        }
+    }
+}
+impl Clone for JsDataFrame {
+    fn clone(&self) -> Self {
+        JsDataFrame::new(self.df.clone())
     }
 }
 impl From<DataFrame> for JsDataFrame {
@@ -55,9 +68,7 @@ impl From<DataFrame> for JsDataFrame {
 
 impl napi::bindgen_prelude::ObjectFinalize for JsDataFrame {
     fn finalize(self, env: Env) -> napi::Result<()> {
-        cache_df_env(env);
-        let size = self.df.estimated_size() as i64;
-        let _ = env.adjust_external_memory(-size);
+        let _ = env.adjust_external_memory(-self.size_hint);
         Ok(())
     }
 }
@@ -819,6 +830,7 @@ impl JsDataFrame {
     pub fn hstack_mut(&mut self, columns: Array) -> napi::Result<()> {
         let columns = to_series_collection(columns)?;
         self.df.hstack_mut(&columns).map_err(JsPolarsErr::from)?;
+        self.update_size_hint();
         Ok(())
     }
     #[napi(catch_unwind)]
@@ -830,11 +842,13 @@ impl JsDataFrame {
     #[napi(catch_unwind)]
     pub fn extend(&mut self, df: &JsDataFrame) -> napi::Result<()> {
         self.df.extend(&df.df.clone()).map_err(JsPolarsErr::from)?;
+        self.update_size_hint();
         Ok(())
     }
     #[napi(catch_unwind)]
     pub fn vstack_mut(&mut self, df: &JsDataFrame) -> napi::Result<()> {
         self.df.vstack_mut(&df.df).map_err(JsPolarsErr::from)?;
+        self.update_size_hint();
         Ok(())
     }
     #[napi(catch_unwind)]
@@ -845,6 +859,7 @@ impl JsDataFrame {
     #[napi(catch_unwind)]
     pub fn drop_in_place(&mut self, name: String) -> napi::Result<JsSeries> {
         let s = self.df.drop_in_place(&name).map_err(JsPolarsErr::from)?;
+        self.update_size_hint();
         Ok(JsSeries {
             series: s.take_materialized_series(),
         })
@@ -973,6 +988,7 @@ impl JsDataFrame {
         self.df
             .replace(&column, new_col.series.clone().into())
             .map_err(JsPolarsErr::from)?;
+        self.update_size_hint();
         Ok(())
     }
 
@@ -998,6 +1014,7 @@ impl JsDataFrame {
         self.df
             .replace_column(index as usize, new_col.series.clone().into())
             .map_err(JsPolarsErr::from)?;
+        self.update_size_hint();
         Ok(())
     }
 
@@ -1006,6 +1023,7 @@ impl JsDataFrame {
         self.df
             .insert_column(index as usize, new_col.series.clone().into())
             .map_err(JsPolarsErr::from)?;
+        self.update_size_hint();
         Ok(())
     }
 
