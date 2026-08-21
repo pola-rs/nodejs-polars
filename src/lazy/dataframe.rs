@@ -230,7 +230,8 @@ impl JsLazyFrame {
         ldf.cache().into()
     }
     #[napi(catch_unwind)]
-    pub fn collect_sync(&self, engine: Wrap<Engine>) -> napi::Result<JsDataFrame> {
+    pub fn collect_sync(&self, engine: Wrap<Engine>, env: Env) -> napi::Result<JsDataFrame> {
+        crate::dataframe::cache_df_env(env);
         let df = self
             .ldf
             .clone()
@@ -1132,7 +1133,8 @@ impl Task for AsyncFetch {
         Ok(df)
     }
 
-    fn resolve(&mut self, _env: Env, df: DataFrame) -> napi::Result<Self::JsValue> {
+    fn resolve(&mut self, env: Env, df: DataFrame) -> napi::Result<Self::JsValue> {
+        crate::dataframe::cache_df_env(env);
         Ok(df.into())
     }
 }
@@ -1148,7 +1150,8 @@ impl Task for AsyncCollect {
         Ok(df)
     }
 
-    fn resolve(&mut self, _env: Env, df: DataFrame) -> napi::Result<Self::JsValue> {
+    fn resolve(&mut self, env: Env, df: DataFrame) -> napi::Result<Self::JsValue> {
+        crate::dataframe::cache_df_env(env);
         Ok(df.into())
     }
 }

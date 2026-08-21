@@ -8,13 +8,32 @@ use polars_io::csv::write::CsvWriterOptions;
 use polars_io::mmap::MmapBytesReader;
 use polars_utils::aliases::PlFixedStateQuality;
 use std::borrow::Borrow;
+use std::cell::Cell;
 use std::collections::{HashMap, HashSet};
 use std::fs::File;
 use std::hash::BuildHasher;
 use std::io::{BufReader, BufWriter, Cursor};
 use std::num::NonZeroUsize;
 
-#[napi]
+thread_local! {
+    static NAPI_ENV: Cell<napi::sys::napi_env> = const { Cell::new(std::ptr::null_mut()) };
+}
+
+pub(crate) fn cache_df_env(env: Env) {
+    NAPI_ENV.with(|c| c.set(env.raw()));
+}
+
+fn try_adjust_df_memory(delta: i64) {
+    NAPI_ENV.with(|c| {
+        let raw = c.get();
+        if !raw.is_null() {
+            let mut changed = 0i64;
+            unsafe { napi::sys::napi_adjust_external_memory(raw, delta, &mut changed) };
+        }
+    });
+}
+
+#[napi(custom_finalize)]
 #[repr(transparent)]
 #[derive(Clone)]
 pub struct JsDataFrame {
@@ -23,12 +42,23 @@ pub struct JsDataFrame {
 
 impl JsDataFrame {
     pub(crate) fn new(df: DataFrame) -> JsDataFrame {
+        let size = df.estimated_size() as i64;
+        try_adjust_df_memory(size);
         JsDataFrame { df }
     }
 }
 impl From<DataFrame> for JsDataFrame {
     fn from(s: DataFrame) -> JsDataFrame {
         JsDataFrame::new(s)
+    }
+}
+
+impl napi::bindgen_prelude::ObjectFinalize for JsDataFrame {
+    fn finalize(self, env: Env) -> napi::Result<()> {
+        cache_df_env(env);
+        let size = self.df.estimated_size() as i64;
+        let _ = env.adjust_external_memory(-size);
+        Ok(())
     }
 }
 
@@ -178,7 +208,9 @@ fn mmap_reader_to_df<'a>(
 pub fn read_csv(
     path_or_buffer: Either<String, Buffer>,
     options: ReadCsvOptions,
+    env: Env,
 ) -> napi::Result<JsDataFrame> {
+    cache_df_env(env);
     match path_or_buffer {
         Either::A(path) => mmap_reader_to_df(std::fs::File::open(path)?, options),
         Either::B(buffer) => mmap_reader_to_df(Cursor::new(buffer.as_ref()), options),
@@ -200,7 +232,9 @@ pub struct WriteJsonOptions {
 pub fn read_json(
     path_or_buffer: Either<String, Buffer>,
     options: ReadJsonOptions,
+    env: Env,
 ) -> napi::Result<JsDataFrame> {
+    cache_df_env(env);
     let infer_schema_length =
         NonZeroUsize::new(options.infer_schema_length.unwrap_or(100) as usize);
     let batch_size = NonZeroUsize::new(options.batch_size.unwrap_or(10000) as usize)
@@ -252,7 +286,9 @@ pub fn read_parquet(
     path_or_buffer: Either<String, Buffer>,
     options: ReadParquetOptions,
     parallel: Wrap<ParallelStrategy>,
+    env: Env,
 ) -> napi::Result<JsDataFrame> {
+    cache_df_env(env);
     let columns = options.columns;
 
     let projection = options
@@ -301,7 +337,9 @@ pub struct ReadIpcOptions {
 pub fn read_ipc(
     path_or_buffer: Either<String, Buffer>,
     options: ReadIpcOptions,
+    env: Env,
 ) -> napi::Result<JsDataFrame> {
+    cache_df_env(env);
     let columns = options.columns;
     let projection = options
         .projection
@@ -338,7 +376,9 @@ pub fn read_ipc(
 pub fn read_ipc_stream(
     path_or_buffer: Either<String, Buffer>,
     options: ReadIpcOptions,
+    env: Env,
 ) -> napi::Result<JsDataFrame> {
+    cache_df_env(env);
     let columns = options.columns;
     let projection = options
         .projection
@@ -382,7 +422,9 @@ pub struct ReadAvroOptions {
 pub fn read_avro(
     path_or_buffer: Either<String, Buffer>,
     options: ReadAvroOptions,
+    env: Env,
 ) -> napi::Result<JsDataFrame> {
+    cache_df_env(env);
     use polars::io::avro::AvroReader;
     let columns = options.columns;
     let projection = options
@@ -420,6 +462,7 @@ pub fn from_rows(
     infer_schema_length: Option<u32>,
     env: Env,
 ) -> napi::Result<JsDataFrame> {
+    cache_df_env(env);
     let schema = match schema {
         Some(s) => s.0,
         None => {
@@ -468,6 +511,7 @@ fn bin_config() -> bincode::config::Configuration {
 impl JsDataFrame {
     #[napi(catch_unwind)]
     pub fn to_js(&self, env: Env) -> napi::Result<napi::Unknown<'_>> {
+        cache_df_env(env);
         env.to_js_value(&self.df)
     }
 
@@ -488,7 +532,8 @@ impl JsDataFrame {
     }
 
     #[napi(factory, catch_unwind)]
-    pub fn deserialize(buf: Buffer, format: String) -> napi::Result<JsDataFrame> {
+    pub fn deserialize(buf: Buffer, format: String, env: Env) -> napi::Result<JsDataFrame> {
+        cache_df_env(env);
         let df: DataFrame = match format.as_ref() {
             "bincode" => bincode::serde::decode_from_slice(&buf, bin_config())
                 .map(|(df, _)| df)
@@ -504,7 +549,8 @@ impl JsDataFrame {
         Ok(df.into())
     }
     #[napi(constructor)]
-    pub fn from_columns(columns: Array) -> napi::Result<JsDataFrame> {
+    pub fn from_columns(columns: Array, env: Env) -> napi::Result<JsDataFrame> {
+        cache_df_env(env);
         let cols = to_series_collection(columns)?;
 
         let df =
