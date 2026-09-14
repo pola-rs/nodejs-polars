@@ -1,6 +1,6 @@
 [package]
 name = "nodejs-polars"
-version = "0.26.0"
+version = "0.26.1"
 authors = ["Cory Grinstead"]
 documentation = "https://pola-rs.github.io/polars-book/"
 edition = "2021"
@@ -14,8 +14,8 @@ crate-type = ["cdylib", "lib"]
 
 [dependencies]
 bincode = { version = "2.0", features = ["serde"] }
-napi = { version = "3.12.1", default-features = false, features = [ "napi8", "serde-json" ] }
-napi-derive = { version = "3.5.6", default-features = false }
+napi = { version = "3.12.4", default-features = false, features = [ "napi8", "serde-json" ] }
+napi-derive = { version = "3.6.5", default-features = false }
 polars-core = { version = "0.55.2", default-features = false }
 polars-io = { version = "0.55.2", default-features = false }
 polars-lazy = { version = "0.55.2", default-features = false }
@@ -25,7 +25,7 @@ polars-utils = { version = "0.55.2", default-features = false }
 polars-compute = { version = "0.55.2", default-features = false }
 thiserror = "2"
 serde_json = "1"
-either = "1.17.0"
+either = "1.18.0"
 
 [dependencies.polars]
 features = [
@@ -101,7 +101,7 @@ features = [
 version = "0.55.2"
 
 [build-dependencies]
-napi-build = "2.4.1"
+napi-build = "2.4.2"
 
 [profile.release]
 codegen-units = 1
