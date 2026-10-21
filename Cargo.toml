@@ -23,6 +23,7 @@ polars-ops = { version = "0.55.2", default-features = false }
 polars-arrow = { version = "0.55.2", default-features = false }
 polars-utils = { version = "0.55.2", default-features = false }
 polars-compute = { version = "0.55.2", default-features = false }
+polars-ooc = { version = "0.55.2", features = ["fast_alloc"] }
 thiserror = "2"
 serde_json = "1"
 either = "1.18.0"
