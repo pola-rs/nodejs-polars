@@ -34,3 +34,6 @@ pub mod export {
     pub use polars::prelude::LazyFrame;
     pub use polars_core;
 }
+
+#[global_allocator]
+static ALLOC: polars_ooc::Allocator = polars_ooc::Allocator;
