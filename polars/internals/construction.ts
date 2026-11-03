@@ -179,6 +179,7 @@ export function arrayToJsSeries(
       "Date",
       "Time",
       "Categorical",
+      "Enum",
       "Int8",
       "Int16",
       "UInt8",

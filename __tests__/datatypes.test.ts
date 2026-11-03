@@ -91,6 +91,12 @@ describe("DataType variants", () => {
       const dt = DataType.Categorical;
       assert.strictEqual(dt.variant, "Categorical");
     });
+
+    it("Enum should have variant 'Enum' and categories", () => {
+      const dt = DataType.Enum(["a", "b"]);
+      assert.strictEqual(dt.variant, "Enum");
+      assert.deepStrictEqual(dt.categories, ["a", "b"]);
+    });
   });
 
   describe("Complex types", () => {

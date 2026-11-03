@@ -2489,6 +2489,7 @@ const mapPolarsTypeToJSONSchema = (colType: DataType): string => {
     Datetime: "string",
     Utf8: "string",
     Categorical: "string",
+    Enum: "string",
     List: "array",
     Struct: "object",
   };
