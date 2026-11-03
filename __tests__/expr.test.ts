@@ -3060,4 +3060,34 @@ describe("EWM", () => {
     assertFrameEqual(actual, expected);
     assertSeriesEqual(seriesActual, expected.getColumn("ewmVar"));
   });
+
+  test("mapBatches", async () => {
+    const lf = pl
+      .DataFrame({ id: [1, 2, 3, 2] })
+      .lazy()
+      .select(
+        col("id")
+          .mapBatches((s) => s.hash(), { returnType: pl.UInt64 })
+          .alias("id_hash"),
+      );
+    const expected = pl.DataFrame({
+      id_hash: pl.Series([1, 2, 3, 2]).hash(),
+    });
+    const actual = await lf.collect();
+    assertFrameEqual(actual, expected);
+  });
+
+  test("mapBatches streaming", async () => {
+    const lf = pl
+      .DataFrame({ id: [10, 20, 30] })
+      .lazy()
+      .select(
+        col("id")
+          .mapBatches((s) => s.mul(2))
+          .alias("id2"),
+      );
+    const expected = pl.DataFrame({ id2: [20, 40, 60] });
+    const actual = await lf.collect({ streaming: true });
+    assertFrameEqual(actual, expected);
+  });
 });
