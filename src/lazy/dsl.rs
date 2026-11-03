@@ -1840,6 +1840,138 @@ pub fn range(low: Wrap<Expr>, high: Wrap<Expr>, dtype: Wrap<DataType>) -> JsExpr
     int_range(low, high, 1, dtype).into()
 }
 
+#[allow(clippy::too_many_arguments)]
+fn datetime_expr(
+    year: &JsExpr,
+    month: &JsExpr,
+    day: &JsExpr,
+    hour: Option<&JsExpr>,
+    minute: Option<&JsExpr>,
+    second: Option<&JsExpr>,
+    microsecond: Option<&JsExpr>,
+    time_unit: Option<Wrap<TimeUnit>>,
+    time_zone: Option<String>,
+    ambiguous: Option<&JsExpr>,
+) -> JsResult<Expr> {
+    let time_zone =
+        TimeZone::opt_try_new(time_zone.map(PlSmallStr::from_string)).map_err(JsPolarsErr::from)?;
+
+    let args = dsl::DatetimeArgs {
+        year: year.inner.clone(),
+        month: month.inner.clone(),
+        day: day.inner.clone(),
+        hour: hour.map(|e| e.inner.clone()).unwrap_or_else(|| dsl::lit(0)),
+        minute: minute
+            .map(|e| e.inner.clone())
+            .unwrap_or_else(|| dsl::lit(0)),
+        second: second
+            .map(|e| e.inner.clone())
+            .unwrap_or_else(|| dsl::lit(0)),
+        microsecond: microsecond
+            .map(|e| e.inner.clone())
+            .unwrap_or_else(|| dsl::lit(0)),
+        time_unit: time_unit.map(|tu| tu.0).unwrap_or(TimeUnit::Microseconds),
+        time_zone,
+        ambiguous: ambiguous
+            .map(|e| e.inner.clone())
+            .unwrap_or_else(|| dsl::lit("raise")),
+    };
+
+    Ok(dsl::datetime(args))
+}
+
+/// Construct an expression of `Datetime` from the provided components.
+#[napi(catch_unwind)]
+#[allow(clippy::too_many_arguments)]
+pub fn datetime(
+    year: &JsExpr,
+    month: &JsExpr,
+    day: &JsExpr,
+    hour: Option<&JsExpr>,
+    minute: Option<&JsExpr>,
+    second: Option<&JsExpr>,
+    microsecond: Option<&JsExpr>,
+    time_unit: Option<Wrap<TimeUnit>>,
+    time_zone: Option<String>,
+    ambiguous: Option<&JsExpr>,
+) -> JsResult<JsExpr> {
+    Ok(datetime_expr(
+        year,
+        month,
+        day,
+        hour,
+        minute,
+        second,
+        microsecond,
+        time_unit,
+        time_zone,
+        ambiguous,
+    )?
+    .into())
+}
+
+/// Construct an expression of `Date` from the provided components.
+#[napi(catch_unwind)]
+pub fn date(year: &JsExpr, month: &JsExpr, day: &JsExpr) -> JsResult<JsExpr> {
+    Ok(
+        datetime_expr(year, month, day, None, None, None, None, None, None, None)?
+            .cast(DataType::Date)
+            .alias("date")
+            .into(),
+    )
+}
+
+/// Construct an expression of `Duration` from the provided components.
+#[napi(catch_unwind)]
+#[allow(clippy::too_many_arguments)]
+pub fn duration(
+    weeks: Option<&JsExpr>,
+    days: Option<&JsExpr>,
+    hours: Option<&JsExpr>,
+    minutes: Option<&JsExpr>,
+    seconds: Option<&JsExpr>,
+    milliseconds: Option<&JsExpr>,
+    microseconds: Option<&JsExpr>,
+    nanoseconds: Option<&JsExpr>,
+    time_unit: Option<Wrap<TimeUnit>>,
+) -> JsExpr {
+    let time_unit = time_unit.map(|tu| tu.0).unwrap_or_else(|| {
+        if nanoseconds.is_some() {
+            TimeUnit::Nanoseconds
+        } else {
+            TimeUnit::Microseconds
+        }
+    });
+
+    let args = dsl::DurationArgs {
+        weeks: weeks
+            .map(|e| e.inner.clone())
+            .unwrap_or_else(|| dsl::lit(0)),
+        days: days.map(|e| e.inner.clone()).unwrap_or_else(|| dsl::lit(0)),
+        hours: hours
+            .map(|e| e.inner.clone())
+            .unwrap_or_else(|| dsl::lit(0)),
+        minutes: minutes
+            .map(|e| e.inner.clone())
+            .unwrap_or_else(|| dsl::lit(0)),
+        seconds: seconds
+            .map(|e| e.inner.clone())
+            .unwrap_or_else(|| dsl::lit(0)),
+        milliseconds: milliseconds
+            .map(|e| e.inner.clone())
+            .unwrap_or_else(|| dsl::lit(0)),
+        microseconds: microseconds
+            .map(|e| e.inner.clone())
+            .unwrap_or_else(|| dsl::lit(0)),
+        nanoseconds: nanoseconds
+            .map(|e| e.inner.clone())
+            .unwrap_or_else(|| dsl::lit(0)),
+        time_unit,
+    };
+
+    dsl::duration(args).into()
+}
+
 #[napi(catch_unwind)]
 pub fn concat_lst(s: Vec<&JsExpr>) -> JsResult<JsExpr> {
     let s = s.to_exprs();
