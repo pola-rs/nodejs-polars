@@ -53,6 +53,7 @@ export const DTYPE_TO_FFINAME = {
   Time: "Time",
   Object: "Object",
   Categorical: "Categorical",
+  Enum: "Enum",
   Struct: "Struct",
 };
 
@@ -106,6 +107,9 @@ const POLARS_TYPE_TO_CONSTRUCTOR: Record<string, any> = {
     return (pli.JsSeries.newOptStr as any)(name, values);
   },
   Categorical(name, values) {
+    return (pli.JsSeries.newOptStr as any)(name, values);
+  },
+  Enum(name, values) {
     return (pli.JsSeries.newOptStr as any)(name, values);
   },
   List(name, values, dtype: DataType) {

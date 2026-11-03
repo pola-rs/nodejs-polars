@@ -79,6 +79,10 @@ export abstract class DataType<Dtype extends DataTypeName = any> {
   public static get Categorical() {
     return new Categorical();
   }
+  /** An ordered categorical with a fixed set of categories */
+  public static Enum(categories: string[]) {
+    return new Enum(categories);
+  }
 
   /** Decimal type */
   public static Decimal(precision?: number, scale?: number) {
@@ -241,6 +245,41 @@ export class String extends DataType<"String"> {
 export class Categorical extends DataType<"Categorical"> {
   declare __dtype: "Categorical";
   readonly variant = "Categorical";
+}
+
+export class Enum extends DataType<"Enum"> {
+  declare __dtype: "Enum";
+  readonly variant = "Enum";
+  constructor(private readonly _categories: string[]) {
+    super();
+  }
+  get categories(): string[] {
+    return this._categories;
+  }
+  override get inner() {
+    return [this._categories];
+  }
+  override equals(other: DataType): boolean {
+    if (other.variant === this.variant) {
+      const otherCategories = (other as Enum).categories;
+      return (
+        this._categories.length === otherCategories.length &&
+        this._categories.every((cat, idx) => cat === otherCategories[idx])
+      );
+    }
+    return false;
+  }
+  override toString() {
+    const quoted = this._categories.map((c) => JSON.stringify(c)).join(", ");
+    return `${this.identity}(${this.variant}([${quoted}]))`;
+  }
+  override toJSON() {
+    return {
+      [this.identity]: {
+        [this.variant]: this._categories,
+      },
+    } as any;
+  }
 }
 
 export class Decimal extends DataType<"Decimal"> {
@@ -442,6 +481,7 @@ export namespace TimeUnit {
  */
 export namespace DataType {
   export type Categorical = import(".").Categorical;
+  export type Enum = import(".").Enum;
   export type Int8 = import(".").Int8;
   export type Int16 = import(".").Int16;
   export type Int32 = import(".").Int32;
@@ -517,6 +557,7 @@ export type DataTypeName =
   | "Utf8"
   | "String"
   | "Categorical"
+  | "Enum"
   | "List"
   | "FixedSizeList"
   | "Struct";

@@ -102,6 +102,7 @@ export namespace pl {
   export const version = pli.version();
 
   export type Categorical = import("./datatypes").Categorical;
+  export type Enum = import("./datatypes").Enum;
   export type Int8 = import("./datatypes").Int8;
   export type Int16 = import("./datatypes").Int16;
   export type Int32 = import("./datatypes").Int32;
@@ -127,6 +128,7 @@ export namespace pl {
   export type Decimal = import("./datatypes").Decimal;
 
   export const Categorical = DataType.Categorical;
+  export const Enum = DataType.Enum;
   export const Int8 = DataType.Int8;
   export const Int16 = DataType.Int16;
   export const Int32 = DataType.Int32;
@@ -248,6 +250,7 @@ export import when = lazy.when;
 export const version = pli.version();
 
 export type Categorical = import("./datatypes").Categorical;
+export type Enum = import("./datatypes").Enum;
 export type Int8 = import("./datatypes").Int8;
 export type Int16 = import("./datatypes").Int16;
 export type Int32 = import("./datatypes").Int32;
@@ -273,6 +276,7 @@ export type Struct = import("./datatypes").Struct;
 export type Decimal = import("./datatypes").Decimal;
 
 export const Categorical = DataType.Categorical;
+export const Enum = DataType.Enum;
 export const Int8 = DataType.Int8;
 export const Int16 = DataType.Int16;
 export const Int32 = DataType.Int32;
