@@ -78,7 +78,7 @@ export interface CsvWriterOptions {
   decimalComma?: boolean;
   nullValue?: string;
   quoteStyle?: "always" | "necessary" | "non_numeric" | "never";
-  compression?: "uncompressed" | "gzip" | "zstd";
+  compression?: "uncompressed" | "gzip" | "zstd" | "lz4";
   compressionLevel?: number;
   checkExtension?: boolean;
   maintainOrder?: boolean;
@@ -131,7 +131,7 @@ export interface ParquetStatisticsOptions {
  * @category Options
  */
 export interface SinkJsonOptions {
-  compression?: "uncompressed" | "gzip" | "zstd";
+  compression?: "uncompressed" | "gzip" | "zstd" | "lz4";
   compressionLevel?: number; // The compression level to use, typically 0-9.
   checkExtension?: boolean; // Whether to check if the filename matches the compression settings.
   cloudOptions?: Record<string, string | number | boolean>;
@@ -144,7 +144,7 @@ export interface SinkJsonOptions {
  * @category Options
  */
 export interface SinkIpcOptions {
-  compression?: "uncompressed" | "gzip" | "zstd";
+  compression?: "uncompressed" | "gzip" | "zstd" | "lz4";
   compatLevel?: "newest" | "oldest";
   cloudOptions?: Record<string, string | number | boolean>;
   syncOnClose?: "none" | "data" | "all"; // Call sync when closing the file.

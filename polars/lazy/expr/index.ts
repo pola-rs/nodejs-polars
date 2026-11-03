@@ -2392,3 +2392,181 @@ export const exprToLitOrExpr = (expr: any, stringToLit = true): Expr => {
   }
   return _Expr(pli.lit(expr));
 };
+
+type DateComponent = ExprOrString | number;
+
+export interface DatetimeOptions {
+  /** Time unit of the resulting expression. */
+  timeUnit?: "ms" | "us" | "ns";
+  /** Time zone of the resulting expression. */
+  timeZone?: string | null;
+  /** How to handle ambiguous datetimes: `"earliest"`, `"latest"`, `"raise"`, or `"null"`. */
+  ambiguous?: ExprOrString;
+}
+
+/**
+ * Create an expression of type `Datetime` from its components.
+ *
+ * @param year Column or literal.
+ * @param month Column or literal, ranging from 1-12.
+ * @param day Column or literal, ranging from 1-31.
+ * @param hour Column or literal, ranging from 0-23.
+ * @param minute Column or literal, ranging from 0-59.
+ * @param second Column or literal, ranging from 0-59.
+ * @param microsecond Column or literal, ranging from 0-999999.
+ * @param options.timeUnit Time unit of the resulting expression.
+ * @param options.timeZone Time zone of the resulting expression.
+ * @param options.ambiguous How to handle ambiguous datetimes.
+ * @example
+ * ```
+ * > const df = pl.DataFrame({ month: [1, 2], day: [3, 4] });
+ * > df.select(pl.datetime(2024, pl.col("month"), pl.col("day")));
+ * shape: (2, 1)
+ * ┌────────────┐
+ * │ datetime   │
+ * │ ---        │
+ * │ datetime[μs] │
+ * ╞════════════╡
+ * │ 2024-01-03 │
+ * │ 2024-02-04 │
+ * └────────────┘
+ * ```
+ */
+export function datetime(
+  year: DateComponent,
+  month: DateComponent,
+  day: DateComponent,
+  hour?: DateComponent | DatetimeOptions | null,
+  minute?: DateComponent | DatetimeOptions | null,
+  second?: DateComponent | DatetimeOptions | null,
+  microsecond?: DateComponent | DatetimeOptions | null,
+  options?: DatetimeOptions,
+): Expr {
+  const toExpr = (value: DateComponent) => exprToLitOrExpr(value, false)._expr;
+  const isOptions = (value: unknown): value is DatetimeOptions =>
+    typeof value === "object" &&
+    value !== null &&
+    !Array.isArray(value) &&
+    !Expr.isExpr(value) &&
+    !Series.isSeries(value);
+
+  let resolvedOptions: DatetimeOptions = {};
+  const components: DateComponent[] = [];
+  for (const arg of [hour, minute, second, microsecond, options]) {
+    if (isOptions(arg)) {
+      resolvedOptions = arg;
+    } else if (arg != null) {
+      components.push(arg);
+    }
+  }
+
+  const [hourValue, minuteValue, secondValue, microsecondValue] = components;
+
+  return _Expr(
+    pli.datetime(
+      toExpr(year),
+      toExpr(month),
+      toExpr(day),
+      hourValue == null ? undefined : toExpr(hourValue),
+      minuteValue == null ? undefined : toExpr(minuteValue),
+      secondValue == null ? undefined : toExpr(secondValue),
+      microsecondValue == null ? undefined : toExpr(microsecondValue),
+      resolvedOptions.timeUnit,
+      resolvedOptions.timeZone,
+      exprToLitOrExpr(resolvedOptions.ambiguous ?? "raise", true)._expr,
+    ),
+  );
+}
+
+/**
+ * Create an expression of type `Date` from its components.
+ *
+ * @param year Column or literal.
+ * @param month Column or literal, ranging from 1-12.
+ * @param day Column or literal, ranging from 1-31.
+ * @example
+ * ```
+ * > const df = pl.DataFrame({ month: [1, 2], day: [3, 4] });
+ * > df.select(pl.date(2024, pl.col("month"), pl.col("day")));
+ * shape: (2, 1)
+ * ┌────────────┐
+ * │ date       │
+ * │ ---        │
+ * │ date       │
+ * ╞════════════╡
+ * │ 2024-01-03 │
+ * │ 2024-02-04 │
+ * └────────────┘
+ * ```
+ */
+export function date(
+  year: DateComponent,
+  month: DateComponent,
+  day: DateComponent,
+): Expr {
+  const toExpr = (value: DateComponent) => exprToLitOrExpr(value, false)._expr;
+
+  return _Expr(pli.date(toExpr(year), toExpr(month), toExpr(day)));
+}
+
+export interface DurationOptions {
+  /** Number of weeks. */
+  weeks?: DateComponent;
+  /** Number of days. */
+  days?: DateComponent;
+  /** Number of hours. */
+  hours?: DateComponent;
+  /** Number of minutes. */
+  minutes?: DateComponent;
+  /** Number of seconds. */
+  seconds?: DateComponent;
+  /** Number of milliseconds. */
+  milliseconds?: DateComponent;
+  /** Number of microseconds. */
+  microseconds?: DateComponent;
+  /** Number of nanoseconds. */
+  nanoseconds?: DateComponent;
+  /**
+   * Time unit of the resulting expression. Defaults to `"ns"` when
+   * `nanoseconds` is specified, and `"us"` otherwise.
+   */
+  timeUnit?: "ms" | "us" | "ns";
+}
+
+/**
+ * Create an expression of type `Duration` from distinct time components.
+ *
+ * @param options Duration components and optional time unit.
+ * @example
+ * ```
+ * > const df = pl.DataFrame({ add: [1, 2] });
+ * > df.select(pl.duration({ days: pl.col("add") }));
+ * shape: (2, 1)
+ * ┌──────────────┐
+ * │ duration     │
+ * │ ---          │
+ * │ duration[μs] │
+ * ╞══════════════╡
+ * │ 1d           │
+ * │ 2d           │
+ * └──────────────┘
+ * ```
+ */
+export function duration(options: DurationOptions = {}): Expr {
+  const toExpr = (value?: DateComponent) =>
+    value == null ? undefined : exprToLitOrExpr(value, false)._expr;
+
+  return _Expr(
+    pli.duration(
+      toExpr(options.weeks),
+      toExpr(options.days),
+      toExpr(options.hours),
+      toExpr(options.minutes),
+      toExpr(options.seconds),
+      toExpr(options.milliseconds),
+      toExpr(options.microseconds),
+      toExpr(options.nanoseconds),
+      options.timeUnit,
+    ),
+  );
+}

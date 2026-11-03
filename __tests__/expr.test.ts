@@ -2471,6 +2471,107 @@ describe("expr.dt", () => {
     assertSeriesStrictEqual(actualFromSeries, expected);
   });
 });
+describe("expr temporal constructors", () => {
+  test("date", () => {
+    const df = pl.DataFrame({
+      year: [2001, 2002],
+      month: [1, 2],
+      day: [3, 4],
+    });
+    const actual = df.select(pl.date("year", "month", "day"));
+
+    assert.deepStrictEqual(actual.getColumn("date").dtype, pl.Date);
+    assert.deepStrictEqual(actual.getColumn("date").cast(pl.String).toArray(), [
+      "2001-01-03",
+      "2002-02-04",
+    ]);
+  });
+  test("datetime", () => {
+    const df = pl.DataFrame({
+      year: [2001, 2002],
+      month: [1, 2],
+      day: [3, 4],
+      hour: [5, 6],
+    });
+    const actual = df
+      .select(
+        pl
+          .datetime("year", "month", "day", "hour", { timeUnit: "ms" })
+          .alias("datetime"),
+      )
+      .getColumn("datetime");
+
+    assert.deepStrictEqual(actual.dtype, pl.Datetime("ms", ""));
+    assert.deepStrictEqual(
+      actual.dt.year().cast(pl.Int64).toArray(),
+      [2001, 2002],
+    );
+    assert.deepStrictEqual(actual.dt.hour().cast(pl.Int64).toArray(), [5, 6]);
+  });
+  test("datetime options", () => {
+    const actual = pl
+      .select(
+        pl
+          .datetime(2024, 1, 2, 3, 4, 5, 6, {
+            timeUnit: "us",
+            timeZone: "UTC",
+          })
+          .alias("datetime"),
+      )
+      .getColumn("datetime");
+
+    assert.deepStrictEqual(actual.dtype, pl.Datetime("us", "UTC"));
+    assert.deepStrictEqual(actual.dt.hour().toArray(), [3]);
+    assert.deepStrictEqual(actual.dt.minute().toArray(), [4]);
+    assert.deepStrictEqual(actual.dt.second().toArray(), [5]);
+
+    const withOptionsAsFourthArg = pl.select(
+      pl.datetime(2024, 1, 2, { timeUnit: "ms" }).alias("datetime"),
+    );
+    assert.deepStrictEqual(
+      withOptionsAsFourthArg.getColumn("datetime").dtype,
+      pl.Datetime("ms", ""),
+    );
+  });
+  test("duration", () => {
+    const actual = pl
+      .select(
+        pl
+          .duration({
+            days: 1,
+            minutes: 2,
+            seconds: 3,
+            milliseconds: 4,
+            microseconds: 5,
+          })
+          .alias("us"),
+        pl.duration({ nanoseconds: 1234 }).alias("ns"),
+        pl.duration({ milliseconds: 4 }).alias("default"),
+      )
+      .select(
+        pl.col("us").cast(pl.Int64),
+        pl.col("ns").cast(pl.Int64),
+        pl.col("default").cast(pl.Int64),
+      );
+
+    assert.deepStrictEqual(actual.toRecords(), [
+      {
+        us: 86523004005,
+        ns: 1234,
+        default: 4000,
+      },
+    ]);
+  });
+  test("duration from column", () => {
+    const df = pl.DataFrame({ add: [1, 2] });
+    const actual = df
+      .select(pl.duration({ days: pl.col("add") }).alias("duration"))
+      .select(pl.col("duration").cast(pl.Int64))
+      .toSeries();
+
+    assert.deepStrictEqual(actual.toArray(), [86400000000, 172800000000]);
+  });
+});
 describe("expr metadata", () => {
   test("inspect & toString", () => {
     const expr = lit("foo");
