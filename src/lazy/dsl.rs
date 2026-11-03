@@ -2,13 +2,13 @@ use crate::conversion::Wrap;
 use crate::lazy::js_udf::{JsMapBatchesOptions, JsMapBatchesUdf};
 use crate::prelude::*;
 use crate::series::JsSeries;
+use napi::bindgen_prelude::Function;
 use polars::chunked_array::ops::reinterpret as pl_reinterpret;
 use polars::lazy::dsl;
 use polars::lazy::dsl::Expr;
 use polars_compute::rolling::RollingQuantileParams;
 use polars_core::series::ops::NullBehavior;
 use polars_utils::aliases::PlFixedStateQuality;
-use napi::bindgen_prelude::Function;
 use std::borrow::Cow;
 use std::hash::BuildHasher;
 
@@ -1617,7 +1617,7 @@ impl JsExpr {
     pub fn map_batches(
         &self,
         _env: Env,
-        callback: Function<'_, (Buffer,), Buffer>,
+        callback: Function<'_, (JsSeries,), crate::lazy::js_udf::ReturnedSeries>,
         options: Option<JsMapBatchesOptions>,
     ) -> JsResult<JsExpr> {
         let options = options.unwrap_or(JsMapBatchesOptions {

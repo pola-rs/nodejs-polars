@@ -1,11 +1,12 @@
 //! Bridges Polars lazy `map_batches` to a JavaScript callback via N-API threadsafe functions.
 //!
-//! Each batch is serialized with bincode, executed on the JS thread, decoded back into a
-//! `Series`, then cast to the materialized output field when needed.
+//! The input [`Series`] is moved into a `JsSeries` on the JS thread. The callback returns
+//! another `JsSeries`, and only the `Arc` around the column buffers is cloned back. Batches
+//! are not serialized.
 
 use std::sync::{Arc, OnceLock};
 
-use napi::bindgen_prelude::{Buffer, Function, Status};
+use napi::bindgen_prelude::{validate_type_tag, FromNapiValue, Function, Status, TypeTag};
 use napi::threadsafe_function::{
     ThreadsafeCallContext, ThreadsafeFunction, ThreadsafeFunctionCallMode,
 };
@@ -14,33 +15,36 @@ use polars_plan::dsl::anonymous::{new_column_udf, AnonymousColumnsUdf, ColumnsUd
 use polars_plan::prelude::{FunctionFlags, FunctionOptions};
 
 use crate::conversion::Wrap;
+use crate::series::JsSeries;
 
-type MapBatchesTsfn = ThreadsafeFunction<
-    Buffer,
-    Buffer,
-    Vec<Buffer>,
-    Status,
-    false,
-    false,
-    0,
->;
+type MapBatchesTsfn = ThreadsafeFunction<Series, ReturnedSeries, JsSeries, Status, false, true, 0>;
 
-fn bin_config() -> bincode::config::Configuration {
-    bincode::config::standard()
-        .with_no_limit()
-        .with_variable_int_encoding()
-}
+/// Series returned by the JavaScript callback.
+///
+/// `FromNapiValue` clones the `Series` (`Arc` clone of the buffers) out of the
+/// live `JsSeries` so the JS wrapper can be collected later without freeing data
+/// the engine still holds.
+pub struct ReturnedSeries(Series);
 
-fn series_to_bytes(s: &Series) -> PolarsResult<Vec<u8>> {
-    bincode::serde::encode_to_vec(s, bin_config()).map_err(|e| {
-        polars_err!(ComputeError: "mapBatches failed to encode Series: {}", e)
-    })
-}
-
-fn series_from_bytes(buf: &[u8]) -> PolarsResult<Series> {
-    bincode::serde::decode_from_slice(buf, bin_config())
-        .map(|(s, _)| s)
-        .map_err(|e| polars_err!(ComputeError: "mapBatches failed to decode Series: {}", e))
+impl FromNapiValue for ReturnedSeries {
+    unsafe fn from_napi_value(
+        env: napi::sys::napi_env,
+        napi_val: napi::sys::napi_value,
+    ) -> napi::Result<Self> {
+        let mut wrapped = std::ptr::null_mut();
+        napi::check_status!(
+            unsafe { napi::sys::napi_unwrap(env, napi_val, &mut wrapped) },
+            "mapBatches callback must return a polars Series"
+        )?;
+        unsafe { validate_type_tag(env, napi_val, &JsSeries::type_tag(), "JsSeries")? };
+        if wrapped.is_null() {
+            return Err(napi::Error::from_reason(
+                "mapBatches callback must return a polars Series".to_owned(),
+            ));
+        }
+        let series = unsafe { (*wrapped.cast::<JsSeries>()).series.clone() };
+        Ok(Self(series))
+    }
 }
 
 fn align_output_dtype(out: Series, field: &Field) -> PolarsResult<Series> {
@@ -75,14 +79,18 @@ pub struct JsMapBatchesUdf {
 
 impl JsMapBatchesUdf {
     pub fn new(
-        callback: Function<'_, (Buffer,), Buffer>,
+        callback: Function<'_, (JsSeries,), ReturnedSeries>,
         return_type: Option<DataType>,
         is_elementwise: bool,
         returns_scalar: bool,
     ) -> napi::Result<Self> {
         let tsfn = callback
-            .build_threadsafe_function::<Buffer>()
-            .build_callback(|ctx: ThreadsafeCallContext<Buffer>| Ok(vec![ctx.value]))?;
+            .build_threadsafe_function::<Series>()
+            // Leave the event loop free to exit once the query promise settles.
+            .weak::<true>()
+            .build_callback(|ctx: ThreadsafeCallContext<Series>| {
+                Ok(JsSeries::reported(ctx.value, &ctx.env))
+            })?;
         Ok(Self {
             tsfn: Arc::new(tsfn),
             return_type,
@@ -120,20 +128,16 @@ impl JsMapBatchesUdf {
         })
     }
 
-    fn invoke_js(&self, input_bytes: Vec<u8>) -> PolarsResult<Series> {
-        if input_bytes.is_empty() {
-            polars_bail!(ComputeError: "mapBatches encoded empty batch");
-        }
-
+    fn invoke_js(&self, input: Series) -> PolarsResult<Series> {
         let (tx, rx) = std::sync::mpsc::sync_channel::<PolarsResult<Series>>(1);
 
         let status = self.tsfn.call_with_return_value(
-            Buffer::from(input_bytes),
+            input,
             ThreadsafeFunctionCallMode::Blocking,
             move |ret, _env| {
-                let out: PolarsResult<Series> = ret
-                    .map_err(|e| polars_err!(ComputeError: "{}", e))
-                    .and_then(|buf| series_from_bytes(buf.as_ref()));
+                let out = ret
+                    .map(|returned| returned.0)
+                    .map_err(|e| polars_err!(ComputeError: "{}", e));
                 let _ = tx.send(out);
                 Ok(())
             },
@@ -146,10 +150,9 @@ impl JsMapBatchesUdf {
             );
         }
 
-        rx.recv()
-            .map_err(|_| {
-                polars_err!(ComputeError: "mapBatches callback channel closed unexpectedly")
-            })?
+        rx.recv().map_err(
+            |_| polars_err!(ComputeError: "mapBatches callback channel closed unexpectedly"),
+        )?
     }
 }
 
@@ -161,8 +164,7 @@ impl ColumnsUdf for JsMapBatchesUdf {
             .first_mut()
             .ok_or_else(|| polars_err!(ComputeError: "mapBatches expects one input column"))?;
         let input_col = std::mem::take(input_col);
-        let input_bytes = series_to_bytes(&input_col.take_materialized_series())?;
-        let out = self.invoke_js(input_bytes)?;
+        let out = self.invoke_js(input_col.take_materialized_series())?;
         let out = align_output_dtype(out, field)?;
         Ok(out.into_column())
     }
@@ -185,9 +187,9 @@ impl AnonymousColumnsUdf for JsMapBatchesUdf {
     }
 
     fn get_field(&self, _input_schema: &Schema, fields: &[Field]) -> PolarsResult<Field> {
-        let input = fields.first().ok_or_else(|| {
-            polars_err!(ComputeError: "mapBatches expects one input column")
-        })?;
+        let input = fields
+            .first()
+            .ok_or_else(|| polars_err!(ComputeError: "mapBatches expects one input column"))?;
 
         Ok(self
             .materialized_field

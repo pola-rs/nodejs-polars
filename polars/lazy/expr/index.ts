@@ -22,10 +22,9 @@ export interface MapBatchesOptions {
 
 import { isRegExp } from "node:util/types";
 import type { DataType } from "../../datatypes";
-import { Buffer as NodeBuffer } from "node:buffer";
 import { InvalidOperationError } from "../../error";
 import pli from "../../internals/polars_internal";
-import { Series, _Series } from "../../series";
+import { _Series, Series } from "../../series";
 import type {
   Arithmetic,
   Comparison,
@@ -641,14 +640,32 @@ export interface Expr
    *
    * @param fn Batch callback.
    * @param options Output dtype and streaming hints.
+   * @example
+   * ```
+   * > pl.DataFrame({ id: [10, 20, 30] })
+   * ...   .lazy()
+   * ...   .select(pl.col("id").mapBatches((s) => s.mul(2)).alias("id2"))
+   * ...   .collect()
+   * shape: (3, 1)
+   * ┌──────┐
+   * │ id2  │
+   * │ ---  │
+   * │ i64  │
+   * ╞══════╡
+   * │ 20   │
+   * ├╌╌╌╌╌╌┤
+   * │ 40   │
+   * ├╌╌╌╌╌╌┤
+   * │ 60   │
+   * ╰──────╯
+   * ```
    */
+  mapBatches(fn: (s: Series) => Series, options?: MapBatchesOptions): Expr;
   mapBatches(
-    fn: (s: Series) => Series,
-    options?: MapBatchesOptions,
+    options: {
+      fn: (s: Series) => Series;
+    } & MapBatchesOptions,
   ): Expr;
-  mapBatches(options: {
-    fn: (s: Series) => Series;
-  } & MapBatchesOptions): Expr;
   /** Take the first n values.  */
   head(length?: number): Expr;
   head({ length }: { length: number }): Expr;
@@ -1915,19 +1932,16 @@ export const _Expr = (_expr: any): Expr => {
         fn = fnOrOpts.fn;
         opts = fnOrOpts;
       }
-      const adapter = (payload: Buffer | Buffer[]) => {
-        const batch = Array.isArray(payload) ? payload[0]! : payload;
-        let input: Series;
-        try {
-          input = Series.deserialize(batch, "bincode");
-        } catch (err: any) {
-          throw new InvalidOperationError(`mapBatches failed to decode batch (len=${batch.length}): ${err?.message ?? err}`,"Series",);
-        }
+      const adapter = (native: any) => {
+        const input = _Series(native);
         const out = fn(input);
         if (!Series.isSeries(out)) {
-          throw new InvalidOperationError("mapBatches callback must return a polars Series", "Series");
+          throw new InvalidOperationError(
+            "mapBatches callback must return a polars Series",
+            "Series",
+          );
         }
-        return out.serialize("bincode");
+        return out.inner();
       };
       return _Expr(_expr.mapBatches(adapter, opts));
     },
