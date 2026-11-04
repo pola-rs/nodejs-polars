@@ -621,7 +621,7 @@ export interface Expr
   gatherEvery(n: number, offset?: number): Expr;
   /** Hash the Series. */
   hash(k0?: number, k1?: number, k2?: number, k3?: number): Expr;
-  map({
+  hash({
     k0,
     k1,
     k2,

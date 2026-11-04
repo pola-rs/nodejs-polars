@@ -33,16 +33,16 @@ impl FromNapiValue for ReturnedSeries {
     ) -> napi::Result<Self> {
         let mut wrapped = std::ptr::null_mut();
         napi::check_status!(
-            unsafe { napi::sys::napi_unwrap(env, napi_val, &mut wrapped) },
+            napi::sys::napi_unwrap(env, napi_val, &mut wrapped),
             "mapBatches callback must return a polars Series"
         )?;
-        unsafe { validate_type_tag(env, napi_val, &JsSeries::type_tag(), "JsSeries")? };
+       validate_type_tag(env, napi_val, &JsSeries::type_tag(), "JsSeries")?;
         if wrapped.is_null() {
             return Err(napi::Error::from_reason(
                 "mapBatches callback must return a polars Series".to_owned(),
             ));
         }
-        let series = unsafe { (*wrapped.cast::<JsSeries>()).series.clone() };
+        let series = (*wrapped.cast::<JsSeries>()).series.clone();
         Ok(Self(series))
     }
 }
