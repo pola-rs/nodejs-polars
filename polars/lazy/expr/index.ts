@@ -8,10 +8,23 @@ export type { ExprList as ListNamespace } from "./list";
 export type { ExprString as StringNamespace } from "./string";
 export type { ExprStruct as StructNamespace } from "./struct";
 
+export interface MapBatchesOptions {
+  /** Expected dtype of the returned series. */
+  returnType?: DataType;
+  /**
+   * Whether the UDF preserves one output row per input row within a batch.
+   * @default true
+   */
+  isElementwise?: boolean;
+  /** Whether the UDF returns a single scalar value per batch. @default false */
+  returnsScalar?: boolean;
+}
+
 import { isRegExp } from "node:util/types";
 import type { DataType } from "../../datatypes";
+import { InvalidOperationError } from "../../error";
 import pli from "../../internals/polars_internal";
-import { Series } from "../../series";
+import { _Series, Series } from "../../series";
 import type {
   Arithmetic,
   Comparison,
@@ -619,6 +632,40 @@ export interface Expr
     k2?: number;
     k3?: number;
   }): Expr;
+  /**
+   * Apply a JavaScript function to each batch of values in a lazy expression.
+   *
+   * The function receives a {@link Series} for the current batch and must return a
+   * {@link Series} of the same length (unless `returnsScalar` is set).
+   *
+   * @param fn Batch callback.
+   * @param options Output dtype and streaming hints.
+   * @example
+   * ```
+   * > pl.DataFrame({ id: [10, 20, 30] })
+   * ...   .lazy()
+   * ...   .select(pl.col("id").mapBatches((s) => s.mul(2)).alias("id2"))
+   * ...   .collect()
+   * shape: (3, 1)
+   * ┌──────┐
+   * │ id2  │
+   * │ ---  │
+   * │ i64  │
+   * ╞══════╡
+   * │ 20   │
+   * ├╌╌╌╌╌╌┤
+   * │ 40   │
+   * ├╌╌╌╌╌╌┤
+   * │ 60   │
+   * ╰──────╯
+   * ```
+   */
+  mapBatches(fn: (s: Series) => Series, options?: MapBatchesOptions): Expr;
+  mapBatches(
+    options: {
+      fn: (s: Series) => Series;
+    } & MapBatchesOptions,
+  ): Expr;
   /** Take the first n values.  */
   head(length?: number): Expr;
   head({ length }: { length: number }): Expr;
@@ -1874,6 +1921,29 @@ export const _Expr = (_expr: any): Expr => {
         BigInt(o.k2),
         BigInt(o.k3),
       );
+    },
+    mapBatches(fnOrOpts: any, options?: MapBatchesOptions) {
+      let fn: (s: Series) => Series;
+      let opts: MapBatchesOptions;
+      if (typeof fnOrOpts === "function") {
+        fn = fnOrOpts;
+        opts = options ?? {};
+      } else {
+        fn = fnOrOpts.fn;
+        opts = fnOrOpts;
+      }
+      const adapter = (native: any) => {
+        const input = _Series(native);
+        const out = fn(input);
+        if (!Series.isSeries(out)) {
+          throw new InvalidOperationError(
+            "mapBatches callback must return a polars Series",
+            "Series",
+          );
+        }
+        return out.inner();
+      };
+      return _Expr(_expr.mapBatches(adapter, opts));
     },
     head(length) {
       if (typeof length === "number") {

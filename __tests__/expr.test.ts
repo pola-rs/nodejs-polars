@@ -3162,3 +3162,62 @@ describe("EWM", () => {
     assertSeriesEqual(seriesActual, expected.getColumn("ewmVar"));
   });
 });
+
+describe("mapBatches", () => {
+  test("mapBatches", async () => {
+    const lf = pl
+      .DataFrame({ id: [1, 2, 3, 2] })
+      .lazy()
+      .select(
+        col("id")
+          .mapBatches((s) => s.hash(), { returnType: pl.UInt64 })
+          .alias("id_hash"),
+      );
+    const expected = pl.DataFrame({
+      id_hash: pl.Series([1, 2, 3, 2]).hash(),
+    });
+    const actual = await lf.collect();
+    assertFrameEqual(actual, expected);
+  });
+
+  test("mapBatches streaming", async () => {
+    const lf = pl
+      .DataFrame({ id: [10, 20, 30] })
+      .lazy()
+      .select(
+        col("id")
+          .mapBatches((s) => s.mul(2))
+          .alias("id2"),
+      );
+    const expected = pl.DataFrame({ id2: [20, 40, 60] });
+    const actual = await lf.collect({ streaming: true });
+    assertFrameEqual(actual, expected);
+  });
+
+  test("mapBatches javascript values", async () => {
+    const lf = pl
+      .DataFrame({ name: ["a", null, "c"] })
+      .lazy()
+      .select(
+        col("name")
+          .mapBatches((s) =>
+            pl.Series(
+              "name",
+              s.toArray().map((v) => (v == null ? null : `${v}!`)),
+            ),
+          )
+          .alias("name"),
+      );
+    const expected = pl.DataFrame({ name: ["a!", null, "c!"] });
+    const actual = await lf.collect();
+    assertFrameEqual(actual, expected);
+  });
+
+  test("mapBatches rejects a non-series return", async () => {
+    const lf = pl
+      .DataFrame({ id: [1] })
+      .lazy()
+      .select(col("id").mapBatches(() => 1 as any));
+    await assert.rejects(() => lf.collect(), /polars Series/);
+  });
+});

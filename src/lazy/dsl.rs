@@ -1,6 +1,8 @@
 use crate::conversion::Wrap;
+use crate::lazy::js_udf::{JsMapBatchesOptions, JsMapBatchesUdf};
 use crate::prelude::*;
 use crate::series::JsSeries;
+use napi::bindgen_prelude::Function;
 use polars::chunked_array::ops::reinterpret as pl_reinterpret;
 use polars::lazy::dsl;
 use polars::lazy::dsl::Expr;
@@ -1611,6 +1613,27 @@ impl JsExpr {
             .with_fields(fields.to_exprs())
             .into()
     }
+    #[napi(catch_unwind)]
+    pub fn map_batches(
+        &self,
+        _env: Env,
+        callback: Function<'_, (JsSeries,), crate::lazy::js_udf::ReturnedSeries>,
+        options: Option<JsMapBatchesOptions>,
+    ) -> JsResult<JsExpr> {
+        let options = options.unwrap_or(JsMapBatchesOptions {
+            return_type: None,
+            is_elementwise: None,
+            returns_scalar: None,
+        });
+        let udf = JsMapBatchesUdf::new(
+            callback,
+            options.return_type.map(|w| w.0),
+            options.is_elementwise.unwrap_or(true),
+            options.returns_scalar.unwrap_or(false),
+        )?;
+        Ok(udf.into_expr(self.inner.clone()).into())
+    }
+
     #[napi(catch_unwind)]
     pub fn log(&self, base: f64) -> JsExpr {
         self.inner.clone().log(base.into()).into()
