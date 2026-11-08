@@ -246,9 +246,10 @@ impl JsLazyFrame {
     }
 
     #[napi(ts_return_type = "Promise<JsDataFrame>", catch_unwind)]
-    pub fn collect(&self) -> AsyncTask<AsyncCollect> {
+    pub fn collect(&self, engine: Option<Wrap<Engine>>) -> AsyncTask<AsyncCollect> {
         let ldf = self.ldf.clone();
-        AsyncTask::new(AsyncCollect(ldf))
+        let engine = engine.map(|w| w.0).unwrap_or(Engine::Auto);
+        AsyncTask::new(AsyncCollect(ldf, engine))
     }
 
     #[napi(catch_unwind)]
@@ -1136,15 +1137,23 @@ impl Task for AsyncFetch {
         Ok(JsDataFrame::reported(df, &env))
     }
 }
-pub struct AsyncCollect(LazyFrame);
+pub struct AsyncCollect(LazyFrame, Engine);
 
 impl Task for AsyncCollect {
     type Output = DataFrame;
     type JsValue = JsDataFrame;
 
     fn compute(&mut self) -> napi::Result<Self::Output> {
-        let ldf = self.0.clone();
-        let df = ldf.collect().map_err(JsPolarsErr::from)?;
+        let df = self
+            .0
+            .clone()
+            .collect_with_engine(self.1)
+            .map(|r| match r {
+                QueryResult::Single(df) => df,
+                // TODO: Should return query results
+                QueryResult::Multiple(_) => DataFrame::empty(),
+            })
+            .map_err(JsPolarsErr::from)?;
         Ok(df)
     }
 

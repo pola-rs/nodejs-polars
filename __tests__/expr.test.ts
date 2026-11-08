@@ -1,5 +1,6 @@
 /* eslint-disable newline-per-chained-call */
 
+import path from "node:path";
 import pl, { col, lit } from "../polars";
 
 const df = () => {
@@ -3194,6 +3195,23 @@ describe("mapBatches", () => {
     assertFrameEqual(actual, expected);
   });
 
+  test("mapBatches streaming over scanCSV", async () => {
+    const csvpath = path.resolve(__dirname, "./examples/datasets/foods1.csv");
+    const lf = pl.scanCSV(csvpath).select(
+      col("category")
+        .mapBatches((s) => s.hash(), { returnType: pl.UInt64 })
+        .alias("category_hash"),
+    );
+    // The streaming engine must produce the same result as the in-memory engine.
+    const inMemory = await lf.clone().collect();
+    const streaming = await lf.collect({ streaming: true });
+    assertFrameEqual(streaming, inMemory);
+    assert.deepStrictEqual(
+      streaming.getColumn("category_hash").dtype,
+      pl.UInt64,
+    );
+  });
+
   test("mapBatches javascript values", async () => {
     const lf = pl
       .DataFrame({ name: ["a", null, "c"] })
@@ -3213,11 +3231,63 @@ describe("mapBatches", () => {
     assertFrameEqual(actual, expected);
   });
 
+  test("mapBatches returnsScalar broadcasts a scalar", async () => {
+    const lf = pl
+      .DataFrame({ id: [1, 2, 3] })
+      .lazy()
+      .select(
+        col("id"),
+        col("id")
+          .mapBatches((s) => s.max() + 1, {
+            returnType: pl.Float64,
+            returnsScalar: true,
+          })
+          .alias("max"),
+      );
+    const expected = pl.DataFrame({ id: [1, 2, 3], max: [4, 4, 4] });
+    assertFrameEqual(await lf.collect(), expected);
+  });
+
+  test("mapBatches returnsScalar ignores isElementwise", async () => {
+    const lf = pl
+      .DataFrame({ id: [1, 2, 3] })
+      .lazy()
+      .select(
+        col("id"),
+        col("id")
+          .mapBatches(() => 7, {
+            returnType: pl.Int64,
+            returnsScalar: true,
+            isElementwise: true,
+          })
+          .alias("seven"),
+      );
+    const expected = pl.DataFrame({ id: [1, 2, 3], seven: [7, 7, 7] });
+    assertFrameEqual(await lf.collect(), expected);
+  });
+
+  test("mapBatches returnsScalar in streaming", async () => {
+    const lf = pl
+      .DataFrame({ id: [1, 2, 3] })
+      .lazy()
+      .select(
+        col("id"),
+        col("id")
+          .mapBatches((s) => s.max(), {
+            returnType: pl.Float64,
+            returnsScalar: true,
+          })
+          .alias("max"),
+      );
+    const expected = pl.DataFrame({ id: [1, 2, 3], max: [3, 3, 3] });
+    assertFrameEqual(await lf.collect({ streaming: true }), expected);
+  });
+
   test("mapBatches rejects a non-series return", async () => {
     const lf = pl
       .DataFrame({ id: [1] })
       .lazy()
       .select(col("id").mapBatches(() => 1 as any));
-    await assert.rejects(() => lf.collect(), /polars Series/);
+    await assert.rejects(() => lf.collect(), /is not supported for Series/);
   });
 });

@@ -424,6 +424,11 @@ export type LazyOptions = {
   commSubplanElim?: boolean;
   commSubexprElim?: boolean;
   streaming?: boolean;
+  /**
+   * Engine used to execute the query. Defaults to `"streaming"` when
+   * `streaming` is `true`, otherwise `"auto"`.
+   */
+  engine?: Engine;
 };
 
 /**

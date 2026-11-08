@@ -2510,12 +2510,12 @@ describe("io", () => {
     assert.deepStrictEqual(actual, expected);
   });
   test("toRecords:date", () => {
+    const dt = new Date(Date.UTC(2026, 0, 1, 6, 0, 0));
     const df = pl
       .DataFrame({
-        date: [new Date()],
+        date: [dt],
       })
       .withColumn(pl.col("date").cast(pl.Date).alias("date"));
-    const dt = new Date();
     const expected = [
       {
         date: new Date(

@@ -36,7 +36,7 @@ impl FromNapiValue for ReturnedSeries {
             napi::sys::napi_unwrap(env, napi_val, &mut wrapped),
             "mapBatches callback must return a polars Series"
         )?;
-       validate_type_tag(env, napi_val, &JsSeries::type_tag(), "JsSeries")?;
+        validate_type_tag(env, napi_val, &JsSeries::type_tag(), "JsSeries")?;
         if wrapped.is_null() {
             return Err(napi::Error::from_reason(
                 "mapBatches callback must return a polars Series".to_owned(),
@@ -102,11 +102,11 @@ impl JsMapBatchesUdf {
 
     pub fn into_expr(self, input: Expr) -> Expr {
         let mut flags = FunctionFlags::default() | FunctionFlags::OPTIONAL_RE_ENTRANT;
-        if self.is_elementwise {
-            flags.set_elementwise();
-        }
         if self.returns_scalar {
+            // `returns_scalar` and length-preserving (elementwise) are mutually exclusive.
             flags |= FunctionFlags::RETURNS_SCALAR;
+        } else if self.is_elementwise {
+            flags.set_elementwise();
         }
 
         Expr::AnonymousFunction {

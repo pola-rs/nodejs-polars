@@ -1628,7 +1628,7 @@ impl JsExpr {
         let udf = JsMapBatchesUdf::new(
             callback,
             options.return_type.map(|w| w.0),
-            options.is_elementwise.unwrap_or(true),
+            options.is_elementwise.unwrap_or(false),
             options.returns_scalar.unwrap_or(false),
         )?;
         Ok(udf.into_expr(self.inner.clone()).into())
