@@ -19,6 +19,7 @@ napi-derive = { version = "3.6.5", default-features = false }
 polars-core = { version = "0.55.2", default-features = false }
 polars-io = { version = "0.55.2", default-features = false }
 polars-lazy = { version = "0.55.2", default-features = false }
+polars-plan = { version = "0.55.2", default-features = false }
 polars-ops = { version = "0.55.2", default-features = false }
 polars-arrow = { version = "0.55.2", default-features = false }
 polars-utils = { version = "0.55.2", default-features = false }

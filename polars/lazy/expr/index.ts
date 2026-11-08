@@ -10,8 +10,9 @@ export type { ExprStruct as StructNamespace } from "./struct";
 
 import { isRegExp } from "node:util/types";
 import type { DataType } from "../../datatypes";
+import { InvalidOperationError } from "../../error";
 import pli from "../../internals/polars_internal";
-import { Series } from "../../series";
+import { _Series, Series } from "../../series";
 import type {
   Arithmetic,
   Comparison,
@@ -543,7 +544,7 @@ export interface Expr
   /**
    * Compute the exponential, element-wise.
    * @example
-   * ``` 
+   * ```
     >>> const df = pl.DataFrame({"values": [1.0, 2.0, 4.0]})
     >>> df.select(pl.col("values").exp())
     shape: (3, 1)
@@ -619,6 +620,44 @@ export interface Expr
     k2?: number;
     k3?: number;
   }): Expr;
+  /**
+   * Apply a JavaScript function to each batch of values in a lazy expression.
+   *
+   * The function receives a {@link Series} for the current batch and must return a
+   * {@link Series} of the same length, or a scalar when `returnsScalar` is set. A
+   * returned scalar is broadcast across the batch.
+   *
+   * @param fn Lambda/function to apply.
+   * @param options Output dtype and streaming hints.
+   * @example
+   * ```
+   * > pl.DataFrame({ id: [10, 20, 30] })
+   * ...   .lazy()
+   * ...   .select(pl.col("id").mapBatches((s) => s.mul(2)).alias("id2"))
+   * ...   .collect()
+   * shape: (3, 1)
+   * ┌──────┐
+   * │ id2  │
+   * │ ---  │
+   * │ i64  │
+   * ╞══════╡
+   * │ 20   │
+   * ├╌╌╌╌╌╌┤
+   * │ 40   │
+   * ├╌╌╌╌╌╌┤
+   * │ 60   │
+   * ╰──────╯
+   * ```
+   */
+  mapBatches(
+    fn: (s: Series) => Series | MapBatchesScalar,
+    options?: MapBatchesOptions,
+  ): Expr;
+  mapBatches(
+    options: {
+      fn: (s: Series) => Series | MapBatchesScalar;
+    } & MapBatchesOptions,
+  ): Expr;
   /** Take the first n values.  */
   head(length?: number): Expr;
   head({ length }: { length: number }): Expr;
@@ -1162,7 +1201,7 @@ export interface Expr
     │ 2   ┆ 5.0 ┆ 5.0      │
     │ 3   ┆ 1.0 ┆ 10.0     │
     └─────┴─────┴──────────┘
-   * ``` 
+   * ```
    */
   replaceStrict(
     old: Expr | string | number | (number | string)[],
@@ -1875,6 +1914,37 @@ export const _Expr = (_expr: any): Expr => {
         BigInt(o.k3),
       );
     },
+    mapBatches(fnOrOpts: any, options?: MapBatchesOptions) {
+      let fn: (s: Series) => Series | MapBatchesScalar;
+      let opts: MapBatchesOptions;
+      if (typeof fnOrOpts === "function") {
+        fn = fnOrOpts;
+        opts = options ?? {};
+      } else {
+        fn = fnOrOpts.fn;
+        opts = fnOrOpts;
+      }
+      const adapter = (native: any) => {
+        const input = _Series(native);
+        const out = fn(input);
+        if (Series.isSeries(out)) {
+          return out.inner();
+        }
+        if (opts.returnsScalar && isScalarValue(out)) {
+          const shape = [out === undefined ? null : out] as any[];
+          const scalarSeries =
+            opts.returnType === undefined
+              ? Series(input.name, shape)
+              : Series(input.name, shape, opts.returnType);
+          return scalarSeries.inner();
+        }
+        throw new InvalidOperationError(
+          "mapBatches callback must return a polars ",
+          "Series",
+        );
+      };
+      return _Expr(_expr.mapBatches(adapter, opts));
+    },
     head(length) {
       if (typeof length === "number") {
         return wrap("head", length);
@@ -2290,6 +2360,15 @@ export interface ExprConstructor extends Deserialize<Expr> {
   isExpr(arg: any): arg is Expr;
 }
 
+const isScalarValue = (anyVal: unknown): anyVal is MapBatchesScalar =>
+  anyVal === null ||
+  anyVal === undefined ||
+  typeof anyVal === "number" ||
+  typeof anyVal === "bigint" ||
+  typeof anyVal === "string" ||
+  typeof anyVal === "boolean" ||
+  anyVal instanceof Date;
+
 const isExpr = (anyVal: any): anyVal is Expr => {
   try {
     return anyVal?.[Symbol.toStringTag]?.() === "Expr";
@@ -2333,6 +2412,33 @@ export interface DatetimeOptions {
   /** How to handle ambiguous datetimes: `"earliest"`, `"latest"`, `"raise"`, or `"null"`. */
   ambiguous?: ExprOrString;
 }
+
+export interface MapBatchesOptions {
+  /** Expected dtype of the returned series. */
+  returnType?: DataType;
+  /**
+   * Whether the UDF preserves one output row per input row within a batch.
+   * @default false
+   */
+  isElementwise?: boolean;
+  /**
+   * Whether the UDF returns a single scalar value per batch, which is then
+   * broadcast across the batch. Mutually exclusive with `isElementwise`; when
+   * set, `isElementwise` is ignored.
+   * @default false
+   */
+  returnsScalar?: boolean;
+}
+
+/** A scalar value a `mapBatches` callback may return when `returnsScalar` is set. */
+export type MapBatchesScalar =
+  | number
+  | bigint
+  | string
+  | boolean
+  | Date
+  | null
+  | undefined;
 
 /**
  * Create an expression of type `Datetime` from its components.
