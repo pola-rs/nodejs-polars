@@ -1,7 +1,12 @@
-import pl, { DataType } from "../polars";
+import pl, { DataType, type Enum } from "../polars";
 
 describe("Enum dtype", () => {
   const levels = pl.Enum(["low", "medium", "high"]);
+
+  function expectEnumDtype(dtype: unknown, expected: string[]) {
+    assert.strictEqual((dtype as Enum).variant, "Enum");
+    assert.deepStrictEqual((dtype as Enum).categories, expected);
+  }
 
   it("constructs Enum with readable categories", () => {
     assert.deepStrictEqual(levels.categories, ["low", "medium", "high"]);
@@ -14,12 +19,7 @@ describe("Enum dtype", () => {
       .withColumns(pl.col("level").cast(levels));
 
     const dtype = df.dtypes[0];
-    assert.strictEqual(dtype.variant, "Enum");
-    assert.deepStrictEqual((dtype as import("../polars").Enum).categories, [
-      "low",
-      "medium",
-      "high",
-    ]);
+    expectEnumDtype(dtype, ["low", "medium", "high"]);
   });
 
   it("sorts by category order, not lexical order", () => {
@@ -42,12 +42,7 @@ describe("Enum dtype", () => {
 
     const restored = pl.readParquet(df.writeParquet());
     const dtype = restored.dtypes[0];
-    assert.strictEqual(dtype.variant, "Enum");
-    assert.deepStrictEqual((dtype as import("../polars").Enum).categories, [
-      "low",
-      "medium",
-      "high",
-    ]);
+    expectEnumDtype(dtype, ["low", "medium", "high"]);
   });
 
   it("round-trips through IPC", () => {
@@ -58,12 +53,7 @@ describe("Enum dtype", () => {
     const buff = df.writeIPC();
     const restored = pl.readIPC(buff);
     const dtype = restored.dtypes[0];
-    assert.strictEqual(dtype.variant, "Enum");
-    assert.deepStrictEqual((dtype as import("../polars").Enum).categories, [
-      "low",
-      "medium",
-      "high",
-    ]);
+    expectEnumDtype(dtype, ["low", "medium", "high"]);
     assert.deepStrictEqual(restored.getColumn("level").toArray(), [
       "high",
       "low",
