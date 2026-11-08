@@ -608,8 +608,7 @@ impl JsSeries {
                 maintain_order,
                 limit: None,
             })
-            .into_series()
-            ;
+            .into_series();
         JsSeries::reported(series, &env)
     }
     #[napi(catch_unwind)]
@@ -1025,7 +1024,11 @@ impl JsSeries {
     }
 
     #[napi(catch_unwind)]
-    pub fn str_json_path_match(&self, env: Env, pat: Wrap<StringChunked>) -> napi::Result<JsSeries> {
+    pub fn str_json_path_match(
+        &self,
+        env: Env,
+        pat: Wrap<StringChunked>,
+    ) -> napi::Result<JsSeries> {
         let ca = self.series.str().map_err(JsPolarsErr::from)?;
         let s = ca
             .json_path_match(&pat.0)
@@ -1099,7 +1102,12 @@ impl JsSeries {
         Ok(JsSeries::reported(s, &env))
     }
     #[napi(catch_unwind)]
-    pub fn str_pad_start(&self, env: Env, length: Vec<i64>, fill_char: String) -> napi::Result<JsSeries> {
+    pub fn str_pad_start(
+        &self,
+        env: Env,
+        length: Vec<i64>,
+        fill_char: String,
+    ) -> napi::Result<JsSeries> {
         let fill_char = parse_fill_char(fill_char)?;
         let vec_ulen = length.into_iter().map(|x| x as u64).collect();
         let chunked_len = UInt64Chunked::from_vec("str_pad_start_length".into(), vec_ulen);
@@ -1108,7 +1116,12 @@ impl JsSeries {
         Ok(JsSeries::reported(s, &env))
     }
     #[napi(catch_unwind)]
-    pub fn str_pad_end(&self, env: Env, length: Vec<i64>, fill_char: String) -> napi::Result<JsSeries> {
+    pub fn str_pad_end(
+        &self,
+        env: Env,
+        length: Vec<i64>,
+        fill_char: String,
+    ) -> napi::Result<JsSeries> {
         let fill_char = parse_fill_char(fill_char)?;
         let vec_ulen = length.into_iter().map(|x| x as u64).collect();
         let chunked_len = UInt64Chunked::from_vec("str_pad_start_length".into(), vec_ulen);
@@ -1258,7 +1271,14 @@ impl JsSeries {
     }
 
     #[napi(catch_unwind)]
-    pub fn hash(&self, env: Env, k0: Wrap<u64>, k1: Wrap<u64>, k2: Wrap<u64>, k3: Wrap<u64>) -> JsSeries {
+    pub fn hash(
+        &self,
+        env: Env,
+        k0: Wrap<u64>,
+        k1: Wrap<u64>,
+        k2: Wrap<u64>,
+        k3: Wrap<u64>,
+    ) -> JsSeries {
         let seed = PlFixedStateQuality::default().hash_one((k0.0, k1.0, k2.0, k3.0));
         let hb = PlSeedableRandomStateQuality::seed_from_u64(seed);
         JsSeries::reported(self.series.hash(hb).into_series(), &env)
@@ -1298,7 +1318,12 @@ impl JsSeries {
         Ok(JsSeries::reported(self.series.rank(options, seed), &env))
     }
     #[napi(catch_unwind)]
-    pub fn diff(&self, env: Env, n: i64, null_behavior: Wrap<NullBehavior>) -> napi::Result<JsSeries> {
+    pub fn diff(
+        &self,
+        env: Env,
+        n: i64,
+        null_behavior: Wrap<NullBehavior>,
+    ) -> napi::Result<JsSeries> {
         let s = diff(&self.series, n, null_behavior.0).map_err(JsPolarsErr::from)?;
         Ok(JsSeries::reported(s, &env))
     }
@@ -1319,7 +1344,12 @@ impl JsSeries {
     }
 
     #[napi(catch_unwind)]
-    pub fn cast(&self, env: Env, dtype: Wrap<DataType>, strict: Option<bool>) -> napi::Result<JsSeries> {
+    pub fn cast(
+        &self,
+        env: Env,
+        dtype: Wrap<DataType>,
+        strict: Option<bool>,
+    ) -> napi::Result<JsSeries> {
         let strict = strict.unwrap_or(false);
         let dtype = dtype.0;
         let out = if strict {
@@ -1353,7 +1383,12 @@ impl JsSeries {
     }
 
     #[napi(catch_unwind)]
-    pub fn extend_constant(&self, env: Env, value: Wrap<AnyValue>, n: i64) -> napi::Result<JsSeries> {
+    pub fn extend_constant(
+        &self,
+        env: Env,
+        value: Wrap<AnyValue>,
+        n: i64,
+    ) -> napi::Result<JsSeries> {
         let out = self
             .series
             .extend_constant(value.0, n as usize)

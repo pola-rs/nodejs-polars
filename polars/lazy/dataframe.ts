@@ -62,7 +62,10 @@ export interface LazyDataFrame<S extends Schema = any>
    * @param opts.noOptimization - Turn off optimizations.
    * @param opts.commSubplanElim - Will try to cache branching subplans that occur on self-joins or unions.
    * @param opts.commSubexprElim - Common subexpressions will be cached and reused.
+   * @param opts.engine - Engine used to execute the query. Defaults to `"streaming"`
+            when `opts.streaming` is `true`, otherwise `"auto"`.
    * @param opts.streaming - Process the query in batches to handle larger-than-memory data.
+            Implies `engine: "streaming"` unless `engine` is set explicitly.
             If set to `False` (default), the entire query is processed in a single
             batch.
 
@@ -968,7 +971,8 @@ export const _LazyDataFrame = (_ldf: any): LazyDataFrame => {
         );
       }
 
-      return _ldf.collect().then(_DataFrame);
+      const engine = opts?.engine ?? (opts?.streaming ? "streaming" : "auto");
+      return _ldf.collect(engine).then(_DataFrame);
     },
     drop(...cols) {
       return _LazyDataFrame(_ldf.dropColumns(cols.flat(2)));
