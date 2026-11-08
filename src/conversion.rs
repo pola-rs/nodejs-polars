@@ -2,6 +2,7 @@ use crate::lazy::dsl::JsExpr;
 use crate::prelude::*;
 use napi::bindgen_prelude::*;
 use polars_arrow::temporal_conversions::time64ns_to_time;
+use polars_dtype::categorical::{CatSize, FrozenCategories};
 use polars_core::config::verbose_print_sensitive;
 use polars_core::series::ops::NullBehavior;
 use polars_io::cloud::{CloudOptions, CloudRetryConfig};
@@ -174,6 +175,10 @@ impl<'a> ToNapiValue for Wrap<AnyValue<'a>> {
                 let s = unsafe { lmap.cat_to_str_unchecked(cat) };
                 String::to_napi_value(env, s.to_string())
             }
+            AnyValue::Enum(cat, &ref lmap) | AnyValue::EnumOwned(cat, ref lmap) => {
+                let s = unsafe { lmap.cat_to_str_unchecked(cat) };
+                String::to_napi_value(env, s.to_string())
+            }
             AnyValue::Duration(v, _) => i64::to_napi_value(env, v),
             AnyValue::Time(v) => {
                 String::to_napi_value(env, time64ns_to_time(v).format("%T%.f").to_string())
@@ -181,14 +186,12 @@ impl<'a> ToNapiValue for Wrap<AnyValue<'a>> {
             AnyValue::List(ser) => Wrap::<&Series>::to_napi_value(env, Wrap(&ser)),
             ref av @ AnyValue::Struct(_, _, flds) => struct_dict(env, av._iter_struct_av(), flds),
             AnyValue::Array(ser, _) => Wrap::<&Series>::to_napi_value(env, Wrap(&ser)),
-            AnyValue::Enum(_, _) => Err(unsupported("Enum")),
             AnyValue::Object(_) => Err(unsupported("Object")),
             AnyValue::ObjectOwned(_) => Err(unsupported("ObjectOwned")),
             AnyValue::StructOwned(_) => Err(unsupported("StructOwned")),
             AnyValue::Binary(_) => Err(unsupported("Binary")),
             AnyValue::BinaryOwned(_) => Err(unsupported("BinaryOwned")),
             AnyValue::Decimal(_, _, _) => Err(unsupported("Decimal")),
-            AnyValue::EnumOwned(_, _) => Err(unsupported("EnumOwned")),
         }
     }
 }
@@ -1038,6 +1041,32 @@ where
         .ok_or_else(|| invalid_arg(message.into()))
 }
 
+fn enum_categories_from_object(obj: &Object<'_>) -> napi::Result<Vec<String>> {
+    let inner: Array = required_object_prop(obj, "inner", "Enum")?;
+    let categories_arr: Array = required_array_item(
+        &inner,
+        0,
+        "Enum 'inner' must contain categories at index 0",
+    )?;
+    let mut categories = Vec::with_capacity(categories_arr.len() as usize);
+    for i in 0..categories_arr.len() {
+        let s: String = required_array_item(
+            &categories_arr,
+            i,
+            format!("Enum categories[{i}] must be a string"),
+        )?;
+        categories.push(s);
+    }
+    Ok(categories)
+}
+
+fn dtype_from_enum_categories(categories: Vec<String>) -> napi::Result<DataType> {
+    let fcats = FrozenCategories::new(categories.iter().map(|s| s.as_str()))
+        .map_err(JsPolarsErr::from)?;
+    let mapping = fcats.mapping().clone();
+    Ok(DataType::Enum(fcats, mapping))
+}
+
 impl FromNapiValue for Wrap<DataType> {
     unsafe fn from_napi_value(env: sys::napi_env, napi_val: sys::napi_value) -> napi::Result<Self> {
         let ty = type_of!(env, napi_val)?;
@@ -1115,6 +1144,7 @@ impl FromNapiValue for Wrap<DataType> {
                         );
                         DataType::Categorical(categories.clone(), categories.clone().mapping())
                     }
+                    "Enum" => dtype_from_enum_categories(enum_categories_from_object(&obj)?)?,
                     "Struct" => {
                         let inner: Array = required_object_prop(&obj, "fields", "Struct")?;
                         let mut fldvec: Vec<Field> = Vec::with_capacity(inner.len() as usize);
@@ -1564,6 +1594,22 @@ impl ToNapiValue for Wrap<DataType> {
             DataType::Duration(..) => String::to_napi_value(env, "Duration".to_owned()),
             DataType::Object(..) => String::to_napi_value(env, "Object".to_owned()),
             DataType::Categorical(..) => String::to_napi_value(env, "Categorical".to_owned()),
+            DataType::Enum(fcats, _) => {
+                let env_ctx = Env::from_raw(env);
+                let mut obj = Object::new(&env_ctx)?;
+                let mapping = fcats.mapping();
+                let n = fcats.categories().len();
+                let categories: Vec<String> = (0..n)
+                    .map(|i| unsafe {
+                        mapping
+                            .cat_to_str_unchecked(i as CatSize)
+                            .to_string()
+                    })
+                    .collect();
+                obj.set("variant", "Enum")?;
+                obj.set("inner", vec![categories])?;
+                Object::to_napi_value(env, obj)
+            }
             DataType::Struct(flds) => {
                 let env_ctx = Env::from_raw(env);
 
