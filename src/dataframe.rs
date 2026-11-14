@@ -460,6 +460,7 @@ pub fn from_rows(
     infer_schema_length: Option<u32>,
     env: Env,
 ) -> napi::Result<JsDataFrame> {
+    let schema_explicit = schema.is_some();
     let schema = match schema {
         Some(s) => s.0,
         None => {
@@ -479,10 +480,15 @@ pub fn from_rows(
                 .map(|fld| {
                     let dtype: &DataType = fld.dtype();
                     let key: &PlSmallStr = fld.name();
-                    if let Ok(Some(unknown)) = obj.get::<Unknown>(key) {
+                    let av = if let Ok(Some(unknown)) = obj.get::<Unknown>(key) {
                         coerce_js_anyvalue(unknown, dtype.clone(), env)
                     } else {
                         Ok(AnyValue::Null)
+                    };
+                    if schema_explicit {
+                        av
+                    } else {
+                        Ok(av.unwrap_or(AnyValue::Null))
                     }
                 })
                 .collect::<napi::Result<Vec<AnyValue>>>()?;
@@ -1764,7 +1770,8 @@ fn resolve_bigint_group<'a>(types: impl Iterator<Item = &'a InferredType>) -> Op
         }
     }
     if has_i64 && has_large_u64 {
-        Some(DataType::Float64)
+        // No single integer type can represent both; avoid lossy Float64 widening.
+        Some(DataType::String)
     } else if has_i64 {
         Some(DataType::Int64)
     } else {

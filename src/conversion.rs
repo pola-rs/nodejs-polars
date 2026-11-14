@@ -374,7 +374,11 @@ impl FromNapiValue for Wrap<ChunkedArray<Int64Type>> {
                         let big: BigInt = unsafe { val.cast()? };
                         builder.append_value(bigint_to_i64(&big)?);
                     }
-                    _ => builder.append_null(),
+                    dt => {
+                        return Err(napi::Error::from_reason(format!(
+                            "Cannot convert {dt:?} to Int64 at index {i}"
+                        )));
+                    }
                 },
                 None => builder.append_null(),
             }
@@ -405,7 +409,11 @@ impl FromNapiValue for Wrap<ChunkedArray<UInt64Type>> {
                         }
                         builder.append_value(n as u64);
                     }
-                    _ => builder.append_null(),
+                    dt => {
+                        return Err(napi::Error::from_reason(format!(
+                            "Cannot convert {dt:?} to UInt64 at index {i}"
+                        )));
+                    }
                 },
                 None => builder.append_null(),
             }
@@ -1222,6 +1230,7 @@ impl FromNapiValue for Wrap<DataType> {
                     "Float32" => DataType::Float32,
                     "Float64" => DataType::Float64,
                     "Bool" => DataType::Boolean,
+                    "Null" => DataType::Null,
                     "Utf8" => DataType::String,
                     "String" => DataType::String,
                     "List" => {

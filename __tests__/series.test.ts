@@ -1254,6 +1254,14 @@ describe("series bigint handling", () => {
     assert.deepStrictEqual(s3.toArray(), [5, null, -5]);
   });
 
+  test("infers Int64 struct fields when negative BigInt is nested in objects", () => {
+    const val = pl.Series([{ x: 5n }, { x: -1n }]);
+    assert.deepStrictEqual(val.toArray(), [{ x: 5 }, { x: -1 }]);
+    assert.deepStrictEqual(val.dtype, pl.Struct({ x: pl.Int64 }));
+    const nestedDtype = pl.Series("a", [{ tags: [5n, -1n] }]).dtype;
+    assert.deepStrictEqual(nestedDtype, pl.Struct({ tags: pl.List(pl.Int64) }));
+  });
+
   test("handles BigInt lists with negative values", () => {
     const s1 = pl.Series("a", [[-1n, 5n]]);
     assert.deepStrictEqual(s1.dtype, pl.List(pl.Int64));
@@ -1266,6 +1274,11 @@ describe("series bigint handling", () => {
     const s3 = pl.Series("a", [[5n, -5n]], pl.List(pl.Int64));
     assert.deepStrictEqual(s3.dtype, pl.List(pl.Int64));
     assert.deepStrictEqual(s3.toArray(), [[5, -5]]);
+  });
+
+  test("rejects incompatible JavaScript types for integer columns", () => {
+    assert.throws(() => pl.Series("a", ["bad", 1n], pl.Int64));
+    assert.throws(() => pl.Series("a", ["bad", 1n], pl.UInt64));
   });
 
   test("rejects negative BigInt for UInt64 and out-of-range BigInts", () => {

@@ -2931,6 +2931,26 @@ describe("create", () => {
     assert.throws(() =>
       pl.readRecords([{ a: -1n }], { schema: { a: pl.UInt64 } }),
     );
+
+    const aboveI64Max = 2n ** 63n;
+    const softNull = pl.readRecords(
+      [{ a: -1n }, { a: 2n }, { a: aboveI64Max }],
+      { inferSchemaLength: 2 },
+    );
+    assert.deepStrictEqual(softNull.schema, { a: pl.Int64 });
+    assert.deepStrictEqual(softNull.toRecords(), [
+      { a: -1 },
+      { a: 2 },
+      { a: null },
+    ]);
+
+    const r8 = pl.readRecords([{ a: -1n }, { a: aboveI64Max }]);
+    assert.notDeepStrictEqual(r8.schema.a, pl.Float64);
+    assert.deepStrictEqual(r8.schema, { a: pl.String });
+    assert.deepStrictEqual(r8.toRecords(), [
+      { a: "-1" },
+      { a: aboveI64Max.toString() },
+    ]);
   });
   test("with schema", () => {
     const df = pl.DataFrame(
