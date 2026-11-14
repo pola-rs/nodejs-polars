@@ -168,7 +168,14 @@ impl<'a> FromNapiValue for JsAnyValue {
             ValueType::Boolean => JsAnyValue::Boolean(bool::from_napi_value(env, napi_val)?),
             ValueType::Number => JsAnyValue::Float64(f64::from_napi_value(env, napi_val)?),
             ValueType::String => JsAnyValue::Utf8(String::from_napi_value(env, napi_val)?),
-            ValueType::BigInt => JsAnyValue::UInt64(Wrap::<u64>::from_napi_value(env, napi_val)?.0),
+            ValueType::BigInt => {
+                let big = BigInt::from_napi_value(env, napi_val)?;
+                if big.sign_bit {
+                    JsAnyValue::Int64(bigint_to_i64(&big)?)
+                } else {
+                    JsAnyValue::UInt64(bigint_to_u64(&big)?)
+                }
+            }
             ValueType::Object => {
                 if let Ok(s) = <&JsSeries>::from_napi_value(env, napi_val) {
                     JsAnyValue::List(s.series.clone())
@@ -197,14 +204,17 @@ impl<'a> FromNapiValue for Wrap<AnyValue<'a>> {
                 let s = String::from_napi_value(env, napi_val)?;
                 AnyValue::StringOwned(s.into())
             }
-            ValueType::BigInt => AnyValue::UInt64(Wrap::<u64>::from_napi_value(env, napi_val)?.0),
+            ValueType::BigInt => {
+                let big = BigInt::from_napi_value(env, napi_val)?;
+                bigint_to_anyvalue(&big)?
+            }
             ValueType::Object => {
                 if let Ok(vals) = Vec::<Wrap<AnyValue>>::from_napi_value(env, napi_val) {
                     let vals = vals
                         .into_iter()
                         .map(|wrap| wrap.0)
                         .collect::<Vec<AnyValue>>();
-                    let s = Series::new(PlSmallStr::EMPTY, vals);
+                    let s = any_values_to_series("", vals);
                     AnyValue::List(s)
                 } else if let Ok(s) = <&JsSeries>::from_napi_value(env, napi_val) {
                     AnyValue::List(s.series.clone())

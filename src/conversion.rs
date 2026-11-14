@@ -2,9 +2,9 @@ use crate::lazy::dsl::JsExpr;
 use crate::prelude::*;
 use napi::bindgen_prelude::*;
 use polars_arrow::temporal_conversions::time64ns_to_time;
-use polars_dtype::categorical::{CatSize, FrozenCategories};
 use polars_core::config::verbose_print_sensitive;
 use polars_core::series::ops::NullBehavior;
+use polars_dtype::categorical::{CatSize, FrozenCategories};
 use polars_io::cloud::{CloudOptions, CloudRetryConfig};
 use polars_io::utils::sync_on_close::SyncOnCloseType;
 use polars_io::ExternalCompression;
@@ -39,6 +39,84 @@ impl TypeName for Wrap<StringChunked> {
         ValueType::Object
     }
 }
+pub(crate) fn bigint_to_i64(big: &BigInt) -> JsResult<i64> {
+    let (val, lossless) = big.get_i64();
+    if !lossless {
+        return Err(napi::Error::from_reason(
+            "BigInt value is out of range for Int64".to_owned(),
+        ));
+    }
+    Ok(val)
+}
+
+pub(crate) fn bigint_to_u64(big: &BigInt) -> JsResult<u64> {
+    let (sign_bit, val, lossless) = big.get_u64();
+    if sign_bit {
+        return Err(napi::Error::from_reason(
+            "Cannot convert negative BigInt to UInt64".to_owned(),
+        ));
+    }
+    if !lossless {
+        return Err(napi::Error::from_reason(
+            "BigInt value is out of range for UInt64".to_owned(),
+        ));
+    }
+    Ok(val)
+}
+
+pub(crate) fn bigint_to_anyvalue(big: &BigInt) -> JsResult<AnyValue<'static>> {
+    if big.sign_bit {
+        bigint_to_i64(big).map(AnyValue::Int64)
+    } else {
+        bigint_to_u64(big).map(AnyValue::UInt64)
+    }
+}
+
+pub(crate) fn bigint_to_f64(big: &BigInt) -> f64 {
+    let mut mag = 0.0_f64;
+    for &word in big.words.iter().rev() {
+        mag = mag * 18446744073709551616.0 + (word as f64);
+    }
+    if big.sign_bit {
+        -mag
+    } else {
+        mag
+    }
+}
+
+pub(crate) fn any_values_to_series(name: &str, mut values: Vec<AnyValue>) -> Series {
+    let mut has_i64 = false;
+    let mut has_u64 = false;
+    let mut all_i64_compatible = true;
+
+    for av in &values {
+        match av {
+            AnyValue::Null => {}
+            AnyValue::Int64(_) => has_i64 = true,
+            AnyValue::UInt64(u) => {
+                has_u64 = true;
+                if *u > i64::MAX as u64 {
+                    all_i64_compatible = false;
+                }
+            }
+            _ => {
+                all_i64_compatible = false;
+                break;
+            }
+        }
+    }
+
+    if has_i64 && has_u64 && all_i64_compatible {
+        for av in &mut values {
+            if let AnyValue::UInt64(u) = *av {
+                *av = AnyValue::Int64(u as i64);
+            }
+        }
+    }
+
+    Series::new(name.into(), values)
+}
+
 /// Safety.
 /// it is up to the consumer to make sure the item is valid
 pub(crate) trait ToSeries {
@@ -53,7 +131,7 @@ impl ToSeries for Array<'_> {
             let av: Wrap<AnyValue> = self.get(i).ok().flatten().unwrap_or(Wrap(AnyValue::Null));
             v.push(av.0);
         }
-        Series::new(name.into(), v)
+        any_values_to_series(name, v)
     }
 }
 
@@ -75,7 +153,7 @@ impl ToSeries for Unknown<'_> {
                 .unwrap_or(AnyValue::Null);
             v.push(av);
         }
-        Series::new(name.into(), v)
+        any_values_to_series(name, v)
     }
 }
 
@@ -278,7 +356,36 @@ macro_rules! impl_chunked {
 impl_chunked!(Float64Type, f64);
 impl_chunked!(Int32Type, i32);
 impl_chunked!(UInt32Type, u32);
-impl_chunked!(Int64Type, i64);
+
+impl FromNapiValue for Wrap<ChunkedArray<Int64Type>> {
+    unsafe fn from_napi_value(env: sys::napi_env, napi_val: sys::napi_value) -> JsResult<Self> {
+        let arr = Array::from_napi_value(env, napi_val)?;
+        let len = arr.len() as usize;
+        let mut builder = PrimitiveChunkedBuilder::<Int64Type>::new(PlSmallStr::EMPTY, len);
+        for i in 0..len {
+            match arr.get::<Unknown>(i as u32)? {
+                Some(val) => match val.get_type()? {
+                    ValueType::Null | ValueType::Undefined => builder.append_null(),
+                    ValueType::Number => {
+                        let v: i64 = unsafe { val.cast()? };
+                        builder.append_value(v);
+                    }
+                    ValueType::BigInt => {
+                        let big: BigInt = unsafe { val.cast()? };
+                        builder.append_value(bigint_to_i64(&big)?);
+                    }
+                    dt => {
+                        return Err(napi::Error::from_reason(format!(
+                            "Cannot convert {dt:?} to Int64 at index {i}"
+                        )));
+                    }
+                },
+                None => builder.append_null(),
+            }
+        }
+        Ok(Wrap(builder.finish()))
+    }
+}
 
 impl FromNapiValue for Wrap<ChunkedArray<UInt64Type>> {
     unsafe fn from_napi_value(env: sys::napi_env, napi_val: sys::napi_value) -> JsResult<Self> {
@@ -286,15 +393,29 @@ impl FromNapiValue for Wrap<ChunkedArray<UInt64Type>> {
         let len = arr.len() as usize;
         let mut builder = PrimitiveChunkedBuilder::<UInt64Type>::new(PlSmallStr::EMPTY, len);
         for i in 0..len {
-            match arr.get::<BigInt>(i as u32) {
-                Ok(val) => match val {
-                    Some(v) => {
-                        let (_, v, _) = v.get_u64();
-                        builder.append_value(v)
+            match arr.get::<Unknown>(i as u32)? {
+                Some(val) => match val.get_type()? {
+                    ValueType::Null | ValueType::Undefined => builder.append_null(),
+                    ValueType::BigInt => {
+                        let big: BigInt = unsafe { val.cast()? };
+                        builder.append_value(bigint_to_u64(&big)?);
                     }
-                    None => builder.append_null(),
+                    ValueType::Number => {
+                        let n: f64 = unsafe { val.cast()? };
+                        if n < 0.0 || !n.is_finite() {
+                            return Err(napi::Error::from_reason(
+                                "Cannot convert negative or non-finite Number to UInt64".to_owned(),
+                            ));
+                        }
+                        builder.append_value(n as u64);
+                    }
+                    dt => {
+                        return Err(napi::Error::from_reason(format!(
+                            "Cannot convert {dt:?} to UInt64 at index {i}"
+                        )));
+                    }
                 },
-                Err(_) => builder.append_null(),
+                None => builder.append_null(),
             }
         }
         Ok(Wrap(builder.finish()))
@@ -576,11 +697,36 @@ impl FromNapiValue for Wrap<f32> {
         Ok(Wrap(n as f32))
     }
 }
+impl FromNapiValue for Wrap<i64> {
+    unsafe fn from_napi_value(env: sys::napi_env, napi_val: sys::napi_value) -> JsResult<Self> {
+        match type_of!(env, napi_val)? {
+            ValueType::BigInt => {
+                let big = BigInt::from_napi_value(env, napi_val)?;
+                Ok(Wrap(bigint_to_i64(&big)?))
+            }
+            ValueType::Number => Ok(Wrap(i64::from_napi_value(env, napi_val)?)),
+            dt => Err(JsPolarsErr::Other(format!("cannot cast {} to i64", dt)).into()),
+        }
+    }
+}
 impl FromNapiValue for Wrap<u64> {
     unsafe fn from_napi_value(env: sys::napi_env, napi_val: sys::napi_value) -> JsResult<Self> {
-        let big = BigInt::from_napi_value(env, napi_val)?;
-        let (_, value, _) = big.get_u64();
-        Ok(Wrap(value))
+        match type_of!(env, napi_val)? {
+            ValueType::BigInt => {
+                let big = BigInt::from_napi_value(env, napi_val)?;
+                Ok(Wrap(bigint_to_u64(&big)?))
+            }
+            ValueType::Number => {
+                let n = f64::from_napi_value(env, napi_val)?;
+                if n < 0.0 || !n.is_finite() {
+                    return Err(napi::Error::from_reason(
+                        "Cannot convert negative or non-finite Number to UInt64".to_owned(),
+                    ));
+                }
+                Ok(Wrap(n as u64))
+            }
+            dt => Err(JsPolarsErr::Other(format!("cannot cast {} to u64", dt)).into()),
+        }
     }
 }
 
@@ -1043,11 +1189,8 @@ where
 
 fn enum_categories_from_object(obj: &Object<'_>) -> napi::Result<Vec<String>> {
     let inner: Array = required_object_prop(obj, "inner", "Enum")?;
-    let categories_arr: Array = required_array_item(
-        &inner,
-        0,
-        "Enum 'inner' must contain categories at index 0",
-    )?;
+    let categories_arr: Array =
+        required_array_item(&inner, 0, "Enum 'inner' must contain categories at index 0")?;
     let mut categories = Vec::with_capacity(categories_arr.len() as usize);
     for i in 0..categories_arr.len() {
         let s: String = required_array_item(
@@ -1061,8 +1204,8 @@ fn enum_categories_from_object(obj: &Object<'_>) -> napi::Result<Vec<String>> {
 }
 
 fn dtype_from_enum_categories(categories: Vec<String>) -> napi::Result<DataType> {
-    let fcats = FrozenCategories::new(categories.iter().map(|s| s.as_str()))
-        .map_err(JsPolarsErr::from)?;
+    let fcats =
+        FrozenCategories::new(categories.iter().map(|s| s.as_str())).map_err(JsPolarsErr::from)?;
     let mapping = fcats.mapping().clone();
     Ok(DataType::Enum(fcats, mapping))
 }
@@ -1087,6 +1230,7 @@ impl FromNapiValue for Wrap<DataType> {
                     "Float32" => DataType::Float32,
                     "Float64" => DataType::Float64,
                     "Bool" => DataType::Boolean,
+                    "Null" => DataType::Null,
                     "Utf8" => DataType::String,
                     "String" => DataType::String,
                     "List" => {
@@ -1386,7 +1530,7 @@ impl FromNapiValue for Wrap<CsvWriterOptions> {
 impl FromNapiValue for Wrap<(i64, usize)> {
     unsafe fn from_napi_value(env: sys::napi_env, napi_val: sys::napi_value) -> napi::Result<Self> {
         let big = BigInt::from_napi_value(env, napi_val)?;
-        let (value, _) = big.get_i64();
+        let value = bigint_to_i64(&big)?;
         Ok(Wrap((value, value as usize)))
     }
 }
@@ -1600,11 +1744,7 @@ impl ToNapiValue for Wrap<DataType> {
                 let mapping = fcats.mapping();
                 let n = fcats.categories().len();
                 let categories: Vec<String> = (0..n)
-                    .map(|i| unsafe {
-                        mapping
-                            .cat_to_str_unchecked(i as CatSize)
-                            .to_string()
-                    })
+                    .map(|i| unsafe { mapping.cat_to_str_unchecked(i as CatSize).to_string() })
                     .collect();
                 obj.set("variant", "Enum")?;
                 obj.set("inner", vec![categories])?;
@@ -1716,7 +1856,10 @@ impl FromJsUnknown for AnyValue<'_> {
             ValueType::Boolean => bool::from_js(val).map(AnyValue::Boolean),
             ValueType::Number => f64::from_js(val).map(AnyValue::Float64),
             ValueType::String => String::from_js(val).map(|s| AnyValue::StringOwned(s.into())),
-            ValueType::BigInt => u64::from_js(val).map(AnyValue::UInt64),
+            ValueType::BigInt => {
+                let big: BigInt = unsafe { val.cast()? };
+                bigint_to_anyvalue(&big)
+            }
             ValueType::Object => {
                 if val.is_date()? {
                     let d: Date = unsafe { val.cast()? };
@@ -1739,7 +1882,14 @@ impl FromJsUnknown for DataType {
             ValueType::Boolean => Ok(DataType::Boolean),
             ValueType::Number => Ok(DataType::Float64),
             ValueType::String => Ok(DataType::String),
-            ValueType::BigInt => Ok(DataType::UInt64),
+            ValueType::BigInt => {
+                let big: BigInt = unsafe { val.cast()? };
+                if big.sign_bit {
+                    Ok(DataType::Int64)
+                } else {
+                    Ok(DataType::UInt64)
+                }
+            }
             ValueType::Object => {
                 if val.is_date()? {
                     Ok(DataType::Datetime(TimeUnit::Milliseconds, None))
@@ -1771,7 +1921,7 @@ impl FromJsUnknown for i64 {
         match val.get_type()? {
             ValueType::BigInt => {
                 let big: BigInt = unsafe { val.cast()? };
-                Ok(big.get_i64().0)
+                bigint_to_i64(&big)
             }
             ValueType::Number => {
                 let n: f64 = unsafe { val.cast()? };
@@ -1787,10 +1937,15 @@ impl FromJsUnknown for u64 {
         match val.get_type()? {
             ValueType::BigInt => {
                 let big: BigInt = unsafe { val.cast()? };
-                Ok(big.get_u64().1)
+                bigint_to_u64(&big)
             }
             ValueType::Number => {
                 let n: f64 = unsafe { val.cast()? };
+                if n < 0.0 || !n.is_finite() {
+                    return Err(napi::Error::from_reason(
+                        "Cannot convert negative or non-finite Number to UInt64".to_owned(),
+                    ));
+                }
                 Ok(n as u64)
             }
             dt => Err(JsPolarsErr::Other(format!("cannot cast {} to u64", dt)).into()),

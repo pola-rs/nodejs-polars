@@ -1,16 +1,73 @@
 import { isTypedArray } from "node:util/types";
 import { DataType, polarsTypeToConstructor } from "../datatypes";
-import { FixedSizeList, TimeUnit } from "../datatypes/datatype";
+import {
+  FixedSizeList,
+  type List,
+  type Struct,
+  TimeUnit,
+} from "../datatypes/datatype";
 import { Field } from "../datatypes/field";
 import { Series } from "../series";
 import pli from "./polars_internal";
+
+const valueContainsNegativeBigInt = (x: unknown): boolean => {
+  if (typeof x === "bigint") {
+    return x < 0n;
+  }
+  if (Array.isArray(x)) {
+    return hasNegativeBigInt(x);
+  }
+  if (
+    x !== null &&
+    typeof x === "object" &&
+    (x as object).constructor === Object
+  ) {
+    return hasNegativeBigInt(Object.values(x as Record<string, unknown>));
+  }
+  return false;
+};
+
+const hasNegativeBigInt = (arr: any[]): boolean => {
+  for (const x of arr) {
+    if (valueContainsNegativeBigInt(x)) {
+      return true;
+    }
+  }
+  return false;
+};
+
+/** When values include negative BigInts, UInt64 columns must become Int64 (including nested types). */
+const promoteUInt64ForNegativeBigInt = (dtype: DataType): DataType => {
+  switch (dtype.variant) {
+    case "UInt64":
+      return DataType.Int64;
+    case "List": {
+      const inner = (dtype as List).inner[0];
+      const promoted = promoteUInt64ForNegativeBigInt(inner);
+      return promoted === inner ? dtype : DataType.List(promoted);
+    }
+    case "Struct":
+      return DataType.Struct(
+        (dtype as Struct).inner.map((f) => {
+          const promoted = promoteUInt64ForNegativeBigInt(f.dtype);
+          return promoted === f.dtype ? f : Field.from(f.name, promoted);
+        }),
+      );
+    default:
+      return dtype;
+  }
+};
 
 export const jsTypeToPolarsType = (value: unknown): DataType => {
   if (value === null) {
     return DataType.Float64;
   }
   if (Array.isArray(value)) {
-    return jsTypeToPolarsType(firstNonNull(value));
+    const dt = jsTypeToPolarsType(firstNonNull(value));
+    if (hasNegativeBigInt(value)) {
+      return promoteUInt64ForNegativeBigInt(dt);
+    }
+    return dt;
   }
   if (isTypedArray(value)) {
     switch (value.constructor.name) {
@@ -43,9 +100,20 @@ export const jsTypeToPolarsType = (value: unknown): DataType => {
     return DataType.Datetime(TimeUnit.Milliseconds);
   }
   if (typeof value === "object" && (value as any).constructor === Object) {
-    const flds = Object.entries(value as any).map(([name, value]) => {
-      const dtype = jsTypeToPolarsType(value);
-
+    const entries = Object.entries(value as Record<string, unknown>);
+    const flds = entries.map(([name, fieldValue]) => {
+      let dtype =
+        fieldValue === null || fieldValue === undefined
+          ? DataType.Null
+          : Array.isArray(fieldValue)
+            ? DataType.List(jsTypeToPolarsType(fieldValue as unknown[]))
+            : jsTypeToPolarsType(fieldValue);
+      if (
+        dtype.variant === "UInt64" &&
+        valueContainsNegativeBigInt(fieldValue)
+      ) {
+        dtype = DataType.Int64;
+      }
       return Field.from(name, dtype);
     });
 
@@ -54,7 +122,7 @@ export const jsTypeToPolarsType = (value: unknown): DataType => {
 
   switch (typeof value) {
     case "bigint":
-      return DataType.UInt64;
+      return value < 0n ? DataType.Int64 : DataType.UInt64;
     case "number":
       return DataType.Float64;
     case "string":
@@ -138,8 +206,11 @@ export function arrayToJsSeries(
   }
   const firstValue = firstNonNull(values);
   if (Array.isArray(firstValue) || isTypedArray(firstValue)) {
-    const arrayDtype: DataType =
-      dtype ?? DataType.List(jsTypeToPolarsType(firstValue));
+    let elementDtype = jsTypeToPolarsType(firstValue);
+    if (!dtype && hasNegativeBigInt(values)) {
+      elementDtype = promoteUInt64ForNegativeBigInt(elementDtype);
+    }
+    const arrayDtype: DataType = dtype ?? DataType.List(elementDtype);
     const ctor = polarsTypeToConstructor(arrayDtype);
     const s = ctor(name, values, arrayDtype);
     if (dtype instanceof FixedSizeList) {
@@ -149,13 +220,22 @@ export function arrayToJsSeries(
     return s;
   }
 
-  dtype = dtype ?? jsTypeToPolarsType(firstValue);
+  if (!dtype) {
+    dtype = jsTypeToPolarsType(firstValue);
+    if (hasNegativeBigInt(values)) {
+      dtype = promoteUInt64ForNegativeBigInt(dtype);
+    }
+  }
 
   switch (dtype?.variant) {
     case "Duration":
       return pli.JsSeries.newAnyValue(name, values, dtype);
-    case "Struct":
-      return pli.fromRows(values, null, 1).toStruct(name);
+    case "Struct": {
+      const schema = Object.fromEntries(
+        (dtype as Struct).inner.map((f) => [f.name, f.dtype]),
+      );
+      return pli.fromRows(values, schema).toStruct(name);
+    }
     case "Decimal":
       if (typeof firstValue !== "bigint") {
         throw new Error("Decimal type can only be constructed from BigInt");

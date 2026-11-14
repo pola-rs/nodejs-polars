@@ -311,6 +311,17 @@ impl JsSeries {
                 if let AnyValue::Int64(v) = val.0 {
                     let mut ca: NoNull<Int64Chunked> = (0..n).map(|_| v).collect_trusted();
                     ca.rename(PlSmallStr::from_string(name));
+                    ca.into_inner().into_series().into()
+                } else {
+                    return Err(napi::Error::from_reason(
+                        "invalid primitive cast".to_owned(),
+                    ));
+                }
+            }
+            DataType::UInt64 => {
+                if let AnyValue::UInt64(v) = val.0 {
+                    let mut ca: NoNull<UInt64Chunked> = (0..n).map(|_| v).collect_trusted();
+                    ca.rename(PlSmallStr::from_string(name));
 
                     ca.into_inner().into_series().into()
                 } else {

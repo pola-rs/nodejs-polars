@@ -2,12 +2,12 @@ use crate::file::*;
 use crate::prelude::*;
 use crate::series::JsSeries;
 use napi::bindgen_prelude::Object;
-use polars::frame::row::{infer_schema, Row};
+use polars::frame::row::Row;
 use polars::frame::PivotColumnNaming;
+use polars_core::utils::try_get_supertype;
 use polars_io::csv::write::CsvWriterOptions;
 use polars_io::mmap::MmapBytesReader;
-use polars_utils::aliases::PlFixedStateQuality;
-use std::borrow::Borrow;
+use polars_utils::aliases::{PlFixedStateQuality, PlIndexMap};
 use std::collections::{HashMap, HashSet};
 use std::fs::File;
 use std::hash::BuildHasher;
@@ -460,40 +460,41 @@ pub fn from_rows(
     infer_schema_length: Option<u32>,
     env: Env,
 ) -> napi::Result<JsDataFrame> {
+    let schema_explicit = schema.is_some();
     let schema = match schema {
         Some(s) => s.0,
         None => {
             let infer_schema_length = infer_schema_length.unwrap_or(100) as usize;
-            let pairs = obj_to_pairs(&rows, infer_schema_length);
-            infer_schema(pairs, infer_schema_length)
+            infer_rows_schema(&rows, infer_schema_length)
         }
     };
     let it: Vec<Row> = (0..rows.len())
-        .into_iter()
         .map(|idx| {
             let obj = rows
                 .get::<Object>(idx as u32)
                 .unwrap_or(None)
                 .unwrap_or_else(|| Object::new(&env).unwrap());
 
-            Row(schema
+            let vals = schema
                 .iter_fields()
                 .map(|fld| {
                     let dtype: &DataType = fld.dtype();
                     let key: &PlSmallStr = fld.name();
-                    if let Ok(unknown) = obj.get::<Unknown>(key) {
-                        match unknown {
-                            Some(unknown) => coerce_js_anyvalue(unknown, dtype.clone(), env)
-                                .unwrap_or(AnyValue::Null),
-                            _ => AnyValue::Null,
-                        }
+                    let av = if let Ok(Some(unknown)) = obj.get::<Unknown>(key) {
+                        coerce_js_anyvalue(unknown, dtype.clone(), env)
                     } else {
-                        AnyValue::Null
+                        Ok(AnyValue::Null)
+                    };
+                    if schema_explicit {
+                        av
+                    } else {
+                        Ok(av.unwrap_or(AnyValue::Null))
                     }
                 })
-                .collect())
+                .collect::<napi::Result<Vec<AnyValue>>>()?;
+            Ok(Row(vals))
         })
-        .collect();
+        .collect::<napi::Result<Vec<Row>>>()?;
     let df = DataFrame::from_rows_and_schema(&it, &schema).map_err(JsPolarsErr::from)?;
     Ok(JsDataFrame::reported(df, &env))
 }
@@ -828,7 +829,9 @@ impl JsDataFrame {
         Ok(JsDataFrame::reported(df, &env))
     }
     fn resync_size(&mut self, env: &Env) {
-        if self.reported_size == 0 { return; }   // never reported; leave alone
+        if self.reported_size == 0 {
+            return;
+        } // never reported; leave alone
         let current = self.df.estimated_size() as i64;
         let delta = current - self.reported_size;
         if delta > 0 && crate::memory::report(env, delta) {
@@ -1280,8 +1283,8 @@ impl JsDataFrame {
     }
     #[napi(catch_unwind)]
     pub fn hmax(&self, env: Env) -> napi::Result<Option<JsSeries>> {
-          let s = self.df.max_horizontal().map_err(JsPolarsErr::from)?;
-          Ok(s.map(|s| JsSeries::reported(s.take_materialized_series(), &env)))
+        let s = self.df.max_horizontal().map_err(JsPolarsErr::from)?;
+        Ok(s.map(|s| JsSeries::reported(s.take_materialized_series(), &env)))
     }
 
     #[napi(catch_unwind)]
@@ -1745,115 +1748,216 @@ impl JsDataFrame {
     }
 }
 
-fn coerce_data_type<A: Borrow<DataType>>(datatypes: &[A]) -> DataType {
-    use DataType::*;
+#[derive(Clone, PartialEq, Eq, Hash)]
+enum InferredType {
+    Exact(DataType),
+    /// Non-negative BigInt in `0..=i64::MAX`: defaults to `UInt64`,
+    /// but widens to `Int64` when combined with negative BigInts (`Int64`).
+    NonNegI64BigInt,
+    List(Box<InferredType>),
+    Struct(Vec<(PlSmallStr, InferredType)>),
+}
 
-    let are_all_equal = datatypes.windows(2).all(|w| w[0].borrow() == w[1].borrow());
+fn resolve_bigint_group<'a>(types: impl Iterator<Item = &'a InferredType>) -> Option<DataType> {
+    let mut has_i64 = false;
+    let mut has_large_u64 = false;
+    for t in types {
+        match t {
+            InferredType::Exact(DataType::Int64) => has_i64 = true,
+            InferredType::Exact(DataType::UInt64) => has_large_u64 = true,
+            InferredType::NonNegI64BigInt => {}
+            _ => return None,
+        }
+    }
+    if has_i64 && has_large_u64 {
+        // No single integer type can represent both; avoid lossy Float64 widening.
+        Some(DataType::String)
+    } else if has_i64 {
+        Some(DataType::Int64)
+    } else {
+        Some(DataType::UInt64)
+    }
+}
 
-    if are_all_equal {
-        return datatypes[0].borrow().clone();
+fn resolve_inferred_list_elem(elems: &[InferredType]) -> InferredType {
+    let non_null: Vec<&InferredType> = elems
+        .iter()
+        .filter(|t| !matches!(t, InferredType::Exact(DataType::Null)))
+        .collect();
+    if non_null.is_empty() {
+        return InferredType::Exact(DataType::Null);
+    }
+    if non_null
+        .iter()
+        .all(|t| matches!(t, InferredType::NonNegI64BigInt))
+    {
+        return InferredType::NonNegI64BigInt;
+    }
+    if let Some(dt) = resolve_bigint_group(non_null.iter().copied()) {
+        return InferredType::Exact(dt);
+    }
+    InferredType::Exact(resolve_inferred_types(elems))
+}
+
+fn inferred_to_default_dtype(t: &InferredType) -> DataType {
+    match t {
+        InferredType::Exact(dt) => dt.clone(),
+        InferredType::NonNegI64BigInt => DataType::UInt64,
+        InferredType::List(inner) => {
+            DataType::List(Box::new(inferred_to_default_dtype(inner.as_ref())))
+        }
+        InferredType::Struct(fields) => DataType::Struct(
+            fields
+                .iter()
+                .map(|(k, v)| Field::new(k.clone(), inferred_to_default_dtype(v)))
+                .collect(),
+        ),
+    }
+}
+
+fn resolve_inferred_types(types: &[InferredType]) -> DataType {
+    let non_null: Vec<&InferredType> = types
+        .iter()
+        .filter(|t| !matches!(t, InferredType::Exact(DataType::Null)))
+        .collect();
+    if non_null.is_empty() {
+        return DataType::Null;
     }
 
-    let (lhs, rhs) = (datatypes[0].borrow(), datatypes[1].borrow());
-
-    return match (lhs, rhs) {
-        (lhs, rhs) if lhs == rhs => lhs.clone(),
-        (List(lhs), List(rhs)) => {
-            let inner = coerce_data_type(&[lhs.as_ref(), rhs.as_ref()]);
-            List(Box::new(inner))
-        }
-        (scalar, List(list)) => {
-            let inner = coerce_data_type(&[scalar, list.as_ref()]);
-            List(Box::new(inner))
-        }
-        (List(list), scalar) => {
-            let inner = coerce_data_type(&[scalar, list.as_ref()]);
-            List(Box::new(inner))
-        }
-        (Float64, UInt64) => Float64,
-        (UInt64, Float64) => Float64,
-        (UInt64, Boolean) => UInt64,
-        (Boolean, UInt64) => UInt64,
-        (_, _) => String,
-    };
-}
-
-fn obj_to_pairs<'a>(
-    rows: &'a Array<'a>,
-    len: usize,
-) -> impl 'a + Iterator<Item = Vec<(String, DataType)>> {
-    let len = std::cmp::min(len, rows.len() as usize);
-    (0..len).map(move |idx| {
-        let obj = rows.get::<Object>(idx as u32).unwrap().unwrap();
-        let keys = Object::keys(&obj).unwrap();
-        keys.iter()
-            .map(|key| {
-                let value = obj.get::<napi::Unknown>(&key).unwrap_or(None);
-                (key.to_owned(), obj_to_type(value))
+    if non_null.iter().all(|t| matches!(t, InferredType::List(_))) {
+        let inner: Vec<InferredType> = non_null
+            .iter()
+            .filter_map(|t| match t {
+                InferredType::List(inner) => Some((**inner).clone()),
+                _ => None,
             })
-            .collect()
-    })
+            .collect();
+        return DataType::List(Box::new(resolve_inferred_types(&inner)));
+    }
+
+    if non_null
+        .iter()
+        .all(|t| matches!(t, InferredType::Struct(_)))
+    {
+        let mut field_map: PlIndexMap<PlSmallStr, Vec<InferredType>> = PlIndexMap::default();
+        for t in &non_null {
+            if let InferredType::Struct(fields) = t {
+                for (name, ft) in fields {
+                    field_map.entry(name.clone()).or_default().push(ft.clone());
+                }
+            }
+        }
+        let fields = field_map
+            .into_iter()
+            .map(|(name, fts)| Field::new(name, resolve_inferred_types(&fts)))
+            .collect();
+        return DataType::Struct(fields);
+    }
+
+    if let Some(dt) = resolve_bigint_group(non_null.iter().copied()) {
+        return dt;
+    }
+
+    let mut unique: Vec<DataType> = Vec::new();
+    for t in non_null {
+        let dt = inferred_to_default_dtype(t);
+        if !unique.contains(&dt) {
+            unique.push(dt);
+        }
+    }
+
+    let mut acc = unique[0].clone();
+    for dt in unique.iter().skip(1) {
+        acc = try_get_supertype(&acc, dt).unwrap_or(DataType::String);
+    }
+    acc
 }
 
-fn obj_to_type(value: Option<Unknown>) -> DataType {
+fn infer_rows_schema(rows: &Array, infer_schema_length: usize) -> Schema {
+    let mut columns: PlIndexMap<PlSmallStr, Vec<InferredType>> = PlIndexMap::default();
+    let len = std::cmp::min(infer_schema_length, rows.len() as usize);
+    for idx in 0..len {
+        let Some(unknown) = rows.get::<Unknown>(idx as u32).ok().flatten() else {
+            continue;
+        };
+        if unknown.get_type().ok() != Some(ValueType::Object) {
+            continue;
+        }
+        let Ok(obj) = (unsafe { unknown.cast::<Object>() }) else {
+            continue;
+        };
+        let keys = Object::keys(&obj).unwrap_or_default();
+        for key in keys {
+            let value = obj.get::<napi::Unknown>(&key).unwrap_or(None);
+            columns
+                .entry(PlSmallStr::from_string(key))
+                .or_default()
+                .push(infer_value_type(value));
+        }
+    }
+    Schema::from_iter(
+        columns
+            .into_iter()
+            .map(|(name, types)| Field::new(name, resolve_inferred_types(&types))),
+    )
+}
+
+fn infer_value_type(value: Option<Unknown>) -> InferredType {
     match value {
         Some(val) => {
             let ty = val.get_type().unwrap();
             match ty {
-                ValueType::Boolean => DataType::Boolean,
-                ValueType::Number => DataType::Float64,
-                ValueType::BigInt => DataType::UInt64,
-                ValueType::String => DataType::String,
+                ValueType::Boolean => InferredType::Exact(DataType::Boolean),
+                ValueType::Number => InferredType::Exact(DataType::Float64),
+                ValueType::BigInt => {
+                    let big: BigInt = unsafe { val.cast().unwrap() };
+                    if big.sign_bit {
+                        InferredType::Exact(DataType::Int64)
+                    } else if big.words.len() == 1 && big.words[0] <= i64::MAX as u64 {
+                        InferredType::NonNegI64BigInt
+                    } else {
+                        InferredType::Exact(DataType::UInt64)
+                    }
+                }
+                ValueType::String => InferredType::Exact(DataType::String),
                 ValueType::Object => {
                     if val.is_array().unwrap() {
                         let arr: Object = unsafe { val.cast().expect("REASON") };
                         let len = arr.get_array_length().unwrap();
                         if len == 0 {
-                            DataType::List(DataType::Null.into())
+                            InferredType::List(Box::new(InferredType::Exact(DataType::Null)))
                         } else {
                             // dont compare too many items, as it could be expensive
                             let max_take = std::cmp::min(len as usize, 10);
-                            let mut dtypes: Vec<DataType> = Vec::with_capacity(len as usize);
+                            let mut elems: Vec<InferredType> = Vec::with_capacity(max_take);
 
                             for idx in 0..max_take {
-                                let item: napi::Unknown = arr.get_element(idx as u32).unwrap();
-                                let ty = item.get_type().unwrap();
-                                let dt: Wrap<DataType> = ty.into();
-                                dtypes.push(dt.0)
+                                let item: Option<napi::Unknown> = arr.get_element(idx as u32).ok();
+                                elems.push(infer_value_type(item));
                             }
-                            let dtype = coerce_data_type(&dtypes);
+                            let inner = resolve_inferred_list_elem(&elems);
 
-                            DataType::List(dtype.into())
+                            InferredType::List(Box::new(inner))
                         }
                     } else if val.is_date().unwrap() {
-                        DataType::Datetime(TimeUnit::Milliseconds, None)
+                        InferredType::Exact(DataType::Datetime(TimeUnit::Milliseconds, None))
                     } else {
                         let inner_val: Object = unsafe { val.cast().expect("REASON") };
                         let inner_keys = Object::keys(&inner_val).unwrap();
-                        let mut fldvec: Vec<Field> = Vec::with_capacity(inner_keys.len() as usize);
+                        let mut fldvec: Vec<(PlSmallStr, InferredType)> =
+                            Vec::with_capacity(inner_keys.len());
 
-                        inner_keys.iter().for_each(|key| {
-                            let inner_val = inner_val.get::<napi::Unknown>(&key).unwrap();
-                            let dtype = match inner_val.as_ref().unwrap().get_type().unwrap() {
-                                ValueType::Boolean => DataType::Boolean,
-                                ValueType::Number => DataType::Float64,
-                                ValueType::BigInt => DataType::UInt64,
-                                ValueType::String => DataType::String,
-                                // determine struct type using a recursive func
-                                ValueType::Object => obj_to_type(inner_val),
-                                _ => DataType::Null,
-                            };
-
-                            let fld = Field::new(key.into(), dtype);
-                            fldvec.push(fld);
-                        });
-                        DataType::Struct(fldvec)
+                        for key in inner_keys {
+                            let inner_v = inner_val.get::<napi::Unknown>(&key).unwrap();
+                            fldvec.push((PlSmallStr::from_string(key), infer_value_type(inner_v)));
+                        }
+                        InferredType::Struct(fldvec)
                     }
                 }
-                _ => DataType::Null,
+                _ => InferredType::Exact(DataType::Null),
             }
         }
-        None => DataType::Null,
+        None => InferredType::Exact(DataType::Null),
     }
 }
 
@@ -1883,11 +1987,19 @@ fn coerce_js_anyvalue<'a>(val: Unknown, dtype: DataType, env: Env) -> JsResult<A
             AnyValue::Int64(n)
         }),
         (ValueType::Number, Float64) => f64::from_js(val).map(AnyValue::Float64),
+        (ValueType::BigInt, Float64) => {
+            let big: BigInt = unsafe { val.cast()? };
+            Ok(AnyValue::Float64(bigint_to_f64(&big)))
+        }
         (_, Float64) => val.coerce_to_number().map(|js_num| {
             let n = js_num.get_double().unwrap();
             AnyValue::Float64(n)
         }),
         (ValueType::Number, Float32) => f32::from_js(val).map(AnyValue::Float32),
+        (ValueType::BigInt, Float32) => {
+            let big: BigInt = unsafe { val.cast()? };
+            Ok(AnyValue::Float32(bigint_to_f64(&big) as f32))
+        }
         (_, Float32) => val.coerce_to_number().map(|js_num| {
             let n = js_num.get_double().unwrap();
             AnyValue::Float32(n as f32)
@@ -1939,8 +2051,15 @@ fn coerce_js_anyvalue<'a>(val: Unknown, dtype: DataType, env: Env) -> JsResult<A
                 Ok(AnyValue::Null)
             }
         }
-        (ValueType::Object, DataType::List(_)) => {
+        (ValueType::Object, DataType::List(inner)) => {
             let s = val.to_series("");
+            let s = if s.dtype() == &*inner {
+                s
+            } else if s.dtype() == &DataType::Int64 && *inner == DataType::UInt64 {
+                s.strict_cast(&inner).map_err(JsPolarsErr::from)?
+            } else {
+                s.cast(&inner).map_err(JsPolarsErr::from)?
+            };
             Ok(AnyValue::List(s))
         }
         (ValueType::Object, DataType::Struct(fields)) => {
@@ -1953,32 +2072,13 @@ fn coerce_js_anyvalue<'a>(val: Unknown, dtype: DataType, env: Env) -> JsResult<A
             let inner_val: napi::bindgen_prelude::Object = unsafe { val.cast()? };
             let mut val_vec: Vec<polars::prelude::AnyValue<'_>> =
                 Vec::with_capacity(number_of_fields as usize);
-            fields.iter().for_each(|fld| {
-                let single_val = inner_val.get::<napi::Unknown>(&fld.name).unwrap().unwrap();
-                let vv = match &fld.dtype {
-                    DataType::Boolean => {
-                        AnyValue::Boolean(single_val.coerce_to_bool().unwrap().try_into().unwrap())
-                    }
-                    DataType::String => AnyValue::from_js(single_val).expect("Expecting string"),
-                    DataType::Int16 => AnyValue::Int16(
-                        single_val.coerce_to_number().unwrap().get_int32().unwrap() as i16,
-                    ),
-                    DataType::Int32 => {
-                        AnyValue::Int32(single_val.coerce_to_number().unwrap().get_int32().unwrap())
-                    }
-                    DataType::Int64 => {
-                        AnyValue::Int64(single_val.coerce_to_number().unwrap().get_int64().unwrap())
-                    }
-                    DataType::Float64 => AnyValue::Float64(
-                        single_val.coerce_to_number().unwrap().get_double().unwrap(),
-                    ),
-                    DataType::Struct(_) => {
-                        coerce_js_anyvalue(single_val, fld.dtype.clone(), env).unwrap()
-                    }
-                    _ => AnyValue::Null,
+            for fld in &fields {
+                let vv = match inner_val.get::<napi::Unknown>(&fld.name)? {
+                    Some(single_val) => coerce_js_anyvalue(single_val, fld.dtype.clone(), env)?,
+                    None => AnyValue::Null,
                 };
                 val_vec.push(vv);
-            });
+            }
 
             Ok(AnyValue::StructOwned(Box::new((val_vec, fields))))
         }

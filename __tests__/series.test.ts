@@ -1211,3 +1211,91 @@ describe("series date", () => {
     assertSeriesStrictEqual(actual2, expected2);
   });
 });
+
+describe("series bigint handling", () => {
+  test("infers Int64 when negative BigInt values are present", () => {
+    const s1 = pl.Series("a", [-1n, 5n]);
+    assert.deepStrictEqual(s1.dtype, pl.Int64);
+    assert.deepStrictEqual(s1.toArray(), [-1, 5]);
+    assert.strictEqual(s1.sum(), 4);
+
+    const s2 = pl.Series("a", [5n, -1n]);
+    assert.deepStrictEqual(s2.dtype, pl.Int64);
+    assert.deepStrictEqual(s2.toArray(), [5, -1]);
+
+    const s3 = pl.Series("a", [null, 5n, -1n]);
+    assert.deepStrictEqual(s3.dtype, pl.Int64);
+    assert.deepStrictEqual(s3.toArray(), [null, 5, -1]);
+  });
+
+  test("preserves i64::MIN and u64 values above i64::MAX", () => {
+    const minI64 = -(2n ** 63n);
+    const sMin = pl.Series("a", [minI64]);
+    assert.deepStrictEqual(sMin.dtype, pl.Int64);
+    assert.deepStrictEqual(sMin.toTypedArray(), new BigInt64Array([minI64]));
+
+    const aboveI64Max = 2n ** 63n;
+    const sMax = pl.Series("a", [aboveI64Max]);
+    assert.deepStrictEqual(sMax.dtype, pl.UInt64);
+    assert.deepStrictEqual(sMax.toArray(), [aboveI64Max]);
+  });
+
+  test("accepts BigInt values with explicit pl.Int64", () => {
+    const s1 = pl.Series("a", [5n, -5n], pl.Int64);
+    assert.deepStrictEqual(s1.dtype, pl.Int64);
+    assert.deepStrictEqual(s1.toArray(), [5, -5]);
+
+    const s2 = pl.Series("a", [5, -5], pl.Int64);
+    assert.deepStrictEqual(s2.dtype, pl.Int64);
+    assert.deepStrictEqual(s2.toArray(), [5, -5]);
+
+    const s3 = pl.Series("a", [5n, null, -5n], pl.Int64);
+    assert.deepStrictEqual(s3.dtype, pl.Int64);
+    assert.deepStrictEqual(s3.toArray(), [5, null, -5]);
+  });
+
+  test("infers Int64 struct fields when negative BigInt is nested in objects", () => {
+    const val = pl.Series([{ x: 5n }, { x: -1n }]);
+    assert.deepStrictEqual(val.toArray(), [{ x: 5 }, { x: -1 }]);
+    assert.deepStrictEqual(val.dtype, pl.Struct({ x: pl.Int64 }));
+    const nestedDtype = pl.Series("a", [{ tags: [5n, -1n] }]).dtype;
+    assert.deepStrictEqual(nestedDtype, pl.Struct({ tags: pl.List(pl.Int64) }));
+  });
+
+  test("handles BigInt lists with negative values", () => {
+    const s1 = pl.Series("a", [[-1n, 5n]]);
+    assert.deepStrictEqual(s1.dtype, pl.List(pl.Int64));
+    assert.deepStrictEqual(s1.toArray(), [[-1, 5]]);
+
+    const s2 = pl.Series("a", [[5n], [-1n]]);
+    assert.deepStrictEqual(s2.dtype, pl.List(pl.Int64));
+    assert.deepStrictEqual(s2.toArray(), [[5], [-1]]);
+
+    const s3 = pl.Series("a", [[5n, -5n]], pl.List(pl.Int64));
+    assert.deepStrictEqual(s3.dtype, pl.List(pl.Int64));
+    assert.deepStrictEqual(s3.toArray(), [[5, -5]]);
+  });
+
+  test("rejects incompatible JavaScript types for integer columns", () => {
+    assert.throws(() => pl.Series("a", ["bad", 1n], pl.Int64));
+    assert.throws(() => pl.Series("a", ["bad", 1n], pl.UInt64));
+  });
+
+  test("rejects negative BigInt for UInt64 and out-of-range BigInts", () => {
+    assert.throws(() => pl.Series("a", [-1n, 5n], pl.UInt64));
+    assert.throws(() => pl.Series("a", [[-1n]], pl.List(pl.UInt64)));
+    assert.throws(() => pl.Series("a", [2n ** 63n], pl.Int64));
+    assert.throws(() => pl.Series("a", [-(2n ** 63n) - 1n], pl.Int64));
+    assert.throws(() => pl.Series("a", [2n ** 64n], pl.UInt64));
+  });
+
+  test("repeat preserves negative BigInt sign", () => {
+    const s = pl.repeat(-1n, 3);
+    assert.deepStrictEqual(s.dtype, pl.Int64);
+    assert.deepStrictEqual(s.toArray(), [-1, -1, -1]);
+
+    const u = pl.repeat(1n, 3);
+    assert.deepStrictEqual(u.dtype, pl.UInt64);
+    assert.deepStrictEqual(u.toArray(), [1n, 1n, 1n]);
+  });
+});

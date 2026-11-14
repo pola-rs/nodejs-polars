@@ -151,7 +151,7 @@ pub fn js_arr_to_list(name: &str, arr: &Array, dtype: &DataType) -> napi::Result
                 Float32Array
             )
         }
-        DataType::Int64 => typed_option_or_null!(
+        DataType::Int64 => build_list_with_downcast!(
             name_pl.clone(),
             arr,
             i64,
