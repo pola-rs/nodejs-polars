@@ -5,12 +5,28 @@ import { Field } from "../datatypes/field";
 import { Series } from "../series";
 import pli from "./polars_internal";
 
+const hasNegativeBigInt = (arr: any[]): boolean => {
+  for (const x of arr) {
+    if (typeof x === "bigint" && x < 0n) {
+      return true;
+    }
+    if (Array.isArray(x) && hasNegativeBigInt(x)) {
+      return true;
+    }
+  }
+  return false;
+};
+
 export const jsTypeToPolarsType = (value: unknown): DataType => {
   if (value === null) {
     return DataType.Float64;
   }
   if (Array.isArray(value)) {
-    return jsTypeToPolarsType(firstNonNull(value));
+    const dt = jsTypeToPolarsType(firstNonNull(value));
+    if (dt.variant === "UInt64" && hasNegativeBigInt(value)) {
+      return DataType.Int64;
+    }
+    return dt;
   }
   if (isTypedArray(value)) {
     switch (value.constructor.name) {
@@ -54,7 +70,7 @@ export const jsTypeToPolarsType = (value: unknown): DataType => {
 
   switch (typeof value) {
     case "bigint":
-      return DataType.UInt64;
+      return value < 0n ? DataType.Int64 : DataType.UInt64;
     case "number":
       return DataType.Float64;
     case "string":
@@ -138,8 +154,15 @@ export function arrayToJsSeries(
   }
   const firstValue = firstNonNull(values);
   if (Array.isArray(firstValue) || isTypedArray(firstValue)) {
-    const arrayDtype: DataType =
-      dtype ?? DataType.List(jsTypeToPolarsType(firstValue));
+    let elementDtype = jsTypeToPolarsType(firstValue);
+    if (
+      !dtype &&
+      elementDtype.variant === "UInt64" &&
+      hasNegativeBigInt(values)
+    ) {
+      elementDtype = DataType.Int64;
+    }
+    const arrayDtype: DataType = dtype ?? DataType.List(elementDtype);
     const ctor = polarsTypeToConstructor(arrayDtype);
     const s = ctor(name, values, arrayDtype);
     if (dtype instanceof FixedSizeList) {
@@ -149,7 +172,12 @@ export function arrayToJsSeries(
     return s;
   }
 
-  dtype = dtype ?? jsTypeToPolarsType(firstValue);
+  if (!dtype) {
+    dtype = jsTypeToPolarsType(firstValue);
+    if (dtype.variant === "UInt64" && hasNegativeBigInt(values)) {
+      dtype = DataType.Int64;
+    }
+  }
 
   switch (dtype?.variant) {
     case "Duration":

@@ -2891,6 +2891,47 @@ describe("create", () => {
 
     assert.deepStrictEqual(df.toObject(), expected);
   });
+  test("negative BigInt in DataFrame and readRecords", () => {
+    const df = pl.DataFrame({ a: [-1n, 5n], b: [5n, -1n] });
+    assert.deepStrictEqual(df.schema, { a: pl.Int64, b: pl.Int64 });
+    assert.deepStrictEqual(df.toRecords(), [
+      { a: -1, b: 5 },
+      { a: 5, b: -1 },
+    ]);
+
+    const r1 = pl.readRecords([{ a: -1n }, { a: 5n }]);
+    assert.deepStrictEqual(r1.schema, { a: pl.Int64 });
+    assert.deepStrictEqual(r1.toRecords(), [{ a: -1 }, { a: 5 }]);
+
+    const r2 = pl.readRecords([{ a: 5n }, { a: -1n }]);
+    assert.deepStrictEqual(r2.schema, { a: pl.Int64 });
+    assert.deepStrictEqual(r2.toRecords(), [{ a: 5 }, { a: -1 }]);
+
+    const r3 = pl.readRecords([{ a: null }, { a: 5n }, { a: -1n }]);
+    assert.deepStrictEqual(r3.schema, { a: pl.Int64 });
+    assert.deepStrictEqual(r3.toRecords(), [{ a: null }, { a: 5 }, { a: -1 }]);
+
+    const r4 = pl.readRecords([{ a: 1n }, { a: 5n }]);
+    assert.deepStrictEqual(r4.schema, { a: pl.UInt64 });
+    assert.deepStrictEqual(r4.toRecords(), [{ a: 1n }, { a: 5n }]);
+
+    const r5 = pl.readRecords([{ a: [5n] }, { a: [-1n] }]);
+    assert.deepStrictEqual(r5.schema, { a: pl.List(pl.Int64) });
+    assert.deepStrictEqual(r5.toRecords(), [{ a: [5] }, { a: [-1] }]);
+
+    const r6 = pl.readRecords([{ a: { x: 5n } }, { a: { x: -1n } }]);
+    assert.deepStrictEqual(r6.schema, {
+      a: pl.Struct({ x: pl.Int64 }),
+    });
+    assert.deepStrictEqual(r6.toRecords(), [{ a: { x: 5 } }, { a: { x: -1 } }]);
+
+    const r7 = pl.readRecords([{ a: -1n }], { schema: { a: pl.Int64 } });
+    assert.deepStrictEqual(r7.toRecords(), [{ a: -1 }]);
+
+    assert.throws(() =>
+      pl.readRecords([{ a: -1n }], { schema: { a: pl.UInt64 } }),
+    );
+  });
   test("with schema", () => {
     const df = pl.DataFrame(
       {
