@@ -103,6 +103,27 @@ describe("lazy functions", () => {
       });
       assertFrameEqual(actual, expected);
     });
+    test("negative bigint", () => {
+      const actual = pl.DataFrame({ x: [1] }).select(pl.lit(-7n).alias("l"));
+      assert.deepStrictEqual(actual.schema, { l: pl.Int64 });
+      assert.deepStrictEqual(actual.toRecords(), [{ l: -7 }]);
+
+      const minI64 = -(2n ** 63n);
+      const minActual = pl
+        .DataFrame({ x: [1] })
+        .select(pl.lit(minI64).alias("l"));
+      assert.deepStrictEqual(minActual.schema, { l: pl.Int64 });
+      assert.deepStrictEqual(
+        minActual.getColumn("l").toTypedArray(),
+        new BigInt64Array([minI64]),
+      );
+
+      const listActual = pl
+        .DataFrame({ x: [1] })
+        .select(pl.lit([-1n, 5n]).alias("l"));
+      assert.deepStrictEqual(listActual.schema, { l: pl.List(pl.Int64) });
+      assert.deepStrictEqual(listActual.toRecords(), [{ l: [-1, 5] }]);
+    });
     test("series", () => {
       const actual = pl
         .DataFrame({
