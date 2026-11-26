@@ -1168,6 +1168,22 @@ describe("series struct", () => {
     const actual = pl.Series(arr).struct.nth(0).toArray();
     assert.deepStrictEqual(actual, expected);
   });
+  test("struct:infers fields from later values", () => {
+    const actual = pl.Series([
+      { a: 1, b: null },
+      { a: 2, b: "x", c: true },
+      null,
+    ]);
+    assert.deepStrictEqual(
+      actual.dtype,
+      pl.Struct({ a: pl.Float64, b: pl.String, c: pl.Bool }),
+    );
+    assert.deepStrictEqual(actual.toArray(), [
+      { a: 1, b: null, c: null },
+      { a: 2, b: "x", c: true },
+      { a: null, b: null, c: null },
+    ]);
+  });
 });
 describe("generics", () => {
   const series = pl.Series([1, 2, 3]);
