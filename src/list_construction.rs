@@ -209,8 +209,8 @@ pub fn js_arr_to_list(name: &str, arr: &Array, dtype: &DataType) -> napi::Result
                             let item: Either<napi::JsDate, Null> =
                                 inner_arr.get(inner_idx)?.unwrap();
                             match item {
-                                Either::A(d) => match d.value_of() {
-                                    Ok(v) => inner_builder.append_value(v as i64),
+                                Either::A(d) => match js_date_to_ms(&d) {
+                                    Ok(v) => inner_builder.append_option(v),
                                     Err(_) => inner_builder.append_null(),
                                 },
                                 Either::B(_) => inner_builder.append_null(),

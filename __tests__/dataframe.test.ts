@@ -2687,6 +2687,40 @@ describe("create", () => {
       assert.deepStrictEqual(s.cast(s.dtype).toArray(), [1500, 2500]);
     }
   });
+  test("invalid date is null", () => {
+    const good = new Date(Date.UTC(2024, 0, 1));
+    const bad = new Date(Number.NaN);
+    assert.deepStrictEqual(pl.Series("d", [good, bad, null]).toArray(), [
+      good,
+      null,
+      null,
+    ]);
+    assert.deepStrictEqual(
+      pl.DataFrame([{ d: good }, { d: bad }]).toRecords(),
+      [{ d: good }, { d: null }],
+    );
+    assert.deepStrictEqual(pl.DataFrame([{ d: [good, bad] }]).toRecords(), [
+      { d: [good, null] },
+    ]);
+    assert.deepStrictEqual(pl.Series("d", [[good, bad]]).toArray(), [
+      [good, null],
+    ]);
+    assert.deepStrictEqual(
+      pl
+        .DataFrame({ a: [1] })
+        .select(pl.lit(bad))
+        .toRecords(),
+      [{ literal: null }],
+    );
+    assert.deepStrictEqual(
+      pl
+        .DataFrame({ d: [good] })
+        .select(pl.col("d").extendConstant(bad, 1))
+        .getColumn("d")
+        .toArray(),
+      [good, null],
+    );
+  });
   test("all supported types", () => {
     const df = pl.DataFrame({
       bool: [true, null],

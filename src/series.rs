@@ -230,8 +230,8 @@ impl JsSeries {
                     let obj: &Object = unsafe { &item.cast()? };
                     if obj.is_date()? {
                         let d: &napi::JsDate = unsafe { &item.cast()? };
-                        match d.value_of() {
-                            Ok(v) => builder.append_value(v as i64),
+                        match js_date_to_ms(d) {
+                            Ok(v) => builder.append_option(v),
                             Err(e) => {
                                 if strict.unwrap_or(false) {
                                     return Err(e);
