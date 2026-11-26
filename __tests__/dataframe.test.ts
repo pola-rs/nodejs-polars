@@ -2677,6 +2677,16 @@ describe("create", () => {
     });
     assert.deepStrictEqual(df.getColumn("duration").dtype, pl.Duration("ms"));
   });
+  test("duration dtype keeps time unit", () => {
+    for (const tu of ["us", "ns"] as const) {
+      const s = pl.Series("duration", [1500, 2500], pl.Duration(tu));
+      assert.deepStrictEqual(s.dtype, pl.Duration(tu));
+      assert.deepStrictEqual(pl.DataFrame({ duration: s }).schema, {
+        duration: pl.Duration(tu),
+      });
+      assert.deepStrictEqual(s.cast(s.dtype).toArray(), [1500, 2500]);
+    }
+  });
   test("all supported types", () => {
     const df = pl.DataFrame({
       bool: [true, null],

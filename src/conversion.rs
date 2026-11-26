@@ -1735,7 +1735,13 @@ impl ToNapiValue for Wrap<DataType> {
             }
             DataType::Null => String::to_napi_value(env, "Null".to_owned()),
             DataType::Time => String::to_napi_value(env, "Time".to_owned()),
-            DataType::Duration(..) => String::to_napi_value(env, "Duration".to_owned()),
+            DataType::Duration(tu) => {
+                let env_ctx = Env::from_raw(env);
+                let mut obj = Object::new(&env_ctx)?;
+                obj.set("variant", "Duration")?;
+                obj.set("inner", vec![tu.to_ascii()])?;
+                Object::to_napi_value(env, obj)
+            }
             DataType::Object(..) => String::to_napi_value(env, "Object".to_owned()),
             DataType::Categorical(..) => String::to_napi_value(env, "Categorical".to_owned()),
             DataType::Enum(fcats, _) => {
