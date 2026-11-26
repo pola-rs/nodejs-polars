@@ -221,6 +221,10 @@ export function arrayToJsSeries(
   }
 
   if (!dtype) {
+    if (firstValue?.constructor === Object) {
+      // infer the struct fields in Rust from up to 100 rows, as pl.DataFrame(rows) does
+      return pli.fromRows(values).toStruct(name);
+    }
     dtype = jsTypeToPolarsType(firstValue);
     if (hasNegativeBigInt(values)) {
       dtype = promoteUInt64ForNegativeBigInt(dtype);

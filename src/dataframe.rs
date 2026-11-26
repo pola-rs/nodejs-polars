@@ -470,10 +470,11 @@ pub fn from_rows(
     };
     let it: Vec<Row> = (0..rows.len())
         .map(|idx| {
-            let obj = rows
-                .get::<Object>(idx as u32)
-                .unwrap_or(None)
-                .unwrap_or_else(|| Object::new(&env).unwrap());
+            // reading a property of a null row would leave a pending JS TypeError
+            let obj = match rows.get::<Unknown>(idx as u32).ok().flatten() {
+                Some(v) if v.get_type()? == ValueType::Object => unsafe { v.cast::<Object>()? },
+                _ => Object::new(&env)?,
+            };
 
             let vals = schema
                 .iter_fields()
