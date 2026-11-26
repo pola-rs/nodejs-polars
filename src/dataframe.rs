@@ -2045,8 +2045,10 @@ fn coerce_js_anyvalue<'a>(val: Unknown, dtype: DataType, env: Env) -> JsResult<A
         (ValueType::Object, DataType::Datetime(_, _)) => {
             if val.is_date()? {
                 let d: napi::JsDate = unsafe { val.cast()? };
-                let d = d.value_of()?;
-                Ok(AnyValue::Datetime(d as i64, TimeUnit::Milliseconds, None))
+                Ok(match js_date_to_ms(&d)? {
+                    Some(d) => AnyValue::Datetime(d, TimeUnit::Milliseconds, None),
+                    None => AnyValue::Null,
+                })
             } else {
                 Ok(AnyValue::Null)
             }

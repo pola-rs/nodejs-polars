@@ -84,6 +84,12 @@ pub(crate) fn bigint_to_f64(big: &BigInt) -> f64 {
     }
 }
 
+/// Milliseconds since the epoch, or None for an Invalid Date (NaN would cast to 0, 1970-01-01).
+pub(crate) fn js_date_to_ms(d: &Date) -> JsResult<Option<i64>> {
+    let ms = d.value_of()?;
+    Ok(ms.is_finite().then_some(ms as i64))
+}
+
 pub(crate) fn any_values_to_series(name: &str, mut values: Vec<AnyValue>) -> Series {
     let mut has_i64 = false;
     let mut has_u64 = false;
@@ -1869,9 +1875,10 @@ impl FromJsUnknown for AnyValue<'_> {
             ValueType::Object => {
                 if val.is_date()? {
                     let d: Date = unsafe { val.cast()? };
-                    let d = d.value_of()?;
-                    let d = d as i64;
-                    Ok(AnyValue::Datetime(d, TimeUnit::Milliseconds, None))
+                    Ok(match js_date_to_ms(&d)? {
+                        Some(d) => AnyValue::Datetime(d, TimeUnit::Milliseconds, None),
+                        None => AnyValue::Null,
+                    })
                 } else {
                     Err(JsPolarsErr::Other("Unsupported Data type".to_owned()).into())
                 }

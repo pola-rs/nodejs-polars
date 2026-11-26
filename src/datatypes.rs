@@ -180,9 +180,10 @@ impl<'a> FromNapiValue for JsAnyValue {
                 if let Ok(s) = <&JsSeries>::from_napi_value(env, napi_val) {
                     JsAnyValue::List(s.series.clone())
                 } else if let Ok(d) = napi::JsDate::from_napi_value(env, napi_val) {
-                    let d = d.value_of()?;
-                    let dt = d as i64;
-                    JsAnyValue::Datetime(dt, TimeUnit::Milliseconds, None)
+                    match js_date_to_ms(&d)? {
+                        Some(dt) => JsAnyValue::Datetime(dt, TimeUnit::Milliseconds, None),
+                        None => JsAnyValue::Null,
+                    }
                 } else {
                     return Err(invalid_js_anyvalue_error());
                 }
@@ -219,9 +220,10 @@ impl<'a> FromNapiValue for Wrap<AnyValue<'a>> {
                 } else if let Ok(s) = <&JsSeries>::from_napi_value(env, napi_val) {
                     AnyValue::List(s.series.clone())
                 } else if let Ok(d) = napi::JsDate::from_napi_value(env, napi_val) {
-                    let d = d.value_of()?;
-                    let dt = d as i64;
-                    AnyValue::Datetime(dt, TimeUnit::Milliseconds, None)
+                    match js_date_to_ms(&d)? {
+                        Some(dt) => AnyValue::Datetime(dt, TimeUnit::Milliseconds, None),
+                        None => AnyValue::Null,
+                    }
                 } else {
                     return Err(invalid_js_anyvalue_error());
                 }
