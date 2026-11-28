@@ -269,10 +269,11 @@ impl<'a> ToNapiValue for Wrap<AnyValue<'a>> {
             }
             AnyValue::List(ser) => Wrap::<&Series>::to_napi_value(env, Wrap(&ser)),
             ref av @ AnyValue::Struct(_, _, flds) => struct_dict(env, av._iter_struct_av(), flds),
+            // A scalar column (e.g. from first() or pl.lit) returns its struct value owned.
+            AnyValue::StructOwned(payload) => struct_dict(env, payload.0.into_iter(), &payload.1),
             AnyValue::Array(ser, _) => Wrap::<&Series>::to_napi_value(env, Wrap(&ser)),
             AnyValue::Object(_) => Err(unsupported("Object")),
             AnyValue::ObjectOwned(_) => Err(unsupported("ObjectOwned")),
-            AnyValue::StructOwned(_) => Err(unsupported("StructOwned")),
             AnyValue::Binary(_) => Err(unsupported("Binary")),
             AnyValue::BinaryOwned(_) => Err(unsupported("BinaryOwned")),
             AnyValue::Decimal(_, _, _) => Err(unsupported("Decimal")),

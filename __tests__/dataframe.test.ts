@@ -2547,6 +2547,51 @@ describe("io", () => {
     const actual = df.toRecords();
     assert.deepStrictEqual(JSON.stringify(actual), JSON.stringify(expected));
   });
+  test("toRecords:struct:scalar", () => {
+    // first() and pl.lit give a scalar column, which yields owned struct values
+    const df = pl.DataFrame({ a: [1, 2], b: ["x", "y"] });
+    const first = df.select(
+      pl
+        .struct([pl.col("a"), pl.col("b")])
+        .first()
+        .alias("s"),
+    );
+    assert.deepStrictEqual(first.row(0), [{ a: 1, b: "x" }]);
+    assert.deepStrictEqual(first.toRecords(), [{ s: { a: 1, b: "x" } }]);
+    const lit = df.select(
+      pl.col("a"),
+      pl
+        .struct([
+          pl.lit(1).alias("q"),
+          pl.lit(null).alias("n"),
+          pl.struct([pl.lit("z").alias("x")]).alias("inner"),
+        ])
+        .alias("s"),
+    );
+    const s = { q: 1, n: null, inner: { x: "z" } };
+    assert.deepStrictEqual(lit.getColumn("s").toArray(), [s, s]);
+    assert.deepStrictEqual(lit.toRecords(), [
+      { a: 1, s },
+      { a: 2, s },
+    ]);
+    assert.deepStrictEqual(lit.rows(), [
+      [1, s],
+      [2, s],
+    ]);
+    assert.deepStrictEqual(lit.row(-1), [2, s]);
+    const nullStruct = df.select(
+      pl.col("a"),
+      pl
+        .struct([pl.col("a")])
+        .filter(pl.col("a").gt(5))
+        .first()
+        .alias("s"),
+    );
+    assert.deepStrictEqual(nullStruct.toRecords(), [
+      { a: 1, s: null },
+      { a: 2, s: null },
+    ]);
+  });
   test("toRecords:quoteChar:emptyHeader", () => {
     const csv = `|name|,||
 |John|,|green|
