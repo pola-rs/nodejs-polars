@@ -688,17 +688,25 @@ export const ExprStringFunctions = (_expr: any): ExprString => {
       if (dt.equals(DataType.Date)) {
         return wrap("strToDate", format, false, false, false);
       }
-      if (dt.equals(DataType.Datetime("ms"))) {
-        return wrap(
+      if (dt.variant === "Datetime") {
+        // A bare pl.Datetime passes no time unit, so polars infers it from the format, as in py-polars.
+        const [timeUnit, timeZone] =
+          dtype instanceof DataType ? (dt as DataType.Datetime).inner : [];
+        const res = wrap(
           "strToDatetime",
           format,
-          undefined,
-          undefined,
+          timeUnit,
+          timeZone,
           false,
           false,
           false,
           undefined,
         );
+        // An invalid time zone comes back as an Error value, as in dt.replaceTimeZone.
+        if (res._expr.toString().startsWith("Error:")) {
+          throw new Error(res._expr.toString());
+        }
+        return res;
       }
       throw new Error(
         `only "DataType.Date" and "DataType.Datetime" are supported`,

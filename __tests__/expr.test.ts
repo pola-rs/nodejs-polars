@@ -1789,6 +1789,68 @@ describe("expr.str", () => {
     assertFrameEqual(actual, expected);
     assertFrameEqual(actualFromSeries, expected);
   });
+  test("strptime keeps the time unit and time zone of the Datetime", () => {
+    const fmt = "%Y-%m-%d %H:%M:%S";
+    const s = pl.Series("t", [
+      "2024-01-02 03:04:05",
+      "1969-12-31 23:59:59",
+      null,
+    ]);
+    const cases: [any, string, (number | null)[]][] = [
+      [pl.Datetime("ms"), "Datetime(ms,)", [1704164645000, -1000, null]],
+      [pl.Datetime(), "Datetime(ms,)", [1704164645000, -1000, null]],
+      [pl.Datetime("us"), "Datetime(us,)", [1704164645000000, -1000000, null]],
+      [
+        pl.Datetime("ns"),
+        "Datetime(ns,)",
+        [1704164645000000000, -1000000000, null],
+      ],
+      [
+        pl.Datetime("ms", "UTC"),
+        "Datetime(ms,UTC)",
+        [1704164645000, -1000, null],
+      ],
+      [
+        pl.Datetime("us", "Europe/Amsterdam"),
+        "Datetime(us,Europe/Amsterdam)",
+        [1704161045000000, -3601000000, null],
+      ],
+      // the bare factory infers the unit from the format
+      [pl.Datetime, "Datetime(us,)", [1704164645000000, -1000000, null]],
+    ];
+    for (const [dtype, expected, values] of cases) {
+      const fromSeries = s.str.strptime(dtype, fmt);
+      const fromExpr = s
+        .toFrame()
+        .select(col("t").str.strptime(dtype, fmt))
+        .getColumn("t");
+      for (const out of [fromSeries, fromExpr]) {
+        assert.strictEqual(String(out.dtype), `DataType(${expected})`);
+        assert.deepStrictEqual(out.cast(pl.Int64).toArray(), values);
+      }
+    }
+    // the requested unit wins over the format, so microseconds are cut to ms
+    assert.deepStrictEqual(
+      pl
+        .Series(["2024-01-02 03:04:05.123456"])
+        .str.strptime(pl.Datetime("ms"), `${fmt}%.6f`)
+        .cast(pl.Int64)
+        .toArray(),
+      [1704164645123],
+    );
+    assert.throws(
+      () => s.str.strptime(pl.Datetime("ms", "Mars/Olympus"), fmt),
+      /unable to parse time zone/,
+    );
+    assert.throws(
+      () => col("t").str.strptime(pl.Datetime("ms", "Mars/Olympus"), fmt),
+      /unable to parse time zone/,
+    );
+    assert.throws(
+      () => s.str.strptime(pl.Datetime("s" as any), fmt),
+      /`timeUnit` must be one of/,
+    );
+  });
   test("toLowercase", () => {
     const df = pl.DataFrame({
       os: ["Kali-Linux", "Debian-Linux", "Ubuntu-Linux", "Mac-Sierra"],
