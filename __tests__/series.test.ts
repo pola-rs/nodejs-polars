@@ -932,6 +932,19 @@ describe("series functions", () => {
     }
   });
 
+  test("get and getIndex count negative indexes from the end and return undefined out of range", () => {
+    const s = pl.Series("a", [1, null, 3]);
+    for (const get of [(i: number) => s.get(i), (i: number) => s.getIndex(i)]) {
+      assert.strictEqual(get(-1), 3);
+      assert.strictEqual(get(-3), 1);
+      assert.strictEqual(get(1), null);
+      assert.strictEqual(get(3), undefined);
+      assert.strictEqual(get(-4), undefined);
+    }
+    assert.strictEqual((s as any)[99], undefined);
+    assert.strictEqual(pl.Series("e", [], pl.Int64).get(0), undefined);
+  });
+
   test("isFinite and isInfinite throw InvalidOperationError for non-floats", () => {
     assert.throws(
       () => pl.Series(["foo"]).isFinite(),

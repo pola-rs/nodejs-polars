@@ -1548,10 +1548,13 @@ export function _Series(_s: any): Series {
         : wrap("filter", (SeriesConstructor("", predicate) as any)._s);
     },
     get(index) {
-      return _s.getIdx(index < 0 ? _s.len() + index : index);
+      const len = _s.len();
+      const idx = index < 0 ? len + index : index;
+      // Out of range reads as undefined, like an array, instead of a Rust panic.
+      return idx >= 0 && idx < len ? _s.getIdx(idx) : undefined;
     },
     getIndex(idx) {
-      return _s.getIdx(idx);
+      return this.get(idx);
     },
     gt(other: number | Series) {
       return numberOrSeriesFunc(other, "Gt");
