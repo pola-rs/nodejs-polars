@@ -912,6 +912,26 @@ describe("series functions", () => {
     assertSeriesEqual(s, pl.Series([1, 99, 3]));
   });
 
+  test("get returns the same value as toArray", () => {
+    const s = pl.Series("a", [3_000_000_000, 2], pl.Int64);
+    assert.strictEqual(s.get(0), 3_000_000_000);
+    assert.strictEqual((s as any)[0], 3_000_000_000);
+    assert.strictEqual(s.get(-1), 2);
+    assert.strictEqual(
+      s.toFrame().select(pl.col("a").sum()).item(),
+      3_000_000_002,
+    );
+    for (const other of [
+      pl.Series("u", [2n ** 63n + 1n]),
+      pl.Series("b", [true]),
+      pl.Series("d", [new Date(Date.UTC(2024, 0, 2))], pl.Date),
+      pl.Series("l", [[1, 2]]),
+      pl.Series("c", ["x"]).cast(pl.Categorical),
+    ]) {
+      assert.deepStrictEqual(other.get(0), other.toArray()[0]);
+    }
+  });
+
   test("isFinite and isInfinite throw InvalidOperationError for non-floats", () => {
     assert.throws(
       () => pl.Series(["foo"]).isFinite(),

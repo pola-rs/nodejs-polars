@@ -1297,15 +1297,6 @@ export function _Series(_s: any): Series {
     return _Series(pli[internalMethod](_s, ...args));
   };
 
-  const dtypeUnwrap = (method: string, ...args: any[]) => {
-    const dtype = _s.dtype;
-
-    const dt = (DTYPE_TO_FFINAME as any)[dtype];
-    const internalMethod = `series${method}${dt}`;
-
-    return pli[internalMethod](_s, ...args);
-  };
-
   const expr_op = (method: string, ...args) => {
     return _Series(_s)
       .toFrame()
@@ -1556,8 +1547,8 @@ export function _Series(_s: any): Series {
         ? wrap("filter", (predicate as any)._s)
         : wrap("filter", (SeriesConstructor("", predicate) as any)._s);
     },
-    get(field) {
-      return dtypeUnwrap("Get", field);
+    get(index) {
+      return _s.getIdx(index < 0 ? _s.len() + index : index);
     },
     getIndex(idx) {
       return _s.getIdx(idx);

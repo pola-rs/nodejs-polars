@@ -1490,39 +1490,6 @@ impl_set_with_mask_wrap!(series_set_with_mask_i16, i16, i16);
 impl_set_with_mask!(series_set_with_mask_i32, i32, i32);
 impl_set_with_mask!(series_set_with_mask_i64, i64, i64);
 
-macro_rules! impl_get {
-    ($name:ident, $series_variant:ident, $type:ty, $cast:ty) => {
-        #[napi(catch_unwind)]
-        pub fn $name(s: &JsSeries, index: i64) -> Option<$cast> {
-            if let Ok(ca) = s.series.$series_variant() {
-                let index = if index < 0 {
-                    (ca.len() as i64 + index) as usize
-                } else {
-                    index as usize
-                };
-                ca.get(index).map(|s| s as $cast)
-            } else {
-                None
-            }
-        }
-    };
-}
-
-impl_get!(series_get_f32, f32, f32, f64);
-impl_get!(series_get_f64, f64, f64, f64);
-impl_get!(series_get_u8, u8, u8, i32);
-impl_get!(series_get_u16, u16, u16, u32);
-impl_get!(series_get_u32, u32, u32, u32);
-impl_get!(series_get_u64, u64, u64, i64);
-impl_get!(series_get_i8, i8, i8, i32);
-impl_get!(series_get_i16, i16, i16, i32);
-impl_get!(series_get_i32, i32, i32, i32);
-impl_get!(series_get_i64, i64, i64, i32);
-impl_get!(series_get_str, str, utf8, &str);
-// impl_get!(series_get_date, date, i32, i32);
-// impl_get!(series_get_datetime, datetime, i64, i64);
-// impl_get!(series_get_duration, duration, i64, i64);
-
 macro_rules! impl_arithmetic {
   ($name:ident, $type:ty, $operand:tt) => {
       #[napi(catch_unwind)]
