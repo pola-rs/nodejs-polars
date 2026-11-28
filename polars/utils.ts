@@ -43,8 +43,13 @@ export function columnOrColumnsStrict(
 ): Array<string> {
   return columns.flat(3) as any;
 }
-/** @ignore */
-export function selectionToExprList(columns: any[], stringToLit?) {
+/**
+ * Strings are column names unless `stringToLit` is true.
+ * The default must stay explicit: `exprToLitOrExpr` defaults its own `stringToLit`
+ * to true, so passing `undefined` through would turn column names into literals.
+ * @ignore
+ */
+export function selectionToExprList(columns: any[], stringToLit = false) {
   return [columns]
     .flat(3)
     .map((expr) => exprToLitOrExpr(expr, stringToLit)._expr);
