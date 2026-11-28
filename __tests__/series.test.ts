@@ -912,6 +912,39 @@ describe("series functions", () => {
     assertSeriesEqual(s, pl.Series([1, 99, 3]));
   });
 
+  test("get returns the same value as toArray", () => {
+    const s = pl.Series("a", [3_000_000_000, 2], pl.Int64);
+    assert.strictEqual(s.get(0), 3_000_000_000);
+    assert.strictEqual((s as any)[0], 3_000_000_000);
+    assert.strictEqual(s.get(-1), 2);
+    assert.strictEqual(
+      s.toFrame().select(pl.col("a").sum()).item(),
+      3_000_000_002,
+    );
+    for (const other of [
+      pl.Series("u", [2n ** 63n + 1n]),
+      pl.Series("b", [true]),
+      pl.Series("d", [new Date(Date.UTC(2024, 0, 2))], pl.Date),
+      pl.Series("l", [[1, 2]]),
+      pl.Series("c", ["x"]).cast(pl.Categorical),
+    ]) {
+      assert.deepStrictEqual(other.get(0), other.toArray()[0]);
+    }
+  });
+
+  test("get and getIndex count negative indexes from the end and return undefined out of range", () => {
+    const s = pl.Series("a", [1, null, 3]);
+    for (const get of [(i: number) => s.get(i), (i: number) => s.getIndex(i)]) {
+      assert.strictEqual(get(-1), 3);
+      assert.strictEqual(get(-3), 1);
+      assert.strictEqual(get(1), null);
+      assert.strictEqual(get(3), undefined);
+      assert.strictEqual(get(-4), undefined);
+    }
+    assert.strictEqual((s as any)[99], undefined);
+    assert.strictEqual(pl.Series("e", [], pl.Int64).get(0), undefined);
+  });
+
   test("isFinite and isInfinite throw InvalidOperationError for non-floats", () => {
     assert.throws(
       () => pl.Series(["foo"]).isFinite(),

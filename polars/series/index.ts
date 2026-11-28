@@ -1297,15 +1297,6 @@ export function _Series(_s: any): Series {
     return _Series(pli[internalMethod](_s, ...args));
   };
 
-  const dtypeUnwrap = (method: string, ...args: any[]) => {
-    const dtype = _s.dtype;
-
-    const dt = (DTYPE_TO_FFINAME as any)[dtype];
-    const internalMethod = `series${method}${dt}`;
-
-    return pli[internalMethod](_s, ...args);
-  };
-
   const expr_op = (method: string, ...args) => {
     return _Series(_s)
       .toFrame()
@@ -1556,11 +1547,14 @@ export function _Series(_s: any): Series {
         ? wrap("filter", (predicate as any)._s)
         : wrap("filter", (SeriesConstructor("", predicate) as any)._s);
     },
-    get(field) {
-      return dtypeUnwrap("Get", field);
+    get(index) {
+      const len = _s.len();
+      const idx = index < 0 ? len + index : index;
+      // Out of range reads as undefined, like an array, instead of a Rust panic.
+      return idx >= 0 && idx < len ? _s.getIdx(idx) : undefined;
     },
     getIndex(idx) {
-      return _s.getIdx(idx);
+      return this.get(idx);
     },
     gt(other: number | Series) {
       return numberOrSeriesFunc(other, "Gt");
