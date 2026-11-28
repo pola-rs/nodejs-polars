@@ -44,7 +44,7 @@ export function columnOrColumnsStrict(
   return columns.flat(3) as any;
 }
 /** @ignore */
-export function selectionToExprList(columns: any[], stringToLit?) {
+export function selectionToExprList(columns: any[], stringToLit = false) {
   return [columns]
     .flat(3)
     .map((expr) => exprToLitOrExpr(expr, stringToLit)._expr);

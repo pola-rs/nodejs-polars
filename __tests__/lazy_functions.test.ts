@@ -625,4 +625,33 @@ describe("lazy functions", () => {
     });
     assertFrameEqual(actual, expected);
   });
+  test("strings are parsed as column names", () => {
+    const df = pl.DataFrame({
+      a: [1, 8, 3],
+      b: [4, 5, 6],
+      x: [true, false, true],
+      y: [true, true, false],
+    });
+
+    const actual = df.select(
+      pl.maxHorizontal(["a", "b"]).alias("max"),
+      pl.minHorizontal(["a", "b"]).alias("min"),
+      pl.sumHorizontal(["a", "b"]).alias("sum"),
+      pl.allHorizontal(["x", "y"]).alias("all"),
+      pl.anyHorizontal(["x", "y"]).alias("any"),
+      pl.struct(["a", "b"]).alias("struct"),
+      pl.argSortBy(["a"]).alias("argSortBy"),
+    );
+
+    const expected = df.select(
+      pl.maxHorizontal([pl.col("a"), pl.col("b")]).alias("max"),
+      pl.minHorizontal([pl.col("a"), pl.col("b")]).alias("min"),
+      pl.sumHorizontal([pl.col("a"), pl.col("b")]).alias("sum"),
+      pl.allHorizontal([pl.col("x"), pl.col("y")]).alias("all"),
+      pl.anyHorizontal([pl.col("x"), pl.col("y")]).alias("any"),
+      pl.struct([pl.col("a"), pl.col("b")]).alias("struct"),
+      pl.argSortBy([pl.col("a")]).alias("argSortBy"),
+    );
+    assertFrameEqual(actual, expected);
+  });
 });
